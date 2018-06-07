@@ -1,0 +1,61 @@
+ignored = ["k8s.io/cloud-provider-vsphere"]
+
+[[override]]
+  name = "github.com/container-storage-interface/spec"
+  version = "0.2.0"
+
+[[override]]
+  branch = "master"
+  name = "github.com/golang/glog"
+
+[[override]]
+  branch = "master"
+  name = "github.com/kubernetes-csi/drivers"
+
+[[override]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+
+[[override]]
+  name = "github.com/docker/distribution"
+  branch = "master"
+
+[[override]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.2"
+
+[[override]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[[override]]
+  name = "google.golang.org/grpc"
+  version = "1.11.1"
+
+[[override]]
+  name = "gopkg.in/gcfg.v1"
+  version = "1.2.1"
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.10.0"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.10.0"
+
+[[override]]
+  name = "k8s.io/apiserver"
+  version = "kubernetes-1.10.0"
+
+[[override]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.10.0"
+
+[[override]]
+  name = "k8s.io/kubernetes"
+  version = "1.10.0"
+
+[prune]
+  go-tests = true
+  unused-packages = true
