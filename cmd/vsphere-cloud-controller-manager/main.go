@@ -36,7 +36,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/version/prometheus" // for version metric registration
 	"k8s.io/kubernetes/pkg/version/verflag"
 
-	"k8s.io/kubernetes/pkg/cloudprovider/providers/vsphere"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -53,7 +53,11 @@ func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	goflag.CommandLine.Parse([]string{})
-	s := options.NewCloudControllerManagerOptions()
+	s, err := options.NewCloudControllerManagerOptions()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
 	command := &cobra.Command{
 		Use: "cloud-controller-manager",
 		Long: `The Cloud controller manager is a daemon that embeds
@@ -88,7 +92,7 @@ the cloud specific control loops shipped with Kubernetes.`,
 
 	glog.V(1).Infof("vsphere-cloud-controller-manager version: %s", version)
 
-	s.Generic.ComponentConfig.CloudProvider = vsphere.ProviderName
+	s.CloudProvider.Name = vsphere.ProviderName
 	if err := command.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

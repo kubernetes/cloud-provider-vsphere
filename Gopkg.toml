@@ -21,6 +21,14 @@ ignored = ["k8s.io/cloud-provider-vsphere"]
   branch = "master"
 
 [[override]]
+  name = "github.com/vmware/govmomi"
+  branch = "master"
+
+[[override]]
+  name = "github.com/json-iterator/go"
+  version = "1.1.4"
+
+[[override]]
   name = "github.com/spf13/cobra"
   version = "0.0.2"
 
@@ -38,23 +46,23 @@ ignored = ["k8s.io/cloud-provider-vsphere"]
 
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/kubernetes"
-  version = "1.10.0"
+  version = "1.11.0"
 
 [prune]
   go-tests = true
