@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloud-controller-manager
+  namespace: kube-system
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: vsphere-cloud-controller-manager
+  namespace: kube-system
+  labels:
+    k8s-app: vsphere-cloud-controller-manager
+spec:
+  selector:
+    matchLabels:
+      k8s-app: vsphere-cloud-controller-manager
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s-app: vsphere-cloud-controller-manager
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      securityContext:
+        runAsUser: 0
+      tolerations:
+      - key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: cloud-controller-manager
+      containers:
+        - name: vsphere-cloud-controller-manager
+          image: docker.io/vmware/vsphere-cloud-controller-manager:latest
+          args:
+            - /bin/vsphere-cloud-controller-manager
+            - --v=4
+            - --cloud-provider=vsphere
+            - --cloud-config=/etc/cloud/vsphere.conf
+            - --kubeconfig=/etc/kubernetes/controller-manager.conf
+            - --address=127.0.0.1
+          volumeMounts:
+            - mountPath: /etc/kubernetes/pki
+              name: k8s-certs
+              readOnly: true
+            - mountPath: /etc/ssl/certs
+              name: ca-certs
+              readOnly: true
+            - mountPath: /etc/kubernetes/controller-manager.conf
+              name: kubeconfig
+              readOnly: true
+            - mountPath: /etc/cloud
+              name: vsphere-config-volume
+              readOnly: true
+            - mountPath: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+              name: flexvolume-dir
+          resources:
+            requests:
+              cpu: 200m
+      hostNetwork: true
+      volumes:
+      - hostPath:
+          path: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+          type: DirectoryOrCreate
+        name: flexvolume-dir
+      - hostPath:
+          path: /etc/kubernetes/pki
+          type: DirectoryOrCreate
+        name: k8s-certs
+      - hostPath:
+          path: /etc/ssl/certs
+          type: DirectoryOrCreate
+        name: ca-certs
+      - hostPath:
+          path: /etc/kubernetes/controller-manager.conf
+          type: FileOrCreate
+        name: kubeconfig
+      - name: vsphere-config-volume
+        configMap:
+          name: cloud-config
