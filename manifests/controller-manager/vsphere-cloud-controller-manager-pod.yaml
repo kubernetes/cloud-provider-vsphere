@@ -21,7 +21,7 @@ spec:
       image: docker.io/vmware/vsphere-cloud-controller-manager:latest
       args:
         - /bin/vsphere-cloud-controller-manager
-        - --v=4
+        - --v=2
         - --cloud-config=/etc/cloud/vsphere.conf
         - --cloud-provider=vsphere
         - --use-service-account-credentials=true
