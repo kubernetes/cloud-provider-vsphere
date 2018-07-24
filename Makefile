@@ -33,6 +33,7 @@ GOFLAGS   :=
 TAGS      :=
 LDFLAGS   := "-w -s -X 'main.version=${VERSION}'"
 REGISTRY ?= k8scloudprovider
+PUSH_LATEST ?= TRUE
 
 ifneq ("$(DEST)", "$(PWD)")
     $(error Please run 'make' from $(DEST). Current directory is $(PWD))
@@ -146,6 +147,9 @@ image-controller-manager: depend vsphere-cloud-controller-manager
 ifeq ($(GOOS),linux)
 	cp vsphere-cloud-controller-manager cluster/images/controller-manager
 	docker build -t $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION) cluster/images/controller-manager
+ifeq ("$(PUSH_LATEST)","TRUE")
+	docker tag $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION) $(REGISTRY)/vsphere-cloud-controller-manager:latest
+endif
 	rm cluster/images/controller-manager/vsphere-cloud-controller-manager
 else
 	$(error Please set GOOS=linux for building the image)
@@ -155,6 +159,9 @@ upload-images: images
 	@echo "push images to $(REGISTRY)"
 	docker login -u="$(DOCKER_USERNAME)" -p="$(DOCKER_PASSWORD)";
 	docker push $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION)
+ifeq ("$(PUSH_LATEST)","TRUE")
+	docker push $(REGISTRY)/vsphere-cloud-controller-manager:latest
+endif
 
 version:
 	@echo ${VERSION}
