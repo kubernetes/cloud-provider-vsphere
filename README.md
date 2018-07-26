@@ -8,6 +8,16 @@ The vSphere cloud provider code locates at [Kubernetes repository directory](htt
 
 There is an ongoing work for refactoring cloud providers out of the upstream repository. For more details, please check [this KEP](https://github.com/kubernetes/community/blob/master/keps/sig-cloud-provider/0002-cloud-controller-manager.md).
 
+## Building Locally
+
+Clone this repository to `$GOPATH/src/k8s.io/cloud-provider-vsphere`. Please note that this path is not the same as the project's location in GitHub. Failing to clone the repository to the prescribed path causes the Go dependency tool `dep` and builds to fail.
+
+Once the project is cloned locally, use the `Makefile` to build the cloud provider:
+
+```shell
+$ make
+```
+
 ## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
