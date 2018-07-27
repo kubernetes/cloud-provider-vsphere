@@ -114,7 +114,6 @@ type NodeManager struct {
 
 type NodeDetails struct {
 	NodeName string
-	vm       *vclib.VirtualMachine
 	UUID     string
 }
 
