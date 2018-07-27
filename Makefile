@@ -2,6 +2,7 @@
 # Follows the interface defined in the Golang CTI proposed
 # in https://review.openstack.org/410355
 
+all: build
 #REPO_VERSION?=$(shell git describe --tags)
 
 GIT_HOST = k8s.io
