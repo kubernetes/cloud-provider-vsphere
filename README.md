@@ -18,6 +18,12 @@ Once the project is cloned locally, use the `Makefile` to build the cloud provid
 $ make
 ```
 
+### The dep tool hangs
+The `dep` tool may freeze when running it locally and not via the `hack/make.sh` command that uses the Docker image. If this happens, please check the following:
+
+1. The repository must be cloned to `$GOPATH/src/k8s.io/cloud-provider-vsphere`. This is not the same path as the project's location in GitHub, but rather reflects the project's Go packages' vanity import path.
+2. The Mercurial client `hg` must be installed in order to fetch the dependency `bitbucket.org/ww/goautoneg`. Otherwise `dep` freezes for no apparent reason.
+
 ## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
