@@ -25,6 +25,7 @@ import (
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Error Messages
@@ -64,10 +65,10 @@ func (secretCredentialManager *SecretCredentialManager) GetCredential(server str
 }
 
 func (secretCredentialManager *SecretCredentialManager) updateCredentialsMap() error {
-	if secretCredentialManager.SecretLister == nil {
-		return fmt.Errorf("SecretLister is not initialized")
+	if secretCredentialManager.Client == nil {
+		return fmt.Errorf("Kubernetes Client is not initialized")
 	}
-	secret, err := secretCredentialManager.SecretLister.Secrets(secretCredentialManager.SecretNamespace).Get(secretCredentialManager.SecretName)
+	secret, err := secretCredentialManager.Client.CoreV1().Secrets(secretCredentialManager.SecretNamespace).Get(secretCredentialManager.SecretName, metav1.GetOptions{})
 	if err != nil {
 		glog.Errorf("Cannot get secret %s in namespace %s. error: %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace, err)
 		return err
