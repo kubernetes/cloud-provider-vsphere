@@ -18,6 +18,7 @@ package vsphere
 
 import (
 	"context"
+	"errors"
 	"net"
 	"strings"
 	"sync"
@@ -35,6 +36,13 @@ const (
 	POOL_SIZE      int    = 8
 	QUEUE_SIZE     int    = POOL_SIZE * 10
 	ProviderPrefix string = "vsphere://"
+
+	CredentialManagerErrMsg = "The Credential Manager is not initialized"
+)
+
+// Error constants
+var (
+	ErrCredentialManager = errors.New(CredentialManagerErrMsg)
 )
 
 func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
@@ -527,28 +535,57 @@ func (i *instances) nodeDiscoveryByProviderID(ctx context.Context, providerID st
 }
 
 func (i *instances) vcConnect(ctx context.Context, vsphereInstance *VSphereInstance) error {
-	err := vsphereInstance.conn.Connect(ctx)
-	if err == nil {
-		return nil
-	}
-
 	credentialManager := i.CredentialManager()
-	if !vclib.IsInvalidCredentialsError(err) || credentialManager == nil {
-		glog.Errorf("Cannot connect to vCenter with err: %v", err)
+	if credentialManager == nil {
+		err := ErrCredentialManager
+		glog.Errorf("%v", err)
 		return err
 	}
-
-	glog.V(4).Infof("Invalid credentials. Cannot connect to server %q. "+
-		"Fetching credentials from secrets.", vsphereInstance.conn.Hostname)
 
 	// Get latest credentials from SecretCredentialManager
 	credentials, err := credentialManager.GetCredential(vsphereInstance.conn.Hostname)
-	if err != nil {
-		glog.Errorf("Failed to get credentials from Secret Credential Manager with err: %v", err)
-		return err
+	if err == nil {
+		glog.V(4).Infof("Secret for server %q found. Attempting connection from secret.",
+			vsphereInstance.conn.Hostname)
+
+		//save username/password from config
+		tmpUsername := vsphereInstance.conn.Username
+		tmpPassword := vsphereInstance.conn.Password
+
+		vsphereInstance.conn.UpdateCredentials(credentials.User, credentials.Password)
+		err := vsphereInstance.conn.Connect(ctx)
+		if err == nil {
+			glog.V(4).Infof("Successfully connected to %q using credentials from secret.",
+				vsphereInstance.conn.Hostname)
+			return nil
+		} else {
+			glog.V(4).Infof("Failed to connected to %q using credentials from secret.",
+				vsphereInstance.conn.Hostname)
+		}
+
+		//revert username/password
+		vsphereInstance.conn.UpdateCredentials(tmpUsername, tmpPassword)
+
+		glog.V(4).Infof("Unable to connect to %q using credentials from secret.",
+			vsphereInstance.conn.Hostname)
+	} else {
+		glog.V(4).Infof("Unable to find secret for server %q. Using credentials from configuration.",
+			vsphereInstance.conn.Hostname)
 	}
-	vsphereInstance.conn.UpdateCredentials(credentials.User, credentials.Password)
-	return vsphereInstance.conn.Connect(ctx)
+
+	glog.V(4).Infof("Attempting connection on %q using credentials from config.",
+		vsphereInstance.conn.Hostname)
+
+	err = vsphereInstance.conn.Connect(ctx)
+	if err == nil {
+		glog.V(4).Infof("Successfully connected to %q using credentials from config.",
+			vsphereInstance.conn.Hostname)
+	} else {
+		glog.V(4).Infof("Failed to connected to %q using credentials from secret.",
+			vsphereInstance.conn.Hostname)
+	}
+
+	return err
 }
 
 func (i *instances) CredentialManager() *SecretCredentialManager {

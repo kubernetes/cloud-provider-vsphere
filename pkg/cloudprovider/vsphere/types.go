@@ -20,15 +20,14 @@ import (
 	"sync"
 
 	"k8s.io/api/core/v1"
-	clientv1 "k8s.io/client-go/listers/core/v1"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 )
 
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
-	// client        *godo.Client
-	// cfg                *Config
+	cfg                *Config
 	vsphereInstanceMap map[string]*VSphereInstance
 	nodeManager        *NodeManager
 	instances          cloudprovider.Instances
@@ -56,6 +55,9 @@ type Config struct {
 		SecretName string `gcfg:"secret-name"`
 		// Secret Namespace where secret will be present that has vCenter credentials.
 		SecretNamespace string `gcfg:"secret-namespace"`
+		// The kubernetes service account used to launch the cloud controller manager.
+		// Default: cloud-controller-manager
+		ServiceAccount string `gcfg:"service-account"`
 	}
 	VirtualCenter map[string]*VirtualCenterConfig
 
@@ -131,7 +133,7 @@ type Credential struct {
 type SecretCredentialManager struct {
 	SecretName      string
 	SecretNamespace string
-	SecretLister    clientv1.SecretLister
+	Client          clientset.Interface
 	Cache           *SecretCache
 }
 

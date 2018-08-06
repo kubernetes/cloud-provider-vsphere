@@ -46,7 +46,6 @@ func init() {
 			return nil, err
 		}
 		return newVSphere(cfg)
-
 	})
 }
 
@@ -72,6 +71,20 @@ func newVSphere(cfg Config) (*VSphere, error) {
 }
 
 func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) {
+	client, err := clientBuilder.Client(vs.cfg.Global.ServiceAccount)
+	if err == nil {
+		glog.V(1).Info("Kubernetes Client Init Succeeded")
+		vs.nodeManager.credentialManager = &SecretCredentialManager{
+			SecretName:      vs.cfg.Global.SecretName,
+			SecretNamespace: vs.cfg.Global.SecretNamespace,
+			Client:          client,
+			Cache: &SecretCache{
+				VirtualCenter: make(map[string]*Credential),
+			},
+		}
+	} else {
+		glog.Errorf("Kubernetes Client Init Failed: %v", err)
+	}
 }
 
 func (vs *VSphere) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
@@ -111,15 +124,12 @@ func (vs *VSphere) HasClusterID() bool {
 
 // Initializes vSphere from vSphere CloudProvider Configuration
 func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
-	// TODO(frapposelli): Look into using k8s secrets to store password
-
-	// isSecretInfoProvided := false
-	// if cfg.Global.SecretName != "" && cfg.Global.SecretNamespace != "" {
-	// 	isSecretInfoProvided = true
-	// }
-
 	if cfg.Global.RoundTripperCount == 0 {
 		cfg.Global.RoundTripperCount = RoundTripperDefaultCount
+	}
+
+	if cfg.Global.ServiceAccount == "" {
+		cfg.Global.ServiceAccount = "cloud-controller-manager"
 	}
 
 	if cfg.Global.VCenterPort == "" {
@@ -137,6 +147,7 @@ func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
 	}
 
 	vs := VSphere{
+		cfg:                &cfg,
 		vsphereInstanceMap: vsphereInstanceMap,
 		nodeManager:        &nm,
 		instances:          newInstances(&nm),
@@ -149,20 +160,7 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 	isSecretInfoProvided := true
 
 	if cfg.Global.SecretName == "" || cfg.Global.SecretNamespace == "" {
-		glog.Warningf("SecretName and/or SecretNamespace is not provided. " +
-			"VCP will use username and password from config file")
 		isSecretInfoProvided = false
-	}
-
-	if isSecretInfoProvided {
-		if cfg.Global.User != "" {
-			glog.Warning("Global.User and Secret info provided. VCP will use secret to get credentials")
-			cfg.Global.User = ""
-		}
-		if cfg.Global.Password != "" {
-			glog.Warning("Global.Password and Secret info provided. VCP will use secret to get credentials")
-			cfg.Global.Password = ""
-		}
 	}
 
 	// vsphere.conf is no longer supported in the old format.
@@ -187,15 +185,6 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 					glog.Errorf("vcConfig.Password is empty for vc %s!", vcServer)
 					return nil, errors.New("Password is missing")
 				}
-			}
-		} else {
-			if vcConfig.User != "" {
-				glog.Warningf("vcConfig.User for server %s and Secret info provided. VCP will use secret to get credentials", vcServer)
-				vcConfig.User = ""
-			}
-			if vcConfig.Password != "" {
-				glog.Warningf("vcConfig.Password for server %s and Secret info provided. VCP will use secret to get credentials", vcServer)
-				vcConfig.Password = ""
 			}
 		}
 
