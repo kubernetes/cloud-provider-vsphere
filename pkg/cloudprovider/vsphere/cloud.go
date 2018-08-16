@@ -27,6 +27,7 @@ import (
 
 	"gopkg.in/gcfg.v1"
 
+	"k8s.io/client-go/informers"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
@@ -37,6 +38,18 @@ const (
 	MacOUIESXPrefix          string = "00:0c:29"
 	ProviderName             string = "vsphere"
 	RoundTripperDefaultCount uint   = 3
+)
+
+// Error Messages
+const (
+	MissingUsernameErrMsg = "Username is missing"
+	MissingPasswordErrMsg = "Password is missing"
+)
+
+// Error constants
+var (
+	ErrUsernameMissing = errors.New(MissingUsernameErrMsg)
+	ErrPasswordMissing = errors.New(MissingPasswordErrMsg)
 )
 
 func init() {
@@ -73,11 +86,14 @@ func newVSphere(cfg Config) (*VSphere, error) {
 func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) {
 	client, err := clientBuilder.Client(vs.cfg.Global.ServiceAccount)
 	if err == nil {
-		glog.V(1).Info("Kubernetes Client Init Succeeded")
+		glog.V(1).Info("Kubernetes SecretLister Init Succeeded")
+
+		informerFactory := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
+		secretInformer := informerFactory.Core().V1().Secrets()
 		vs.nodeManager.credentialManager = &SecretCredentialManager{
 			SecretName:      vs.cfg.Global.SecretName,
 			SecretNamespace: vs.cfg.Global.SecretNamespace,
-			Client:          client,
+			SecretLister:    secretInformer.Lister(),
 			Cache: &SecretCache{
 				VirtualCenter: make(map[string]*Credential),
 			},
@@ -176,14 +192,16 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 				vcConfig.User = cfg.Global.User
 				if vcConfig.User == "" {
 					glog.Errorf("vcConfig.User is empty for vc %s!", vcServer)
-					return nil, errors.New("Username is missing")
+					fmt.Println("Throwing ErrUsernameMissing")
+					return nil, ErrUsernameMissing
 				}
 			}
 			if vcConfig.Password == "" {
 				vcConfig.Password = cfg.Global.Password
 				if vcConfig.Password == "" {
 					glog.Errorf("vcConfig.Password is empty for vc %s!", vcServer)
-					return nil, errors.New("Password is missing")
+					fmt.Println("Throwing ErrPasswordMissing")
+					return nil, ErrPasswordMissing
 				}
 			}
 		}
@@ -200,6 +218,15 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 		if vcConfig.RoundTripperCount == 0 {
 			vcConfig.RoundTripperCount = cfg.Global.RoundTripperCount
 		}
+		if vcConfig.RoundTripperCount == 0 {
+			vcConfig.RoundTripperCount = cfg.Global.RoundTripperCount
+		}
+		if vcConfig.CAFile == "" {
+			vcConfig.CAFile = cfg.Global.CAFile
+		}
+		if vcConfig.Thumbprint == "" {
+			vcConfig.Thumbprint = cfg.Global.Thumbprint
+		}
 
 		// Note: If secrets info is provided username and password will be populated
 		// once secret is created.
@@ -210,12 +237,44 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 			Insecure:          cfg.Global.InsecureFlag,
 			RoundTripperCount: vcConfig.RoundTripperCount,
 			Port:              vcConfig.VCenterPort,
+			CACert:            vcConfig.CAFile,
+			Thumbprint:        vcConfig.Thumbprint,
 		}
 		vsphereIns := VSphereInstance{
 			conn: &vSphereConn,
 			cfg:  vcConfig,
 		}
 		vsphereInstanceMap[vcServer] = &vsphereIns
+	}
+
+	// Create a single instance of VSphereInstance for the Global VCenterIP if the
+	// VSphereInstance doesnt already exist in the map
+	if !isSecretInfoProvided && cfg.Global.VCenterIP != "" && vsphereInstanceMap[cfg.Global.VCenterIP] == nil {
+		glog.V(4).Infof("Creating a vc server %s for the global instance", cfg.Global.VCenterIP)
+		vcConfig := &VirtualCenterConfig{
+			User:              cfg.Global.User,
+			Password:          cfg.Global.Password,
+			VCenterPort:       cfg.Global.VCenterPort,
+			Datacenters:       cfg.Global.Datacenters,
+			RoundTripperCount: cfg.Global.RoundTripperCount,
+			CAFile:            cfg.Global.CAFile,
+			Thumbprint:        cfg.Global.Thumbprint,
+		}
+		vSphereConn := vclib.VSphereConnection{
+			Username:          cfg.Global.User,
+			Password:          cfg.Global.Password,
+			Hostname:          cfg.Global.VCenterIP,
+			Insecure:          cfg.Global.InsecureFlag,
+			RoundTripperCount: cfg.Global.RoundTripperCount,
+			Port:              cfg.Global.VCenterPort,
+			CACert:            cfg.Global.CAFile,
+			Thumbprint:        cfg.Global.Thumbprint,
+		}
+		vsphereIns := VSphereInstance{
+			conn: &vSphereConn,
+			cfg:  vcConfig,
+		}
+		vsphereInstanceMap[cfg.Global.VCenterIP] = &vsphereIns
 	}
 
 	return vsphereInstanceMap, nil

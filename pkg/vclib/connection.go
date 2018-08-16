@@ -38,6 +38,8 @@ type VSphereConnection struct {
 	Password          string
 	Hostname          string
 	Port              string
+	CACert            string
+	Thumbprint        string
 	Insecure          bool
 	RoundTripperCount uint
 	credentialsLock   sync.Mutex
@@ -144,6 +146,16 @@ func (connection *VSphereConnection) NewClient(ctx context.Context) (*vim25.Clie
 	}
 
 	sc := soap.NewClient(url, connection.Insecure)
+
+	if ca := connection.CACert; ca != "" {
+		if err := sc.SetRootCAs(ca); err != nil {
+			return nil, err
+		}
+	}
+
+	tpHost := connection.Hostname + ":" + connection.Port
+	sc.SetThumbprint(tpHost, connection.Thumbprint)
+
 	client, err := vim25.NewClient(ctx, sc)
 	if err != nil {
 		glog.Errorf("Failed to create new client. err: %+v", err)
