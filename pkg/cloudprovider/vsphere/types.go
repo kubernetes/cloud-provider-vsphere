@@ -20,7 +20,7 @@ import (
 	"sync"
 
 	"k8s.io/api/core/v1"
-	clientset "k8s.io/client-go/kubernetes"
+	clientv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 )
@@ -51,6 +51,11 @@ type Config struct {
 		Datacenters string `gcfg:"datacenters"`
 		// Soap round tripper count (retries = RoundTripper - 1)
 		RoundTripperCount uint `gcfg:"soap-roundtrip-count"`
+		// Specifies the path to a CA certificate in PEM format. Optional; if not
+		// configured, the system's CA certificates will be used.
+		CAFile string `gcfg:"ca-file"`
+		// Thumbprint of the VCenter's certificate thumbprint
+		Thumbprint string `gcfg:"thumbprint"`
 		// Name of the secret were vCenter credentials are present.
 		SecretName string `gcfg:"secret-name"`
 		// Secret Namespace where secret will be present that has vCenter credentials.
@@ -87,6 +92,11 @@ type VirtualCenterConfig struct {
 	RoundTripperCount uint `gcfg:"soap-roundtrip-count"`
 	// PublicNetwork is name of the network the VMs are joined to.
 	PublicNetwork string `gcfg:"public-network"`
+	// Specifies the path to a CA certificate in PEM format. Optional; if not
+	// configured, the system's CA certificates will be used.
+	CAFile string `gcfg:"ca-file"`
+	// Thumbprint of the VCenter's certificate thumbprint
+	Thumbprint string `gcfg:"thumbprint"`
 }
 
 // Stores info about the kubernetes node
@@ -133,7 +143,7 @@ type Credential struct {
 type SecretCredentialManager struct {
 	SecretName      string
 	SecretNamespace string
-	Client          clientset.Interface
+	SecretLister    clientv1.SecretLister
 	Cache           *SecretCache
 }
 
