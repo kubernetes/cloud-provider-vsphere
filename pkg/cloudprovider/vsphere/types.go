@@ -110,17 +110,22 @@ type NodeInfo struct {
 }
 
 type NodeManager struct {
-	// TODO: replace map with concurrent map when k8s supports go v1.9
-
 	// Maps the VC server to VSphereInstance
 	vsphereInstanceMap map[string]*VSphereInstance
-	// Maps node name to node info.
-	nodeInfoMap map[string]*NodeInfo
-	//CredentialsManager
+	// Maps node name to node info
+	nodeNameMap map[string]*NodeInfo
+	// Maps ProviderID (UUID) to node info.
+	nodeUUIDMap map[string]*NodeInfo
+	// Maps ProviderID (UUID) to node info.
+	nodeRegUUIDMap map[string]*v1.Node
+	// CredentialsManager
 	credentialManager *SecretCredentialManager
+	// NodeLister to track Node properties
+	nodeLister clientv1.NodeLister
 
 	// Mutexes
 	nodeInfoLock          sync.RWMutex
+	nodeRegInfoLock       sync.RWMutex
 	credentialManagerLock sync.Mutex
 }
 

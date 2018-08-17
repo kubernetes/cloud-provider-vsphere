@@ -27,15 +27,16 @@ import (
 
 	"gopkg.in/gcfg.v1"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
+	"k8s.io/sample-controller/pkg/signals"
 )
 
 const (
-	MacOUIVCPrefix           string = "00:50:56"
-	MacOUIESXPrefix          string = "00:0c:29"
 	ProviderName             string = "vsphere"
 	RoundTripperDefaultCount uint   = 3
 )
@@ -86,7 +87,9 @@ func newVSphere(cfg Config) (*VSphere, error) {
 func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) {
 	client, err := clientBuilder.Client(vs.cfg.Global.ServiceAccount)
 	if err == nil {
-		glog.V(1).Info("Kubernetes SecretLister Init Succeeded")
+		glog.V(1).Info("Kubernetes Client Init Succeeded")
+
+		stopCh := signals.SetupSignalHandler()
 
 		informerFactory := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
 		secretInformer := informerFactory.Core().V1().Secrets()
@@ -98,6 +101,13 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 				VirtualCenter: make(map[string]*Credential),
 			},
 		}
+		nodeInformer := informerFactory.Core().V1().Nodes().Informer()
+		nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    vs.nodeAdded,
+			DeleteFunc: vs.nodeDeleted,
+		})
+
+		go informerFactory.Start(stopCh)
 	} else {
 		glog.Errorf("Kubernetes Client Init Failed: %v", err)
 	}
@@ -159,7 +169,9 @@ func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
 
 	nm := NodeManager{
 		vsphereInstanceMap: vsphereInstanceMap,
-		nodeInfoMap:        make(map[string]*NodeInfo),
+		nodeNameMap:        make(map[string]*NodeInfo),
+		nodeUUIDMap:        make(map[string]*NodeInfo),
+		nodeRegUUIDMap:     make(map[string]*v1.Node),
 	}
 
 	vs := VSphere{
@@ -214,9 +226,6 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 			if cfg.Global.Datacenters != "" {
 				vcConfig.Datacenters = cfg.Global.Datacenters
 			}
-		}
-		if vcConfig.RoundTripperCount == 0 {
-			vcConfig.RoundTripperCount = cfg.Global.RoundTripperCount
 		}
 		if vcConfig.RoundTripperCount == 0 {
 			vcConfig.RoundTripperCount = cfg.Global.RoundTripperCount
@@ -286,4 +295,26 @@ func logout(vs *VSphere) {
 			vsphereIns.conn.Logout(context.TODO())
 		}
 	}
+}
+
+// Notification handler when node is added into k8s cluster.
+func (vs *VSphere) nodeAdded(obj interface{}) {
+	node, ok := obj.(*v1.Node)
+	if node == nil || !ok {
+		glog.Warningf("nodeAdded: unrecognized object %+v", obj)
+		return
+	}
+
+	vs.nodeManager.RegisterNode(node)
+}
+
+// Notification handler when node is removed from k8s cluster.
+func (vs *VSphere) nodeDeleted(obj interface{}) {
+	node, ok := obj.(*v1.Node)
+	if node == nil || !ok {
+		glog.Warningf("nodeDeleted: unrecognized object %+v", obj)
+		return
+	}
+
+	vs.nodeManager.UnregisterNode(node)
 }
