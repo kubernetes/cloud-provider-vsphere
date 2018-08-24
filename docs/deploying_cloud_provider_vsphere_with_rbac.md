@@ -4,10 +4,10 @@ This document is designed to quickly get you up and running with the `cloud-prov
 
 ## Deployment Overview
 
-Steps that will covered in deploying `cloud-provider-vpshere`:
+Steps that will be covered in deploying `cloud-provider-vpshere`:
 
 1. Set all your Kubernetes nodes to run using an external cloud controller manager.
-2. Configure your vsphere.conf file and create a `configmap` you settings.
+2. Configure your vsphere.conf file and create a `configmap` of your settings.
 3. (Optional, but recommended) Storing vCenter creds in a Kubernetes Secret
 4. Create the RBAC roles for `cloud-provider-vsphere`.
 5. Create the RBAC role bindings for `cloud-provider-vsphere`.
@@ -104,7 +104,7 @@ Configure your vsphere.conf file and create a `configmap` of your settings using
 
 #### 3. (Optional, but recommended) Storing vCenter credentials in a Kubernetes Secret
 
-If you chose to store your vCenter credentials within a Kubernetes Secret (method 1 above), an example [Secrets YAML](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vccm-secret.yaml) is provided for reference. Both the vCenter username and password is base64 encoded within the secret. If you have multiple vCenters (as in the example vsphere.conf file), your Kubernetes Secret YAML will look like the following:
+If you choose to store your vCenter credentials within a Kubernetes Secret (method 1 above), an example [Secrets YAML](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vccm-secret.yaml) is provided for reference. Both the vCenter username and password is base64 encoded within the secret. If you have multiple vCenters (as in the example vsphere.conf file), your Kubernetes Secret YAML will look like the following:
 
 ```
 apiVersion: v1
@@ -155,7 +155,7 @@ You have two options for deploying `cloud-provider-vsphere`. It can be deployed 
 
 The YAML to deploy `cloud-provider-vsphere` as a Pod can be found in [vsphere-cloud-controller-manager-pod.yaml](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vsphere-cloud-controller-manager-pod.yaml).
 
-The run the following command:
+Run the following command:
 
 ```bash
 [k8suser@k8master ~]$ kubectl create -f vsphere-cloud-controller-manager-pod.yaml
@@ -165,7 +165,7 @@ The run the following command:
 
 The YAML to deploy `cloud-provider-vsphere` as a DaemonSet can be found in [vsphere-cloud-controller-manager-ds.yaml](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vsphere-cloud-controller-manager-ds.yaml).
 
-The run the following command:
+Run the following command:
 
 ```bash
 [k8suser@k8master ~]$ kubectl create -f vsphere-cloud-controller-manager-ds.yaml
