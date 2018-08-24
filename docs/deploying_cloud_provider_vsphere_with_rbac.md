@@ -1,6 +1,6 @@
 # Deploying `cloud-provider-vsphere` with RBAC
 
-This document is designed to quickly get you setting up and running with the `cloud-provider-vsphere` external Cloud Controller Manager (CCM).
+This document is designed to quickly get you up and running with the `cloud-provider-vsphere` external Cloud Controller Manager (CCM).
 
 ## Deployment Overview
 
