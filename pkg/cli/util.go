@@ -17,16 +17,22 @@ limitations under the License.
 package cli
 
 import (
-	"io"
-
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
+	"fmt"
+	"io/ioutil"
+	"os"
 )
 
-// Config represents configuration of vcp
-type Config struct {
-}
-
-func readConfig(config io.Reader) (vsphere.Config, error) {
-	// TODO : implement
-	return vsphere.Config{}, nil
+func ReadContent(path string) (string, error) {
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("file [%s] does not exist", path)
+		}
+		return "", err
+	}
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }

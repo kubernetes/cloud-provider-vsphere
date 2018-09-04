@@ -298,6 +298,19 @@
   version = "1.1.5"
 
 [[projects]]
+  branch = "govmomi"
+  name = "github.com/kr/pretty"
+  packages = ["."]
+  revision = "2ee9d7453c02ef7fa518a83ae23644eb8872186a"
+  source = "https://github.com/dougm/pretty"
+
+[[projects]]
+  name = "github.com/kr/text"
+  packages = ["."]
+  revision = "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:84a5a2b67486d5d67060ac393aa255d05d24ed5ee41daecd5635ec22657b6492"
   name = "github.com/mailru/easyjson"
@@ -436,7 +449,78 @@
   name = "github.com/vmware/govmomi"
   packages = [
     ".",
+    "event",
     "find",
+    "govc",
+    "govc/about",
+    "govc/cli",
+    "govc/cluster",
+    "govc/cluster/group",
+    "govc/cluster/override",
+    "govc/cluster/rule",
+    "govc/datacenter",
+    "govc/datastore",
+    "govc/datastore/disk",
+    "govc/datastore/vsan",
+    "govc/device",
+    "govc/device/cdrom",
+    "govc/device/floppy",
+    "govc/device/scsi",
+    "govc/device/serial",
+    "govc/device/usb",
+    "govc/dvs",
+    "govc/dvs/portgroup",
+    "govc/env",
+    "govc/events",
+    "govc/export",
+    "govc/extension",
+    "govc/fields",
+    "govc/flags",
+    "govc/folder",
+    "govc/host",
+    "govc/host/account",
+    "govc/host/autostart",
+    "govc/host/cert",
+    "govc/host/date",
+    "govc/host/esxcli",
+    "govc/host/firewall",
+    "govc/host/maintenance",
+    "govc/host/option",
+    "govc/host/portgroup",
+    "govc/host/service",
+    "govc/host/storage",
+    "govc/host/vnic",
+    "govc/host/vswitch",
+    "govc/importx",
+    "govc/license",
+    "govc/logs",
+    "govc/ls",
+    "govc/metric",
+    "govc/metric/interval",
+    "govc/object",
+    "govc/option",
+    "govc/permissions",
+    "govc/pool",
+    "govc/role",
+    "govc/session",
+    "govc/sso/service",
+    "govc/sso/user",
+    "govc/tags",
+    "govc/tags/association",
+    "govc/tags/category",
+    "govc/task",
+    "govc/vapp",
+    "govc/version",
+    "govc/vm",
+    "govc/vm/disk",
+    "govc/vm/guest",
+    "govc/vm/network",
+    "govc/vm/rdm",
+    "govc/vm/snapshot",
+    "guest",
+    "guest/toolbox",
+    "internal",
+    "license",
     "list",
     "lookup",
     "lookup/methods",
@@ -444,18 +528,26 @@
     "lookup/types",
     "nfc",
     "object",
+    "ovf",
     "pbm",
     "pbm/methods",
     "pbm/types",
+    "performance",
     "property",
     "session",
     "simulator",
     "simulator/esx",
     "simulator/vpx",
+    "ssoadmin",
+    "ssoadmin/methods",
+    "ssoadmin/types",
     "sts",
     "sts/internal",
     "sts/simulator",
     "task",
+    "units",
+    "vapi/tags",
+    "view",
     "vim25",
     "vim25/debug",
     "vim25/methods",
@@ -464,6 +556,7 @@
     "vim25/soap",
     "vim25/types",
     "vim25/xml",
+    "vmdk"
   ]
   pruneopts = "UT"
   revision = "22f74650cf39ba4649fba45e770df0f44df6f758"
