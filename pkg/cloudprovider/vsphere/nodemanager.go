@@ -232,6 +232,9 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 								}, v1.NodeAddress{
 									Type:    v1.NodeInternalIP,
 									Address: ip,
+								}, v1.NodeAddress{
+									Type:    v1.NodeHostName,
+									Address: oVM.Guest.HostName,
 								},
 							)
 						}
