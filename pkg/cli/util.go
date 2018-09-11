@@ -36,3 +36,8 @@ func ReadContent(path string) (string, error) {
 	}
 	return string(content), nil
 }
+
+// TODO (fanz): IsK8sNode validate if the given name refers to a node in kubernetes cluster
+func IsClusterNode(name string) bool {
+	return false
+}
