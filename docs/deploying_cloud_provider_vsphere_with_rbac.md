@@ -149,7 +149,9 @@ To apply them to your Kubernetes cluster, run the following command:
 
 You have two options for deploying `cloud-provider-vsphere`. It can be deployed either as a simple Pod or in a DaemonSet. There really isn't much difference between the two other than the DaemonSet will do leader election and the Pod will just assume to be the leader.
 
-**IMPORTANT NOTE:** Deploy either as a Pod or in a DaemonSet, but *DO NOT* deploy both.
+**IMPORTANT NOTES:**
+- Deploy either as a Pod or in a DaemonSet, but *DO NOT* deploy both.
+- The YAML to deploy as a Pod or a DaemonSet assume that your Kubernetes cluster was deployed using [kubeadm](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/). If you deployed your cluster using alternate means, you will need to modify the either of the YAML files in order to provided necessary files or paths based on your deployment.
 
 ##### Deploy `cloud-provider-vsphere` as a Pod
 
