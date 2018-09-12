@@ -67,10 +67,6 @@ func configFromEnv() (cfg Config, ok bool) {
 	cfg.Global.Password = os.Getenv("VSPHERE_PASSWORD")
 	cfg.Global.Datacenters = os.Getenv("VSPHERE_DATACENTER")
 	cfg.Network.PublicNetwork = os.Getenv("VSPHERE_PUBLIC_NETWORK")
-	//cfg.Global.DefaultDatastore = os.Getenv("VSPHERE_DATASTORE")
-	//cfg.Disk.SCSIControllerType = os.Getenv("VSPHERE_SCSICONTROLLER_TYPE")
-	//cfg.Global.WorkingDir = os.Getenv("VSPHERE_WORKING_DIR")
-	//cfg.Global.VMName = os.Getenv("VSPHERE_VM_NAME")
 	if os.Getenv("VSPHERE_INSECURE") != "" {
 		InsecureFlag, err = strconv.ParseBool(os.Getenv("VSPHERE_INSECURE"))
 	} else {
@@ -86,9 +82,6 @@ func configFromEnv() (cfg Config, ok bool) {
 
 	return
 }
-
-// getVMUUID allows tests to override GetVMUUID
-//var getVMUUID = GetVMUUID
 
 // configFromSim starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with an empty tls.Config.
@@ -126,23 +119,10 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (Config, 
 	cfg.Global.Password, _ = s.URL.User.Password()
 	cfg.Global.Datacenters = vclib.TestDefaultDatacenter
 	cfg.Network.PublicNetwork = vclib.TestDefaultNetwork
-	//cfg.Global.DefaultDatastore = vclib.TestDefaultDatastore
-	//cfg.Disk.SCSIControllerType = os.Getenv("VSPHERE_SCSICONTROLLER_TYPE")
-	//cfg.Global.WorkingDir = os.Getenv("VSPHERE_WORKING_DIR")
-	//cfg.Global.VMName = os.Getenv("VSPHERE_VM_NAME")
-
-	//if cfg.Global.WorkingDir == "" {
-	//	cfg.Global.WorkingDir = "vm" // top-level Datacenter.VmFolder
-	//}
-
-	//uuid := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine).Config.Uuid
-	//getVMUUID = func() (string, error) { return uuid, nil }
-
 	cfg.VirtualCenter = make(map[string]*VirtualCenterConfig)
 	cfg.VirtualCenter[s.URL.Hostname()] = &VirtualCenterConfig{}
 
 	return cfg, func() {
-		//getVMUUID = GetVMUUID
 		s.Close()
 		model.Remove()
 	}
@@ -156,7 +136,6 @@ func configFromEnvOrSim() (Config, func()) {
 	}
 	return configFromSim()
 }
-
 func TestReadConfig(t *testing.T) {
 	_, err := readConfig(nil)
 	if err == nil {
