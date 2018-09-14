@@ -18,6 +18,6 @@
 # In other words you don't need a Go env on your system to run Make (build, test etc)
 # This script will just bind-mount the source directory into a container under the correct
 # GOPATH and handle all of the Go ENV stuff for you.  All you need is Docker
-docker run -it -v "$PWD":/go/src/k8s.io/cloud-provider-vsphere:z \
+docker run -i -v "$PWD":/go/src/k8s.io/cloud-provider-vsphere:z \
 	-w /go/src/k8s.io/cloud-provider-vsphere \
 	golang:1.10 make "$@"
