@@ -23,8 +23,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/ssoadmin"
 	"github.com/vmware/govmomi/ssoadmin/types"
+	"github.com/vmware/govmomi/view"
+	"github.com/vmware/govmomi/vim25/mo"
+	vimType "github.com/vmware/govmomi/vim25/types"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 )
 
@@ -47,14 +51,57 @@ func ParseConfig(configFile string) (vsphere.Config, error) {
 	return cfg, err
 }
 
-// TODO (fanz) : Perform vSphere configuration health check on VM:
-func CheckVSphereConfig(config vsphere.Config) error {
+// CheckVSphereConfig performs vSphere health check on VMs
+// TODO (fanz) : support checking network
+func CheckVSphereConfig(ctx context.Context, o *ClientOption) error {
+	c, err := o.GetClient()
+	if err != nil {
+		return err
+	}
+	vc := view.NewManager(c)
+	cv, err := vc.CreateContainerView(ctx, c.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
+	if err != nil {
+		return err
+	}
+	defer cv.Destroy(ctx)
+	var vms []mo.VirtualMachine
+	var vm *object.VirtualMachine
+
+	config := []vimType.BaseOptionValue{&vimType.OptionValue{Key: "disk.enableUUID", Value: "1"}}
+
+	err = cv.Retrieve(ctx, []string{"VirtualMachine"}, []string{"summary"}, &vms)
+	if err != nil {
+		return err
+	}
+	for _, v := range vms {
+		if v.Summary.Config.Uuid == "" {
+			name := v.Summary.Config.Name
+			// TODO (fanz): filter vm for node in kubernetes cluster
+			if !IsClusterNode(name) {
+				continue
+			}
+			vm = object.NewVirtualMachine(c, v.Reference())
+			spec := vimType.VirtualMachineConfigSpec{
+				ExtraConfig: config,
+			}
+			task, err := vm.Reconfigure(ctx, spec)
+			err = task.Wait(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
-// TODO (fanz) : Create vSphere role with minimal set of permissions
-func CreateRole() error {
-	return nil
+// CreateRole creates vSphere role
+func CreateRole(ctx context.Context, o *ClientOption, role *Role) error {
+	p, err := GetRolePermission(ctx, o)
+	if err != nil {
+		return err
+	}
+	_, err = p.am.AddRole(ctx, role.RoleName, role.Privileges)
+	return err
 }
 
 // CreateSolutionUser creates a default solution user (k8s-vcp) for CCM with Administrator role and WSTrust permissions
@@ -81,7 +128,6 @@ func CreateSolutionUser(ctx context.Context, o *ClientOption) error {
 		}
 		p := types.PrincipalId{Name: "k8s-vcp", Domain: c.Domain}
 
-		// TODO (fanz): Create a role with the minimum set of privileges required by VCP before SetRole
 		if _, err := c.SetRole(ctx, p, u.role); err != nil {
 			return err
 		}

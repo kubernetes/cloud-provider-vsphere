@@ -58,7 +58,7 @@ var provisionCmd = &cobra.Command{
 	Long: `Starting prerequisites for deploying a cloud provider on vSphere, in cluding :
 	[x] vSphere configuration health check.
 	[x] Create vSphere solution user.
-	[x] Create vSohere role with minimal set of premissions.
+	[x] Create vSphere role with minimal set of permissions.
   `,
 	Example: `# Specify interaction mode or declaration mode (default)
 	vcpctl provision --interactive=false
@@ -94,6 +94,13 @@ func RunProvision(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+	defer client.Logout(ctx)
 	o.Client = client
+	fmt.Println("Create solution user...")
 	cli.CreateSolutionUser(ctx, &o)
+	r := cli.Role{RoleName: "k8s-vcp-default"}
+	fmt.Println("Create default role with minimal permissions...")
+	cli.CreateRole(ctx, &o, &r)
+	fmt.Println("Checking vSphere Config on VMs...")
+	cli.CheckVSphereConfig(ctx, &o)
 }

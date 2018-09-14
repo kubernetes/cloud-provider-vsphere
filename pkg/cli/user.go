@@ -20,10 +20,12 @@ import (
 	"context"
 	"os"
 
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/ssoadmin"
 	"github.com/vmware/govmomi/ssoadmin/types"
 	"github.com/vmware/govmomi/sts"
 	"github.com/vmware/govmomi/vim25/soap"
+	vimType "github.com/vmware/govmomi/vim25/types"
 )
 
 type User struct {
@@ -79,4 +81,28 @@ func (u *User) Run(ctx context.Context, c *ClientOption, fn CreateUserFunc) erro
 	defer ssoClient.Logout(ctx)
 
 	return fn(ssoClient)
+}
+
+type RolePermission struct {
+	Roles       object.AuthorizationRoleList `json:",omitempty"`
+	Permissions []vimType.Permission         `json:",omitempty"`
+	am          *object.AuthorizationManager
+}
+
+// GetRolePermission returns RolePermission by User
+func GetRolePermission(ctx context.Context, c *ClientOption) (*RolePermission, error) {
+	vc, err := c.GetClient()
+	if err != nil {
+		return nil, err
+	}
+	r := RolePermission{}
+	r.am = object.NewAuthorizationManager(vc)
+	r.Roles, err = r.am.RoleList(ctx)
+
+	return &r, err
+}
+
+type Role struct {
+	RoleName   string
+	Privileges []string
 }
