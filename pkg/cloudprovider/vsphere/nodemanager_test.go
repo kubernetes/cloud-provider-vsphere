@@ -29,6 +29,8 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 )
 
 func TestRegUnregNode(t *testing.T) {
@@ -45,6 +47,7 @@ func TestRegUnregNode(t *testing.T) {
 		nodeNameMap:        make(map[string]*NodeInfo),
 		nodeUUIDMap:        make(map[string]*NodeInfo),
 		nodeRegUUIDMap:     make(map[string]*v1.Node),
+		vcList:             make(map[string]*VCenterInfo),
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
@@ -115,6 +118,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 		nodeNameMap:        make(map[string]*NodeInfo),
 		nodeUUIDMap:        make(map[string]*NodeInfo),
 		nodeRegUUIDMap:     make(map[string]*v1.Node),
+		vcList:             make(map[string]*VCenterInfo),
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
@@ -164,4 +168,56 @@ func TestUUIDConvert2(t *testing.T) {
 	if biosUUID != "56492e42-22ad-3911-6d72-59cc8f26bc90" {
 		t.Errorf("Failed to translate UUID")
 	}
+}
+
+func TestExport(t *testing.T) {
+	cfg, ok := configFromEnvOrSim()
+	defer ok()
+
+	vsphere, err := newVSphere(cfg)
+	if err != nil {
+		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
+	}
+
+	nm := NodeManager{
+		vsphereInstanceMap: vsphere.vsphereInstanceMap,
+		nodeNameMap:        make(map[string]*NodeInfo),
+		nodeUUIDMap:        make(map[string]*NodeInfo),
+		nodeRegUUIDMap:     make(map[string]*v1.Node),
+		vcList:             make(map[string]*VCenterInfo),
+	}
+
+	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	name := vm.Config.GuestFullName
+	UUID := vm.Config.Uuid
+	k8sUUID := nm.convertK8sUUIDtoNormal(UUID)
+
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Status: v1.NodeStatus{
+			NodeInfo: v1.NodeSystemInfo{
+				SystemUUID: k8sUUID,
+			},
+		},
+	}
+
+	nm.RegisterNode(node)
+
+	nodeList := make([]*pb.Node, 0)
+	_ = nm.ExportNodes("", "", &nodeList)
+
+	found := false
+	for _, node := range nodeList {
+		if node.Uuid == UUID {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Errorf("Node was not converted to protobuf")
+	}
+
+	nm.UnregisterNode(node)
 }

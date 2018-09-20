@@ -83,3 +83,19 @@ spec:
       - name: vsphere-config-volume
         configMap:
           name: cloud-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    component: cloud-controller-manager
+  name: vsphere-cloud-controller-manager
+  namespace: kube-system
+spec:
+  type: NodePort
+  ports:
+    - port: 50051
+      protocol: TCP
+      targetPort: 50051
+  selector:
+    component: cloud-controller-manager

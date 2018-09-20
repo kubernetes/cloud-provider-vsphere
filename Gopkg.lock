@@ -202,10 +202,11 @@
   revision = "24b0969c4cb722950103eed87108c8d291a8df00"
 
 [[projects]]
-  digest = "1:4c0989ca0bcd10799064318923b9bc2db6b4d6338dd75f3f2d86c3511aaaf5cf"
+  digest = "1:5d1b5a25486fc7d4e133646d834f6fca7ba1cef9903d40e7aa786c41b89e9e91"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
+    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
@@ -432,7 +433,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3778a164c689c0f0da1d1fef27373d60df09a8d6c0249ade95bc437e77546d0d"
+  digest = "1:088ee9c3eb6bb4b5f0d0d7c0afa452dd78a05e4e56e9fac38ff72225864a3f4a"
   name = "github.com/vmware/govmomi"
   packages = [
     ".",
@@ -459,6 +460,7 @@
     "sts/internal",
     "sts/simulator",
     "task",
+    "view",
     "vim25",
     "vim25/debug",
     "vim25/methods",
@@ -553,7 +555,7 @@
   revision = "c66870c02cf823ceb633bcd05be3c7cda29976f4"
 
 [[projects]]
-  digest = "1:7ccedf0aab474a6aef9d7222cd2429a34fddb996bbd1f60ec0f9fe69d80b36ae"
+  digest = "1:afaf87aad768542e4460be3e9de93019e02a7ea53f68eccb8ce426c1689deb73"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -577,6 +579,8 @@
     "metadata",
     "naming",
     "peer",
+    "reflection",
+    "reflection/grpc_reflection_v1alpha",
     "resolver",
     "resolver/dns",
     "resolver/passthrough",
@@ -1109,6 +1113,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/golang/glog",
+    "github.com/golang/protobuf/proto",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
@@ -1126,11 +1131,15 @@
     "github.com/vmware/govmomi/ssoadmin/types",
     "github.com/vmware/govmomi/sts",
     "github.com/vmware/govmomi/sts/simulator",
+    "github.com/vmware/govmomi/view",
     "github.com/vmware/govmomi/vim25",
     "github.com/vmware/govmomi/vim25/methods",
     "github.com/vmware/govmomi/vim25/mo",
     "github.com/vmware/govmomi/vim25/soap",
     "github.com/vmware/govmomi/vim25/types",
+    "golang.org/x/net/context",
+    "google.golang.org/grpc",
+    "google.golang.org/grpc/reflection",
     "gopkg.in/gcfg.v1",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",

@@ -25,12 +25,18 @@ import (
 	"k8s.io/kubernetes/pkg/cloudprovider"
 )
 
+// GRPCServer interface
+type GRPCServer interface {
+	Start()
+}
+
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
 	cfg                *Config
 	vsphereInstanceMap map[string]*VSphereInstance
 	nodeManager        *NodeManager
 	instances          cloudprovider.Instances
+	server             GRPCServer
 }
 
 // Config is used to read and store information from the cloud configuration file
@@ -109,14 +115,26 @@ type NodeInfo struct {
 	NodeAddresses []v1.NodeAddress
 }
 
+type DatacenterInfo struct {
+	name   string
+	vmList map[string]*NodeInfo
+}
+
+type VCenterInfo struct {
+	address string
+	dcList  map[string]*DatacenterInfo
+}
+
 type NodeManager struct {
 	// Maps the VC server to VSphereInstance
 	vsphereInstanceMap map[string]*VSphereInstance
 	// Maps node name to node info
 	nodeNameMap map[string]*NodeInfo
-	// Maps ProviderID (UUID) to node info.
+	// Maps UUID to node info.
 	nodeUUIDMap map[string]*NodeInfo
-	// Maps ProviderID (UUID) to node info.
+	// Maps VC -> DC -> VM
+	vcList map[string]*VCenterInfo
+	// Maps UUID to node info.
 	nodeRegUUIDMap map[string]*v1.Node
 	// CredentialsManager
 	credentialManager *SecretCredentialManager
@@ -127,11 +145,6 @@ type NodeManager struct {
 	nodeInfoLock          sync.RWMutex
 	nodeRegInfoLock       sync.RWMutex
 	credentialManagerLock sync.Mutex
-}
-
-type NodeDetails struct {
-	NodeName string
-	UUID     string
 }
 
 type SecretCache struct {
