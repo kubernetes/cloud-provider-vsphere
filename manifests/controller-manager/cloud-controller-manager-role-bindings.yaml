@@ -36,5 +36,7 @@ items:
   - kind: ServiceAccount
     name: cloud-controller-manager
     namespace: kube-system
+  - kind: User
+    name: cloud-controller-manager
 kind: List
 metadata: {}
