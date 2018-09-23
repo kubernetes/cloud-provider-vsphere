@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Copyright 2018 The Kubernetes Authors.
 #
@@ -13,6 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# posix complaint
+# verified by https://www.shellcheck.net
 
 # Simple script to offer the ability to run the make directives in a Docker Container.
 # In other words you don't need a Go env on your system to run Make (build, test etc)
