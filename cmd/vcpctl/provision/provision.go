@@ -87,7 +87,7 @@ func RunProvision(cmd *cobra.Command, args []string) {
 	// TODO (fanz): implement provision
 	fmt.Println("Perform cloud provider provisioning...")
 	o := cli.ClientOption{}
-	o.LoadCredential(vcUser, vcPassword, vcCert, vcRole)
+	o.LoadCredential(vcUser, vcPassword, vcCert, vcRole, insecure)
 	ctx := context.Background()
 	client, err := o.NewClient(ctx, vchost)
 	if err != nil {
@@ -97,10 +97,22 @@ func RunProvision(cmd *cobra.Command, args []string) {
 	defer client.Logout(ctx)
 	o.Client = client
 	fmt.Println("Create solution user...")
-	cli.CreateSolutionUser(ctx, &o)
+	err = cli.CreateSolutionUser(ctx, &o)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 	r := cli.Role{RoleName: "k8s-vcp-default"}
 	fmt.Println("Create default role with minimal permissions...")
-	cli.CreateRole(ctx, &o, &r)
+	err = cli.CreateRole(ctx, &o, &r)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 	fmt.Println("Checking vSphere Config on VMs...")
-	cli.CheckVSphereConfig(ctx, &o)
+	err = cli.CheckVSphereConfig(ctx, &o)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 }

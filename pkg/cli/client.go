@@ -115,12 +115,13 @@ type VCCMSecret struct {
 	Data map[string]string
 }
 
-func (o *ClientOption) LoadCredential(username, password, cert, role string) {
+func (o *ClientOption) LoadCredential(username, password, cert, role string, insecure bool) {
 	c := Credential{}
 	c.username = username
 	c.password = password
 	c.cert = cert
 	c.role = role
+	o.insecure = insecure
 	// TODO: (fanz) Secret of Credential
 	o.credential = c
 }
