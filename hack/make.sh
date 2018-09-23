@@ -27,4 +27,4 @@ echo "${-}" | grep -q i && TERM_FLAGS="${TERM_FLAGS}t"
 
 docker run ${TERM_FLAGS} -v "$PWD":/go/src/k8s.io/cloud-provider-vsphere:z \
 	-w /go/src/k8s.io/cloud-provider-vsphere \
-	golang:1.10 make "$@"
+	golang:1.11 make "$@"
