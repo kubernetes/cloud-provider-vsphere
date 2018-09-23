@@ -432,7 +432,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3778a164c689c0f0da1d1fef27373d60df09a8d6c0249ade95bc437e77546d0d"
+  digest = "1:088ee9c3eb6bb4b5f0d0d7c0afa452dd78a05e4e56e9fac38ff72225864a3f4a"
   name = "github.com/vmware/govmomi"
   packages = [
     ".",
@@ -459,6 +459,7 @@
     "sts/internal",
     "sts/simulator",
     "task",
+    "view",
     "vim25",
     "vim25/debug",
     "vim25/methods",
@@ -1126,6 +1127,7 @@
     "github.com/vmware/govmomi/ssoadmin/types",
     "github.com/vmware/govmomi/sts",
     "github.com/vmware/govmomi/sts/simulator",
+    "github.com/vmware/govmomi/view",
     "github.com/vmware/govmomi/vim25",
     "github.com/vmware/govmomi/vim25/methods",
     "github.com/vmware/govmomi/vim25/mo",
