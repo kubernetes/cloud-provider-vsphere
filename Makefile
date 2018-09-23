@@ -33,7 +33,7 @@ VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
 GOFLAGS   :=
 TAGS      :=
 LDFLAGS   := "-w -s -X 'main.version=${VERSION}'"
-REGISTRY ?= k8scloudprovider
+REGISTRY ?= gcr.io/cloud-provider-vsphere
 PUSH_LATEST ?= TRUE
 
 ifneq ("$(DEST)", "$(PWD)")
