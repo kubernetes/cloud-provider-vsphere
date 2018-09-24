@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# posix complaint
+# posix compliant
 # verified by https://www.shellcheck.net
 
 # Simple script to offer the ability to run the make directives in a Docker Container.
