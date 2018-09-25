@@ -110,8 +110,19 @@ func CreateSolutionUser(ctx context.Context, o *ClientOption) error {
 	u.role = o.getCredential().role
 	u.cert = o.getCredential().cert
 	return u.Run(ctx, o, CreateUserFunc(func(c *ssoadmin.Client) error {
-		// TODO (fanz): By far, cert data is provided from crt file (by --cert flag)
-		//  Will add an option to generate key-pairs in separate PR.
+
+		_, err := os.Stat(u.cert)
+		if err == nil {
+			fmt.Errorf("cert file already exists (%s). Please delete the cert and key files", u.cert)
+		} else if os.IsNotExist(err) {
+			err = u.createCert()
+			if err != nil {
+				fmt.Errorf("Create solution user certificate (%s) error: %s", u.cert, err)
+			}
+		} else {
+			fmt.Errorf("Invalid cert file or directory (%s), create solution user error : %s", u.cert, err)
+		}
+
 		if cert, err := ReadContent(u.cert); err == nil {
 			block, _ := pem.Decode([]byte(cert))
 			if block != nil {
@@ -126,7 +137,7 @@ func CreateSolutionUser(ctx context.Context, o *ClientOption) error {
 		if err := c.CreateSolutionUser(ctx, u.id, u.solution); err != nil {
 			return err
 		}
-		p := types.PrincipalId{Name: "k8s-vcp", Domain: c.Domain}
+		p := types.PrincipalId{Name: u.id, Domain: c.Domain}
 
 		if _, err := c.SetRole(ctx, p, u.role); err != nil {
 			return err
