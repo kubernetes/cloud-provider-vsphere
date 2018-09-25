@@ -21,7 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"runtime"
+	"strconv"
 
 	"github.com/golang/glog"
 
@@ -64,13 +67,50 @@ func init() {
 	})
 }
 
+// Allow setting configuration via environment variables.
+func configFromEnv() (cfg Config, ok bool) {
+	var InsecureFlag, DisableAPI bool
+	var err error
+	cfg.Global.VCenterIP = os.Getenv("VSPHERE_VCENTER")
+	cfg.Global.VCenterPort = os.Getenv("VSPHERE_VCENTER_PORT")
+	cfg.Global.User = os.Getenv("VSPHERE_USER")
+	cfg.Global.Password = os.Getenv("VSPHERE_PASSWORD")
+	cfg.Global.Datacenters = os.Getenv("VSPHERE_DATACENTER")
+	cfg.Network.PublicNetwork = os.Getenv("VSPHERE_PUBLIC_NETWORK")
+
+	if os.Getenv("VSPHERE_INSECURE") != "" {
+		InsecureFlag, err = strconv.ParseBool(os.Getenv("VSPHERE_INSECURE"))
+	} else {
+		InsecureFlag = false
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg.Global.InsecureFlag = InsecureFlag
+
+	if os.Getenv("VSPHERE_DISABLE_API") != "" {
+		DisableAPI, err = strconv.ParseBool(os.Getenv("VSPHERE_DISABLE_API"))
+	} else {
+		DisableAPI = true
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg.Global.DisableAPI = DisableAPI
+
+	ok = (cfg.Global.VCenterIP != "" &&
+		cfg.Global.User != "")
+
+	return
+}
+
 // Parses vSphere cloud config file and stores it into VSphereConfig.
 func readConfig(config io.Reader) (Config, error) {
 	if config == nil {
 		return Config{}, fmt.Errorf("no vSphere cloud provider config file given")
 	}
 
-	var cfg Config
+	cfg, _ := configFromEnv()
 	err := gcfg.ReadInto(&cfg, config)
 	return cfg, err
 }
@@ -108,7 +148,9 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 			DeleteFunc: vs.nodeDeleted,
 		})
 
-		vs.server.Start()
+		if !vs.cfg.Global.DisableAPI {
+			vs.server.Start()
+		}
 
 		go informerFactory.Start(stopCh)
 	} else {
