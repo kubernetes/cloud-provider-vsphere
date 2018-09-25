@@ -20,8 +20,6 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
-	"os"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -57,31 +55,6 @@ IuSvv03kaPR5XVQ99/UeEetUgGvBcABpAiBJSBzVITIVCGkGc7d+RCf49KTCIklv
 bGWObufAR8Ni4QIgWpILjW8dkGg8GOUZ0zaNA6Nvt6TIv2UWGJ4v5PoV98kCIQDx
 rIiZs5QbKdycsv9gQJzwQAogC8o04X3Zz3dsoX+h4A==
 -----END RSA PRIVATE KEY-----`
-
-func configFromEnv() (cfg Config, ok bool) {
-	var InsecureFlag bool
-	var err error
-	cfg.Global.VCenterIP = os.Getenv("VSPHERE_VCENTER")
-	cfg.Global.VCenterPort = os.Getenv("VSPHERE_VCENTER_PORT")
-	cfg.Global.User = os.Getenv("VSPHERE_USER")
-	cfg.Global.Password = os.Getenv("VSPHERE_PASSWORD")
-	cfg.Global.Datacenters = os.Getenv("VSPHERE_DATACENTER")
-	cfg.Network.PublicNetwork = os.Getenv("VSPHERE_PUBLIC_NETWORK")
-	if os.Getenv("VSPHERE_INSECURE") != "" {
-		InsecureFlag, err = strconv.ParseBool(os.Getenv("VSPHERE_INSECURE"))
-	} else {
-		InsecureFlag = false
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfg.Global.InsecureFlag = InsecureFlag
-
-	ok = (cfg.Global.VCenterIP != "" &&
-		cfg.Global.User != "")
-
-	return
-}
 
 // configFromSim starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with an empty tls.Config.
