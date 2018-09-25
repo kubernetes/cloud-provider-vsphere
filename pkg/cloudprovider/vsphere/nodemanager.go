@@ -18,6 +18,7 @@ package vsphere
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -25,7 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
+	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
@@ -37,6 +38,18 @@ type FindVM int
 const (
 	FindVMByUUID FindVM = iota // 0
 	FindVMByName               // 1
+
+	// Error Messages
+	VCenterNotFoundErrMsg    = "vCenter not found"
+	DatacenterNotFoundErrMsg = "Datacenter not found"
+	VMNotFoundErrMsg         = "VM not found"
+)
+
+// Error constants
+var (
+	ErrVCenterNotFound    = errors.New(VCenterNotFoundErrMsg)
+	ErrDatacenterNotFound = errors.New(DatacenterNotFoundErrMsg)
+	ErrVMNotFound         = errors.New(VMNotFoundErrMsg)
 )
 
 // RegisterNode - Handler when node is removed from k8s cluster.
@@ -59,6 +72,7 @@ func (nm *NodeManager) addNodeInfo(node *NodeInfo) {
 	glog.V(4).Info("addNodeInfo NodeName: ", node.NodeName, ", UUID: ", node.UUID)
 	nm.nodeNameMap[node.NodeName] = node
 	nm.nodeUUIDMap[node.UUID] = node
+	nm.AddNodeInfoToVCList(node.vcServer, node.dataCenter.Name(), node)
 	nm.nodeInfoLock.Unlock()
 }
 
@@ -269,14 +283,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 	return vclib.ErrNoVMFound
 }
 
-func (nm *NodeManager) uidToString(uid types.UID) string {
-	return strings.ToLower(string(uid))
-}
-
-func (nm *NodeManager) stringToUID(uid string) types.UID {
-	return types.UID(strings.ToLower(uid))
-}
-
 // vcConnect connects to vCenter with existing credentials
 // If credentials are invalid:
 // 		1. It will fetch credentials from credentialManager
@@ -319,4 +325,113 @@ func (nm *NodeManager) convertK8sUUIDtoNormal(k8sUUID string) string {
 		k8sUUID[19:23],
 		k8sUUID[24:36])
 	return strings.ToLower(uuid)
+}
+
+// ExportNodes transforms the NodeInfoList to []*pb.Node
+func (nm *NodeManager) ExportNodes(vcenter string, datacenter string, nodeList *[]*pb.Node) error {
+	nm.nodeInfoLock.Lock()
+
+	if vcenter != "" && datacenter != "" {
+		dc, err := nm.FindDatacenterInfoInVCList(vcenter, datacenter)
+		if err != nil {
+			nm.nodeInfoLock.Unlock()
+			return err
+		}
+
+		nm.datacenterToNodeList(dc.vmList, nodeList)
+	} else if vcenter != "" {
+		if nm.vcList[vcenter] == nil {
+			nm.nodeInfoLock.Unlock()
+			return ErrVCenterNotFound
+		}
+
+		for _, dc := range nm.vcList[vcenter].dcList {
+			nm.datacenterToNodeList(dc.vmList, nodeList)
+		}
+	} else {
+		for _, vc := range nm.vcList {
+			for _, dc := range vc.dcList {
+				nm.datacenterToNodeList(dc.vmList, nodeList)
+			}
+		}
+	}
+
+	nm.nodeInfoLock.Unlock()
+
+	return nil
+}
+
+func (nm *NodeManager) datacenterToNodeList(vmList map[string]*NodeInfo, nodeList *[]*pb.Node) {
+	for _, node := range vmList {
+		pbNode := &pb.Node{
+			Vcenter:    node.vcServer,
+			Datacenter: node.dataCenter.Name(),
+			Name:       node.NodeName,
+			Dnsnames:   make([]string, 0),
+			Addresses:  make([]string, 0),
+			Uuid:       node.UUID,
+		}
+		for _, address := range node.NodeAddresses {
+			switch address.Type {
+			case v1.NodeExternalIP:
+				pbNode.Addresses = append(pbNode.Addresses, address.Address)
+			case v1.NodeHostName:
+				pbNode.Dnsnames = append(pbNode.Dnsnames, address.Address)
+			default:
+				glog.V(4).Infof("Unknown/unsupported address type: %v", address.Type)
+			}
+		}
+		*nodeList = append(*nodeList, pbNode)
+	}
+}
+
+// AddNodeInfoToVCList creates a relational mapping from VC -> DC -> VM/Node
+func (nm *NodeManager) AddNodeInfoToVCList(vcenter string, datacenter string, node *NodeInfo) {
+	if nm.vcList[vcenter] == nil {
+		nm.vcList[vcenter] = &VCenterInfo{
+			address: vcenter,
+			dcList:  make(map[string]*DatacenterInfo),
+		}
+	}
+	vc := nm.vcList[vcenter]
+
+	if vc.dcList[datacenter] == nil {
+		vc.dcList[datacenter] = &DatacenterInfo{
+			name:   datacenter,
+			vmList: make(map[string]*NodeInfo),
+		}
+	}
+	dc := vc.dcList[datacenter]
+
+	dc.vmList[node.UUID] = node
+}
+
+// FindDatacenterInfoInVCList retrieves the DatacenterInfo from the tree
+func (nm *NodeManager) FindDatacenterInfoInVCList(vcenter string, datacenter string) (*DatacenterInfo, error) {
+	vc := nm.vcList[vcenter]
+	if vc == nil {
+		return nil, ErrVCenterNotFound
+	}
+
+	dc := vc.dcList[datacenter]
+	if dc == nil {
+		return nil, ErrDatacenterNotFound
+	}
+
+	return dc, nil
+}
+
+// FindNodeInfoInVCList retrieves the NodeInfo from the tree
+func (nm *NodeManager) FindNodeInfoInVCList(vcenter string, datacenter string, UUID string) (*NodeInfo, error) {
+	dc, err := nm.FindDatacenterInfoInVCList(vcenter, datacenter)
+	if err != nil {
+		return nil, err
+	}
+
+	vm := dc.vmList[UUID]
+	if vm == nil {
+		return nil, ErrVMNotFound
+	}
+
+	return vm, nil
 }

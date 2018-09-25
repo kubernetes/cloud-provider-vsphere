@@ -30,6 +30,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
@@ -107,6 +108,8 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 			DeleteFunc: vs.nodeDeleted,
 		})
 
+		vs.server.Start()
+
 		go informerFactory.Start(stopCh)
 	} else {
 		glog.Errorf("Kubernetes Client Init Failed: %v", err)
@@ -172,13 +175,17 @@ func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
 		nodeNameMap:        make(map[string]*NodeInfo),
 		nodeUUIDMap:        make(map[string]*NodeInfo),
 		nodeRegUUIDMap:     make(map[string]*v1.Node),
+		vcList:             make(map[string]*VCenterInfo),
 	}
 
+	var nodeMgr server.NodeManagerInterface
+	nodeMgr = &nm
 	vs := VSphere{
 		cfg:                &cfg,
 		vsphereInstanceMap: vsphereInstanceMap,
 		nodeManager:        &nm,
 		instances:          newInstances(&nm),
+		server:             server.NewServer(nodeMgr),
 	}
 	return &vs, nil
 }
