@@ -1,0 +1,64 @@
+# Use the newer Travis-CI build templates based on the
+# Debian Linux distribution "Trusty" release.
+os:             linux
+dist:           trusty
+
+# Set the version of Go.
+language:       go
+go:             1.11
+
+# Default to requiring Docker unless overriden by the job.
+sudo:           required
+services:       docker
+
+# Always set the project's Go import path to ensure that forked
+# builds get cloned to the correct location.
+go_import_path: k8s.io/cloud-provider-vsphere
+
+jobs:
+  include:
+
+    # The "build" stage builds the cloud provider for all pull requests.
+    - stage:          build
+      if: |
+        (
+          type = pull_request OR
+          (
+            commit_message =~ /\/ci-build/ AND
+            (fork = true OR sender =~ env(OWNERS))
+          )
+        ) AND NOT (
+          commit_message =~ /\/ci-nobuild/ AND
+          (fork = true OR sender =~ env(OWNERS))
+        )
+      sudo:           false
+      services:       false
+      install:
+        - make vendor
+      script:
+        - make build
+
+    # The "deploy" stage builds the cloud provider and then pushes the
+    # the cloud provider image to the GCR image registry. This stage is
+    # skipped when this configuration runs as a cron job.
+    - stage:          deploy
+      if: |
+        (
+          (branch = master AND type = push) OR
+          (
+            commit_message =~ /\/ci-deploy/ AND
+            (fork = true OR sender =~ env(OWNERS))
+          )
+        ) AND NOT (
+          commit_message =~ /\/ci-nodeploy/ AND
+          (fork = true OR sender =~ env(OWNERS))
+        )
+      install:
+        - make vendor
+      before_script:
+        - echo "${GCR_KEY_FILE}" | base64 -d | gzip -d >gcr-key-file.json
+      script:
+        - make build
+        - make images
+      after_success:
+        - GCR_KEY_FILE=gcr-key-file.json make upload-images
