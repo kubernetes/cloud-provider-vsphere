@@ -69,6 +69,9 @@ type Config struct {
 		// The kubernetes service account used to launch the cloud controller manager.
 		// Default: cloud-controller-manager
 		ServiceAccount string `gcfg:"service-account"`
+		// Disable the vSphere CCM API
+		// Default: true
+		DisableAPI bool `gcfg:"disable-api"`
 	}
 	VirtualCenter map[string]*VirtualCenterConfig
 

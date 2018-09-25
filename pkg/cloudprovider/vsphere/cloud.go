@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"runtime"
+	"strings"
 
 	"github.com/golang/glog"
 
@@ -64,13 +66,24 @@ func init() {
 	})
 }
 
+// Allow setting configuration via environment variables.
+func configFromEnv() (cfg Config) {
+	if strings.ToLower(os.Getenv("VS_DISABLE_API")) == "false" {
+		cfg.Global.DisableAPI = false
+	} else {
+		cfg.Global.DisableAPI = true
+	}
+
+	return cfg
+}
+
 // Parses vSphere cloud config file and stores it into VSphereConfig.
 func readConfig(config io.Reader) (Config, error) {
 	if config == nil {
 		return Config{}, fmt.Errorf("no vSphere cloud provider config file given")
 	}
 
-	var cfg Config
+	cfg := configFromEnv()
 	err := gcfg.ReadInto(&cfg, config)
 	return cfg, err
 }
@@ -108,7 +121,9 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 			DeleteFunc: vs.nodeDeleted,
 		})
 
-		vs.server.Start()
+		if !vs.cfg.Global.DisableAPI {
+			vs.server.Start()
+		}
 
 		go informerFactory.Start(stopCh)
 	} else {
