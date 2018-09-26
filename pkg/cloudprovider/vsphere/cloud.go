@@ -133,15 +133,19 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 		stopCh := signals.SetupSignalHandler()
 
 		informerFactory := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
-		secretInformer := informerFactory.Core().V1().Secrets()
-		vs.nodeManager.credentialManager = &SecretCredentialManager{
-			SecretName:      vs.cfg.Global.SecretName,
-			SecretNamespace: vs.cfg.Global.SecretNamespace,
-			SecretLister:    secretInformer.Lister(),
-			Cache: &SecretCache{
-				VirtualCenter: make(map[string]*Credential),
-			},
+
+		if vs.cfg.Global.SecretNamespace != "" && vs.cfg.Global.SecretName != "" {
+			secretInformer := informerFactory.Core().V1().Secrets()
+			vs.nodeManager.credentialManager = &SecretCredentialManager{
+				SecretName:      vs.cfg.Global.SecretName,
+				SecretNamespace: vs.cfg.Global.SecretNamespace,
+				SecretLister:    secretInformer.Lister(),
+				Cache: &SecretCache{
+					VirtualCenter: make(map[string]*Credential),
+				},
+			}
 		}
+
 		nodeInformer := informerFactory.Core().V1().Nodes().Informer()
 		nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    vs.nodeAdded,
