@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"runtime"
 	"strconv"
@@ -42,7 +41,8 @@ import (
 
 const (
 	ProviderName             string = "vsphere"
-	RoundTripperDefaultCount uint   = 3
+	DefaultRoundTripperCount uint   = 3
+	DefaultAPIBinding               = ":43001"
 )
 
 // Error Messages
@@ -69,7 +69,8 @@ func init() {
 
 // Allow setting configuration via environment variables.
 func configFromEnv() (cfg Config, ok bool) {
-	var InsecureFlag, DisableAPI bool
+	var InsecureFlag, APIDisable bool
+	var APIBinding string
 	var err error
 	cfg.Global.VCenterIP = os.Getenv("VSPHERE_VCENTER")
 	cfg.Global.VCenterPort = os.Getenv("VSPHERE_VCENTER_PORT")
@@ -84,19 +85,26 @@ func configFromEnv() (cfg Config, ok bool) {
 		InsecureFlag = false
 	}
 	if err != nil {
-		log.Fatal(err)
+		glog.Fatalf("Failed to parse VSPHERE_INSECURE: %s", err)
 	}
 	cfg.Global.InsecureFlag = InsecureFlag
 
-	if os.Getenv("VSPHERE_DISABLE_API") != "" {
-		DisableAPI, err = strconv.ParseBool(os.Getenv("VSPHERE_DISABLE_API"))
+	if os.Getenv("VSPHERE_API_DISABLE") != "" {
+		APIDisable, err = strconv.ParseBool(os.Getenv("VSPHERE_API_DISABLE"))
 	} else {
-		DisableAPI = true
+		APIDisable = true
 	}
 	if err != nil {
-		log.Fatal(err)
+		glog.Fatalf("Failed to parse VSPHERE_API_DISABLE: %s", err)
 	}
-	cfg.Global.DisableAPI = DisableAPI
+	cfg.Global.APIDisable = APIDisable
+
+	if os.Getenv("VSPHERE_API_BINDING") != "" {
+		APIBinding = os.Getenv("VSPHERE_API_BINDING")
+	} else {
+		APIBinding = DefaultAPIBinding
+	}
+	cfg.Global.APIBinding = APIBinding
 
 	ok = (cfg.Global.VCenterIP != "" &&
 		cfg.Global.User != "")
@@ -152,8 +160,11 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 			DeleteFunc: vs.nodeDeleted,
 		})
 
-		if !vs.cfg.Global.DisableAPI {
+		if !vs.cfg.Global.APIDisable {
+			glog.V(1).Info("Starting the API Server")
 			vs.server.Start()
+		} else {
+			glog.V(1).Info("API Server is disabled")
 		}
 
 		go informerFactory.Start(stopCh)
@@ -200,7 +211,7 @@ func (vs *VSphere) HasClusterID() bool {
 // Initializes vSphere from vSphere CloudProvider Configuration
 func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
 	if cfg.Global.RoundTripperCount == 0 {
-		cfg.Global.RoundTripperCount = RoundTripperDefaultCount
+		cfg.Global.RoundTripperCount = DefaultRoundTripperCount
 	}
 
 	if cfg.Global.ServiceAccount == "" {
@@ -231,7 +242,7 @@ func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
 		vsphereInstanceMap: vsphereInstanceMap,
 		nodeManager:        &nm,
 		instances:          newInstances(&nm),
-		server:             server.NewServer(nodeMgr),
+		server:             server.NewServer(cfg.Global.APIBinding, nodeMgr),
 	}
 	return &vs, nil
 }
@@ -257,7 +268,6 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 				vcConfig.User = cfg.Global.User
 				if vcConfig.User == "" {
 					glog.Errorf("vcConfig.User is empty for vc %s!", vcServer)
-					fmt.Println("Throwing ErrUsernameMissing")
 					return nil, ErrUsernameMissing
 				}
 			}
@@ -265,7 +275,6 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 				vcConfig.Password = cfg.Global.Password
 				if vcConfig.Password == "" {
 					glog.Errorf("vcConfig.Password is empty for vc %s!", vcServer)
-					fmt.Println("Throwing ErrPasswordMissing")
 					return nil, ErrPasswordMissing
 				}
 			}
@@ -312,7 +321,7 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 	// Create a single instance of VSphereInstance for the Global VCenterIP if the
 	// VSphereInstance doesnt already exist in the map
 	if !isSecretInfoProvided && cfg.Global.VCenterIP != "" && vsphereInstanceMap[cfg.Global.VCenterIP] == nil {
-		glog.V(4).Infof("Creating a vc server %s for the global instance", cfg.Global.VCenterIP)
+		glog.V(2).Infof("Creating a vc server %s for the global instance", cfg.Global.VCenterIP)
 		vcConfig := &VirtualCenterConfig{
 			User:              cfg.Global.User,
 			Password:          cfg.Global.Password,

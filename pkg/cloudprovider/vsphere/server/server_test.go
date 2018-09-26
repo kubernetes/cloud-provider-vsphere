@@ -28,6 +28,7 @@ import (
 
 const (
 	exampleUUIDForGoTest = "422e4956-ad22-1139-6d72-59cc8f26bc90"
+	DefaultAPIBinding    = ":43001"
 )
 
 type fakeNodeMgr struct{}
@@ -53,6 +54,7 @@ func TestGRPCServerClient(t *testing.T) {
 	//server
 	s := grpc.NewServer()
 	myServer := &server{
+		binding: DefaultAPIBinding,
 		s:       s,
 		nodeMgr: &fakeNodeMgr{},
 	}
@@ -62,7 +64,7 @@ func TestGRPCServerClient(t *testing.T) {
 	myServer.Start()
 
 	//client
-	conn, err := grpc.Dial(port, grpc.WithInsecure())
+	conn, err := grpc.Dial(DefaultAPIBinding, grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}

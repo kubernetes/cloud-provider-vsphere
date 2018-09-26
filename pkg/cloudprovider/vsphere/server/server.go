@@ -22,15 +22,12 @@ import (
 	"log"
 	"net"
 
+	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
-)
-
-const (
-	port = ":50051"
 )
 
 type NodeManagerInterface interface {
@@ -42,6 +39,7 @@ type GRPCServer interface {
 }
 
 type server struct {
+	binding string
 	s       *grpc.Server
 	nodeMgr NodeManagerInterface
 }
@@ -65,22 +63,24 @@ func (s *server) ListNodes(ctx context.Context, request *pb.ListNodesRequest) (*
 
 func (s *server) Start() {
 	go func() {
-		lis, err := net.Listen("tcp", port)
+		lis, err := net.Listen("tcp", s.binding)
 		if err != nil {
-			log.Printf("failed to listen: %v", err)
+			glog.Fatalf("Server Listen() failed: %s", err)
+
 		}
 
 		err = s.s.Serve(lis)
 		if err != nil {
-			log.Printf("failed to serve: %v", err)
+			log.Printf("Server Serve() failed: %s", err)
 		}
 	}()
 }
 
 // NewServer generates a new gRPC Server
-func NewServer(nodeMgr NodeManagerInterface) GRPCServer {
+func NewServer(binding string, nodeMgr NodeManagerInterface) GRPCServer {
 	s := grpc.NewServer()
 	myServer := &server{
+		binding: binding,
 		s:       s,
 		nodeMgr: nodeMgr,
 	}
