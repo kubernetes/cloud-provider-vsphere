@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: e2e
+  namespace: e2e
+  labels:
+    name: e2e
+spec:
+  template:
+    spec:
+      volumes:
+      - name: kubectl
+        hostPath:
+          path: /opt/bin/kubectl
+          type: File
+      - name: kubeconfig
+        secret:
+          secretName: kubeconfig
+      - name: e2e
+        hostPath:
+          path: /var/lib/kubernetes/e2e
+          type: Directory
+      - name: artifacts
+        emptyDir: {}
+      containers:
+      - name: run
+        image: gcr.io/kubernetes-conformance-testing/yake2e-job
+        args:
+        - run
+        volumeMounts:
+        - name: kubectl
+          mountPath: /usr/local/bin/kubectl
+          readOnly: true
+        - name: kubeconfig
+          mountPath: /etc/kubernetes
+          readOnly: true
+        - name: e2e
+          mountPath: /var/lib/kubernetes/e2e
+          readOnly: true
+        - name: artifacts
+          mountPath: /var/log/kubernetes/e2e
+          readOnly: false
+      - name: tgz
+        image: gcr.io/kubernetes-conformance-testing/yake2e-job
+        args:
+        - tgz
+        volumeMounts:
+        - name: artifacts
+          mountPath: /var/log/kubernetes/e2e
+          readOnly: false
+      restartPolicy: Never
+  backoffLimit: 4
