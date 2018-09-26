@@ -18,15 +18,13 @@ go_import_path: k8s.io/cloud-provider-vsphere
 jobs:
   include:
 
-    # The "build" stage builds the cloud provider for all pull requests.
+    # The "build" stage builds the cloud provider when requested with a commit
+    # message trigger.
     - stage:          build
       if: |
         (
-          type = pull_request OR
-          (
-            commit_message =~ /\/ci-build/ AND
-            (fork = true OR sender =~ env(OWNERS))
-          )
+          commit_message =~ /\/ci-build/ AND
+          (fork = true OR sender =~ env(OWNERS))
         ) AND NOT (
           commit_message =~ /\/ci-nobuild/ AND
           (fork = true OR sender =~ env(OWNERS))
