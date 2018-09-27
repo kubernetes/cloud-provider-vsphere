@@ -80,8 +80,8 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 50051
+    - port: 43001
       protocol: TCP
-      targetPort: 50051
+      targetPort: 43001
   selector:
     component: cloud-controller-manager

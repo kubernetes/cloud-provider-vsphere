@@ -56,12 +56,12 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 
 	// Check if node has been discovered already
 	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
-		glog.V(4).Info("instances.NodeAddresses() CACHED with ", string(nodeName))
+		glog.V(2).Info("instances.NodeAddresses() CACHED with ", string(nodeName))
 		return node.NodeAddresses, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err != nil {
-		glog.V(4).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
+		glog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
 		return i.nodeManager.nodeNameMap[string(nodeName)].NodeAddresses, nil
 	}
 
@@ -78,12 +78,12 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 	// Check if node has been discovered already
 	uid := i.getUUIDFromProviderID(providerID)
 	if node, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
-		glog.V(4).Info("instances.NodeAddressesByProviderID() CACHED with ", uid)
+		glog.V(2).Info("instances.NodeAddressesByProviderID() CACHED with ", uid)
 		return node.NodeAddresses, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(uid, FindVMByUUID); err == nil {
-		glog.V(4).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
+		glog.V(2).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
 		return i.nodeManager.nodeUUIDMap[uid].NodeAddresses, nil
 	}
 
@@ -108,12 +108,12 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 
 	// Check if node has been discovered already
 	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
-		glog.V(4).Info("instances.InstanceID() CACHED with ", string(nodeName))
+		glog.V(2).Info("instances.InstanceID() CACHED with ", string(nodeName))
 		return node.UUID, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err == nil {
-		glog.V(4).Info("instances.InstanceID() FOUND with ", string(nodeName))
+		glog.V(2).Info("instances.InstanceID() FOUND with ", string(nodeName))
 		return i.nodeManager.nodeNameMap[string(nodeName)].UUID, nil
 	}
 
@@ -153,12 +153,12 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 	// Check if node has been discovered already
 	uid := i.getUUIDFromProviderID(providerID)
 	if _, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
-		glog.V(4).Info("instances.InstanceExistsByProviderID() CACHED with ", uid)
+		glog.V(2).Info("instances.InstanceExistsByProviderID() CACHED with ", uid)
 		return true, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(uid, FindVMByUUID); err == nil {
-		glog.V(4).Info("instances.InstanceExistsByProviderID() EXISTS with ", uid)
+		glog.V(2).Info("instances.InstanceExistsByProviderID() EXISTS with ", uid)
 		return true, err
 	}
 

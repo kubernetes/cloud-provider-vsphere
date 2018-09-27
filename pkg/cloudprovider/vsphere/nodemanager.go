@@ -94,7 +94,7 @@ func (nm *NodeManager) removeNode(node *v1.Node) {
 
 func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 	if nodeID == "" {
-		glog.V(4).Info("DiscoverNode called but nodeID is empty")
+		glog.V(3).Info("DiscoverNode called but nodeID is empty")
 		return vclib.ErrNoVMFound
 	}
 	type vmSearch struct {
@@ -112,12 +112,12 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 
 	myNodeID := nodeID
 	if searchBy == FindVMByUUID {
-		glog.V(4).Info("DiscoverNode by UUID")
+		glog.V(3).Info("DiscoverNode by UUID")
 		myNodeID = strings.ToLower(nodeID)
 	} else {
-		glog.V(4).Info("DiscoverNode by Name")
+		glog.V(3).Info("DiscoverNode by Name")
 	}
-	glog.V(4).Info("DiscoverNode nodeID: ", myNodeID)
+	glog.V(2).Info("DiscoverNode nodeID: ", myNodeID)
 
 	vmFound := false
 	globalErr = nil
@@ -156,7 +156,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 
 			err := nm.vcConnect(ctx, vsi)
 			if err != nil {
-				glog.V(4).Info("Discovering node error vc:", err)
+				glog.Error("Discovering node error vc:", err)
 				setGlobalErr(err)
 				continue
 			}
@@ -164,7 +164,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 			if vsi.cfg.Datacenters == "" {
 				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.conn)
 				if err != nil {
-					glog.V(4).Info("Discovering node error dc:", err)
+					glog.Error("Discovering node error dc:", err)
 					setGlobalErr(err)
 					continue
 				}
@@ -177,7 +177,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 					}
 					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.conn, dc)
 					if err != nil {
-						glog.V(4).Info("Discovering node error dc:", err)
+						glog.Error("Discovering node error dc:", err)
 						setGlobalErr(err)
 						continue
 					}
@@ -216,12 +216,12 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 				}
 
 				if err != nil {
-					glog.V(4).Infof("Error while looking for vm=%+v in vc=%s and datacenter=%s: %v",
+					glog.Error("Error while looking for vm=%+v in vc=%s and datacenter=%s: %v",
 						vm, res.vc, res.datacenter.Name(), err)
 					if err != vclib.ErrNoVMFound {
 						setGlobalErr(err)
 					} else {
-						glog.V(4).Infof("Did not find node %s in vc=%s and datacenter=%s",
+						glog.V(2).Infof("Did not find node %s in vc=%s and datacenter=%s",
 							myNodeID, res.vc, res.datacenter.Name())
 					}
 					continue
@@ -230,7 +230,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 				var oVM mo.VirtualMachine
 				err = vm.Properties(ctx, vm.Reference(), []string{"config", "summary", "summary.config", "guest.net", "guest"}, &oVM)
 				if err != nil {
-					glog.V(4).Infof("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
+					glog.Error("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
 						vm, res.vc, res.datacenter.Name(), err)
 					continue
 				}
@@ -255,9 +255,9 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 					}
 				}
 
-				glog.V(4).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
+				glog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
 					nodeID, vm, res.vc, res.datacenter.Name())
-				glog.V(4).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
+				glog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
 
 				nodeInfo := &NodeInfo{dataCenter: res.datacenter, vm: vm, vcServer: res.vc,
 					UUID: oVM.Summary.Config.Uuid, NodeName: oVM.Guest.HostName, NodeAddresses: addrs}
@@ -299,13 +299,13 @@ func (nm *NodeManager) vcConnect(ctx context.Context, vsphereInstance *VSphereIn
 		return err
 	}
 
-	glog.V(4).Infof("Invalid credentials. Cannot connect to server %q. "+
+	glog.V(2).Infof("Invalid credentials. Cannot connect to server %q. "+
 		"Fetching credentials from secrets.", vsphereInstance.conn.Hostname)
 
 	// Get latest credentials from SecretCredentialManager
 	credentials, err := nm.credentialManager.GetCredential(vsphereInstance.conn.Hostname)
 	if err != nil {
-		glog.Errorf("Failed to get credentials from Secret Credential Manager with err: %v", err)
+		glog.Error("Failed to get credentials from Secret Credential Manager with err:", err)
 		return err
 	}
 	vsphereInstance.conn.UpdateCredentials(credentials.User, credentials.Password)
@@ -378,7 +378,7 @@ func (nm *NodeManager) datacenterToNodeList(vmList map[string]*NodeInfo, nodeLis
 			case v1.NodeHostName:
 				pbNode.Dnsnames = append(pbNode.Dnsnames, address.Address)
 			default:
-				glog.V(4).Infof("Unknown/unsupported address type: %v", address.Type)
+				glog.Warning("Unknown/unsupported address type:", address.Type)
 			}
 		}
 		*nodeList = append(*nodeList, pbNode)

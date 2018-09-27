@@ -39,7 +39,7 @@ spec:
           image: docker.io/vmware/vsphere-cloud-controller-manager:latest
           args:
             - /bin/vsphere-cloud-controller-manager
-            - --v=4
+            - --v=2
             - --cloud-provider=vsphere
             - --cloud-config=/etc/cloud/vsphere.conf
             - --kubeconfig=/etc/kubernetes/controller-manager.conf
@@ -94,8 +94,8 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 50051
+    - port: 43001
       protocol: TCP
-      targetPort: 50051
+      targetPort: 43001
   selector:
     component: cloud-controller-manager

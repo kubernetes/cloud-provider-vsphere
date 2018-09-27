@@ -75,7 +75,7 @@ func (secretCredentialManager *SecretCredentialManager) updateCredentialsMap() e
 	cacheSecret := secretCredentialManager.Cache.GetSecret()
 	if cacheSecret != nil &&
 		cacheSecret.GetResourceVersion() == secret.GetResourceVersion() {
-		glog.V(4).Infof("VCP SecretCredentialManager: Secret %q will not be updated in cache. Since, secrets have same resource version %q", secretCredentialManager.SecretName, cacheSecret.GetResourceVersion())
+		glog.V(2).Infof("VCP SecretCredentialManager: Secret %q will not be updated in cache. Since, secrets have same resource version %q", secretCredentialManager.SecretName, cacheSecret.GetResourceVersion())
 		return nil
 	}
 	secretCredentialManager.Cache.UpdateSecret(secret)

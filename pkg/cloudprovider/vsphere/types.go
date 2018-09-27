@@ -71,7 +71,10 @@ type Config struct {
 		ServiceAccount string `gcfg:"service-account"`
 		// Disable the vSphere CCM API
 		// Default: true
-		DisableAPI bool `gcfg:"disable-api"`
+		APIDisable bool `gcfg:"api-disable"`
+		// Configurable vSphere CCM API port
+		// Default: 43001
+		APIBinding string `gcfg:"api-binding"`
 	}
 	VirtualCenter map[string]*VirtualCenterConfig
 
