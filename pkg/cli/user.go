@@ -17,8 +17,17 @@ limitations under the License.
 package cli
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/ssoadmin"
@@ -41,6 +50,8 @@ type User struct {
 type CreateUserFunc func(c *ssoadmin.Client) error
 
 func (u *User) Run(ctx context.Context, c *ClientOption, fn CreateUserFunc) error {
+
+	u.id = "k8s-vcp"
 
 	vc, err := c.GetClient()
 	if err != nil {
@@ -105,4 +116,68 @@ func GetRolePermission(ctx context.Context, c *ClientOption) (*RolePermission, e
 type Role struct {
 	RoleName   string
 	Privileges []string
+}
+
+// createCert creates a key pair for login purpose
+func (u *User) createCert() error {
+	id := strings.TrimSuffix(u.cert, ".crt")
+	var encodedCert bytes.Buffer
+	certFile, err := os.Create(id + ".crt")
+	if err != nil {
+		return err
+	}
+	defer certFile.Close()
+
+	keyFile, err := os.Create(id + ".key")
+	if err != nil {
+		return err
+	}
+	defer keyFile.Close()
+
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+
+	notBefore := time.Now()
+	notAfter := notBefore.Add(5 * 365 * 24 * time.Hour) // 5 years
+
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		return err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			Organization: []string{"kubernetes"},
+		},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	if err != nil {
+		return err
+	}
+
+	err = pem.Encode(&encodedCert, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		return err
+	}
+
+	_, err = certFile.Write(encodedCert.Bytes())
+	if err != nil {
+		return err
+	}
+
+	err = pem.Encode(keyFile, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
