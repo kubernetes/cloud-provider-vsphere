@@ -216,7 +216,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 				}
 
 				if err != nil {
-					glog.Error("Error while looking for vm=%+v in vc=%s and datacenter=%s: %v",
+					glog.Errorf("Error while looking for vm=%+v in vc=%s and datacenter=%s: %v",
 						vm, res.vc, res.datacenter.Name(), err)
 					if err != vclib.ErrNoVMFound {
 						setGlobalErr(err)
@@ -230,7 +230,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 				var oVM mo.VirtualMachine
 				err = vm.Properties(ctx, vm.Reference(), []string{"config", "summary", "summary.config", "guest.net", "guest"}, &oVM)
 				if err != nil {
-					glog.Error("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
+					glog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
 						vm, res.vc, res.datacenter.Name(), err)
 					continue
 				}
