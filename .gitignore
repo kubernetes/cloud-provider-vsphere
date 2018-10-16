@@ -137,4 +137,5 @@ zz_generated.openapi.go
 *.pyc
 
 # binaries
-vsphere-cloud-controller-manager
+/vsphere-cloud-controller-manager
+/vsphere-csi

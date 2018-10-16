@@ -34,6 +34,14 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  digest = "1:5090455975191d02ed0875979b7dc14a76f73005f71404cca242eeb5b83361e9"
+  name = "github.com/akutz/gosync"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "94b0033d0b5fc254594c3174329c19356c2c4f63"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
   name = "github.com/beorn7/perks"
@@ -42,12 +50,21 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
-  digest = "1:ed319ae4ca2e3d1884e22d307b4d02f4020316ebf95e565eaa4ead5983f48fda"
+  digest = "1:a54dc69ec3668e0e57ad159a0a8c0ce1ec571174bb4eb6b3915833a8c21d40f3"
+  name = "github.com/container-storage-interface/spec"
+  packages = ["lib/go/csi/v0"]
+  pruneopts = "UT"
+  revision = "2178fdeea87f1150a17a63252eee28d4d8141f72"
+  version = "v0.3.0"
+
+[[projects]]
+  digest = "1:219324e0a689fe0a31bd25c295b643b6f3a0867313002f7c3b33305739c4cb5a"
   name = "github.com/coreos/etcd"
   packages = [
     "auth/authpb",
     "client",
     "clientv3",
+    "clientv3/concurrency",
     "etcdserver/api/v3rpc/rpctypes",
     "etcdserver/etcdserverpb",
     "mvcc/mvccpb",
@@ -202,7 +219,7 @@
   revision = "24b0969c4cb722950103eed87108c8d291a8df00"
 
 [[projects]]
-  digest = "1:5d1b5a25486fc7d4e133646d834f6fca7ba1cef9903d40e7aa786c41b89e9e91"
+  digest = "1:588beb9f80d2b0afddf05663b32d01c867da419458b560471d81cca0286e76b8"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -211,6 +228,7 @@
     "ptypes/any",
     "ptypes/duration",
     "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
   pruneopts = "UT"
   revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
@@ -297,6 +315,14 @@
   pruneopts = "UT"
   revision = "1624edc4454b8682399def8740d46db5e4362ba4"
   version = "1.1.5"
+
+[[projects]]
+  digest = "1:0a69a1c0db3591fcefb47f115b224592c8dfa4368b7ba9fae509d5e16cdc95c8"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
+  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
@@ -406,6 +432,32 @@
   ]
   pruneopts = "UT"
   revision = "05ee40e3a273f7245e8777337fc7b46e533a9a92"
+
+[[projects]]
+  branch = "master"
+  digest = "1:bfacccb149d451c243e47c66b1ee1cb56ff724bfce5b4eb196b5c07f69e660f4"
+  name = "github.com/rexray/gocsi"
+  packages = [
+    ".",
+    "context",
+    "middleware/logging",
+    "middleware/requestid",
+    "middleware/serialvolume",
+    "middleware/serialvolume/etcd",
+    "middleware/serialvolume/types",
+    "middleware/specvalidator",
+    "utils",
+  ]
+  pruneopts = "UT"
+  revision = "47f4bd656ddea05ff2d9c85cc55c6b9eafcf960e"
+
+[[projects]]
+  digest = "1:3f53e9e4dfbb664cd62940c9c4b65a2171c66acd0b7621a1a6b8e78513525a52"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ad15b42461921f1fb3529b058c6786c6a45d5162"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -1112,9 +1164,12 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/container-storage-interface/spec/lib/go/csi/v0",
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/prometheus/client_golang/prometheus",
+    "github.com/rexray/gocsi",
+    "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "github.com/vmware/govmomi",
