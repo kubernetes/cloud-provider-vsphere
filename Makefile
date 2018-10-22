@@ -32,7 +32,8 @@ VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
                  git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 GOFLAGS   :=
 TAGS      :=
-LDFLAGS   := "-w -s -X 'main.version=${VERSION}'"
+LDFLAGSCCM := "-w -s -X 'main.version=${VERSION}'"
+LDFLAGSCSI := "-w -s -X 'k8s.io/cloud-provider-vsphere/pkg/csi/service.version=${VERSION}'"
 REGISTRY ?= gcr.io/cloud-provider-vsphere
 PUSH_LATEST ?= TRUE
 
@@ -65,13 +66,19 @@ ifndef HAS_DEP
 endif
 	dep ensure -v$(DEP_FLAGS) && touch vendor
 
-build: vsphere-cloud-controller-manager
+build: vsphere-cloud-controller-manager vsphere-csi
 
 vsphere-cloud-controller-manager: vendor $(SOURCES)
 	CGO_ENABLED=0 GOOS=$(GOOS) go build \
-		-ldflags $(LDFLAGS) \
+		-ldflags $(LDFLAGSCCM) \
 		-o vsphere-cloud-controller-manager \
 		cmd/vsphere-cloud-controller-manager/main.go
+
+vsphere-csi: vendor $(SOURCES)
+	CGO_ENABLED=0 GOOS=$(GOOS) go build \
+		-ldflags $(LDFLAGSCSI) \
+		-o vsphere-csi \
+		cmd/vsphere-csi/main.go
 
 test: unit
 
@@ -136,7 +143,7 @@ install-distro-packages:
 	tools/install-distro-packages.sh
 
 clean:
-	rm -rf _dist .bindep vsphere-cloud-controller-manager
+	rm -rf _dist .bindep vsphere-cloud-controller-manager vsphere-csi
 
 realclean: clean
 	rm -rf vendor

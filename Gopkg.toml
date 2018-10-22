@@ -5,17 +5,13 @@
 
 ignored = ["k8s.io/cloud-provider-vsphere"]
 
-[[override]]
-  name = "github.com/container-storage-interface/spec"
-  version = "0.2.0"
+[[constraint]]
+  name = "github.com/rexray/gocsi"
+  branch = "master"
 
 [[override]]
   branch = "master"
   name = "github.com/golang/glog"
-
-[[override]]
-  branch = "master"
-  name = "github.com/kubernetes-csi/drivers"
 
 [[override]]
   branch = "master"
