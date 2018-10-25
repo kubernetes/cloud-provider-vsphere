@@ -18,48 +18,29 @@ package vsphere
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
-	"os"
 	"runtime"
-	"strconv"
 
 	"github.com/golang/glog"
-
-	"gopkg.in/gcfg.v1"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
-	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/sample-controller/pkg/signals"
+
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/config"
 )
 
 const (
-	ProviderName             string = "vsphere"
-	DefaultRoundTripperCount uint   = 3
-	DefaultAPIBinding               = ":43001"
-)
-
-// Error Messages
-const (
-	MissingUsernameErrMsg = "Username is missing"
-	MissingPasswordErrMsg = "Password is missing"
-)
-
-// Error constants
-var (
-	ErrUsernameMissing = errors.New(MissingUsernameErrMsg)
-	ErrPasswordMissing = errors.New(MissingPasswordErrMsg)
+	ProviderName string = "vsphere"
 )
 
 func init() {
 	cloudprovider.RegisterCloudProvider(ProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
-		cfg, err := readConfig(config)
+		cfg, err := vcfg.ReadConfig(config)
 		if err != nil {
 			return nil, err
 		}
@@ -67,64 +48,8 @@ func init() {
 	})
 }
 
-// Allow setting configuration via environment variables.
-func configFromEnv() (cfg Config, ok bool) {
-	var InsecureFlag, APIDisable bool
-	var APIBinding string
-	var err error
-	cfg.Global.VCenterIP = os.Getenv("VSPHERE_VCENTER")
-	cfg.Global.VCenterPort = os.Getenv("VSPHERE_VCENTER_PORT")
-	cfg.Global.User = os.Getenv("VSPHERE_USER")
-	cfg.Global.Password = os.Getenv("VSPHERE_PASSWORD")
-	cfg.Global.Datacenters = os.Getenv("VSPHERE_DATACENTER")
-	cfg.Network.PublicNetwork = os.Getenv("VSPHERE_PUBLIC_NETWORK")
-
-	if os.Getenv("VSPHERE_INSECURE") != "" {
-		InsecureFlag, err = strconv.ParseBool(os.Getenv("VSPHERE_INSECURE"))
-	} else {
-		InsecureFlag = false
-	}
-	if err != nil {
-		glog.Fatalf("Failed to parse VSPHERE_INSECURE: %s", err)
-	}
-	cfg.Global.InsecureFlag = InsecureFlag
-
-	if os.Getenv("VSPHERE_API_DISABLE") != "" {
-		APIDisable, err = strconv.ParseBool(os.Getenv("VSPHERE_API_DISABLE"))
-	} else {
-		APIDisable = true
-	}
-	if err != nil {
-		glog.Fatalf("Failed to parse VSPHERE_API_DISABLE: %s", err)
-	}
-	cfg.Global.APIDisable = APIDisable
-
-	if os.Getenv("VSPHERE_API_BINDING") != "" {
-		APIBinding = os.Getenv("VSPHERE_API_BINDING")
-	} else {
-		APIBinding = DefaultAPIBinding
-	}
-	cfg.Global.APIBinding = APIBinding
-
-	ok = (cfg.Global.VCenterIP != "" &&
-		cfg.Global.User != "")
-
-	return
-}
-
-// Parses vSphere cloud config file and stores it into VSphereConfig.
-func readConfig(config io.Reader) (Config, error) {
-	if config == nil {
-		return Config{}, fmt.Errorf("no vSphere cloud provider config file given")
-	}
-
-	cfg, _ := configFromEnv()
-	err := gcfg.ReadInto(&cfg, config)
-	return cfg, err
-}
-
 // Creates new Controller node interface and returns
-func newVSphere(cfg Config) (*VSphere, error) {
+func newVSphere(cfg vcfg.Config) (*VSphere, error) {
 	vs, err := buildVSphereFromConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -209,23 +134,9 @@ func (vs *VSphere) HasClusterID() bool {
 }
 
 // Initializes vSphere from vSphere CloudProvider Configuration
-func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
-	if cfg.Global.RoundTripperCount == 0 {
-		cfg.Global.RoundTripperCount = DefaultRoundTripperCount
-	}
-
-	if cfg.Global.ServiceAccount == "" {
-		cfg.Global.ServiceAccount = "cloud-controller-manager"
-	}
-
-	if cfg.Global.VCenterPort == "" {
-		cfg.Global.VCenterPort = "443"
-	}
-
-	vsphereInstanceMap, err := populateVsphereInstanceMap(&cfg)
-	if err != nil {
-		return nil, err
-	}
+func buildVSphereFromConfig(cfg vcfg.Config) (*VSphere, error) {
+	//genrate connection map
+	vsphereInstanceMap := vcfg.GenerateInstanceMap(cfg)
 
 	nm := NodeManager{
 		vsphereInstanceMap: vsphereInstanceMap,
@@ -247,114 +158,10 @@ func buildVSphereFromConfig(cfg Config) (*VSphere, error) {
 	return &vs, nil
 }
 
-func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error) {
-	vsphereInstanceMap := make(map[string]*VSphereInstance)
-	isSecretInfoProvided := true
-
-	if cfg.Global.SecretName == "" || cfg.Global.SecretNamespace == "" {
-		isSecretInfoProvided = false
-	}
-
-	// vsphere.conf is no longer supported in the old format.
-	for vcServer, vcConfig := range cfg.VirtualCenter {
-		glog.V(4).Infof("Initializing vc server %s", vcServer)
-		if vcServer == "" {
-			glog.Error("vsphere.conf does not have the VirtualCenter IP address specified")
-			return nil, errors.New("vsphere.conf does not have the VirtualCenter IP address specified")
-		}
-
-		if !isSecretInfoProvided {
-			if vcConfig.User == "" {
-				vcConfig.User = cfg.Global.User
-				if vcConfig.User == "" {
-					glog.Errorf("vcConfig.User is empty for vc %s!", vcServer)
-					return nil, ErrUsernameMissing
-				}
-			}
-			if vcConfig.Password == "" {
-				vcConfig.Password = cfg.Global.Password
-				if vcConfig.Password == "" {
-					glog.Errorf("vcConfig.Password is empty for vc %s!", vcServer)
-					return nil, ErrPasswordMissing
-				}
-			}
-		}
-
-		if vcConfig.VCenterPort == "" {
-			vcConfig.VCenterPort = cfg.Global.VCenterPort
-		}
-
-		if vcConfig.Datacenters == "" {
-			if cfg.Global.Datacenters != "" {
-				vcConfig.Datacenters = cfg.Global.Datacenters
-			}
-		}
-		if vcConfig.RoundTripperCount == 0 {
-			vcConfig.RoundTripperCount = cfg.Global.RoundTripperCount
-		}
-		if vcConfig.CAFile == "" {
-			vcConfig.CAFile = cfg.Global.CAFile
-		}
-		if vcConfig.Thumbprint == "" {
-			vcConfig.Thumbprint = cfg.Global.Thumbprint
-		}
-
-		// Note: If secrets info is provided username and password will be populated
-		// once secret is created.
-		vSphereConn := vclib.VSphereConnection{
-			Username:          vcConfig.User,
-			Password:          vcConfig.Password,
-			Hostname:          vcServer,
-			Insecure:          cfg.Global.InsecureFlag,
-			RoundTripperCount: vcConfig.RoundTripperCount,
-			Port:              vcConfig.VCenterPort,
-			CACert:            vcConfig.CAFile,
-			Thumbprint:        vcConfig.Thumbprint,
-		}
-		vsphereIns := VSphereInstance{
-			conn: &vSphereConn,
-			cfg:  vcConfig,
-		}
-		vsphereInstanceMap[vcServer] = &vsphereIns
-	}
-
-	// Create a single instance of VSphereInstance for the Global VCenterIP if the
-	// VSphereInstance doesnt already exist in the map
-	if !isSecretInfoProvided && cfg.Global.VCenterIP != "" && vsphereInstanceMap[cfg.Global.VCenterIP] == nil {
-		glog.V(2).Infof("Creating a vc server %s for the global instance", cfg.Global.VCenterIP)
-		vcConfig := &VirtualCenterConfig{
-			User:              cfg.Global.User,
-			Password:          cfg.Global.Password,
-			VCenterPort:       cfg.Global.VCenterPort,
-			Datacenters:       cfg.Global.Datacenters,
-			RoundTripperCount: cfg.Global.RoundTripperCount,
-			CAFile:            cfg.Global.CAFile,
-			Thumbprint:        cfg.Global.Thumbprint,
-		}
-		vSphereConn := vclib.VSphereConnection{
-			Username:          cfg.Global.User,
-			Password:          cfg.Global.Password,
-			Hostname:          cfg.Global.VCenterIP,
-			Insecure:          cfg.Global.InsecureFlag,
-			RoundTripperCount: cfg.Global.RoundTripperCount,
-			Port:              cfg.Global.VCenterPort,
-			CACert:            cfg.Global.CAFile,
-			Thumbprint:        cfg.Global.Thumbprint,
-		}
-		vsphereIns := VSphereInstance{
-			conn: &vSphereConn,
-			cfg:  vcConfig,
-		}
-		vsphereInstanceMap[cfg.Global.VCenterIP] = &vsphereIns
-	}
-
-	return vsphereInstanceMap, nil
-}
-
 func logout(vs *VSphere) {
 	for _, vsphereIns := range vs.vsphereInstanceMap {
-		if vsphereIns.conn.Client != nil {
-			vsphereIns.conn.Logout(context.TODO())
+		if vsphereIns.Conn.Client != nil {
+			vsphereIns.Conn.Logout(context.TODO())
 		}
 	}
 }

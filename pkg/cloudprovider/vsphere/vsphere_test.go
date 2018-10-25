@@ -28,6 +28,7 @@ import (
 	"github.com/vmware/govmomi/simulator/vpx"
 	sts "github.com/vmware/govmomi/sts/simulator"
 
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/config"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 )
 
@@ -58,15 +59,15 @@ rIiZs5QbKdycsv9gQJzwQAogC8o04X3Zz3dsoX+h4A==
 
 // configFromSim starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with an empty tls.Config.
-func configFromSim() (Config, func()) {
+func configFromSim() (vcfg.Config, func()) {
 	return configFromSimWithTLS(new(tls.Config), true)
 }
 
 // configFromSimWithTLS starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with a tls.Config. The returned client
 // config can be configured to allow/decline insecure connections.
-func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (Config, func()) {
-	var cfg Config
+func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Config, func()) {
+	var cfg vcfg.Config
 	model := simulator.VPX()
 
 	err := model.Create()
@@ -91,9 +92,14 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (Config, 
 	cfg.Global.User = s.URL.User.Username()
 	cfg.Global.Password, _ = s.URL.User.Password()
 	cfg.Global.Datacenters = vclib.TestDefaultDatacenter
-	cfg.Network.PublicNetwork = vclib.TestDefaultNetwork
-	cfg.VirtualCenter = make(map[string]*VirtualCenterConfig)
-	cfg.VirtualCenter[s.URL.Hostname()] = &VirtualCenterConfig{}
+	cfg.VirtualCenter = make(map[string]*vcfg.VirtualCenterConfig)
+	cfg.VirtualCenter[s.URL.Hostname()] = &vcfg.VirtualCenterConfig{
+		User:         cfg.Global.User,
+		Password:     cfg.Global.Password,
+		VCenterPort:  cfg.Global.VCenterPort,
+		InsecureFlag: cfg.Global.InsecureFlag,
+		Datacenters:  cfg.Global.Datacenters,
+	}
 
 	return cfg, func() {
 		s.Close()
@@ -102,58 +108,16 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (Config, 
 }
 
 // configFromEnvOrSim returns config from configFromEnv if set, otherwise returns configFromSim.
-func configFromEnvOrSim() (Config, func()) {
-	cfg, ok := configFromEnv()
+func configFromEnvOrSim() (vcfg.Config, func()) {
+	cfg, ok := vcfg.ConfigFromEnv()
 	if ok {
 		return cfg, func() {}
 	}
 	return configFromSim()
 }
-func TestReadConfig(t *testing.T) {
-	_, err := readConfig(nil)
-	if err == nil {
-		t.Errorf("Should fail when no config is provided: %s", err)
-	}
-
-	cfg, err := readConfig(strings.NewReader(`
-[Global]
-server = 0.0.0.0
-port = 443
-user = user
-password = password
-insecure-flag = true
-datacenters = us-west
-ca-file = /some/path/to/a/ca.pem
-`))
-	//vm-uuid = 1234
-	//vm-name = vmname
-	if err != nil {
-		t.Fatalf("Should succeed when a valid config is provided: %s", err)
-	}
-
-	if cfg.Global.VCenterIP != "0.0.0.0" {
-		t.Errorf("incorrect vcenter ip: %s", cfg.Global.VCenterIP)
-	}
-
-	if cfg.Global.Datacenters != "us-west" {
-		t.Errorf("incorrect datacenter: %s", cfg.Global.Datacenters)
-	}
-
-	// if cfg.Global.VMUUID != "1234" {
-	// 	t.Errorf("incorrect vm-uuid: %s", cfg.Global.VMUUID)
-	// }
-
-	// if cfg.Global.VMName != "vmname" {
-	// 	t.Errorf("incorrect vm-name: %s", cfg.Global.VMName)
-	// }
-
-	if cfg.Global.CAFile != "/some/path/to/a/ca.pem" {
-		t.Errorf("incorrect ca-file: %s", cfg.Global.CAFile)
-	}
-}
 
 func TestNewVSphere(t *testing.T) {
-	cfg, ok := configFromEnv()
+	cfg, ok := vcfg.ConfigFromEnv()
 	if !ok {
 		t.Skipf("No config found in environment")
 	}
@@ -184,11 +148,11 @@ func TestVSphereLogin(t *testing.T) {
 		t.Fatalf("Couldn't get vSphere instance: %s", cfg.Global.VCenterIP)
 	}
 
-	err = vcInstance.conn.Connect(ctx)
+	err = vcInstance.Conn.Connect(ctx)
 	if err != nil {
 		t.Errorf("Failed to connect to vSphere: %s", err)
 	}
-	vcInstance.conn.Logout(ctx)
+	vcInstance.Conn.Logout(ctx)
 }
 
 func TestVSphereLoginByToken(t *testing.T) {
@@ -213,11 +177,11 @@ func TestVSphereLoginByToken(t *testing.T) {
 		t.Fatalf("Couldn't get vSphere instance: %s", cfg.Global.VCenterIP)
 	}
 
-	err = vcInstance.conn.Connect(ctx)
+	err = vcInstance.Conn.Connect(ctx)
 	if err != nil {
 		t.Errorf("Failed to connect to vSphere: %s", err)
 	}
-	vcInstance.conn.Logout(ctx)
+	vcInstance.Conn.Logout(ctx)
 }
 
 /*
@@ -353,7 +317,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 			secret-name = "vccreds"
 			`,
 			expectedPassword: password,
-			expectedError:    ErrUsernameMissing,
+			expectedError:    vcfg.ErrUsernameMissing,
 		},
 		{
 			testName: "SecretNamespace and Password missing in old configuration",
@@ -364,7 +328,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 			secret-name = "vccreds"
 			`,
 			expectedUsername: username,
-			expectedError:    ErrPasswordMissing,
+			expectedError:    vcfg.ErrPasswordMissing,
 		},
 		{
 			testName: "SecretNamespace, Username and Password missing in old configuration",
@@ -373,7 +337,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 			datacenters = us-west
 			secret-name = "vccreds"
 			`,
-			expectedError: ErrUsernameMissing,
+			expectedError: vcfg.ErrUsernameMissing,
 		},
 		{
 			testName: "Username and password with new configuration but username and password in global section",
@@ -487,7 +451,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Logf("Executing Testcase: %s", testcase.testName)
-		cfg, err := readConfig(strings.NewReader(testcase.conf))
+		cfg, err := vcfg.ReadConfig(strings.NewReader(testcase.conf))
 		if err != nil {
 			t.Fatalf("readConfig: Should succeed when a valid config is provided: %v", err)
 		}
@@ -501,13 +465,13 @@ func TestSecretVSphereConfig(t *testing.T) {
 		}
 		if !testcase.expectedIsSecretProvided {
 			for _, vsInstance := range vs.vsphereInstanceMap {
-				if vsInstance.conn.Username != testcase.expectedUsername {
+				if vsInstance.Conn.Username != testcase.expectedUsername {
 					t.Fatalf("Expected username %s doesn't match actual username %s in config %s. error: %s",
-						testcase.expectedUsername, vsInstance.conn.Username, testcase.conf, err)
+						testcase.expectedUsername, vsInstance.Conn.Username, testcase.conf, err)
 				}
-				if vsInstance.conn.Password != testcase.expectedPassword {
+				if vsInstance.Conn.Password != testcase.expectedPassword {
 					t.Fatalf("Expected password %s doesn't match actual password %s in config %s. error: %s",
-						testcase.expectedPassword, vsInstance.conn.Password, testcase.conf, err)
+						testcase.expectedPassword, vsInstance.Conn.Password, testcase.conf, err)
 				}
 			}
 		}
@@ -517,7 +481,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 			if !ok {
 				t.Fatalf("Could not find configuration for instance %s", instanceName)
 			}
-			if actualThumbprint := instanceConfig.conn.Thumbprint; actualThumbprint != expectedThumbprint {
+			if actualThumbprint := instanceConfig.Conn.Thumbprint; actualThumbprint != expectedThumbprint {
 				t.Fatalf(
 					"Expected thumbprint for instance '%s' to be '%s', got '%s'",
 					instanceName, expectedThumbprint, actualThumbprint,
@@ -527,7 +491,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 		// Check, if all connections are configured with the global CA certificate
 		if expectedCaPath := cfg.Global.CAFile; expectedCaPath != "" {
 			for name, instance := range vs.vsphereInstanceMap {
-				if actualCaPath := instance.conn.CACert; actualCaPath != expectedCaPath {
+				if actualCaPath := instance.Conn.CACert; actualCaPath != expectedCaPath {
 					t.Fatalf(
 						"Expected CA certificate path for instance '%s' to be the globally configured one ('%s'), got '%s'",
 						name, expectedCaPath, actualCaPath,
