@@ -55,9 +55,6 @@ datacenters = "list of datacenters where Kubernetes node VMs are present"
         port = "448"
         insecure-flag = "0"
         # datacenters will be used from Global section.
-
-[Network]
-        public-network = "Network Name to be used"
 ```
 
 Configure your vsphere.conf file and create a `configmap` of your settings using the following command:

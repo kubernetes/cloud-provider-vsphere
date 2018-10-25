@@ -23,6 +23,8 @@ import (
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/soap"
+
+	"k8s.io/cloud-provider-vsphere/pkg/config"
 )
 
 type ClientOption struct {
@@ -31,7 +33,7 @@ type ClientOption struct {
 	Client     *govmomi.Client
 	url        *url.URL
 	// config Config
-	Config Config
+	Config config.Config
 }
 
 func (o *ClientOption) NewClient(ctx context.Context, hostURL string) (*govmomi.Client, error) {
