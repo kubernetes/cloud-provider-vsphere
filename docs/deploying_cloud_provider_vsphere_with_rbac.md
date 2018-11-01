@@ -35,7 +35,7 @@ Example vsphere.conf contents if the vCenter credentials are going to be stored 
 
 ```
 [Global]
-# properties in this section will be used for all specified vCenters unless overriden in VirtualCenter section.
+# properties in this section will be used for all specified vCenters unless overridden in VirtualCenter section.
 
 secret-name = "Kubernetes Secret containing creds in the namespace below"
 secret-namespace = "Kubernetes namespace for CCM deploy"
