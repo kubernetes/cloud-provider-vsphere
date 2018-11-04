@@ -119,7 +119,7 @@ data:
   10.0.0.1.password: "Replace with output from `echo -n YOUR_VCENTER_PASSWORD | base64`"
 ```
 
-Create the secret by running the folowing command:
+Create the secret by running the following command:
 
 ```bash
 [k8suser@k8master ~]$ kubectl create -f vccm-secret.yaml
