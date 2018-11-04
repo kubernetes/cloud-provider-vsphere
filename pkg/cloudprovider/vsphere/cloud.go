@@ -319,7 +319,7 @@ func populateVsphereInstanceMap(cfg *Config) (map[string]*VSphereInstance, error
 	}
 
 	// Create a single instance of VSphereInstance for the Global VCenterIP if the
-	// VSphereInstance doesnt already exist in the map
+	// VSphereInstance does not already exist in the map
 	if !isSecretInfoProvided && cfg.Global.VCenterIP != "" && vsphereInstanceMap[cfg.Global.VCenterIP] == nil {
 		glog.V(2).Infof("Creating a vc server %s for the global instance", cfg.Global.VCenterIP)
 		vcConfig := &VirtualCenterConfig{
