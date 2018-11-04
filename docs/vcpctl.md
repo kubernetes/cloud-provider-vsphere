@@ -39,7 +39,7 @@ List of flags:
 - `cert` : Certification for solution user. If you want to provide a certification, pass the file path of the certifcation to cert, like `--cert /path/to/cert.crt`. If no certification is provided, `vcpctl` will create a new one and store in default directory. (TODO)
 - `role` : `vcpctl` can create roles during the provision. Role can be either `RegularUser` or `Administrator`. 
 
-Note: vSphere SSO is requried to be enabled by default. So SAML tolen has to be provided as `SSO_LOGIN_TOKEN`.
+Note: vSphere SSO is required to be enabled by default. So SAML tolen has to be provided as `SSO_LOGIN_TOKEN`.
 
 ### Workflow
 
