@@ -25,7 +25,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/types"
-	"k8s.io/cloud-provider-vsphere/pkg/vclib"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // vmDiskManager implements VirtualDiskProvider interface for creating volume using Virtual Machine Reconfigure approach

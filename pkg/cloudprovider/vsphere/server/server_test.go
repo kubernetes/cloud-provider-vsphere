@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
-	vcfg "k8s.io/cloud-provider-vsphere/pkg/config"
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
 const (

@@ -28,8 +28,8 @@ import (
 	"github.com/vmware/govmomi/simulator/vpx"
 	sts "github.com/vmware/govmomi/sts/simulator"
 
-	vcfg "k8s.io/cloud-provider-vsphere/pkg/config"
-	"k8s.io/cloud-provider-vsphere/pkg/vclib"
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // localhostCert was generated from crypto/tls/generate_cert.go with the following command:

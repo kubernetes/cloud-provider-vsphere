@@ -23,7 +23,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/types"
-	"k8s.io/cloud-provider-vsphere/pkg/vclib"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // virtualDiskManager implements VirtualDiskProvider Interface for creating and deleting volume using VirtualDiskManager

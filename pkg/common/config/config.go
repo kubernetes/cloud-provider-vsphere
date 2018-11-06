@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/cloud-provider-vsphere/pkg/vclib"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 
 	"gopkg.in/gcfg.v1"
 )
