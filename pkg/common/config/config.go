@@ -246,6 +246,10 @@ func fixUpConfigFromFile(cfg *Config) error {
 		cfg.Global.VCenterPort = DefaultVCenterPort
 	}
 
+	if len(cfg.Network.PublicNetwork) > 0 {
+		glog.Warningf("Network section is deprecated, please remove it from your configuration.")
+	}
+
 	isSecretInfoProvided := true
 	if cfg.Global.SecretName == "" || cfg.Global.SecretNamespace == "" {
 		isSecretInfoProvided = false
