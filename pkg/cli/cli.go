@@ -29,11 +29,12 @@ import (
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25/mo"
 	vimType "github.com/vmware/govmomi/vim25/types"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
+
+	"k8s.io/cloud-provider-vsphere/pkg/config"
 )
 
-func ParseConfig(configFile string) (vsphere.Config, error) {
-	var cfg vsphere.Config
+func ParseConfig(configFile string) (config.Config, error) {
+	var cfg config.Config
 	if len(configFile) == 0 {
 		return cfg, fmt.Errorf("Please specify vsphere cloud config file, e.g. --config vsphere.conf")
 	}
@@ -44,7 +45,7 @@ func ParseConfig(configFile string) (vsphere.Config, error) {
 	if err != nil {
 		return cfg, fmt.Errorf("Can not open config file %s, %v", configFile, err)
 	}
-	cfg, err = readConfig(f)
+	cfg, err = config.ReadConfig(f)
 	if err != nil {
 		return cfg, err
 	}
@@ -147,9 +148,4 @@ func CreateSolutionUser(ctx context.Context, o *ClientOption) error {
 		}
 		return nil
 	}))
-}
-
-// TODO (fanz) :  Convert old in-tree vsphere.conf configuration files to new configmap
-func ConvertOldConfig(old string) (vsphere.Config, error) {
-	return vsphere.Config{}, nil
 }

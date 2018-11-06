@@ -23,6 +23,8 @@ import (
 	clientv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/cloud-provider-vsphere/pkg/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/config"
 )
 
 // GRPCServer interface
@@ -32,83 +34,11 @@ type GRPCServer interface {
 
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
-	cfg                *Config
-	vsphereInstanceMap map[string]*VSphereInstance
+	cfg                *vcfg.Config
+	vsphereInstanceMap map[string]*vcfg.VSphereInstance
 	nodeManager        *NodeManager
 	instances          cloudprovider.Instances
 	server             GRPCServer
-}
-
-// Config is used to read and store information from the cloud configuration file
-type Config struct {
-	Global struct {
-		// vCenter username.
-		User string `gcfg:"user"`
-		// vCenter password in clear text.
-		Password string `gcfg:"password"`
-		// Deprecated. Use VirtualCenter to specify multiple vCenter Servers.
-		// vCenter IP.
-		VCenterIP string `gcfg:"server"`
-		// vCenter port.
-		VCenterPort string `gcfg:"port"`
-		// True if vCenter uses self-signed cert.
-		InsecureFlag bool `gcfg:"insecure-flag"`
-		// Datacenter in which VMs are located.
-		Datacenters string `gcfg:"datacenters"`
-		// Soap round tripper count (retries = RoundTripper - 1)
-		RoundTripperCount uint `gcfg:"soap-roundtrip-count"`
-		// Specifies the path to a CA certificate in PEM format. Optional; if not
-		// configured, the system's CA certificates will be used.
-		CAFile string `gcfg:"ca-file"`
-		// Thumbprint of the VCenter's certificate thumbprint
-		Thumbprint string `gcfg:"thumbprint"`
-		// Name of the secret were vCenter credentials are present.
-		SecretName string `gcfg:"secret-name"`
-		// Secret Namespace where secret will be present that has vCenter credentials.
-		SecretNamespace string `gcfg:"secret-namespace"`
-		// The kubernetes service account used to launch the cloud controller manager.
-		// Default: cloud-controller-manager
-		ServiceAccount string `gcfg:"service-account"`
-		// Disable the vSphere CCM API
-		// Default: true
-		APIDisable bool `gcfg:"api-disable"`
-		// Configurable vSphere CCM API port
-		// Default: 43001
-		APIBinding string `gcfg:"api-binding"`
-	}
-	VirtualCenter map[string]*VirtualCenterConfig
-
-	Network struct {
-		// PublicNetwork is name of the network the VMs are joined to.
-		PublicNetwork string `gcfg:"public-network"`
-	}
-}
-
-// Represents a vSphere instance where one or more kubernetes nodes are running.
-type VSphereInstance struct {
-	conn *vclib.VSphereConnection
-	cfg  *VirtualCenterConfig
-}
-
-// Structure that represents Virtual Center configuration
-type VirtualCenterConfig struct {
-	// vCenter username.
-	User string `gcfg:"user"`
-	// vCenter password in clear text.
-	Password string `gcfg:"password"`
-	// vCenter port.
-	VCenterPort string `gcfg:"port"`
-	// Datacenter in which VMs are located.
-	Datacenters string `gcfg:"datacenters"`
-	// Soap round tripper count (retries = RoundTripper - 1)
-	RoundTripperCount uint `gcfg:"soap-roundtrip-count"`
-	// PublicNetwork is name of the network the VMs are joined to.
-	PublicNetwork string `gcfg:"public-network"`
-	// Specifies the path to a CA certificate in PEM format. Optional; if not
-	// configured, the system's CA certificates will be used.
-	CAFile string `gcfg:"ca-file"`
-	// Thumbprint of the VCenter's certificate thumbprint
-	Thumbprint string `gcfg:"thumbprint"`
 }
 
 // Stores info about the kubernetes node
@@ -133,7 +63,7 @@ type VCenterInfo struct {
 
 type NodeManager struct {
 	// Maps the VC server to VSphereInstance
-	vsphereInstanceMap map[string]*VSphereInstance
+	vsphereInstanceMap map[string]*vcfg.VSphereInstance
 	// Maps node name to node info
 	nodeNameMap map[string]*NodeInfo
 	// Maps UUID to node info.
