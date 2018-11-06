@@ -16,7 +16,7 @@ limitations under the License.
 
 package config
 
-import "k8s.io/cloud-provider-vsphere/pkg/vclib"
+import "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 
 // Config is used to read and store information from the cloud configuration file
 type Config struct {

@@ -27,8 +27,8 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
-	vcfg "k8s.io/cloud-provider-vsphere/pkg/config"
-	"k8s.io/cloud-provider-vsphere/pkg/vclib"
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
 	"github.com/vmware/govmomi/vim25/mo"

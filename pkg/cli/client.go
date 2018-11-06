@@ -24,7 +24,7 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/soap"
 
-	"k8s.io/cloud-provider-vsphere/pkg/config"
+	"k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
 type ClientOption struct {

@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"k8s.io/cloud-provider-vsphere/pkg/vclib"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // VirtualDisk is for the Disk Management

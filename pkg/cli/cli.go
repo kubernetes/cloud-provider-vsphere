@@ -30,7 +30,7 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	vimType "github.com/vmware/govmomi/vim25/types"
 
-	"k8s.io/cloud-provider-vsphere/pkg/config"
+	"k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
 func ParseConfig(configFile string) (config.Config, error) {

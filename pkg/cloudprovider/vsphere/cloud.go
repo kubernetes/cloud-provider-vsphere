@@ -31,7 +31,7 @@ import (
 	"k8s.io/sample-controller/pkg/signals"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
-	vcfg "k8s.io/cloud-provider-vsphere/pkg/config"
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
 const (
