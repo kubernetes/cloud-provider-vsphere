@@ -35,6 +35,7 @@ const (
 	DefaultAPIBinding        string = ":43001"
 	DefaultK8sServiceAccount string = "cloud-controller-manager"
 	DefaultVCenterPort       string = "443"
+	DefaultSecretDirectory   string = "/etc/cloud/secrets"
 )
 
 // Error Messages
@@ -136,6 +137,17 @@ func ConfigFromEnv() (cfg Config, ok bool) {
 		APIBinding = DefaultAPIBinding
 	}
 	cfg.Global.APIBinding = APIBinding
+
+	var SecretsDirectory string
+	if os.Getenv("VSPHERE_SECRETS_DIRECTORY") != "" {
+		SecretsDirectory = os.Getenv("VSPHERE_SECRETS_DIRECTORY")
+	} else {
+		SecretsDirectory = DefaultSecretDirectory
+	}
+	if _, err := os.Stat(SecretsDirectory); os.IsNotExist(err) {
+		SecretsDirectory = "" //Dir does not exist, set to empty string
+	}
+	cfg.Global.SecretsDirectory = SecretsDirectory
 
 	cfg.Global.CAFile = os.Getenv("VSPHERE_CAFILE")
 	cfg.Global.Thumbprint = os.Getenv("VSPHERE_THUMBPRINT")
@@ -251,7 +263,7 @@ func fixUpConfigFromFile(cfg *Config) error {
 	}
 
 	isSecretInfoProvided := true
-	if cfg.Global.SecretName == "" || cfg.Global.SecretNamespace == "" {
+	if (cfg.Global.SecretName == "" || cfg.Global.SecretNamespace == "") && cfg.Global.SecretsDirectory == "" {
 		isSecretInfoProvided = false
 	}
 

@@ -48,6 +48,11 @@ type Config struct {
 		// The kubernetes service account used to launch the cloud controller manager.
 		// Default: cloud-controller-manager
 		ServiceAccount string `gcfg:"service-account"`
+		// Secret directory in the event that:
+		// 1) we don't want to use the k8s API to listen for changes to secrets
+		// 2) we are not in a k8s env, namely DC/OS, since CSI is CO agnostic
+		// Default: /etc/cloud/credentials
+		SecretsDirectory string `gcfg:"secrets-directory"`
 		// Disable the vSphere CCM API
 		// Default: true
 		APIDisable bool `gcfg:"api-disable"`

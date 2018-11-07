@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vsphere
+package credentialmanager
 
 import (
 	"errors"
-	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -42,17 +42,27 @@ var (
 )
 
 // GetCredential returns credentials for the given vCenter Server.
-// GetCredential returns error if Secret is not added.
-// GetCredential return error is the secret doesn't contain any credentials.
+// GetCredential returns error if Secret is not added or SecretDirectory is not set (ie No Creds).
 func (secretCredentialManager *SecretCredentialManager) GetCredential(server string) (*Credential, error) {
-	err := secretCredentialManager.updateCredentialsMap()
-	if err != nil {
-		statusErr, ok := err.(*apierrors.StatusError)
-		if (ok && statusErr.ErrStatus.Code != http.StatusNotFound) || !ok {
-			return nil, err
+	//get the creds using the K8s listener if it exists
+	if secretCredentialManager.SecretLister != nil {
+		err := secretCredentialManager.updateCredentialsMapK8s()
+		if err != nil {
+			statusErr, ok := err.(*apierrors.StatusError)
+			if (ok && statusErr.ErrStatus.Code != http.StatusNotFound) || !ok {
+				return nil, err
+			}
+			// Handle secrets deletion by finding credentials from cache
+			glog.Warningf("secret %q not found in namespace %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace)
 		}
-		// Handle secrets deletion by finding credentials from cache
-		glog.Warningf("secret %q not found in namespace %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace)
+	}
+
+	//get the creds using the Secrets File if it exists
+	if secretCredentialManager.SecretsDirectory != "" {
+		err := secretCredentialManager.updateCredentialsMapFile()
+		if err != nil {
+			glog.Warningf("Failed parsing SecretsDirectory %q: %q", secretCredentialManager.SecretsDirectory, err)
+		}
 	}
 
 	credential, found := secretCredentialManager.Cache.GetCredential(server)
@@ -63,10 +73,7 @@ func (secretCredentialManager *SecretCredentialManager) GetCredential(server str
 	return &credential, nil
 }
 
-func (secretCredentialManager *SecretCredentialManager) updateCredentialsMap() error {
-	if secretCredentialManager.SecretLister == nil {
-		return fmt.Errorf("Kubernetes SecretLister is not initialized")
-	}
+func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapK8s() error {
 	secret, err := secretCredentialManager.SecretLister.Secrets(secretCredentialManager.SecretNamespace).Get(secretCredentialManager.SecretName)
 	if err != nil {
 		glog.Warningf("Cannot get secret %s in namespace %s. error: %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace, err)
@@ -82,6 +89,44 @@ func (secretCredentialManager *SecretCredentialManager) updateCredentialsMap() e
 	return secretCredentialManager.Cache.parseSecret()
 }
 
+func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapFile() error {
+	//Secretsdirectory was parsed before, no need to do it again
+	if secretCredentialManager.SecretsDirectoryParse {
+		return nil
+	}
+
+	//take the mounted secrets in the form of files and make it looks like we
+	//parsed it from a k8s secret so we can reuse the SecretCache.parseSecret() func
+	data := make(map[string][]byte)
+
+	files, err := ioutil.ReadDir(secretCredentialManager.SecretsDirectory)
+	if err != nil {
+		secretCredentialManager.SecretsDirectoryParse = true
+		glog.Warningf("Failed to find secrets directory %s. error: %q", secretCredentialManager.SecretsDirectory, err)
+		return err
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			glog.Warningf("Skipping parse of directory: %s", f.Name())
+			continue
+		}
+
+		fullFilePath := secretCredentialManager.SecretsDirectory + "/" + f.Name()
+		contents, err := ioutil.ReadFile(fullFilePath)
+		if err != nil {
+			glog.Warningf("Cannot read  file %s. error: %q", fullFilePath, err)
+			continue
+		}
+
+		data[f.Name()] = contents
+	}
+
+	secretCredentialManager.SecretsDirectoryParse = true
+	secretCredentialManager.Cache.UpdateSecretFile(data)
+	return secretCredentialManager.Cache.parseSecret()
+}
+
 func (cache *SecretCache) GetSecret() *corev1.Secret {
 	cache.cacheLock.Lock()
 	defer cache.cacheLock.Unlock()
@@ -92,6 +137,12 @@ func (cache *SecretCache) UpdateSecret(secret *corev1.Secret) {
 	cache.cacheLock.Lock()
 	defer cache.cacheLock.Unlock()
 	cache.Secret = secret
+}
+
+func (cache *SecretCache) UpdateSecretFile(data map[string][]byte) {
+	cache.cacheLock.Lock()
+	defer cache.cacheLock.Unlock()
+	cache.SecretFile = data
 }
 
 func (cache *SecretCache) GetCredential(server string) (Credential, bool) {
@@ -107,7 +158,17 @@ func (cache *SecretCache) GetCredential(server string) (Credential, bool) {
 func (cache *SecretCache) parseSecret() error {
 	cache.cacheLock.Lock()
 	defer cache.cacheLock.Unlock()
-	return parseConfig(cache.Secret.Data, cache.VirtualCenter)
+
+	var data map[string][]byte
+	if cache.Secret != nil {
+		glog.V(3).Infof("parseSecret using k8s secret")
+		data = cache.Secret.Data
+	} else if cache.SecretFile != nil {
+		glog.V(3).Infof("parseSecret using secrets directory")
+		data = cache.SecretFile
+	}
+
+	return parseConfig(data, cache.VirtualCenter)
 }
 
 // parseConfig returns vCenter ip/fdqn mapping to its credentials viz. Username and Password.
@@ -117,15 +178,14 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 	}
 	for credentialKey, credentialValue := range data {
 		credentialKey = strings.ToLower(credentialKey)
-		vcServer := ""
 		if strings.HasSuffix(credentialKey, "password") {
-			vcServer = strings.Split(credentialKey, ".password")[0]
+			vcServer := strings.Split(credentialKey, ".password")[0]
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
 			config[vcServer].Password = string(credentialValue)
 		} else if strings.HasSuffix(credentialKey, "username") {
-			vcServer = strings.Split(credentialKey, ".username")[0]
+			vcServer := strings.Split(credentialKey, ".username")[0]
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
