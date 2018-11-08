@@ -135,7 +135,7 @@ func (vs *VSphere) HasClusterID() bool {
 
 // Initializes vSphere from vSphere CloudProvider Configuration
 func buildVSphereFromConfig(cfg vcfg.Config) (*VSphere, error) {
-	//genrate connection map
+	//generate connection map
 	vsphereInstanceMap := vcfg.GenerateInstanceMap(cfg)
 
 	nm := NodeManager{
