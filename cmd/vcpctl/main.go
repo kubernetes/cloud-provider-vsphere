@@ -38,7 +38,7 @@ func main() {
 
 var cmd = &cobra.Command{
 	Use:   "vcpctl",
-	Short: "The vcpctl tool is responsible for facilitating cloud controller mananger provisioining.",
+	Short: "The vcpctl tool is responsible for facilitating cloud controller manager provisioining.",
 	Long: `Deploying a cloud provider on vSphere is a task that has many prerequisites, this tool provides these needs:
 * Perform vSphere configuration health check.
 * Create vSphere role with a minimal set of permissioins.

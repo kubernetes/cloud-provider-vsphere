@@ -1,6 +1,6 @@
 # vSphere Cloud Provider CLI
 
-This document is about vSphere Cloud Provifer CLI (aka **vcpctl**), a command line interface tool for facilitating cloud controller mananger (aka **CCM** ) provisioining, running command against CCM, and controling CCM.
+This document is about vSphere Cloud Provifer CLI (aka **vcpctl**), a command line interface tool for facilitating cloud controller manager (aka **CCM** ) provisioining, running command against CCM, and controling CCM.
 
 ## Provision Overview
 
@@ -53,5 +53,5 @@ Checking vSphere Config on VMs...
 ```
 
 1. It creates a solution user base on the certification provided by `--cert`
-2. It creates a default role with name of `k8s-vcp-default`, and grants it with minimual permissions.
+2. It creates a default role with name of `k8s-vcp-default`, and grants it with minimal permissions.
 3. It checks the vm which is used for k8s cluster nodes, enabling uuid attribute.
