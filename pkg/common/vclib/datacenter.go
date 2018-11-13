@@ -206,7 +206,7 @@ func (dc *Datacenter) GetVMMoList(ctx context.Context, vmObjList []*VirtualMachi
 	var vmMoList []mo.VirtualMachine
 	var vmRefs []types.ManagedObjectReference
 	if len(vmObjList) < 1 {
-		glog.Errorf("VirtualMachine Object list is empty")
+		glog.Error("VirtualMachine Object list is empty")
 		return nil, fmt.Errorf("VirtualMachine Object list is empty")
 	}
 
@@ -244,7 +244,7 @@ func (dc *Datacenter) GetDatastoreMoList(ctx context.Context, dsObjList []*Datas
 	var dsMoList []mo.Datastore
 	var dsRefs []types.ManagedObjectReference
 	if len(dsObjList) < 1 {
-		glog.Errorf("Datastore Object list is empty")
+		glog.Error("Datastore Object list is empty")
 		return nil, fmt.Errorf("Datastore Object list is empty")
 	}
 
@@ -279,7 +279,7 @@ func (dc *Datacenter) CheckDisksAttached(ctx context.Context, nodeVolumes map[st
 		vmList = append(vmList, vm)
 	}
 	if len(vmList) == 0 {
-		glog.V(2).Infof("vSphere CP will assume no disks are attached to any node.")
+		glog.V(2).Info("vSphere CP will assume no disks are attached to any node.")
 		return attached, nil
 	}
 	vmMoList, err := dc.GetVMMoList(ctx, vmList, []string{"config.hardware.device", "name"})
