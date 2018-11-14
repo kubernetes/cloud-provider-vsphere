@@ -90,7 +90,7 @@ func (vmdisk vmDiskManager) Create(ctx context.Context, datastore *vclib.Datasto
 			ObjectData:   vmdisk.volumeOptions.VSANStorageProfileData,
 		}
 	} else {
-		glog.Errorf("Both volumeOptions.StoragePolicyID and volumeOptions.VSANStorageProfileData are not set. One of them should be set")
+		glog.Error("Both volumeOptions.StoragePolicyID and volumeOptions.VSANStorageProfileData are not set. One of them should be set")
 		return "", fmt.Errorf("Both volumeOptions.StoragePolicyID and volumeOptions.VSANStorageProfileData are not set. One of them should be set")
 	}
 	var dummyVM *vclib.VirtualMachine

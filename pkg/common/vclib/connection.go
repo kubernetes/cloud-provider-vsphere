@@ -74,7 +74,7 @@ func (connection *VSphereConnection) Connect(ctx context.Context) error {
 	if userSession != nil {
 		return nil
 	}
-	glog.Warningf("Creating new client session since the existing session is not valid or not authenticated")
+	glog.Warning("Creating new client session since the existing session is not valid or not authenticated")
 
 	connection.Client, err = connection.NewClient(ctx)
 	if err != nil {

@@ -70,7 +70,7 @@ func (pbmClient *PbmClient) IsDatastoreCompatible(ctx context.Context, storagePo
 		}
 		dsName, err := datastore.ObjectName(ctx)
 		if err != nil {
-			glog.Errorf("Failed to get datastore ObjectName")
+			glog.Error("Failed to get datastore ObjectName")
 			return false, "", err
 		}
 		if compatibilityResult[0].Error[0].LocalizedMessage == "" {
