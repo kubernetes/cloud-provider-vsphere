@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vsphere
+package credentialmanager
 
 import (
 	"reflect"
@@ -28,7 +28,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 )
 
-func TestSecretCredentialManager_GetCredential(t *testing.T) {
+func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 	var (
 		userKey             = "username"
 		passwordKey         = "password"
@@ -190,7 +190,6 @@ func TestSecretCredentialManager_GetCredential(t *testing.T) {
 		SecretName:      secretName,
 		SecretNamespace: secretNamespace,
 		SecretLister:    secretInformer.Lister(),
-		//Client: client,
 		Cache: &SecretCache{
 			VirtualCenter: make(map[string]*Credential),
 		},

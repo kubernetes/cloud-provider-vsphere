@@ -21,10 +21,11 @@ import (
 
 	"k8s.io/api/core/v1"
 	clientv1 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // GRPCServer interface
@@ -73,7 +74,7 @@ type NodeManager struct {
 	// Maps UUID to node info.
 	nodeRegUUIDMap map[string]*v1.Node
 	// CredentialsManager
-	credentialManager *SecretCredentialManager
+	credentialManager *cm.SecretCredentialManager
 	// NodeLister to track Node properties
 	nodeLister clientv1.NodeLister
 
@@ -81,24 +82,6 @@ type NodeManager struct {
 	nodeInfoLock          sync.RWMutex
 	nodeRegInfoLock       sync.RWMutex
 	credentialManagerLock sync.Mutex
-}
-
-type SecretCache struct {
-	cacheLock     sync.Mutex
-	VirtualCenter map[string]*Credential
-	Secret        *v1.Secret
-}
-
-type Credential struct {
-	User     string `gcfg:"user"`
-	Password string `gcfg:"password"`
-}
-
-type SecretCredentialManager struct {
-	SecretName      string
-	SecretNamespace string
-	SecretLister    clientv1.SecretLister
-	Cache           *SecretCache
 }
 
 type instances struct {

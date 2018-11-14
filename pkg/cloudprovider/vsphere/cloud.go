@@ -32,6 +32,7 @@ import (
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
 )
 
 const (
@@ -69,12 +70,22 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 
 		if vs.cfg.Global.SecretNamespace != "" && vs.cfg.Global.SecretName != "" {
 			secretInformer := informerFactory.Core().V1().Secrets()
-			vs.nodeManager.credentialManager = &SecretCredentialManager{
-				SecretName:      vs.cfg.Global.SecretName,
-				SecretNamespace: vs.cfg.Global.SecretNamespace,
-				SecretLister:    secretInformer.Lister(),
-				Cache: &SecretCache{
-					VirtualCenter: make(map[string]*Credential),
+			vs.nodeManager.credentialManager = &cm.SecretCredentialManager{
+				SecretName:            vs.cfg.Global.SecretName,
+				SecretNamespace:       vs.cfg.Global.SecretNamespace,
+				SecretLister:          secretInformer.Lister(),
+				SecretsDirectory:      vs.cfg.Global.SecretsDirectory,
+				SecretsDirectoryParse: false,
+				Cache: &cm.SecretCache{
+					VirtualCenter: make(map[string]*cm.Credential),
+				},
+			}
+		} else if vs.cfg.Global.SecretsDirectory != "" {
+			vs.nodeManager.credentialManager = &cm.SecretCredentialManager{
+				SecretsDirectory:      vs.cfg.Global.SecretsDirectory,
+				SecretsDirectoryParse: false,
+				Cache: &cm.SecretCache{
+					VirtualCenter: make(map[string]*cm.Credential),
 				},
 			}
 		}
