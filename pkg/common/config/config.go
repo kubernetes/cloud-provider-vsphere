@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 
 	"gopkg.in/gcfg.v1"
 )
@@ -353,30 +352,4 @@ func ReadConfig(config io.Reader) (Config, error) {
 	err = fixUpConfigFromFile(&cfg)
 
 	return cfg, err
-}
-
-//GenerateInstanceMap creates a map of vCenter connection objects that can be
-//use to create a connection to a vCenter using vclib package
-func GenerateInstanceMap(cfg Config) map[string]*VSphereInstance {
-	vsphereInstanceMap := make(map[string]*VSphereInstance)
-
-	for vcServer, vcConfig := range cfg.VirtualCenter {
-		vSphereConn := vclib.VSphereConnection{
-			Username:          vcConfig.User,
-			Password:          vcConfig.Password,
-			Hostname:          vcServer,
-			Insecure:          vcConfig.InsecureFlag,
-			RoundTripperCount: vcConfig.RoundTripperCount,
-			Port:              vcConfig.VCenterPort,
-			CACert:            vcConfig.CAFile,
-			Thumbprint:        vcConfig.Thumbprint,
-		}
-		vsphereIns := VSphereInstance{
-			Conn: &vSphereConn,
-			Cfg:  vcConfig,
-		}
-		vsphereInstanceMap[vcServer] = &vsphereIns
-	}
-
-	return vsphereInstanceMap
 }

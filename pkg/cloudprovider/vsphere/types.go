@@ -24,7 +24,7 @@ import (
 	"k8s.io/kubernetes/pkg/cloudprovider"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
-	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
@@ -35,11 +35,11 @@ type GRPCServer interface {
 
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
-	cfg                *vcfg.Config
-	vsphereInstanceMap map[string]*vcfg.VSphereInstance
-	nodeManager        *NodeManager
-	instances          cloudprovider.Instances
-	server             GRPCServer
+	cfg               *vcfg.Config
+	connectionManager *cm.ConnectionManager
+	nodeManager       *NodeManager
+	instances         cloudprovider.Instances
+	server            GRPCServer
 }
 
 // Stores info about the kubernetes node
@@ -63,8 +63,6 @@ type VCenterInfo struct {
 }
 
 type NodeManager struct {
-	// Maps the VC server to VSphereInstance
-	vsphereInstanceMap map[string]*vcfg.VSphereInstance
 	// Maps node name to node info
 	nodeNameMap map[string]*NodeInfo
 	// Maps UUID to node info.
@@ -73,15 +71,14 @@ type NodeManager struct {
 	vcList map[string]*VCenterInfo
 	// Maps UUID to node info.
 	nodeRegUUIDMap map[string]*v1.Node
-	// CredentialsManager
-	credentialManager *cm.SecretCredentialManager
+	// ConnectionManager
+	connectionManager *cm.ConnectionManager
 	// NodeLister to track Node properties
 	nodeLister clientv1.NodeLister
 
 	// Mutexes
-	nodeInfoLock          sync.RWMutex
-	nodeRegInfoLock       sync.RWMutex
-	credentialManagerLock sync.Mutex
+	nodeInfoLock    sync.RWMutex
+	nodeRegInfoLock sync.RWMutex
 }
 
 type instances struct {
