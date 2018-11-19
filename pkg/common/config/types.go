@@ -59,11 +59,6 @@ type Config struct {
 		APIBinding string `gcfg:"api-binding"`
 	}
 	VirtualCenter map[string]*VirtualCenterConfig
-
-	Network struct {
-		// PublicNetwork is name of the network the VMs are joined to.
-		PublicNetwork string `gcfg:"public-network"`
-	}
 }
 
 // Structure that represents Virtual Center configuration
