@@ -17,7 +17,6 @@ limitations under the License.
 package vsphere
 
 import (
-	"context"
 	"io"
 	"runtime"
 
@@ -32,7 +31,7 @@ import (
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
-	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
 const (
@@ -68,27 +67,17 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 
 		informerFactory := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
 
+		var connMgr *cm.ConnectionManager
 		if vs.cfg.Global.SecretNamespace != "" && vs.cfg.Global.SecretName != "" {
+			glog.V(4).Info("NewConnectionManagerK8s")
 			secretInformer := informerFactory.Core().V1().Secrets()
-			vs.nodeManager.credentialManager = &cm.SecretCredentialManager{
-				SecretName:            vs.cfg.Global.SecretName,
-				SecretNamespace:       vs.cfg.Global.SecretNamespace,
-				SecretLister:          secretInformer.Lister(),
-				SecretsDirectory:      vs.cfg.Global.SecretsDirectory,
-				SecretsDirectoryParse: false,
-				Cache: &cm.SecretCache{
-					VirtualCenter: make(map[string]*cm.Credential),
-				},
-			}
+			connMgr = cm.NewConnectionManagerK8s(vs.cfg, secretInformer.Lister())
 		} else if vs.cfg.Global.SecretsDirectory != "" {
-			vs.nodeManager.credentialManager = &cm.SecretCredentialManager{
-				SecretsDirectory:      vs.cfg.Global.SecretsDirectory,
-				SecretsDirectoryParse: false,
-				Cache: &cm.SecretCache{
-					VirtualCenter: make(map[string]*cm.Credential),
-				},
-			}
+			glog.V(4).Info("NewConnectionManagerGeneric")
+			connMgr = cm.NewConnectionManagerGeneric(vs.cfg)
 		}
+		vs.connectionManager = connMgr
+		vs.nodeManager.connectionManager = connMgr
 
 		nodeInformer := informerFactory.Core().V1().Nodes().Informer()
 		nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -146,35 +135,26 @@ func (vs *VSphere) HasClusterID() bool {
 
 // Initializes vSphere from vSphere CloudProvider Configuration
 func buildVSphereFromConfig(cfg vcfg.Config) (*VSphere, error) {
-	//generate connection map
-	vsphereInstanceMap := vcfg.GenerateInstanceMap(cfg)
-
 	nm := NodeManager{
-		vsphereInstanceMap: vsphereInstanceMap,
-		nodeNameMap:        make(map[string]*NodeInfo),
-		nodeUUIDMap:        make(map[string]*NodeInfo),
-		nodeRegUUIDMap:     make(map[string]*v1.Node),
-		vcList:             make(map[string]*VCenterInfo),
+		nodeNameMap:    make(map[string]*NodeInfo),
+		nodeUUIDMap:    make(map[string]*NodeInfo),
+		nodeRegUUIDMap: make(map[string]*v1.Node),
+		vcList:         make(map[string]*VCenterInfo),
 	}
 
 	var nodeMgr server.NodeManagerInterface
 	nodeMgr = &nm
 	vs := VSphere{
-		cfg:                &cfg,
-		vsphereInstanceMap: vsphereInstanceMap,
-		nodeManager:        &nm,
-		instances:          newInstances(&nm),
-		server:             server.NewServer(cfg.Global.APIBinding, nodeMgr),
+		cfg:         &cfg,
+		nodeManager: &nm,
+		instances:   newInstances(&nm),
+		server:      server.NewServer(cfg.Global.APIBinding, nodeMgr),
 	}
 	return &vs, nil
 }
 
 func logout(vs *VSphere) {
-	for _, vsphereIns := range vs.vsphereInstanceMap {
-		if vsphereIns.Conn.Client != nil {
-			vsphereIns.Conn.Logout(context.TODO())
-		}
-	}
+	vs.connectionManager.Logout()
 }
 
 // Notification handler when node is added into k8s cluster.

@@ -29,6 +29,7 @@ import (
 	sts "github.com/vmware/govmomi/sts/simulator"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
@@ -138,13 +139,14 @@ func TestVSphereLogin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
+	vs.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
 
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Create vSphere client
-	vcInstance, ok := vs.vsphereInstanceMap[cfg.Global.VCenterIP]
+	vcInstance, ok := vs.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
 	if !ok {
 		t.Fatalf("Couldn't get vSphere instance: %s", cfg.Global.VCenterIP)
 	}
@@ -169,11 +171,12 @@ func TestVSphereLoginByToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
+	vs.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
 
 	ctx := context.Background()
 
 	// Create vSphere client
-	vcInstance, ok := vs.vsphereInstanceMap[cfg.Global.VCenterIP]
+	vcInstance, ok := vs.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
 	if !ok {
 		t.Fatalf("Couldn't get vSphere instance: %s", cfg.Global.VCenterIP)
 	}
@@ -460,12 +463,14 @@ func TestSecretVSphereConfig(t *testing.T) {
 		if err != nil { // testcase.expectedError {
 			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 		}
+		vs.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
+
 		if testcase.expectedIsSecretProvided && (vs.cfg.Global.SecretNamespace == "" || vs.cfg.Global.SecretName == "") {
 			t.Fatalf("SecretName and SecretNamespace was expected in config %s. error: %s",
 				testcase.conf, err)
 		}
 		if !testcase.expectedIsSecretProvided {
-			for _, vsInstance := range vs.vsphereInstanceMap {
+			for _, vsInstance := range vs.connectionManager.VsphereInstanceMap {
 				if vsInstance.Conn.Username != testcase.expectedUsername {
 					t.Fatalf("Expected username %s doesn't match actual username %s in config %s. error: %s",
 						testcase.expectedUsername, vsInstance.Conn.Username, testcase.conf, err)
@@ -478,7 +483,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 		}
 		// Check, if all the expected thumbprints are configured
 		for instanceName, expectedThumbprint := range testcase.expectedThumbprints {
-			instanceConfig, ok := vs.vsphereInstanceMap[instanceName]
+			instanceConfig, ok := vs.connectionManager.VsphereInstanceMap[instanceName]
 			if !ok {
 				t.Fatalf("Could not find configuration for instance %s", instanceName)
 			}
@@ -491,7 +496,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 		}
 		// Check, if all connections are configured with the global CA certificate
 		if expectedCaPath := cfg.Global.CAFile; expectedCaPath != "" {
-			for name, instance := range vs.vsphereInstanceMap {
+			for name, instance := range vs.connectionManager.VsphereInstanceMap {
 				if actualCaPath := instance.Conn.CACert; actualCaPath != expectedCaPath {
 					t.Fatalf(
 						"Expected CA certificate path for instance '%s' to be the globally configured one ('%s'), got '%s'",

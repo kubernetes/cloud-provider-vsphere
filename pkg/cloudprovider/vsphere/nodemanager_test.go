@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
 func TestRegUnregNode(t *testing.T) {
@@ -41,13 +42,14 @@ func TestRegUnregNode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
+	vsphere.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
 
 	nm := NodeManager{
-		vsphereInstanceMap: vsphere.vsphereInstanceMap,
-		nodeNameMap:        make(map[string]*NodeInfo),
-		nodeUUIDMap:        make(map[string]*NodeInfo),
-		nodeRegUUIDMap:     make(map[string]*v1.Node),
-		vcList:             make(map[string]*VCenterInfo),
+		nodeNameMap:       make(map[string]*NodeInfo),
+		nodeUUIDMap:       make(map[string]*NodeInfo),
+		nodeRegUUIDMap:    make(map[string]*v1.Node),
+		vcList:            make(map[string]*VCenterInfo),
+		connectionManager: vsphere.connectionManager,
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
@@ -112,24 +114,25 @@ func TestDiscoverNodeByName(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to construct/authenticate vSphere: %s", err)
 	}
+	vsphere.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
 
 	nm := NodeManager{
-		vsphereInstanceMap: vsphere.vsphereInstanceMap,
-		nodeNameMap:        make(map[string]*NodeInfo),
-		nodeUUIDMap:        make(map[string]*NodeInfo),
-		nodeRegUUIDMap:     make(map[string]*v1.Node),
-		vcList:             make(map[string]*VCenterInfo),
+		nodeNameMap:       make(map[string]*NodeInfo),
+		nodeUUIDMap:       make(map[string]*NodeInfo),
+		nodeRegUUIDMap:    make(map[string]*v1.Node),
+		vcList:            make(map[string]*VCenterInfo),
+		connectionManager: vsphere.connectionManager,
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Config.GuestFullName
 
-	err = nm.vsphereInstanceMap[cfg.Global.VCenterIP].Conn.Connect(context.Background())
+	err = nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP].Conn.Connect(context.Background())
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
 
-	search := object.NewSearchIndex(nm.vsphereInstanceMap[cfg.Global.VCenterIP].Conn.Client)
+	search := object.NewSearchIndex(nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP].Conn.Client)
 	si := simulator.Map.Get(search.Reference()).(*simulator.SearchIndex)
 	simulator.Map.Put(&SearchIndex{si, vm})
 
@@ -178,13 +181,14 @@ func TestExport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
+	vsphere.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
 
 	nm := NodeManager{
-		vsphereInstanceMap: vsphere.vsphereInstanceMap,
-		nodeNameMap:        make(map[string]*NodeInfo),
-		nodeUUIDMap:        make(map[string]*NodeInfo),
-		nodeRegUUIDMap:     make(map[string]*v1.Node),
-		vcList:             make(map[string]*VCenterInfo),
+		nodeNameMap:       make(map[string]*NodeInfo),
+		nodeUUIDMap:       make(map[string]*NodeInfo),
+		nodeRegUUIDMap:    make(map[string]*v1.Node),
+		vcList:            make(map[string]*VCenterInfo),
+		connectionManager: vsphere.connectionManager,
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)

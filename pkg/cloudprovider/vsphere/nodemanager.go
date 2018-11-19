@@ -27,7 +27,6 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
-	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
@@ -144,7 +143,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 
 	go func() {
 		var datacenterObjs []*vclib.Datacenter
-		for vc, vsi := range nm.vsphereInstanceMap {
+		for vc, vsi := range nm.connectionManager.VsphereInstanceMap {
 
 			found := getVMFound()
 			if found == true {
@@ -155,7 +154,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err := nm.vcConnect(ctx, vsi)
+			err := nm.connectionManager.Connect(ctx, vc)
 			if err != nil {
 				glog.Error("Discovering node error vc:", err)
 				setGlobalErr(err)
@@ -282,35 +281,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 
 	glog.V(4).Infof("Discovery Node: %q vm not found", myNodeID)
 	return vclib.ErrNoVMFound
-}
-
-// vcConnect connects to vCenter with existing credentials
-// If credentials are invalid:
-// 		1. It will fetch credentials from credentialManager
-//      2. Update the credentials
-//		3. Connects again to vCenter with fetched credentials
-func (nm *NodeManager) vcConnect(ctx context.Context, vsphereInstance *vcfg.VSphereInstance) error {
-	err := vsphereInstance.Conn.Connect(ctx)
-	if err == nil {
-		return nil
-	}
-
-	if !vclib.IsInvalidCredentialsError(err) || nm.credentialManager == nil {
-		glog.Errorf("Cannot connect to vCenter with err: %v", err)
-		return err
-	}
-
-	glog.V(2).Infof("Invalid credentials. Cannot connect to server %q. "+
-		"Fetching credentials from secrets.", vsphereInstance.Conn.Hostname)
-
-	// Get latest credentials from SecretCredentialManager
-	credentials, err := nm.credentialManager.GetCredential(vsphereInstance.Conn.Hostname)
-	if err != nil {
-		glog.Error("Failed to get credentials from Secret Credential Manager with err:", err)
-		return err
-	}
-	vsphereInstance.Conn.UpdateCredentials(credentials.User, credentials.Password)
-	return vsphereInstance.Conn.Connect(ctx)
 }
 
 // Reformats UUID to match vSphere format
