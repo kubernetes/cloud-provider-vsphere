@@ -93,7 +93,6 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Con
 	cfg.Global.User = s.URL.User.Username()
 	cfg.Global.Password, _ = s.URL.User.Password()
 	cfg.Global.Datacenters = vclib.TestDefaultDatacenter
-	cfg.Network.PublicNetwork = vclib.TestDefaultNetwork
 	cfg.VirtualCenter = make(map[string]*vcfg.VirtualCenterConfig)
 	cfg.VirtualCenter[s.URL.Hostname()] = &vcfg.VirtualCenterConfig{
 		User:         cfg.Global.User,
