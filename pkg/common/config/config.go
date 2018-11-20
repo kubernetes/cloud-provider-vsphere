@@ -340,7 +340,7 @@ func ReadConfig(config io.Reader) (Config, error) {
 
 	cfg, _ := ConfigFromEnv()
 
-	err := gcfg.ReadInto(&cfg, config)
+	err := gcfg.FatalOnly(gcfg.ReadInto(&cfg, config))
 	if err != nil {
 		return cfg, err
 	}
