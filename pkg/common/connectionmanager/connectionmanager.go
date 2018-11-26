@@ -38,26 +38,39 @@ var (
 	ErrConnectionNotFound = errors.New(ConnectionNotFoundErrMsg)
 )
 
-func NewConnectionManagerK8s(config *vcfg.Config, secretLister v1.SecretLister) *ConnectionManager {
-	return &ConnectionManager{
-		VsphereInstanceMap: generateInstanceMap(config),
-		credentialManager: &cm.SecretCredentialManager{
-			SecretName:      config.Global.SecretName,
-			SecretNamespace: config.Global.SecretNamespace,
-			SecretLister:    secretLister,
-			Cache: &cm.SecretCache{
-				VirtualCenter: make(map[string]*cm.Credential),
+func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *ConnectionManager {
+	if secretLister != nil {
+		glog.V(2).Info("NewConnectionManager with SecretLister")
+		return &ConnectionManager{
+			VsphereInstanceMap: generateInstanceMap(config),
+			credentialManager: &cm.SecretCredentialManager{
+				SecretName:      config.Global.SecretName,
+				SecretNamespace: config.Global.SecretNamespace,
+				SecretLister:    secretLister,
+				Cache: &cm.SecretCache{
+					VirtualCenter: make(map[string]*cm.Credential),
+				},
 			},
-		},
+		}
 	}
-}
+	if config.Global.SecretsDirectory != "" {
+		glog.V(2).Info("NewConnectionManager generic CO")
+		return &ConnectionManager{
+			VsphereInstanceMap: generateInstanceMap(config),
+			credentialManager: &cm.SecretCredentialManager{
+				SecretsDirectory:      config.Global.SecretsDirectory,
+				SecretsDirectoryParse: false,
+				Cache: &cm.SecretCache{
+					VirtualCenter: make(map[string]*cm.Credential),
+				},
+			},
+		}
+	}
 
-func NewConnectionManagerGeneric(config *vcfg.Config) *ConnectionManager {
+	glog.V(2).Info("NewConnectionManager creds from config")
 	return &ConnectionManager{
 		VsphereInstanceMap: generateInstanceMap(config),
 		credentialManager: &cm.SecretCredentialManager{
-			SecretsDirectory:      config.Global.SecretsDirectory,
-			SecretsDirectoryParse: false,
 			Cache: &cm.SecretCache{
 				VirtualCenter: make(map[string]*cm.Credential),
 			},
@@ -109,6 +122,32 @@ func (cm *ConnectionManager) Logout() {
 			vsphereIns.Conn.Logout(context.TODO())
 		}
 	}
+}
+
+func (cm *ConnectionManager) Verify() error {
+	for vcServer := range cm.VsphereInstanceMap {
+		err := cm.Connect(context.Background(), vcServer)
+		if err == nil {
+			glog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
+		} else {
+			glog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (cm *ConnectionManager) VerifyWithContext(ctx context.Context) error {
+	for vcServer := range cm.VsphereInstanceMap {
+		err := cm.Connect(ctx, vcServer)
+		if err == nil {
+			glog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
+		} else {
+			glog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
+			return err
+		}
+	}
+	return nil
 }
 
 //GenerateInstanceMap creates a map of vCenter connection objects that can be

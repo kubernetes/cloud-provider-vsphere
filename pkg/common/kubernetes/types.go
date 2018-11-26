@@ -14,17 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package service
+package kubernetes
 
-const (
-	// DefaultCloudConfigPath is /etc/cloud/vsphere.conf
-	DefaultCloudConfigPath = "/etc/cloud/vsphere.conf"
+import (
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/informers/core/v1"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 )
 
-const (
-	// EnvAPI is the name of the API to use with vSphere
-	EnvAPI = "X_CSI_VSPHERE_APINAME"
+type InformerManager struct {
+	// k8s client
+	client *clientset.Interface
+	// main shared informer factory
+	informerFactory informers.SharedInformerFactory
+	// main signal
+	stopCh (<-chan struct{})
 
-	// EnvCloudConfig contains the path to the vSphere Cloud Config
-	EnvCloudConfig = "X_CSI_VSPHERE_CLOUD_CONFIG"
-)
+	// secret informer
+	secretInformer v1.SecretInformer
+
+	// node informer
+	nodeInformer cache.SharedInformer
+}

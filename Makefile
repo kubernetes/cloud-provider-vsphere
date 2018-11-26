@@ -154,7 +154,7 @@ realclean: clean
 shell:
 	$(SHELL) -i
 
-images: image-controller-manager
+images: image-controller-manager image-csi
 
 image-controller-manager: vendor vsphere-cloud-controller-manager
 ifeq ($(GOOS),linux)
@@ -164,6 +164,18 @@ ifeq ("$(PUSH_LATEST)","TRUE")
 	docker tag $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION) $(REGISTRY)/vsphere-cloud-controller-manager:latest
 endif
 	rm cluster/images/controller-manager/vsphere-cloud-controller-manager
+else
+	$(error Please set GOOS=linux for building the image)
+endif
+
+image-csi: vendor vsphere-csi
+ifeq ($(GOOS),linux)
+	cp vsphere-csi cluster/images/csi
+	docker build -t $(REGISTRY)/vsphere-csi:$(VERSION) cluster/images/csi
+ifeq ("$(PUSH_LATEST)","TRUE")
+	docker tag $(REGISTRY)/vsphere-csi:$(VERSION) $(REGISTRY)/vsphere-csi:latest
+endif
+	rm cluster/images/csi/vsphere-csi
 else
 	$(error Please set GOOS=linux for building the image)
 endif
@@ -204,6 +216,10 @@ endif # end docker
 	docker push $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION)
 ifeq ("$(PUSH_LATEST)","TRUE")
 	docker push $(REGISTRY)/vsphere-cloud-controller-manager:latest
+endif
+	docker push $(REGISTRY)/vsphere-csi:$(VERSION)
+ifeq ("$(PUSH_LATEST)","TRUE")
+	docker push $(REGISTRY)/vsphere-csi:latest
 endif
 
 version:
