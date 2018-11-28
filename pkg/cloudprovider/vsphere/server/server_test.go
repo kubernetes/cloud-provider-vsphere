@@ -65,10 +65,19 @@ func TestGRPCServerClient(t *testing.T) {
 	myServer.Start()
 
 	//client
-	conn, err := grpc.Dial(vcfg.DefaultAPIBinding, grpc.WithInsecure())
+	var conn *grpc.ClientConn
+	var err error
+	for i := 0; i < 3; i++ {
+		conn, err = grpc.Dial(vcfg.DefaultAPIBinding, grpc.WithInsecure())
+		if err == nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
+
 	defer conn.Close()
 	c := pb.NewCloudProviderVsphereClient(conn)
 

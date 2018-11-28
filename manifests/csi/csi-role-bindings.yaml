@@ -3,16 +3,14 @@ items:
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
-    name: system:cloud-controller-manager
+    name: system:csi-controller
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: system:cloud-controller-manager
+    name: system:csi-controller
   subjects:
   - kind: ServiceAccount
-    name: cloud-controller-manager
+    name: csi-controller
     namespace: kube-system
-  - kind: User
-    name: cloud-controller-manager
 kind: List
 metadata: {}

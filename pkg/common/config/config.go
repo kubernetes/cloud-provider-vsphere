@@ -91,6 +91,9 @@ func ConfigFromEnv() (cfg Config, ok bool) {
 	cfg.Global.User = os.Getenv("VSPHERE_USER")
 	cfg.Global.Password = os.Getenv("VSPHERE_PASSWORD")
 	cfg.Global.Datacenters = os.Getenv("VSPHERE_DATACENTER")
+	cfg.Global.SecretName = os.Getenv("VSPHERE_SECRET_NAME")
+	cfg.Global.SecretNamespace = os.Getenv("VSPHERE_SECRET_NAMESPACE")
+	cfg.Global.ServiceAccount = os.Getenv("VSPHERE_SERVICE_ACCOUNT")
 
 	var RoundTripCount uint
 	if os.Getenv("VSPHERE_ROUNDTRIP_COUNT") != "" {

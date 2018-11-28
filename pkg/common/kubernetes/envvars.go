@@ -14,17 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package service
+package kubernetes
 
 const (
-	// DefaultCloudConfigPath is /etc/cloud/vsphere.conf
-	DefaultCloudConfigPath = "/etc/cloud/vsphere.conf"
+	// DefaultKubeConfigPath is /etc/kubernetes/controller-manager.conf
+	DefaultKubeConfigPath = "/etc/kubernetes/controller-manager.conf"
 )
 
 const (
-	// EnvAPI is the name of the API to use with vSphere
-	EnvAPI = "X_CSI_VSPHERE_APINAME"
-
-	// EnvCloudConfig contains the path to the vSphere Cloud Config
-	EnvCloudConfig = "X_CSI_VSPHERE_CLOUD_CONFIG"
+	// EnvKubeConfig contains the path to the KubeConfig
+	EnvKubeConfig = "VSPHERE_KUBE_CONFIG"
 )

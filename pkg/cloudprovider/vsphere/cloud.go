@@ -23,15 +23,13 @@ import (
 	"github.com/golang/glog"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/sample-controller/pkg/signals"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
+	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
 
 const (
@@ -63,27 +61,15 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 	if err == nil {
 		glog.V(1).Info("Kubernetes Client Init Succeeded")
 
-		stopCh := signals.SetupSignalHandler()
+		vs.informMgr = k8s.NewInformer(&client)
 
-		informerFactory := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
-
-		var connMgr *cm.ConnectionManager
-		if vs.cfg.Global.SecretNamespace != "" && vs.cfg.Global.SecretName != "" {
-			glog.V(4).Info("NewConnectionManagerK8s")
-			secretInformer := informerFactory.Core().V1().Secrets()
-			connMgr = cm.NewConnectionManagerK8s(vs.cfg, secretInformer.Lister())
-		} else if vs.cfg.Global.SecretsDirectory != "" {
-			glog.V(4).Info("NewConnectionManagerGeneric")
-			connMgr = cm.NewConnectionManagerGeneric(vs.cfg)
-		}
+		connMgr := cm.NewConnectionManager(vs.cfg, vs.informMgr.GetSecretListener())
 		vs.connectionManager = connMgr
 		vs.nodeManager.connectionManager = connMgr
 
-		nodeInformer := informerFactory.Core().V1().Nodes().Informer()
-		nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    vs.nodeAdded,
-			DeleteFunc: vs.nodeDeleted,
-		})
+		vs.informMgr.AddNodeListener(vs.nodeAdded, vs.nodeDeleted, nil)
+
+		vs.informMgr.Listen()
 
 		if !vs.cfg.Global.APIDisable {
 			glog.V(1).Info("Starting the API Server")
@@ -91,8 +77,6 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 		} else {
 			glog.V(1).Info("API Server is disabled")
 		}
-
-		go informerFactory.Start(stopCh)
 	} else {
 		glog.Errorf("Kubernetes Client Init Failed: %v", err)
 	}

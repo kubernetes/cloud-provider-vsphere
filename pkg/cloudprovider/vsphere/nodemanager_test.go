@@ -42,7 +42,7 @@ func TestRegUnregNode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vsphere.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
+	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
 
 	nm := NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),
@@ -114,7 +114,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vsphere.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
+	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
 
 	nm := NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),
@@ -181,7 +181,7 @@ func TestExport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vsphere.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
+	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
 
 	nm := NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),

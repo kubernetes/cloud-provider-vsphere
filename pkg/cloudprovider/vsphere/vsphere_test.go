@@ -138,7 +138,7 @@ func TestVSphereLogin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vs.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
+	vs.connectionManager = cm.NewConnectionManager(&cfg, nil)
 
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -170,7 +170,7 @@ func TestVSphereLoginByToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vs.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
+	vs.connectionManager = cm.NewConnectionManager(&cfg, nil)
 
 	ctx := context.Background()
 
@@ -462,7 +462,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 		if err != nil { // testcase.expectedError {
 			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 		}
-		vs.connectionManager = cm.NewConnectionManagerK8s(&cfg, nil)
+		vs.connectionManager = cm.NewConnectionManager(&cfg, nil)
 
 		if testcase.expectedIsSecretProvided && (vs.cfg.Global.SecretNamespace == "" || vs.cfg.Global.SecretName == "") {
 			t.Fatalf("SecretName and SecretNamespace was expected in config %s. error: %s",
