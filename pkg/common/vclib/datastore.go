@@ -26,6 +26,7 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
+	"github.com/vmware/govmomi/vslm"
 )
 
 // Datastore extends the govmomi Datastore object
@@ -75,6 +76,18 @@ func (ds *Datastore) GetType(ctx context.Context) (string, error) {
 	return dsMo.Summary.Type, nil
 }
 
+// GetName returns the type of datastore
+func (ds *Datastore) GetName(ctx context.Context) (string, error) {
+	var dsMo mo.Datastore
+	pc := property.DefaultCollector(ds.Client())
+	err := pc.RetrieveOne(ctx, ds.Datastore.Reference(), []string{DatastoreInfoProperty}, &dsMo)
+	if err != nil {
+		glog.Errorf("Failed to retrieve datastore info property. err: %v", err)
+		return "", err
+	}
+	return dsMo.Info.GetDatastoreInfo().Name, nil
+}
+
 // IsCompatibleWithStoragePolicy returns true if datastore is compatible with given storage policy else return false
 // for not compatible datastore, fault message is also returned
 func (ds *Datastore) IsCompatibleWithStoragePolicy(ctx context.Context, storagePolicyID string) (bool, string, error) {
@@ -84,4 +97,76 @@ func (ds *Datastore) IsCompatibleWithStoragePolicy(ctx context.Context, storageP
 		return false, "", err
 	}
 	return pbmClient.IsDatastoreCompatible(ctx, storagePolicyID, ds)
+}
+
+// ListFirstClassDisks gets a list of first class disks (FCD) on this datastore
+func (ds *Datastore) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDisk, error) {
+	m := vslm.NewObjectManager(ds.Client())
+
+	oids, err := m.List(ctx, ds.Reference())
+	if err != nil {
+		glog.Errorf("Failed to list disks. Err: %v", err)
+		return nil, err
+	}
+
+	var ids []string
+	for _, id := range oids {
+		ids = append(ids, id.Id)
+	}
+
+	var objs []*FirstClassDisk
+	for _, id := range ids {
+		o, err := m.Retrieve(ctx, ds.Reference(), id)
+		if err != nil {
+			return nil, err
+		}
+
+		objs = append(objs, &FirstClassDisk{
+			ds.Datacenter,
+			o,
+			TypeDatastore,
+			ds,
+			nil,
+		})
+	}
+
+	return objs, nil
+}
+
+// ListFirstClassDiskInfos gets a list of first class disks (FCD) on this datastore
+func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*FirstClassDiskInfo, error) {
+	m := vslm.NewObjectManager(dsi.Datacenter.Client())
+
+	oids, err := m.List(ctx, dsi.Reference())
+	if err != nil {
+		glog.Errorf("Failed to list disks. Err: %v", err)
+		return nil, err
+	}
+
+	var ids []string
+	for _, id := range oids {
+		ids = append(ids, id.Id)
+	}
+
+	var objs []*FirstClassDiskInfo
+	for _, id := range ids {
+		o, err := m.Retrieve(ctx, dsi.Reference(), id)
+		if err != nil {
+			return nil, err
+		}
+
+		objs = append(objs, &FirstClassDiskInfo{
+			&FirstClassDisk{
+				dsi.Datacenter,
+				o,
+				TypeDatastore,
+				dsi.Datastore,
+				nil,
+			},
+			dsi,
+			nil,
+		})
+	}
+
+	return objs, nil
 }

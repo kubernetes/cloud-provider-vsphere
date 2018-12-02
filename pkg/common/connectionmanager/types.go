@@ -22,6 +22,7 @@ import (
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
+// ConnectionManager encapsulates vCenter connections
 type ConnectionManager struct {
 	// Maps the VC server to VSphereInstance
 	VsphereInstanceMap map[string]*VSphereInstance
@@ -33,4 +34,19 @@ type ConnectionManager struct {
 type VSphereInstance struct {
 	Conn *vclib.VSphereConnection
 	Cfg  *vcfg.VirtualCenterConfig
+}
+
+// VmDiscoveryInfo contains VM info about a discovered VM
+type VmDiscoveryInfo struct {
+	DataCenter *vclib.Datacenter
+	VM         *vclib.VirtualMachine
+	VcServer   string
+	UUID       string
+	NodeName   string
+}
+
+// DiscoveryInfo contains VC+DC info based on a given zone
+type DiscoveryInfo struct {
+	DataCenter *vclib.Datacenter
+	VcServer   string
 }

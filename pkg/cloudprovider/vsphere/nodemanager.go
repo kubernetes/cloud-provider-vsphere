@@ -22,15 +22,15 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"sync"
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
-	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
 	"github.com/vmware/govmomi/vim25/mo"
+
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
 type FindVM int
@@ -93,194 +93,48 @@ func (nm *NodeManager) removeNode(node *v1.Node) {
 }
 
 func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
-	if nodeID == "" {
-		glog.V(3).Info("DiscoverNode called but nodeID is empty")
-		return vclib.ErrNoVMFound
-	}
-	type vmSearch struct {
-		vc         string
-		datacenter *vclib.Datacenter
+	vm, err := nm.connectionManager.WhichVCandDCByNodeId(nodeID, cm.FindVM(searchBy))
+	if err != nil {
+		return err
 	}
 
-	var mutex = &sync.Mutex{}
-	var globalErrMutex = &sync.Mutex{}
-	var queueChannel chan *vmSearch
-	var wg sync.WaitGroup
-	var globalErr *error
-
-	queueChannel = make(chan *vmSearch, QUEUE_SIZE)
-
-	myNodeID := nodeID
-	if searchBy == FindVMByUUID {
-		glog.V(3).Info("DiscoverNode by UUID")
-		myNodeID = strings.ToLower(nodeID)
-	} else {
-		glog.V(3).Info("DiscoverNode by Name")
-	}
-	glog.V(2).Info("DiscoverNode nodeID: ", myNodeID)
-
-	vmFound := false
-	globalErr = nil
-
-	setGlobalErr := func(err error) {
-		globalErrMutex.Lock()
-		globalErr = &err
-		globalErrMutex.Unlock()
+	var oVM mo.VirtualMachine
+	err = vm.VM.Properties(context.Background(), vm.VM.Reference(), []string{"config", "summary", "summary.config", "guest.net", "guest"}, &oVM)
+	if err != nil {
+		glog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
+			vm.NodeName, vm.VcServer, vm.DataCenter.Name(), err)
+		return err
 	}
 
-	setVMFound := func(found bool) {
-		mutex.Lock()
-		vmFound = found
-		mutex.Unlock()
-	}
-
-	getVMFound := func() bool {
-		mutex.Lock()
-		found := vmFound
-		mutex.Unlock()
-		return found
-	}
-
-	go func() {
-		var datacenterObjs []*vclib.Datacenter
-		for vc, vsi := range nm.connectionManager.VsphereInstanceMap {
-
-			found := getVMFound()
-			if found == true {
-				break
-			}
-
-			// Create context
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			err := nm.connectionManager.Connect(ctx, vc)
-			if err != nil {
-				glog.Error("Discovering node error vc:", err)
-				setGlobalErr(err)
-				continue
-			}
-
-			if vsi.Cfg.Datacenters == "" {
-				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
-				if err != nil {
-					glog.Error("Discovering node error dc:", err)
-					setGlobalErr(err)
-					continue
-				}
-			} else {
-				datacenters := strings.Split(vsi.Cfg.Datacenters, ",")
-				for _, dc := range datacenters {
-					dc = strings.TrimSpace(dc)
-					if dc == "" {
-						continue
-					}
-					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
-					if err != nil {
-						glog.Error("Discovering node error dc:", err)
-						setGlobalErr(err)
-						continue
-					}
-					datacenterObjs = append(datacenterObjs, datacenterObj)
-				}
-			}
-
-			for _, datacenterObj := range datacenterObjs {
-				found := getVMFound()
-				if found == true {
-					break
-				}
-
-				glog.V(4).Infof("Finding node %s in vc=%s and datacenter=%s", myNodeID, vc, datacenterObj.Name())
-				queueChannel <- &vmSearch{
-					vc:         vc,
-					datacenter: datacenterObj,
-				}
+	addrs := []v1.NodeAddress{}
+	for _, v := range oVM.Guest.Net {
+		for _, ip := range v.IpAddress {
+			if net.ParseIP(ip).To4() != nil {
+				v1helper.AddToNodeAddresses(&addrs,
+					v1.NodeAddress{
+						Type:    v1.NodeExternalIP,
+						Address: ip,
+					}, v1.NodeAddress{
+						Type:    v1.NodeInternalIP,
+						Address: ip,
+					}, v1.NodeAddress{
+						Type:    v1.NodeHostName,
+						Address: oVM.Guest.HostName,
+					},
+				)
 			}
 		}
-		close(queueChannel)
-	}()
-
-	for i := 0; i < POOL_SIZE; i++ {
-		go func() {
-			for res := range queueChannel {
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
-
-				var vm *vclib.VirtualMachine
-				var err error
-				if searchBy == FindVMByUUID {
-					vm, err = res.datacenter.GetVMByUUID(ctx, myNodeID)
-				} else {
-					vm, err = res.datacenter.GetVMByDNSName(ctx, myNodeID)
-				}
-
-				if err != nil {
-					glog.Errorf("Error while looking for vm=%+v in vc=%s and datacenter=%s: %v",
-						vm, res.vc, res.datacenter.Name(), err)
-					if err != vclib.ErrNoVMFound {
-						setGlobalErr(err)
-					} else {
-						glog.V(2).Infof("Did not find node %s in vc=%s and datacenter=%s",
-							myNodeID, res.vc, res.datacenter.Name())
-					}
-					continue
-				}
-
-				var oVM mo.VirtualMachine
-				err = vm.Properties(ctx, vm.Reference(), []string{"config", "summary", "summary.config", "guest.net", "guest"}, &oVM)
-				if err != nil {
-					glog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
-						vm, res.vc, res.datacenter.Name(), err)
-					continue
-				}
-
-				addrs := []v1.NodeAddress{}
-				for _, v := range oVM.Guest.Net {
-					for _, ip := range v.IpAddress {
-						if net.ParseIP(ip).To4() != nil {
-							v1helper.AddToNodeAddresses(&addrs,
-								v1.NodeAddress{
-									Type:    v1.NodeExternalIP,
-									Address: ip,
-								}, v1.NodeAddress{
-									Type:    v1.NodeInternalIP,
-									Address: ip,
-								}, v1.NodeAddress{
-									Type:    v1.NodeHostName,
-									Address: oVM.Guest.HostName,
-								},
-							)
-						}
-					}
-				}
-
-				glog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
-					nodeID, vm, res.vc, res.datacenter.Name())
-				glog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
-
-				nodeInfo := &NodeInfo{dataCenter: res.datacenter, vm: vm, vcServer: res.vc,
-					UUID: oVM.Summary.Config.Uuid, NodeName: oVM.Guest.HostName, NodeAddresses: addrs}
-				nm.addNodeInfo(nodeInfo)
-				for range queueChannel {
-				}
-				setVMFound(true)
-				break
-			}
-			wg.Done()
-		}()
-		wg.Add(1)
-	}
-	wg.Wait()
-	if vmFound {
-		return nil
-	}
-	if globalErr != nil {
-		return *globalErr
 	}
 
-	glog.V(4).Infof("Discovery Node: %q vm not found", myNodeID)
-	return vclib.ErrNoVMFound
+	glog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
+		nodeID, vm.NodeName, vm.VcServer, vm.DataCenter.Name())
+	glog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
+
+	nodeInfo := &NodeInfo{dataCenter: vm.DataCenter, vm: vm.VM, vcServer: vm.VcServer,
+		UUID: oVM.Summary.Config.Uuid, NodeName: oVM.Guest.HostName, NodeAddresses: addrs}
+	nm.addNodeInfo(nodeInfo)
+
+	return nil
 }
 
 // Reformats UUID to match vSphere format

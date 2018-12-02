@@ -14,12 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package fcd
 
 const (
-	// DefaultKubeConfigPath is /etc/kubernetes/controller-manager.conf
-	DefaultKubeConfigPath = "/etc/kubernetes/controller-manager.conf"
+	// MbInBytes... just like it sounds but as int64
+	MbInBytes = int64(1024 * 1024)
 
-	// EnvKubeConfig contains the path to the KubeConfig
-	EnvKubeConfig = "VSPHERE_KUBE_CONFIG"
+	// FirstClassDiskTypeString in string form
+	FirstClassDiskTypeString = "First Class Disk"
+
+	// FCD attribute labels
+	AttributeFirstClassDiskType            = "type"
+	AttributeFirstClassDiskName            = "name"
+	AttributeFirstClassDiskParentType      = "parent_type"
+	AttributeFirstClassDiskParentName      = "parent_name"
+	AttributeFirstClassDiskOwningDatastore = "owning_datastore"
 )

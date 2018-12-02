@@ -206,5 +206,16 @@ func VerifyVolumePathsForVMDevices(vmDevices object.VirtualDeviceList, volPaths 
 			}
 		}
 	}
+}
 
+func ExistsInList(needle string, haystack []string, caseSensitive bool) bool {
+	for _, straw := range haystack {
+		if caseSensitive && strings.EqualFold(straw, needle) {
+			return true
+		} else if strings.ToLower(straw) == strings.ToLower(needle) {
+			return true
+		}
+	}
+
+	return false
 }
