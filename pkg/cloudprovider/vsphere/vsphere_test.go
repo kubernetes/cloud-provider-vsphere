@@ -22,7 +22,6 @@ import (
 	"log"
 	"strings"
 	"testing"
-	"time"
 
 	lookup "github.com/vmware/govmomi/lookup/simulator"
 	"github.com/vmware/govmomi/simulator"
@@ -134,14 +133,13 @@ func TestVSphereLogin(t *testing.T) {
 	cfg, cleanup := configFromEnvOrSim()
 	defer cleanup()
 
-	time.Sleep(5 * time.Second)
-
 	// Create vSphere configuration object
 	vs, err := newVSphere(cfg)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
 	vs.connectionManager = cm.NewConnectionManager(&cfg, nil)
+	defer vs.connectionManager.Logout()
 
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())

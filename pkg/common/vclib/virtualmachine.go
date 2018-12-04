@@ -98,7 +98,7 @@ func (vm *VirtualMachine) AttachDisk(ctx context.Context, vmDiskPath string, vol
 		return "", err
 	}
 	// If disk is not attached, create a disk spec for disk to be attached to the VM.
-	disk, newSCSIController, err := vm.CreateDiskSpec(ctx, vmDiskPath, dsObj, volumeOptions)
+	disk, newSCSIController, err := vm.CreateDiskSpec(ctx, vmDiskPath, dsObj.Datastore, volumeOptions)
 	if err != nil {
 		glog.Errorf("Error occurred while creating disk spec. err: %+v", err)
 		return "", err

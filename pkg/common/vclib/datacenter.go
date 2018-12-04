@@ -30,6 +30,7 @@ import (
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
+	"github.com/vmware/govmomi/vslm"
 )
 
 // Datacenter extends the govmomi Datacenter object
@@ -149,7 +150,7 @@ func (dc *Datacenter) GetAllDatastores(ctx context.Context) (map[string]*Datasto
 }
 
 // GetDatastoreByPath gets the Datastore object from the given vmDiskPath
-func (dc *Datacenter) GetDatastoreByPath(ctx context.Context, vmDiskPath string) (*Datastore, error) {
+func (dc *Datacenter) GetDatastoreByPath(ctx context.Context, vmDiskPath string) (*DatastoreInfo, error) {
 	datastorePathObj := new(object.DatastorePath)
 	isSuccess := datastorePathObj.FromString(vmDiskPath)
 	if !isSuccess {
@@ -161,15 +162,27 @@ func (dc *Datacenter) GetDatastoreByPath(ctx context.Context, vmDiskPath string)
 }
 
 // GetDatastoreByName gets the Datastore object for the given datastore name
-func (dc *Datacenter) GetDatastoreByName(ctx context.Context, name string) (*Datastore, error) {
+func (dc *Datacenter) GetDatastoreByName(ctx context.Context, name string) (*DatastoreInfo, error) {
 	finder := getFinder(dc)
 	ds, err := finder.Datastore(ctx, name)
 	if err != nil {
 		glog.Errorf("Failed while searching for datastore: %s. err: %+v", name, err)
 		return nil, err
 	}
-	datastore := Datastore{ds, dc}
-	return &datastore, nil
+
+	var dsMo mo.Datastore
+	pc := property.DefaultCollector(dc.Client())
+	properties := []string{DatastoreInfoProperty}
+	err = pc.RetrieveOne(ctx, ds.Reference(), properties, &dsMo)
+	if err != nil {
+		glog.Errorf("Failed to get Datastore managed objects from datastore objects."+
+			" properties: %+v, err: %v", properties, err)
+		return nil, err
+	}
+
+	return &DatastoreInfo{
+		&Datastore{ds, dc},
+		dsMo.Info.GetDatastoreInfo()}, nil
 }
 
 // GetResourcePool gets the resource pool for the given path
@@ -351,7 +364,7 @@ func (dc *Datacenter) GetAllDatastoreClusters(ctx context.Context, child bool) (
 	var spMoList []mo.StoragePod
 	pc := property.DefaultCollector(dc.Client())
 	properties := []string{StoragePodDrsEntryProperty, StoragePodProperty}
-	err = pc.Retrieve(ctx, spList, nil, &spMoList)
+	err = pc.Retrieve(ctx, spList, properties, &spMoList)
 	if err != nil {
 		glog.Errorf("Failed to get Datastore managed objects from datastore objects."+
 			" dsObjList: %+v, properties: %+v, err: %v", spList, properties, err)
@@ -381,6 +394,135 @@ func (dc *Datacenter) GetAllDatastoreClusters(ctx context.Context, child bool) (
 
 	glog.V(9).Infof("spURLInfoMap : %+v", spURLInfoMap)
 	return spURLInfoMap, nil
+}
+
+// GetDatastoreClusterByName gets the DatastoreCluster object for the given name
+func (dc *Datacenter) GetDatastoreClusterByName(ctx context.Context, name string) (*StoragePodInfo, error) {
+	finder := getFinder(dc)
+	ds, err := finder.DatastoreCluster(ctx, name)
+	if err != nil {
+		glog.Errorf("Failed while searching for datastore cluster: %s. err: %+v", name, err)
+		return nil, err
+	}
+
+	var spMo mo.StoragePod
+	pc := property.DefaultCollector(dc.Client())
+	properties := []string{StoragePodDrsEntryProperty, StoragePodProperty}
+	err = pc.RetrieveOne(ctx, ds.Reference(), properties, &spMo)
+	if err != nil {
+		glog.Errorf("Failed to get Datastore managed objects from datastore objects."+
+			" properties: %+v, err: %v", properties, err)
+		return nil, err
+	}
+
+	return &StoragePodInfo{
+		&StoragePod{
+			dc,
+			object.NewStoragePod(dc.Client(), spMo.Reference()),
+			make([]*Datastore, 0),
+		},
+		spMo.Summary,
+		&spMo.PodStorageDrsEntry.StorageDrsConfig,
+		make([]*DatastoreInfo, 0),
+	}, nil
+}
+
+func (dc *Datacenter) CreateFirstClassDisk(ctx context.Context,
+	datastoreName string, datastoreType ParentDatastoreType,
+	diskName string, diskSize int64) error {
+
+	m := vslm.NewObjectManager(dc.Client())
+
+	var pool *object.ResourcePool
+	var ds types.ManagedObjectReference
+	if datastoreType == TypeDatastoreCluster {
+		storagePod, err := dc.GetDatastoreClusterByName(ctx, datastoreName)
+		if err != nil {
+			glog.Errorf("GetDatastoreClusterByName failed. Err: %v", err)
+			return err
+		}
+		ds = storagePod.Reference()
+
+		pool, err = dc.GetResourcePool(ctx, "")
+		if err != nil {
+			glog.Errorf("GetResourcePool failed. Err: %v", err)
+			return err
+		}
+	} else {
+		datastore, err := dc.GetDatastoreByName(ctx, datastoreName)
+		if err != nil {
+			glog.Errorf("GetDatastoreByName failed. Err: %v", err)
+			return err
+		}
+		ds = datastore.Reference()
+	}
+
+	spec := types.VslmCreateSpec{
+		Name:         diskName,
+		CapacityInMB: diskSize,
+		BackingSpec: &types.VslmCreateSpecDiskFileBackingSpec{
+			VslmCreateSpecBackingSpec: types.VslmCreateSpecBackingSpec{
+				Datastore: ds,
+			},
+			ProvisioningType: string(types.BaseConfigInfoDiskFileBackingInfoProvisioningTypeThin),
+		},
+	}
+
+	if datastoreType == TypeDatastoreCluster {
+		err := m.PlaceDisk(ctx, &spec, pool.Reference())
+		if err != nil {
+			glog.Errorf("PlaceDisk(%s) failed. Err: %v", diskName, err)
+			return err
+		}
+	}
+
+	task, err := m.CreateDisk(ctx, spec)
+	if err != nil {
+		glog.Errorf("CreateDisk(%s) failed. Err: %v", diskName, err)
+		return err
+	}
+
+	err = task.Wait(ctx)
+	if err != nil {
+		glog.Errorf("Wait(%s) failed. Err: %v", diskName, err)
+		return err
+	}
+
+	return nil
+}
+
+func (dc *Datacenter) GetFirstClassDisk(ctx context.Context,
+	datastoreName string, datastoreType ParentDatastoreType,
+	diskID string, findBy FindFCD) (*FirstClassDiskInfo, error) {
+
+	var fcd *FirstClassDiskInfo
+	if datastoreType == TypeDatastoreCluster {
+		storagePod, err := dc.GetDatastoreClusterByName(ctx, datastoreName)
+		if err != nil {
+			glog.Errorf("GetDatastoreClusterByName failed. Err: %v", err)
+			return nil, err
+		}
+
+		fcd, err = storagePod.GetFirstClassDiskInfo(ctx, diskID, findBy)
+		if err != nil {
+			glog.Errorf("GetFirstClassDiskByName failed. Err: %v", err)
+			return nil, err
+		}
+	} else {
+		datastore, err := dc.GetDatastoreByName(ctx, datastoreName)
+		if err != nil {
+			glog.Errorf("GetDatastoreByName failed. Err: %v", err)
+			return nil, err
+		}
+
+		fcd, err = datastore.GetFirstClassDiskInfo(ctx, diskID, findBy)
+		if err != nil {
+			glog.Errorf("GetFirstClassDiskByName failed. Err: %v", err)
+			return nil, err
+		}
+	}
+
+	return fcd, nil
 }
 
 func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassDiskInfo, error) {
@@ -438,4 +580,66 @@ func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassD
 	})
 
 	return firstClassDisks, nil
+}
+
+func (dc *Datacenter) DoesFirstClassDiskExist(ctx context.Context, fcdID string) (*FirstClassDiskInfo, error) {
+	datastores, err := dc.GetAllDatastores(ctx)
+	if err != nil {
+		glog.Errorf("GetAllDatastores failed. Err: %v", err)
+		return nil, err
+	}
+
+	for _, datastore := range datastores {
+		fcd, err := datastore.GetFirstClassDiskInfo(ctx, fcdID, FindFCDByID)
+		if err == nil {
+			glog.Infof("DoesFirstClassDiskExist(%s): FOUND", fcdID)
+			return fcd, nil
+		}
+	}
+
+	glog.Infof("DoesFirstClassDiskExist(%s): NOT FOUND", fcdID)
+	return nil, ErrNoDiskIDFound
+}
+
+func (dc *Datacenter) DeleteFirstClassDisk(ctx context.Context,
+	datastoreName string, datastoreType ParentDatastoreType, diskID string) error {
+
+	var ds types.ManagedObjectReference
+	if datastoreType == TypeDatastoreCluster {
+		storagePod, err := dc.GetDatastoreClusterByName(ctx, datastoreName)
+		if err != nil {
+			glog.Errorf("GetDatastoreClusterByName failed. Err: %v", err)
+			return err
+		}
+
+		datastore, err := storagePod.GetDatastoreThatOwnsFCD(ctx, diskID)
+		if err != nil {
+			glog.Errorf("GetDatastoreThatOwnsFCD failed. Err: %v", err)
+			return err
+		}
+		ds = datastore.Reference()
+	} else {
+		datastore, err := dc.GetDatastoreByName(ctx, datastoreName)
+		if err != nil {
+			glog.Errorf("GetDatastoreByName failed. Err: %v", err)
+			return err
+		}
+		ds = datastore.Reference()
+	}
+
+	m := vslm.NewObjectManager(dc.Client())
+
+	task, err := m.Delete(ctx, ds, diskID)
+	if err != nil {
+		glog.Errorf("Delete(%s) failed. Err: %v", diskID, err)
+		return err
+	}
+
+	err = task.Wait(ctx)
+	if err != nil {
+		glog.Errorf("Wait(%s) failed. Err: %v", diskID, err)
+		return err
+	}
+
+	return nil
 }

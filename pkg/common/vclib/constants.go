@@ -16,6 +16,13 @@ limitations under the License.
 
 package vclib
 
+type FindFCD int
+
+const (
+	FindFCDByID   FindFCD = iota // 0
+	FindFCDByName                // 1
+)
+
 // Volume Constnts
 const (
 	ThinDiskType             = "thin"
