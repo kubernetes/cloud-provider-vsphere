@@ -485,7 +485,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:088ee9c3eb6bb4b5f0d0d7c0afa452dd78a05e4e56e9fac38ff72225864a3f4a"
+  digest = "1:b7bca6301bab2a5f5da81f3b39756b98f6de92989585c9b13b6ad5c172d3166a"
   name = "github.com/vmware/govmomi"
   packages = [
     ".",
@@ -512,6 +512,7 @@
     "sts/internal",
     "sts/simulator",
     "task",
+    "units",
     "view",
     "vim25",
     "vim25/debug",
@@ -521,9 +522,10 @@
     "vim25/soap",
     "vim25/types",
     "vim25/xml",
+    "vslm",
   ]
   pruneopts = "UT"
-  revision = "22f74650cf39ba4649fba45e770df0f44df6f758"
+  revision = "6712f991d8852a25ae4304a720463301c1ac4c64"
 
 [[projects]]
   branch = "master"
@@ -1186,12 +1188,14 @@
     "github.com/vmware/govmomi/ssoadmin/types",
     "github.com/vmware/govmomi/sts",
     "github.com/vmware/govmomi/sts/simulator",
+    "github.com/vmware/govmomi/units",
     "github.com/vmware/govmomi/view",
     "github.com/vmware/govmomi/vim25",
     "github.com/vmware/govmomi/vim25/methods",
     "github.com/vmware/govmomi/vim25/mo",
     "github.com/vmware/govmomi/vim25/soap",
     "github.com/vmware/govmomi/vim25/types",
+    "github.com/vmware/govmomi/vslm",
     "golang.org/x/net/context",
     "google.golang.org/grpc",
     "google.golang.org/grpc/reflection",

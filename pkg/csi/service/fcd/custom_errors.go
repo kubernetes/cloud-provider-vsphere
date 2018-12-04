@@ -14,12 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package fcd
 
+import "errors"
+
+// Error Messages
 const (
-	// DefaultKubeConfigPath is /etc/kubernetes/controller-manager.conf
-	DefaultKubeConfigPath = "/etc/kubernetes/controller-manager.conf"
+	ListInvalidNextTokenErrMsg = "Invalid next token"
+)
 
-	// EnvKubeConfig contains the path to the KubeConfig
-	EnvKubeConfig = "VSPHERE_KUBE_CONFIG"
+// Error constants
+var (
+	ErrListInvalidNextToken = errors.New(ListInvalidNextTokenErrMsg)
 )

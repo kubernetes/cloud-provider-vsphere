@@ -19,8 +19,12 @@ package connectionmanager
 import (
 	"context"
 	"errors"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/golang/glog"
+	"github.com/vmware/govmomi/vim25/mo"
 	"k8s.io/client-go/listers/core/v1"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -29,13 +33,26 @@ import (
 )
 
 // Error Messages
+type FindVM int
+
 const (
-	ConnectionNotFoundErrMsg = "vCenter not found"
+	FindVMByUUID FindVM = iota // 0
+	FindVMByName               // 1
+
+	POOL_SIZE  int = 8
+	QUEUE_SIZE int = POOL_SIZE * 10
+
+	// Error Messages
+	VMNotFoundErrMsg               = "VM not found"
+	ConnectionNotFoundErrMsg       = "vCenter not found"
+	UnsupportedConfigurationErrMsg = "Unsupported configuration: Supports only a single VC/DC"
 )
 
 // Error constants
 var (
-	ErrConnectionNotFound = errors.New(ConnectionNotFoundErrMsg)
+	ErrVMNotFound               = errors.New(VMNotFoundErrMsg)
+	ErrConnectionNotFound       = errors.New(ConnectionNotFoundErrMsg)
+	ErrUnsupportedConfiguration = errors.New(UnsupportedConfigurationErrMsg)
 )
 
 func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *ConnectionManager {
@@ -148,6 +165,237 @@ func (cm *ConnectionManager) VerifyWithContext(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// WhichVCandDCByZone gets the corresponding VC+DC combo that supports the availability zone
+//TODO: we currently only support a single VC/DC combinations until we support availability zones
+func (cm *ConnectionManager) WhichVCandDCByZone(zone string) (*DiscoveryInfo, error) {
+	//TODO: we currently only support a single VC/DC combinations until we support availability zones
+	if len(cm.VsphereInstanceMap) != 1 {
+		glog.Error("Only a single vServer is currently supported")
+		return nil, ErrUnsupportedConfiguration
+	}
+
+	var vc string
+	var vsi *VSphereInstance
+	for vc, vsi = range cm.VsphereInstanceMap {
+		glog.V(2).Infof("vCenter: %s", vc)
+	}
+
+	datacenters := strings.Split(vsi.Cfg.Datacenters, ",")
+	if len(datacenters) != 1 {
+		glog.Error("Only a single Datacenter is currently supported")
+		return nil, ErrUnsupportedConfiguration
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var err error
+	for i := 0; i < 3; i++ {
+		err = cm.Connect(ctx, vc)
+		if err == nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	if err != nil {
+		glog.Error("Discovering node error vc:", err)
+		return nil, err
+	}
+
+	datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, vsi.Cfg.Datacenters)
+	if err != nil {
+		glog.Error("Discovering node error dc:", err)
+		return nil, err
+	}
+
+	discoveryInfo := &DiscoveryInfo{
+		VcServer:   vc,
+		DataCenter: datacenterObj,
+	}
+
+	return discoveryInfo, nil
+}
+
+func (cm *ConnectionManager) WhichVCandDCByNodeId(nodeID string, searchBy FindVM) (*VmDiscoveryInfo, error) {
+	if nodeID == "" {
+		glog.V(3).Info("DiscoverNode called but nodeID is empty")
+		return nil, ErrVMNotFound
+	}
+	type vmSearch struct {
+		vc         string
+		datacenter *vclib.Datacenter
+	}
+
+	var mutex = &sync.Mutex{}
+	var globalErrMutex = &sync.Mutex{}
+	var queueChannel chan *vmSearch
+	var wg sync.WaitGroup
+	var globalErr *error
+
+	queueChannel = make(chan *vmSearch, QUEUE_SIZE)
+
+	myNodeID := nodeID
+	if searchBy == FindVMByUUID {
+		glog.V(3).Info("DiscoverNode by UUID")
+		myNodeID = strings.ToLower(nodeID)
+	} else {
+		glog.V(3).Info("DiscoverNode by Name")
+	}
+	glog.V(2).Info("DiscoverNode nodeID: ", myNodeID)
+
+	vmFound := false
+	globalErr = nil
+
+	setGlobalErr := func(err error) {
+		globalErrMutex.Lock()
+		globalErr = &err
+		globalErrMutex.Unlock()
+	}
+
+	setVMFound := func(found bool) {
+		mutex.Lock()
+		vmFound = found
+		mutex.Unlock()
+	}
+
+	getVMFound := func() bool {
+		mutex.Lock()
+		found := vmFound
+		mutex.Unlock()
+		return found
+	}
+
+	go func() {
+		var datacenterObjs []*vclib.Datacenter
+		for vc, vsi := range cm.VsphereInstanceMap {
+
+			found := getVMFound()
+			if found == true {
+				break
+			}
+
+			// Create context
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			var err error
+			for i := 0; i < 3; i++ {
+				err = cm.Connect(ctx, vc)
+				if err == nil {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+
+			if err != nil {
+				glog.Error("Discovering node error vc:", err)
+				setGlobalErr(err)
+				continue
+			}
+
+			if vsi.Cfg.Datacenters == "" {
+				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
+				if err != nil {
+					glog.Error("Discovering node error dc:", err)
+					setGlobalErr(err)
+					continue
+				}
+			} else {
+				datacenters := strings.Split(vsi.Cfg.Datacenters, ",")
+				for _, dc := range datacenters {
+					dc = strings.TrimSpace(dc)
+					if dc == "" {
+						continue
+					}
+					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
+					if err != nil {
+						glog.Error("Discovering node error dc:", err)
+						setGlobalErr(err)
+						continue
+					}
+					datacenterObjs = append(datacenterObjs, datacenterObj)
+				}
+			}
+
+			for _, datacenterObj := range datacenterObjs {
+				found := getVMFound()
+				if found == true {
+					break
+				}
+
+				glog.V(4).Infof("Finding node %s in vc=%s and datacenter=%s", myNodeID, vc, datacenterObj.Name())
+				queueChannel <- &vmSearch{
+					vc:         vc,
+					datacenter: datacenterObj,
+				}
+			}
+		}
+		close(queueChannel)
+	}()
+
+	var vmInfo *VmDiscoveryInfo
+	for i := 0; i < POOL_SIZE; i++ {
+		go func() {
+			for res := range queueChannel {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				var vm *vclib.VirtualMachine
+				var err error
+				if searchBy == FindVMByUUID {
+					vm, err = res.datacenter.GetVMByUUID(ctx, myNodeID)
+				} else {
+					vm, err = res.datacenter.GetVMByDNSName(ctx, myNodeID)
+				}
+
+				if err != nil {
+					glog.Errorf("Error while looking for vm=%+v in vc=%s and datacenter=%s: %v",
+						vm, res.vc, res.datacenter.Name(), err)
+					if err != vclib.ErrNoVMFound {
+						setGlobalErr(err)
+					} else {
+						glog.V(2).Infof("Did not find node %s in vc=%s and datacenter=%s",
+							myNodeID, res.vc, res.datacenter.Name())
+					}
+					continue
+				}
+
+				var oVM mo.VirtualMachine
+				err = vm.Properties(ctx, vm.Reference(), []string{"config", "summary", "summary.config", "guest.net", "guest"}, &oVM)
+				if err != nil {
+					glog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
+						vm, res.vc, res.datacenter.Name(), err)
+					continue
+				}
+
+				glog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
+					nodeID, vm, res.vc, res.datacenter.Name())
+				glog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
+
+				vmInfo = &VmDiscoveryInfo{DataCenter: res.datacenter, VM: vm, VcServer: res.vc,
+					UUID: oVM.Summary.Config.Uuid, NodeName: oVM.Guest.HostName}
+				for range queueChannel {
+				}
+				setVMFound(true)
+				break
+			}
+			wg.Done()
+		}()
+		wg.Add(1)
+	}
+	wg.Wait()
+	if vmFound {
+		return vmInfo, nil
+	}
+	if globalErr != nil {
+		return nil, *globalErr
+	}
+
+	glog.V(4).Infof("Discovery Node: %q vm not found", myNodeID)
+	return nil, vclib.ErrNoVMFound
 }
 
 //GenerateInstanceMap creates a map of vCenter connection objects that can be

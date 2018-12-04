@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/golang/glog"
@@ -333,4 +334,108 @@ func setNodeVolumeMap(
 		nodeVolumeMap[nodeName] = volumeMap
 	}
 	volumeMap[volumePath] = check
+}
+
+func (dc *Datacenter) GetAllDatastoreClusters(ctx context.Context, child bool) (map[string]*StoragePodInfo, error) {
+	finder := getFinder(dc)
+	storagePods, err := finder.DatastoreClusterList(ctx, "*")
+	if err != nil {
+		glog.Errorf("Failed to get all the datastore clusters. err: %+v", err)
+		return nil, err
+	}
+	var spList []types.ManagedObjectReference
+	for _, sp := range storagePods {
+		spList = append(spList, sp.Reference())
+	}
+
+	var spMoList []mo.StoragePod
+	pc := property.DefaultCollector(dc.Client())
+	properties := []string{StoragePodDrsEntryProperty, StoragePodProperty}
+	err = pc.Retrieve(ctx, spList, nil, &spMoList)
+	if err != nil {
+		glog.Errorf("Failed to get Datastore managed objects from datastore objects."+
+			" dsObjList: %+v, properties: %+v, err: %v", spList, properties, err)
+		return nil, err
+	}
+
+	spURLInfoMap := make(map[string]*StoragePodInfo)
+	for _, spMo := range spMoList {
+		spURLInfoMap[spMo.Summary.Name] = &StoragePodInfo{
+			&StoragePod{
+				dc,
+				object.NewStoragePod(dc.Client(), spMo.Reference()),
+				make([]*Datastore, 0),
+			},
+			spMo.Summary,
+			&spMo.PodStorageDrsEntry.StorageDrsConfig,
+			make([]*DatastoreInfo, 0),
+		}
+
+		if child {
+			err := spURLInfoMap[spMo.Summary.Name].PopulateChildDatastoreInfos(ctx, false)
+			if err != nil {
+				glog.Warningf("PopulateChildDatastoreInfos Failed. Err: %v", err)
+			}
+		}
+	}
+
+	glog.V(9).Infof("spURLInfoMap : %+v", spURLInfoMap)
+	return spURLInfoMap, nil
+}
+
+func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassDiskInfo, error) {
+	storagePods, err := dc.GetAllDatastoreClusters(ctx, true)
+	if err != nil {
+		glog.Errorf("GetAllDatastoreClusters failed. Err: %v", err)
+		return nil, err
+	}
+
+	datastores, err := dc.GetAllDatastores(ctx)
+	if err != nil {
+		glog.Errorf("GetAllDatastores failed. Err: %v", err)
+		return nil, err
+	}
+
+	alreadyVisited := make([]string, 0)
+	firstClassDisks := make([]*FirstClassDiskInfo, 0)
+
+	for _, storagePod := range storagePods {
+		err := storagePod.PopulateChildDatastoreInfos(ctx, false)
+		if err != nil {
+			glog.Warningf("PopulateChildDatastores failed. Err: %v", err)
+			continue
+		}
+		for _, datastore := range storagePod.DatastoreInfos {
+			alreadyVisited = append(alreadyVisited, datastore.Info.Name)
+		}
+
+		disks, err := storagePod.ListFirstClassDisksInfo(ctx)
+		if err != nil {
+			glog.Warningf("ListFirstClassDisks failed for %s. Err: %v", storagePod.Name(), err)
+			continue
+		}
+
+		firstClassDisks = append(firstClassDisks, disks...)
+	}
+
+	for _, datastore := range datastores {
+		if ExistsInList(datastore.Info.Name, alreadyVisited, false) {
+			continue
+		}
+		alreadyVisited = append(alreadyVisited, datastore.Info.Name)
+
+		disks, err := datastore.ListFirstClassDiskInfos(ctx)
+		if err != nil {
+			glog.Warningf("ListFirstClassDisks failed for %s. Err: %v", datastore.Info.Name, err)
+			continue
+		}
+
+		firstClassDisks = append(firstClassDisks, disks...)
+	}
+
+	sort.Slice(firstClassDisks, func(i, j int) bool {
+		return firstClassDisks[i].Config.Id.Id > firstClassDisks[j].Config.Id.Id
+	})
+
+	return firstClassDisks, nil
 }

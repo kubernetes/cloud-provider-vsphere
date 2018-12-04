@@ -22,6 +22,7 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
 	lookup "github.com/vmware/govmomi/lookup/simulator"
 	"github.com/vmware/govmomi/simulator"
@@ -132,6 +133,8 @@ func TestNewVSphere(t *testing.T) {
 func TestVSphereLogin(t *testing.T) {
 	cfg, cleanup := configFromEnvOrSim()
 	defer cleanup()
+
+	time.Sleep(5 * time.Second)
 
 	// Create vSphere configuration object
 	vs, err := newVSphere(cfg)

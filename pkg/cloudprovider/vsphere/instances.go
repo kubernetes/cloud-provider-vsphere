@@ -28,8 +28,6 @@ import (
 )
 
 const (
-	POOL_SIZE      int    = 8
-	QUEUE_SIZE     int    = POOL_SIZE * 10
 	ProviderPrefix string = "vsphere://"
 
 	//CredentialManagerErrMsg = "The Credential Manager is not initialized"
