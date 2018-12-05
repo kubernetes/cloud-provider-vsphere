@@ -50,12 +50,12 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
-  digest = "1:a54dc69ec3668e0e57ad159a0a8c0ce1ec571174bb4eb6b3915833a8c21d40f3"
+  digest = "1:94ffc0947c337d618b6ff5ed9abaddc1217b090c1b3a1ae4739b35b7b25851d5"
   name = "github.com/container-storage-interface/spec"
-  packages = ["lib/go/csi/v0"]
+  packages = ["lib/go/csi"]
   pruneopts = "UT"
-  revision = "2178fdeea87f1150a17a63252eee28d4d8141f72"
-  version = "v0.3.0"
+  revision = "ed0bb0e1557548aa028307f48728767cfe8f6345"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:219324e0a689fe0a31bd25c295b643b6f3a0867313002f7c3b33305739c4cb5a"
@@ -435,7 +435,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bfacccb149d451c243e47c66b1ee1cb56ff724bfce5b4eb196b5c07f69e660f4"
+  digest = "1:f782a2ff377b06a1bfb0635c627ace1403011b4996d3c445bb4170f6ee93261f"
   name = "github.com/rexray/gocsi"
   packages = [
     ".",
@@ -449,7 +449,7 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "47f4bd656ddea05ff2d9c85cc55c6b9eafcf960e"
+  revision = "207653674028b68706993f72ac0d4846a2d228d2"
 
 [[projects]]
   digest = "1:3f53e9e4dfbb664cd62940c9c4b65a2171c66acd0b7621a1a6b8e78513525a52"
@@ -1166,7 +1166,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/container-storage-interface/spec/lib/go/csi/v0",
+    "github.com/container-storage-interface/spec/lib/go/csi",
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/prometheus/client_golang/prometheus",
