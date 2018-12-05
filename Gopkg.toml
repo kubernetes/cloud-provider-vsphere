@@ -9,6 +9,10 @@ ignored = ["k8s.io/cloud-provider-vsphere"]
   name = "github.com/rexray/gocsi"
   branch = "master"
 
+[[constraint]]
+  name = "github.com/container-storage-interface/spec"
+  version = "1.0.0"
+
 [[override]]
   branch = "master"
   name = "github.com/golang/glog"
