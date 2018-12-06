@@ -48,13 +48,8 @@ $(GOBIN):
 	mkdir -p $(GOBIN)
 
 vendor: | $(GOBIN)
-ifeq (0,$(shell { test ! -d vendor || test vendor -ot Gopkg.lock; } && echo 0))
-vendor:
 	@$(MAKE) --always-make Gopkg.lock
 .PHONY: vendor
-else
-vendor: Gopkg.lock
-endif
 vendor-update: | $(GOBIN)
 	@DEP_FLAGS=" -update" $(MAKE) --always-make Gopkg.lock
 Gopkg.lock: Gopkg.toml $(SOURCES)
