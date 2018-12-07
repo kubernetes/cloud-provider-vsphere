@@ -163,8 +163,8 @@ func (vm *VirtualMachine) DetachDisk(ctx context.Context, vmDiskPath string) err
 		return err
 	}
 	if device == nil {
-		glog.Errorf("No virtual device found with diskPath: %q on VM: %q", vmDiskPath, vm.InventoryPath)
-		return fmt.Errorf("No virtual device found with diskPath: %q on VM: %q", vmDiskPath, vm.InventoryPath)
+		glog.Warningf("No virtual device found with diskPath: %q on VM: %q", vmDiskPath, vm.InventoryPath)
+		return nil
 	}
 	// Detach disk from VM
 	requestTime := time.Now()
