@@ -34,6 +34,14 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  digest = "1:ba7ea5f59171f2da1bfa7a00711b850cc109e5e6b9ea67be324210c66f96cac2"
+  name = "github.com/akutz/gofsutil"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "56ae374ef75adf5ca8ea6b4b79d97175cb86deb2"
+  version = "v0.1.2"
+
+[[projects]]
   digest = "1:5090455975191d02ed0875979b7dc14a76f73005f71404cca242eeb5b83361e9"
   name = "github.com/akutz/gosync"
   packages = ["."]
@@ -452,12 +460,12 @@
   revision = "207653674028b68706993f72ac0d4846a2d228d2"
 
 [[projects]]
-  digest = "1:3f53e9e4dfbb664cd62940c9c4b65a2171c66acd0b7621a1a6b8e78513525a52"
+  branch = "master"
+  digest = "1:1d11307230f6c30c988350d470540c477f7567dd15c9f32a51eb941f749b0b33"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ad15b42461921f1fb3529b058c6786c6a45d5162"
-  version = "v1.1.1"
+  revision = "29d7eb25e8ffa54207ff5a9a5c3d63e95be2cc39"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -1183,11 +1191,13 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/akutz/gofsutil",
     "github.com/container-storage-interface/spec/lib/go/csi",
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/rexray/gocsi",
+    "github.com/rexray/gocsi/context",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",

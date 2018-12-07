@@ -13,6 +13,10 @@ ignored = ["k8s.io/cloud-provider-vsphere"]
   name = "github.com/container-storage-interface/spec"
   version = "1.0.0"
 
+[[constraint]]
+  name = "github.com/akutz/gofsutil"
+  version = "0.1.2"
+
 [[override]]
   branch = "master"
   name = "github.com/golang/glog"
