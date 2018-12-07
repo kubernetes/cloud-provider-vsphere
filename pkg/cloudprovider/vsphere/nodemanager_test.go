@@ -53,7 +53,7 @@ func TestRegUnregNode(t *testing.T) {
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	name := vm.Config.GuestFullName
+	name := vm.Name
 	UUID := vm.Config.Uuid
 	k8sUUID := nm.convertK8sUUIDtoNormal(UUID)
 
@@ -100,7 +100,7 @@ type SearchIndex struct {
 
 func (s *SearchIndex) FindByDnsName(req *types.FindByDnsName) soap.HasFault {
 	res := &methods.FindByDnsNameBody{Res: new(types.FindByDnsNameResponse)}
-	if req.VmSearch && strings.ToLower(req.DnsName) == strings.ToLower(s.vm.Config.GuestFullName) {
+	if req.VmSearch && strings.EqualFold(req.DnsName, s.vm.Name) {
 		res.Res.Returnval = &s.vm.Self
 	}
 	return res
@@ -126,7 +126,8 @@ func TestDiscoverNodeByName(t *testing.T) {
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	name := vm.Config.GuestFullName
+	name := vm.Name
+
 	err = nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP].Conn.Connect(context.Background())
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
@@ -193,7 +194,7 @@ func TestExport(t *testing.T) {
 	}
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	name := vm.Config.GuestFullName
+	name := vm.Name
 	UUID := vm.Config.Uuid
 	k8sUUID := nm.convertK8sUUIDtoNormal(UUID)
 

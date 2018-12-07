@@ -215,6 +215,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 	}()
 
 	for i := 0; i < cm.POOL_SIZE; i++ {
+		wg.Add(1)
 		go func() {
 			for res := range queueChannel {
 				var vm *vclib.VirtualMachine
@@ -277,7 +278,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 			}
 			wg.Done()
 		}()
-		wg.Add(1)
 	}
 	wg.Wait()
 	if vmFound {
