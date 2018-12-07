@@ -45,6 +45,13 @@ type VmDiscoveryInfo struct {
 	NodeName   string
 }
 
+// FcdDiscoveryInfo contains FCD info about a discovered FCD
+type FcdDiscoveryInfo struct {
+	DataCenter *vclib.Datacenter
+	FCDInfo    *vclib.FirstClassDiskInfo
+	VcServer   string
+}
+
 // DiscoveryInfo contains VC+DC info based on a given zone
 type DiscoveryInfo struct {
 	DataCenter *vclib.Datacenter

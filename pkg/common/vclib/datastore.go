@@ -109,14 +109,9 @@ func (ds *Datastore) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDisk
 		return nil, err
 	}
 
-	var ids []string
-	for _, id := range oids {
-		ids = append(ids, id.Id)
-	}
-
 	var objs []*FirstClassDisk
-	for _, id := range ids {
-		o, err := m.Retrieve(ctx, ds.Reference(), id)
+	for _, id := range oids {
+		o, err := m.Retrieve(ctx, ds.Reference(), id.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -133,6 +128,37 @@ func (ds *Datastore) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDisk
 	return objs, nil
 }
 
+// GetFirstClassDisk gets a specific first class disks (FCD) on this datastore
+func (ds *Datastore) GetFirstClassDisk(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDisk, error) {
+	m := vslm.NewObjectManager(ds.Client())
+
+	oids, err := m.List(ctx, ds.Reference())
+	if err != nil {
+		glog.Errorf("Failed to list disks. Err: %v", err)
+		return nil, err
+	}
+
+	for _, id := range oids {
+		o, err := m.Retrieve(ctx, ds.Reference(), id.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		if (findBy == FindFCDByName && o.Config.Name == diskID) ||
+			(findBy == FindFCDByID && o.Config.Id.Id == diskID) {
+			return &FirstClassDisk{
+				ds.Datacenter,
+				o,
+				TypeDatastore,
+				ds,
+				nil,
+			}, nil
+		}
+	}
+
+	return nil, ErrNoDiskIDFound
+}
+
 // ListFirstClassDiskInfos gets a list of first class disks (FCD) on this datastore
 func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*FirstClassDiskInfo, error) {
 	m := vslm.NewObjectManager(dsi.Datacenter.Client())
@@ -143,14 +169,9 @@ func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*First
 		return nil, err
 	}
 
-	var ids []string
-	for _, id := range oids {
-		ids = append(ids, id.Id)
-	}
-
 	var objs []*FirstClassDiskInfo
-	for _, id := range ids {
-		o, err := m.Retrieve(ctx, dsi.Reference(), id)
+	for _, id := range oids {
+		o, err := m.Retrieve(ctx, dsi.Reference(), id.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -169,4 +190,39 @@ func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*First
 	}
 
 	return objs, nil
+}
+
+// GetFirstClassDiskInfo gets a specific first class disks (FCD) on this datastore
+func (dsi *DatastoreInfo) GetFirstClassDiskInfo(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDiskInfo, error) {
+	m := vslm.NewObjectManager(dsi.Datacenter.Client())
+
+	oids, err := m.List(ctx, dsi.Reference())
+	if err != nil {
+		glog.Errorf("Failed to list disks. Err: %v", err)
+		return nil, err
+	}
+
+	for _, id := range oids {
+		o, err := m.Retrieve(ctx, dsi.Reference(), id.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		if (findBy == FindFCDByName && o.Config.Name == diskID) ||
+			(findBy == FindFCDByID && o.Config.Id.Id == diskID) {
+			return &FirstClassDiskInfo{
+				&FirstClassDisk{
+					dsi.Datacenter,
+					o,
+					TypeDatastore,
+					dsi.Datastore,
+					nil,
+				},
+				dsi,
+				nil,
+			}, nil
+		}
+	}
+
+	return nil, ErrNoDiskIDFound
 }

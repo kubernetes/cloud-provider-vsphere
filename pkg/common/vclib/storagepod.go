@@ -49,7 +49,6 @@ func (spi *StoragePodInfo) PopulateChildDatastoreInfos(ctx context.Context, refr
 		glog.Infof("Re-discover datastore infos")
 	}
 	if len(spi.DatastoreInfos) > 0 && !refresh {
-		glog.Infof("Already discovered datastore infos")
 		return nil
 	}
 
@@ -106,13 +105,8 @@ func (spi *StoragePodInfo) ListFirstClassDisksInfo(ctx context.Context) ([]*Firs
 			return nil, err
 		}
 
-		var ids []string
 		for _, id := range oids {
-			ids = append(ids, id.Id)
-		}
-
-		for _, id := range ids {
-			o, err := m.Retrieve(ctx, child, id)
+			o, err := m.Retrieve(ctx, child, id.Id)
 			if err != nil {
 				return nil, err
 			}
@@ -134,13 +128,87 @@ func (spi *StoragePodInfo) ListFirstClassDisksInfo(ctx context.Context) ([]*Firs
 	return objs, nil
 }
 
+// GetFirstClassDiskInfo gets a specific first class disks (FCD) on this datastore backed by this StoragePodInfo
+func (spi *StoragePodInfo) GetFirstClassDiskInfo(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDiskInfo, error) {
+	err := spi.PopulateChildDatastoreInfos(ctx, false)
+	if err != nil {
+		glog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
+		return nil, err
+	}
+
+	m := vslm.NewObjectManager(spi.Datacenter.Client())
+
+	for _, child := range spi.DatastoreInfos {
+		oids, err := m.List(ctx, child)
+		if err != nil {
+			glog.Errorf("Failed to list disks. Err: %v", err)
+			return nil, err
+		}
+
+		for _, id := range oids {
+			o, err := m.Retrieve(ctx, child, id.Id)
+			if err != nil {
+				return nil, err
+			}
+
+			if (findBy == FindFCDByName && o.Config.Name == diskID) ||
+				(findBy == FindFCDByID && o.Config.Id.Id == diskID) {
+				return &FirstClassDiskInfo{
+					&FirstClassDisk{
+						spi.Datacenter,
+						o,
+						TypeDatastoreCluster,
+						child.Datastore,
+						spi.StoragePod,
+					},
+					child,
+					spi,
+				}, nil
+			}
+		}
+	}
+
+	return nil, ErrNoDiskIDFound
+}
+
+// GetDatastoreThatOwnsFCD gets datastore that owns first class disks (FCD) backed by this StoragePod
+func (spi *StoragePodInfo) GetDatastoreThatOwnsFCD(ctx context.Context, diskID string) (*DatastoreInfo, error) {
+	err := spi.PopulateChildDatastoreInfos(ctx, false)
+	if err != nil {
+		glog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
+		return nil, err
+	}
+
+	m := vslm.NewObjectManager(spi.Datacenter.Client())
+
+	for _, child := range spi.DatastoreInfos {
+		oids, err := m.List(ctx, child)
+		if err != nil {
+			glog.Errorf("Failed to list disks. Err: %v", err)
+			return nil, err
+		}
+
+		for _, id := range oids {
+			o, err := m.Retrieve(ctx, child, id.Id)
+			if err != nil {
+				return nil, err
+			}
+
+			if o.Config.Id.Id == diskID {
+				return child, nil
+			}
+		}
+	}
+
+	return nil, ErrNoDiskIDFound
+}
+
 // PopulateChildDatastores discovers the child Datastores backed by this StoragePod
 func (sp *StoragePod) PopulateChildDatastores(ctx context.Context, refresh bool) error {
 	if refresh {
 		glog.Infof("Re-discover datastores")
 	}
 	if len(sp.Datastores) > 0 && !refresh {
-		glog.Infof("Already discovered datastores")
 		return nil
 	}
 
@@ -179,13 +247,8 @@ func (sp *StoragePod) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDis
 			return nil, err
 		}
 
-		var ids []string
 		for _, id := range oids {
-			ids = append(ids, id.Id)
-		}
-
-		for _, id := range ids {
-			o, err := m.Retrieve(ctx, child, id)
+			o, err := m.Retrieve(ctx, child, id.Id)
 			if err != nil {
 				return nil, err
 			}
@@ -201,4 +264,43 @@ func (sp *StoragePod) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDis
 	}
 
 	return objs, nil
+}
+
+// GetFirstClassDisk gets a specific first class disks (FCD) on this datastore backed by this StoragePod
+func (sp *StoragePod) GetFirstClassDisk(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDisk, error) {
+	err := sp.PopulateChildDatastores(ctx, false)
+	if err != nil {
+		glog.Errorf("PopulateChildDatastores failed. Err: %v", err)
+		return nil, err
+	}
+
+	m := vslm.NewObjectManager(sp.Datacenter.Client())
+
+	for _, child := range sp.Datastores {
+		oids, err := m.List(ctx, child)
+		if err != nil {
+			glog.Errorf("Failed to list disks. Err: %v", err)
+			return nil, err
+		}
+
+		for _, id := range oids {
+			o, err := m.Retrieve(ctx, child, id.Id)
+			if err != nil {
+				return nil, err
+			}
+
+			if (findBy == FindFCDByName && o.Config.Name == diskID) ||
+				(findBy == FindFCDByID && o.Config.Id.Id == diskID) {
+				return &FirstClassDisk{
+					sp.Datacenter,
+					o,
+					TypeDatastoreCluster,
+					child,
+					sp,
+				}, nil
+			}
+		}
+	}
+
+	return nil, ErrNoDiskIDFound
 }

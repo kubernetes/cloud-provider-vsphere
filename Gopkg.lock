@@ -1088,7 +1088,7 @@
   revision = "e3762e86a74c878ffed47484592986685639c2cd"
 
 [[projects]]
-  digest = "1:f7f7777d09307c2c606e4779fd7810e53bb18d07ea2f8860a60abe67c4973b6b"
+  digest = "1:cba624958aaf538386f59ff24426f41d2521ea215c55274dba0a6271d4556876"
   name = "k8s.io/kubernetes"
   packages = [
     "cmd/cloud-controller-manager/app",
@@ -1140,15 +1140,24 @@
     "pkg/util/file",
     "pkg/util/flag",
     "pkg/util/hash",
+    "pkg/util/io",
     "pkg/util/metrics",
+    "pkg/util/mount",
     "pkg/util/net/sets",
     "pkg/util/node",
+    "pkg/util/nsenter",
     "pkg/util/parsers",
     "pkg/util/pointer",
     "pkg/util/taints",
     "pkg/version",
     "pkg/version/prometheus",
     "pkg/version/verflag",
+    "pkg/volume",
+    "pkg/volume/util",
+    "pkg/volume/util/fs",
+    "pkg/volume/util/recyclerclient",
+    "pkg/volume/util/types",
+    "pkg/volume/util/volumepathhandler",
   ]
   pruneopts = "UT"
   revision = "bb9ffb1654d4a729bb4cec18ff088eacc153c239"
@@ -1161,6 +1170,14 @@
   packages = ["pkg/signals"]
   pruneopts = "UT"
   revision = "be98dc6210ab86895825bb9ed212f9f60557c33e"
+
+[[projects]]
+  branch = "master"
+  digest = "1:381323c2fe2e890a3dd3b5d6dc6f2199068408cca89b24f6b7ca1c60f32644a5"
+  name = "k8s.io/utils"
+  packages = ["exec"]
+  pruneopts = "UT"
+  revision = "0d26856f57b32ec3398579285e5c8a2bfe8c5243"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -1198,7 +1215,9 @@
     "github.com/vmware/govmomi/vslm",
     "golang.org/x/net/context",
     "google.golang.org/grpc",
+    "google.golang.org/grpc/codes",
     "google.golang.org/grpc/reflection",
+    "google.golang.org/grpc/status",
     "gopkg.in/gcfg.v1",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
@@ -1225,6 +1244,7 @@
     "k8s.io/kubernetes/pkg/util/flag",
     "k8s.io/kubernetes/pkg/version/prometheus",
     "k8s.io/kubernetes/pkg/version/verflag",
+    "k8s.io/kubernetes/pkg/volume/util",
     "k8s.io/sample-controller/pkg/signals",
   ]
   solver-name = "gps-cdcl"

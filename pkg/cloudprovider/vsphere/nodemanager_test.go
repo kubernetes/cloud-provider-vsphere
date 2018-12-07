@@ -115,6 +115,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 		t.Errorf("Failed to construct/authenticate vSphere: %s", err)
 	}
 	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
+	defer vsphere.connectionManager.Logout()
 
 	nm := NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),
@@ -126,7 +127,6 @@ func TestDiscoverNodeByName(t *testing.T) {
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Config.GuestFullName
-
 	err = nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP].Conn.Connect(context.Background())
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
@@ -182,6 +182,7 @@ func TestExport(t *testing.T) {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
 	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
+	defer vsphere.connectionManager.Logout()
 
 	nm := NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),

@@ -133,7 +133,7 @@ func TestDatacenter(t *testing.T) {
 		t.Error(err)
 	}
 
-	diskPath := ds.Path(avm.Name + "/disk1.vmdk")
+	diskPath := ds.Datastore.Path(avm.Name + "/disk1.vmdk")
 
 	_, err = dc.GetVirtualDiskPage83Data(ctx, diskPath+testNameNotFound)
 	if err == nil {
@@ -142,7 +142,7 @@ func TestDatacenter(t *testing.T) {
 
 	_, err = dc.GetVirtualDiskPage83Data(ctx, diskPath)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("GetVirtualDiskPage83Data: %v", err)
 	}
 
 	_, err = dc.GetDatastoreMoList(ctx, nil, nil)
@@ -150,12 +150,12 @@ func TestDatacenter(t *testing.T) {
 		t.Error("expected error")
 	}
 
-	_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds}, []string{testNameNotFound}) // invalid property
+	_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds.Datastore}, []string{testNameNotFound}) // invalid property
 	if err == nil {
 		t.Error("expected error")
 	}
 
-	_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds}, []string{DatastoreInfoProperty})
+	_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds.Datastore}, []string{DatastoreInfoProperty})
 	if err != nil {
 		t.Error(err)
 	}
