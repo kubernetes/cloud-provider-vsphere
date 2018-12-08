@@ -128,12 +128,13 @@ func TestDiscoverNodeByName(t *testing.T) {
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
 
-	err = nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP].Conn.Connect(context.Background())
+	vsi := nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
+	err = nm.connectionManager.Connect(context.Background(), cfg.Global.VCenterIP)
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
 
-	search := object.NewSearchIndex(nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP].Conn.Client)
+	search := object.NewSearchIndex(vsi.Conn.Client)
 	si := simulator.Map.Get(search.Reference()).(*simulator.SearchIndex)
 	simulator.Map.Put(&SearchIndex{si, vm})
 

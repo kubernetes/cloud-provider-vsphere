@@ -118,7 +118,14 @@ func generateInstanceMap(cfg *vcfg.Config) map[string]*VSphereInstance {
 	return vsphereInstanceMap
 }
 
+var (
+	clientLock sync.Mutex
+)
+
 func (cm *ConnectionManager) Connect(ctx context.Context, vcenter string) error {
+	clientLock.Lock()
+	defer clientLock.Unlock()
+
 	vc := cm.VsphereInstanceMap[vcenter]
 	if vc == nil {
 		return ErrConnectionNotFound
@@ -158,7 +165,10 @@ func (cm *ConnectionManager) ConnectByInstance(ctx context.Context, vsphereInsta
 
 func (cm *ConnectionManager) Logout() {
 	for _, vsphereIns := range cm.VsphereInstanceMap {
-		if vsphereIns.Conn.Client != nil {
+		clientLock.Lock()
+		c := vsphereIns.Conn.Client
+		clientLock.Unlock()
+		if c != nil {
 			vsphereIns.Conn.Logout(context.TODO())
 		}
 	}

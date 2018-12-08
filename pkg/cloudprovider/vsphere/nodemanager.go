@@ -55,6 +55,17 @@ var (
 	ErrVMNotFound         = errors.New(VMNotFoundErrMsg)
 )
 
+func (f FindVM) String() string {
+	switch f {
+	case FindVMByUUID:
+		return "byUUID"
+	case FindVMByName:
+		return "byName"
+	default:
+		return "byUnknown"
+	}
+}
+
 // RegisterNode - Handler when node is removed from k8s cluster.
 func (nm *NodeManager) RegisterNode(node *v1.Node) {
 	glog.V(4).Info("RegisterNode ENTER: ", node.Name)
@@ -227,8 +238,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 				}
 
 				if err != nil {
-					glog.Errorf("Error while looking for vm=%+v in vc=%s and datacenter=%s: %v",
-						vm, res.vc, res.datacenter.Name(), err)
+					glog.Errorf("Error while looking for vm=%s(%s) in vc=%s and datacenter=%s: %v",
+						myNodeID, searchBy, res.vc, res.datacenter.Name(), err)
 					if err != vclib.ErrNoVMFound {
 						setGlobalErr(err)
 					} else {

@@ -42,17 +42,20 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return newVSphere(cfg)
+		return newVSphere(cfg, true)
 	})
 }
 
 // Creates new Controller node interface and returns
-func newVSphere(cfg vcfg.Config) (*VSphere, error) {
+func newVSphere(cfg vcfg.Config, finalize ...bool) (*VSphere, error) {
 	vs, err := buildVSphereFromConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
-	runtime.SetFinalizer(vs, logout)
+	if len(finalize) == 1 && finalize[0] {
+		// optional for use in tests
+		runtime.SetFinalizer(vs, logout)
+	}
 	return vs, nil
 }
 
