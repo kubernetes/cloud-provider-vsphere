@@ -94,9 +94,11 @@ func (s *service) BeforeServe(
 
 	// Get the SP's operating mode.
 	s.mode = csictx.Getenv(ctx, gocsi.EnvVarMode)
+	log.Infof("Mode: %s", s.mode)
 
 	if !strings.EqualFold(s.mode, "node") {
 		// Controller service is needed
+		log.Info("Initializing controller")
 
 		if s.cs == nil {
 			return fmt.Errorf("Invalid API: %s", api)

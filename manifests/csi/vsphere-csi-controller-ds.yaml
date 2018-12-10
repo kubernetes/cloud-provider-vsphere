@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpshere-csi-controller
+  namespace: kube-system
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: vsphere-csi-controller
+  namespace: kube-system
+  labels:
+    k8s-app: vsphere-csi-controller
+spec:
+  selector:
+    matchLabels:
+      k8s-app: vsphere-csi-controller
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s-app: vsphere-csi-controller
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: vpshere-csi-controller
+      containers:
+        - name: vsphere-csi-controller
+          image: gcr.io/cloud-provider-vsphere/vsphere-csi:latest
+          imagePullPolicy: Always
+          env:
+          - name: VSPHERE_KUBE_CONFIG
+            value: "*"
+          - name: CSI_ENDPOINT
+            value: unix:///var/lib/csi/sockets/controller/csi.sock
+          - name: X_CSI_MODE
+            value: "controller"
+          volumeMounts:
+            - mountPath: /etc/kubernetes/pki
+              name: k8s-certs
+              readOnly: true
+            - mountPath: /etc/ssl/certs
+              name: ca-certs
+              readOnly: true
+            - mountPath: /etc/kubernetes/controller-manager.conf
+              name: kubeconfig
+              readOnly: true
+            - mountPath: /etc/cloud
+              name: vsphere-config-volume
+              readOnly: true
+            - mountPath: /var/lib/csi/sockets/controller
+              name: socket-dir
+          resources:
+            requests:
+              cpu: 200m
+      hostNetwork: true
+      securityContext:
+        runAsUser: 0
+      volumes:
+      - hostPath:
+          path: /var/lib/csi/sockets/controller
+          type: DirectoryOrCreate
+        name: socket-dir
+      - hostPath:
+          path: /etc/kubernetes/pki
+          type: DirectoryOrCreate
+        name: k8s-certs
+      - hostPath:
+          path: /etc/ssl/certs
+          type: DirectoryOrCreate
+        name: ca-certs
+      - hostPath:
+          path: /etc/kubernetes/controller-manager.conf
+          type: FileOrCreate
+        name: kubeconfig
+      - name: vsphere-config-volume
+        configMap:
+          name: cloud-config

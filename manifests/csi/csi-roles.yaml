@@ -3,7 +3,7 @@ items:
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
-    name: system:csi-controller
+    name: system:vsphere-csi-controller
   rules:
   - apiGroups:
     - ""
@@ -21,6 +21,41 @@ items:
     - create
     - patch
     - update
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - secrets
+    verbs:
+    - get
+    - list
+    - watch
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: system:vsphere-csi-node
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - persistentvolumes
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - events
+    verbs:
+    - create
+    - patch
+    - update
+    - get
+    - list
+    - watch
   - apiGroups:
     - ""
     resources:

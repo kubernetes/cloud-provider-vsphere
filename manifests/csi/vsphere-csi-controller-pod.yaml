@@ -1,8 +1,7 @@
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: csi-controller
+  name: vsphere-csi-controller
   namespace: kube-system
 ---
 apiVersion: v1
@@ -11,17 +10,23 @@ metadata:
   annotations:
     scheduler.alpha.kubernetes.io/critical-pod: ""
   labels:
-    component: csi-controller
+    component: vsphere-csi-controller
     tier: control-plane
   name: vsphere-csi-controller
   namespace: kube-system
 spec:
+  serviceAccountName: vsphere-csi-controller
   containers:
-    - name: vsphere-csi
+    - name: vsphere-csi-controller
       image: gcr.io/cloud-provider-vsphere/vsphere-csi:latest
+      imagePullPolicy: Always
       env:
         - name: VSPHERE_KUBE_CONFIG
           value: "*"
+        - name: CSI_ENDPOINT
+          value: unix:///var/lib/csi/sockets/controller/csi.sock
+        - name: X_CSI_MODE
+          value: "controller"
       volumeMounts:
         - mountPath: /etc/kubernetes/pki
           name: k8s-certs
@@ -32,23 +37,22 @@ spec:
         - mountPath: /etc/kubernetes/controller-manager.conf
           name: kubeconfig
           readOnly: true
-        - mountPath: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
-          name: flexvolume-dir
         - mountPath: /etc/cloud
-          name: cloud-config-volume
+          name: vsphere-config-volume
           readOnly: true
+        - mountPath: /var/lib/csi/sockets/controller
+          name: socket-dir
       resources:
         requests:
           cpu: 200m
   hostNetwork: true
   securityContext:
-    runAsUser: 1001
-  serviceAccountName: csi-controller
+    runAsUser: 0
   volumes:
   - hostPath:
-      path: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+      path: /var/lib/csi/sockets/controller
       type: DirectoryOrCreate
-    name: flexvolume-dir
+    name: socket-dir
   - hostPath:
       path: /etc/kubernetes/pki
       type: DirectoryOrCreate
@@ -61,22 +65,6 @@ spec:
       path: /etc/kubernetes/controller-manager.conf
       type: FileOrCreate
     name: kubeconfig
-  - name: cloud-config-volume
+  - name: vsphere-config-volume
     configMap:
       name: cloud-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    component: csi-controller
-  name: vsphere-csi-controller
-  namespace: kube-system
-spec:
-  type: NodePort
-  ports:
-    - port: 43001
-      protocol: TCP
-      targetPort: 43001
-  selector:
-    component: csi-controller

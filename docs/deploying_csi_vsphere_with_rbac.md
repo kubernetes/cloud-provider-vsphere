@@ -10,7 +10,8 @@ Steps that will be covered in deploying `csi-vsphere`:
 2. (Optional, but highly recommended) Storing vCenter creds in a Kubernetes Secret
 3. Create the RBAC roles for `csi-vsphere`.
 4. Create the RBAC role bindings for `csi-vsphere`.
-5. Deploy `csi-vsphere` using either the Pod or DaemonSet YAML.
+5. Deploy `csi-vsphere-controller` using DaemonSet YAML.
+6. Deploy `csi-vsphere-node` using DaemonSet YAML.
 
 ## Deploying `csi-vsphere`
 
@@ -137,32 +138,42 @@ To apply them to your Kubernetes cluster, run the following command:
 [k8suser@k8master ~]$ kubectl create -f csi-role-bindings.yaml
 ```
 
-#### 5. Deploy `csi-vsphere`
+#### 5. Deploy `csi-vsphere-controller`
 
-You have two options for deploying `csi-vsphere`. It can be deployed either as a simple Pod or in a DaemonSet. There really isn't much difference between the two other than the DaemonSet will do leader election and the Pod will just assume to be the leader.
+You have two options for deploying `csi-vsphere-controller`. It can be deployed either as a DaemonSet (highly preferred for production) or as a pod (for debug purposes).
 
 **IMPORTANT NOTES:**
-- Deploy either as a Pod or in a DaemonSet, but *DO NOT* deploy both.
+- Deploy either as a DaemonSet or Pod, but *DO NOT* deploy both.
 - The YAML to deploy as a Pod or a DaemonSet assume that your Kubernetes cluster was deployed using [kubeadm](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/). If you deployed your cluster using alternate means, you will need to modify the either of the YAML files in order to provided necessary files or paths based on your deployment.
 
-##### Deploy `csi-vsphere` as a Pod
+##### Deploy `csi-vsphere-controller` as a DaemonSet
 
-The YAML to deploy `csi-vsphere` as a Pod can be found in [vsphere-csi-pod.yaml](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/csi/vsphere-csi-pod.yaml).
+The YAML to deploy `csi-vsphere-controller` as a DaemonSet can be found in [vsphere-csi-controller-ds.yaml](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/csi/vsphere-csi-controller-ds.yaml).
 
 Run the following command:
 
 ```bash
-[k8suser@k8master ~]$ kubectl create -f vsphere-csi-pod.yaml
+[k8suser@k8master ~]$ kubectl create -f vsphere-csi-controller-ds.yaml
 ```
 
-##### Deploy `csi-vsphere` as a DaemonSet
+##### Deploy `csi-vsphere-controller` as a Pod
 
-The YAML to deploy `csi-vsphere` as a DaemonSet can be found in [vsphere-csi-ds.yaml](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/csi/vsphere-csi-ds.yaml).
+The YAML to deploy `csi-vsphere-controller` as a Pod can be found in [vsphere-csi-controller-pod.yaml](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/csi/vsphere-csi-controller-pod.yaml).
 
 Run the following command:
 
 ```bash
-[k8suser@k8master ~]$ kubectl create -f vsphere-csi-ds.yaml
+[k8suser@k8master ~]$ kubectl create -f vsphere-csi-controller-pod.yaml
+```
+
+#### 6. Deploy `csi-vsphere-node`
+
+The YAML to deploy `csi-vsphere-node` as a DaemonSet can be found in [vsphere-csi-node-ds.yaml](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/csi/vsphere-csi-node-ds.yaml).
+
+Run the following command:
+
+```bash
+[k8suser@k8master ~]$ kubectl create -f vsphere-csi-node-ds.yaml
 ```
 
 ## Wrapping Up
