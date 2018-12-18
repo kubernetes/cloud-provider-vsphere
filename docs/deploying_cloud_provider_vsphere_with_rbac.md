@@ -148,7 +148,7 @@ You have two options for deploying `cloud-provider-vsphere`. It can be deployed 
 
 **IMPORTANT NOTES:**
 - Deploy either as a Pod or in a DaemonSet, but *DO NOT* deploy both.
-- The YAML to deploy as a Pod or a DaemonSet assume that your Kubernetes cluster was deployed using [kubeadm](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/). If you deployed your cluster using alternate means, you will need to modify the either of the YAML files in order to provided necessary files or paths based on your deployment.
+- The YAML to deploy as a Pod or a DaemonSet assume that your Kubernetes cluster was deployed using [kubeadm](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/). If you deployed your cluster using alternate means, you will need to modify the YAML files in order to provide necessary files or paths based on your deployment.
 
 ##### Deploy `cloud-provider-vsphere` as a Pod
 
