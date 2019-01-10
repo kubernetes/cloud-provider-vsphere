@@ -110,7 +110,8 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Con
 
 // configFromEnvOrSim returns config from configFromEnv if set, otherwise returns configFromSim.
 func configFromEnvOrSim() (vcfg.Config, func()) {
-	cfg, ok := vcfg.ConfigFromEnv()
+	cfg := vcfg.Config{}
+	ok := vcfg.ConfigFromEnv(&cfg)
 	if ok {
 		return cfg, func() {}
 	}
@@ -118,7 +119,9 @@ func configFromEnvOrSim() (vcfg.Config, func()) {
 }
 
 func TestNewVSphere(t *testing.T) {
-	cfg, ok := vcfg.ConfigFromEnv()
+	cfg := vcfg.Config{}
+
+	ok := vcfg.ConfigFromEnv(&cfg)
 	if !ok {
 		t.Skipf("No config found in environment")
 	}
@@ -455,7 +458,8 @@ func TestSecretVSphereConfig(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Logf("Executing Testcase: %s", testcase.testName)
-		cfg, err := vcfg.ReadConfig(strings.NewReader(testcase.conf))
+		cfg := vcfg.Config{}
+		err := vcfg.ReadConfig(&cfg, strings.NewReader(testcase.conf))
 		if err != nil {
 			t.Fatalf("readConfig: Should succeed when a valid config is provided: %v", err)
 		}

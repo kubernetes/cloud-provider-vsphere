@@ -113,7 +113,8 @@ func (s *service) BeforeServe(
 			log.Errorf("Failed to open %s. Err: %v", cfgPath, err)
 			return err
 		}
-		cfg, err := vcfg.ReadConfig(config)
+		cfg := vcfg.Config{}
+		err = vcfg.ReadConfig(&cfg, config)
 		if err != nil {
 			log.Errorf("Failed to parse config. Err: %v", err)
 			return err

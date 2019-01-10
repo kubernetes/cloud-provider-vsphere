@@ -38,7 +38,8 @@ const (
 
 func init() {
 	cloudprovider.RegisterCloudProvider(ProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
-		cfg, err := vcfg.ReadConfig(config)
+		cfg := vcfg.Config{}
+		err := vcfg.ReadConfig(&cfg, config)
 		if err != nil {
 			return nil, err
 		}

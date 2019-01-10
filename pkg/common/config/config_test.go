@@ -22,12 +22,18 @@ import (
 )
 
 func TestReadConfigGlobal(t *testing.T) {
-	_, err := ReadConfig(nil)
+	cfg := Config{}
+
+	err := ReadConfig(&cfg, nil)
+	if err == nil {
+		t.Errorf("Should fail when no config file is provided: %s", err)
+	}
+	err = ReadConfig(nil, strings.NewReader(""))
 	if err == nil {
 		t.Errorf("Should fail when no config is provided: %s", err)
 	}
 
-	cfg, err := ReadConfig(strings.NewReader(`
+	err = ReadConfig(&cfg, strings.NewReader(`
 [Global]
 server = 0.0.0.0
 port = 443

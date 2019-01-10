@@ -26,7 +26,7 @@ import (
 
 	"github.com/golang/glog"
 
-	"gopkg.in/gcfg.v1"
+	gcfg "gopkg.in/gcfg.v1"
 )
 
 const (
@@ -79,7 +79,12 @@ func getEnvKeyValue(match string, partial bool) (string, string, error) {
 }
 
 //ConfigFromEnv allows setting configuration via environment variables.
-func ConfigFromEnv() (cfg Config, ok bool) {
+func ConfigFromEnv(cfg *Config) (ok bool) {
+	if cfg == nil {
+		ok = false
+		return
+	}
+
 	var err error
 
 	//Init
@@ -336,19 +341,22 @@ func fixUpConfigFromFile(cfg *Config) error {
 }
 
 //ReadConfig parses vSphere cloud config file and stores it into VSphereConfig.
-func ReadConfig(config io.Reader) (Config, error) {
-	if config == nil {
-		return Config{}, fmt.Errorf("no vSphere cloud provider config file given")
+func ReadConfig(cfg *Config, reader io.Reader) error {
+	if reader == nil {
+		return fmt.Errorf("no vSphere cloud provider config file given")
+	}
+	if cfg == nil {
+		return fmt.Errorf("no vSphere cloud provider config given")
 	}
 
-	cfg, _ := ConfigFromEnv()
+	_ = ConfigFromEnv(cfg)
 
-	err := gcfg.FatalOnly(gcfg.ReadInto(&cfg, config))
+	err := gcfg.FatalOnly(gcfg.ReadInto(cfg, reader))
 	if err != nil {
-		return cfg, err
+		return err
 	}
 
-	err = fixUpConfigFromFile(&cfg)
+	err = fixUpConfigFromFile(cfg)
 
-	return cfg, err
+	return err
 }

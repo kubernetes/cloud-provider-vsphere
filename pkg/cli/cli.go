@@ -34,7 +34,8 @@ import (
 )
 
 func ParseConfig(configFile string) (config.Config, error) {
-	var cfg config.Config
+	cfg := config.Config{}
+
 	if len(configFile) == 0 {
 		return cfg, fmt.Errorf("Please specify vsphere cloud config file, e.g. --config vsphere.conf")
 	}
@@ -45,10 +46,7 @@ func ParseConfig(configFile string) (config.Config, error) {
 	if err != nil {
 		return cfg, fmt.Errorf("Can not open config file %s, %v", configFile, err)
 	}
-	cfg, err = config.ReadConfig(f)
-	if err != nil {
-		return cfg, err
-	}
+	err = config.ReadConfig(&cfg, f)
 	return cfg, err
 }
 
