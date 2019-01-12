@@ -91,16 +91,18 @@ func (vs *VSphere) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
 }
 
 func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
+	glog.V(1).Info("Enabling Instances interface on vSphere cloud provider")
 	return vs.instances, true
 }
 
 func (vs *VSphere) Zones() (cloudprovider.Zones, bool) {
-	glog.V(1).Info("The vSphere cloud provider does not support zones")
-	return nil, false
+	glog.V(1).Info("Enabling Zones interface on vSphere cloud provider")
+	return vs.zones, true
 }
 
 func (vs *VSphere) Clusters() (cloudprovider.Clusters, bool) {
-	return nil, true
+	glog.V(1).Info("The vSphere cloud provider does not support clusters")
+	return nil, false
 }
 
 func (vs *VSphere) Routes() (cloudprovider.Routes, bool) {
@@ -135,6 +137,7 @@ func buildVSphereFromConfig(cfg vcfg.Config) (*VSphere, error) {
 		cfg:         &cfg,
 		nodeManager: &nm,
 		instances:   newInstances(&nm),
+		zones:       newZones(&nm, cfg.Labels.Zone, cfg.Labels.Region),
 		server:      server.NewServer(cfg.Global.APIBinding, nodeMgr),
 	}
 	return &vs, nil

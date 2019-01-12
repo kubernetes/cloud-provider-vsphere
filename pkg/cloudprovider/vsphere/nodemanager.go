@@ -19,7 +19,6 @@ package vsphere
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
 	"sync"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	clientv1 "k8s.io/client-go/listers/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
@@ -66,11 +66,22 @@ func (f FindVM) String() string {
 	}
 }
 
+func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeManager {
+	return &NodeManager{
+		nodeNameMap:       make(map[string]*NodeInfo),
+		nodeUUIDMap:       make(map[string]*NodeInfo),
+		nodeRegUUIDMap:    make(map[string]*v1.Node),
+		vcList:            make(map[string]*VCenterInfo),
+		connectionManager: cm,
+		nodeLister:        lister,
+	}
+}
+
 // RegisterNode - Handler when node is removed from k8s cluster.
 func (nm *NodeManager) RegisterNode(node *v1.Node) {
 	glog.V(4).Info("RegisterNode ENTER: ", node.Name)
 	nm.addNode(node)
-	nm.DiscoverNode(nm.convertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID), FindVMByUUID)
+	nm.DiscoverNode(ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID), FindVMByUUID)
 	glog.V(4).Info("RegisterNode LEAVE: ", node.Name)
 }
 
@@ -92,7 +103,7 @@ func (nm *NodeManager) addNodeInfo(node *NodeInfo) {
 
 func (nm *NodeManager) addNode(node *v1.Node) {
 	nm.nodeRegInfoLock.Lock()
-	uuid := nm.convertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
+	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
 	glog.V(4).Info("addNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	nm.nodeRegUUIDMap[uuid] = node
 	nm.nodeRegInfoLock.Unlock()
@@ -100,7 +111,7 @@ func (nm *NodeManager) addNode(node *v1.Node) {
 
 func (nm *NodeManager) removeNode(node *v1.Node) {
 	nm.nodeRegInfoLock.Lock()
-	uuid := nm.convertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
+	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
 	glog.V(4).Info("removeNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	delete(nm.nodeRegUUIDMap, uuid)
 	nm.nodeRegInfoLock.Unlock()
@@ -158,8 +169,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 	ctx := context.Background()
 
 	go func() {
-		var datacenterObjs []*vclib.Datacenter
 		for vc, vsi := range nm.connectionManager.VsphereInstanceMap {
+			var datacenterObjs []*vclib.Datacenter
 
 			found := getVMFound()
 			if found == true {
@@ -169,10 +180,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 			var err error
 			for i := 0; i < 3; i++ {
 				err = nm.connectionManager.Connect(ctx, vc)
-				if err == nil {
-					break
-				}
-				err = nm.connectionManager.ConnectByInstance(ctx, vsi)
 				if err == nil {
 					break
 				}
@@ -300,21 +307,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 
 	glog.V(4).Infof("Discovery Node: %q vm not found", myNodeID)
 	return vclib.ErrNoVMFound
-}
-
-// Reformats UUID to match vSphere format
-// Endian Safe : https://www.dmtf.org/standards/smbios/
-//            8   -  4 -  4 - 4  -    12
-//K8s:    56492e42-22ad-3911-6d72-59cc8f26bc90
-//VMware: 422e4956-ad22-1139-6d72-59cc8f26bc90
-func (nm *NodeManager) convertK8sUUIDtoNormal(k8sUUID string) string {
-	uuid := fmt.Sprintf("%s%s%s%s-%s%s-%s%s-%s-%s",
-		k8sUUID[6:8], k8sUUID[4:6], k8sUUID[2:4], k8sUUID[0:2],
-		k8sUUID[11:13], k8sUUID[9:11],
-		k8sUUID[16:18], k8sUUID[14:16],
-		k8sUUID[19:23],
-		k8sUUID[24:36])
-	return strings.ToLower(uuid)
 }
 
 // ExportNodes transforms the NodeInfoList to []*pb.Node

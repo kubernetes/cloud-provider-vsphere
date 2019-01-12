@@ -493,7 +493,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b7bca6301bab2a5f5da81f3b39756b98f6de92989585c9b13b6ad5c172d3166a"
+  digest = "1:324f1888e6b2dcfa1efa164ae9a874e77b40ac5f785e2eb548d3ae86f502731f"
   name = "github.com/vmware/govmomi"
   packages = [
     ".",
@@ -521,6 +521,10 @@
     "sts/simulator",
     "task",
     "units",
+    "vapi/internal",
+    "vapi/rest",
+    "vapi/simulator",
+    "vapi/tags",
     "view",
     "vim25",
     "vim25/debug",
@@ -1216,6 +1220,9 @@
     "github.com/vmware/govmomi/sts",
     "github.com/vmware/govmomi/sts/simulator",
     "github.com/vmware/govmomi/units",
+    "github.com/vmware/govmomi/vapi/rest",
+    "github.com/vmware/govmomi/vapi/simulator",
+    "github.com/vmware/govmomi/vapi/tags",
     "github.com/vmware/govmomi/view",
     "github.com/vmware/govmomi/vim25",
     "github.com/vmware/govmomi/vim25/methods",

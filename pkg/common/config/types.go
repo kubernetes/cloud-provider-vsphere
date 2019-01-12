@@ -58,7 +58,15 @@ type Config struct {
 		// Default: 43001
 		APIBinding string `gcfg:"api-binding"`
 	}
+
+	// Virtual Center configurations
 	VirtualCenter map[string]*VirtualCenterConfig
+
+	// Tag categories and tags which correspond to "built-in node labels: zones and region"
+	Labels struct {
+		Zone   string `gcfg:"zone"`
+		Region string `gcfg:"region"`
+	}
 }
 
 // Structure that represents Virtual Center configuration

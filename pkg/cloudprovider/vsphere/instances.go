@@ -19,7 +19,6 @@ package vsphere
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
@@ -28,8 +27,6 @@ import (
 )
 
 const (
-	ProviderPrefix string = "vsphere://"
-
 	//CredentialManagerErrMsg = "The Credential Manager is not initialized"
 	NodeNotFoundErrMsg = "Node not found"
 )
@@ -74,7 +71,7 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 	glog.V(4).Info("instances.NodeAddressesByProviderID() called with ", providerID)
 
 	// Check if node has been discovered already
-	uid := i.getUUIDFromProviderID(providerID)
+	uid := GetUUIDFromProviderID(providerID)
 	if node, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
 		glog.V(2).Info("instances.NodeAddressesByProviderID() CACHED with ", uid)
 		return node.NodeAddresses, nil
@@ -149,7 +146,7 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 	glog.V(4).Info("instances.InstanceExistsByProviderID() called with ", providerID)
 
 	// Check if node has been discovered already
-	uid := i.getUUIDFromProviderID(providerID)
+	uid := GetUUIDFromProviderID(providerID)
 	if _, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
 		glog.V(2).Info("instances.InstanceExistsByProviderID() CACHED with ", uid)
 		return true, nil
@@ -168,8 +165,4 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID string) (bool, error) {
 	glog.V(4).Info("instances.InstanceShutdownByProviderID() called")
 	return false, cloudprovider.NotImplemented
-}
-
-func (i *instances) getUUIDFromProviderID(providerID string) string {
-	return strings.TrimPrefix(providerID, ProviderPrefix)
 }
