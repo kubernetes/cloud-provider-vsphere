@@ -19,6 +19,18 @@ Steps that will be covered in deploying `cloud-provider-vsphere`:
 
 This is already covered in the Kubernetes documentation. Please take a look at configuration guidelines located [here](https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#running-cloud-controller-manager).
 
+> **NOTE**: According to the above documentation, enabling the external provider should automatically add a taint `node.cloudprovider.kubernetes.io/uninitialized` with an effect `NoSchedule` during initialization. This may not occur leading to partially initialized nodes. If this occurs, the taint can manually be applied *BEFORE* launching the cloud controller manager by running the following command:
+
+```bash
+[k8suser@k8master ~]$ kubectl taint nodes YOUR_NODE_NAME node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+```
+
+> **NOTE**: To remove the taint above, the following command can be executed:
+
+```bash
+[k8suser@k8master ~]$ kubectl taint nodes YOUR_NODE_NAME node.cloudprovider.kubernetes.io/uninitialized:NoSchedule-
+```
+
 #### 2. Creating a `configmap` of your vSphere configuration
 
 There are 2 methods for configuring the `cloud-provider-vsphere`:

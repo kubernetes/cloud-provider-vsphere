@@ -47,7 +47,6 @@ type server struct {
 // ListNodes implements CloudProviderVsphere interface
 func (s *server) ListNodes(ctx context.Context, request *pb.ListNodesRequest) (*pb.ListNodesReply, error) {
 	reply := &pb.ListNodesReply{
-
 		Nodes: make([]*pb.Node, 0),
 	}
 	//Do not allow specifying the Datacenter without specifying the vCenter

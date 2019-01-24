@@ -55,7 +55,7 @@ func TestRegUnregNode(t *testing.T) {
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
 	UUID := vm.Config.Uuid
-	k8sUUID := nm.convertK8sUUIDtoNormal(UUID)
+	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
 
 	node := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -151,30 +151,6 @@ func TestDiscoverNodeByName(t *testing.T) {
 	}
 }
 
-func TestUUIDConvert1(t *testing.T) {
-	k8sUUID := "56492e42-22ad-3911-6d72-59cc8f26bc90"
-
-	nm := NodeManager{}
-
-	biosUUID := nm.convertK8sUUIDtoNormal(k8sUUID)
-
-	if biosUUID != "422e4956-ad22-1139-6d72-59cc8f26bc90" {
-		t.Errorf("Failed to translate UUID")
-	}
-}
-
-func TestUUIDConvert2(t *testing.T) {
-	k8sUUID := "422e4956-ad22-1139-6d72-59cc8f26bc90"
-
-	nm := NodeManager{}
-
-	biosUUID := nm.convertK8sUUIDtoNormal(k8sUUID)
-
-	if biosUUID != "56492e42-22ad-3911-6d72-59cc8f26bc90" {
-		t.Errorf("Failed to translate UUID")
-	}
-}
-
 func TestExport(t *testing.T) {
 	cfg, ok := configFromEnvOrSim()
 	defer ok()
@@ -197,7 +173,7 @@ func TestExport(t *testing.T) {
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
 	UUID := vm.Config.Uuid
-	k8sUUID := nm.convertK8sUUIDtoNormal(UUID)
+	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
 
 	node := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{

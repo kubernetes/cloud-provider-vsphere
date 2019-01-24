@@ -41,6 +41,7 @@ type VSphere struct {
 	nodeManager       *NodeManager
 	informMgr         *k8s.InformerManager
 	instances         cloudprovider.Instances
+	zones             cloudprovider.Zones
 	server            GRPCServer
 }
 
@@ -85,4 +86,10 @@ type NodeManager struct {
 
 type instances struct {
 	nodeManager *NodeManager
+}
+
+type zones struct {
+	nodeManager *NodeManager
+	zone        string
+	region      string
 }

@@ -26,6 +26,7 @@ const (
 	InvalidVolumeOptionsErrMsg = "VolumeOptions verification failed"
 	NoVMFoundErrMsg            = "No VM found"
 	NoDatastoreFoundErrMsg     = "Datastore not found"
+	NoDatacenterFoundErrMsg    = "Datacenter not found"
 )
 
 // Error constants
@@ -36,4 +37,5 @@ var (
 	ErrInvalidVolumeOptions = errors.New(InvalidVolumeOptionsErrMsg)
 	ErrNoVMFound            = errors.New(NoVMFoundErrMsg)
 	ErrNoDatastoreFound     = errors.New(NoDatastoreFoundErrMsg)
+	ErrNoDatacenterFound    = errors.New(NoDatacenterFoundErrMsg)
 )

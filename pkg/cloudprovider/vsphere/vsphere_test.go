@@ -27,6 +27,7 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/simulator/vpx"
 	sts "github.com/vmware/govmomi/sts/simulator"
+	vapi "github.com/vmware/govmomi/vapi/simulator"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
@@ -81,6 +82,10 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Con
 
 	// STS simulator
 	path, handler := sts.New(s.URL, vpx.Setting)
+	model.Service.ServeMux.Handle(path, handler)
+
+	// vAPI simulator
+	path, handler = vapi.New(s.URL, nil)
 	model.Service.ServeMux.Handle(path, handler)
 
 	// Lookup Service simulator

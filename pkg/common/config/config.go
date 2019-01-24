@@ -154,6 +154,9 @@ func ConfigFromEnv() (cfg Config, ok bool) {
 	cfg.Global.CAFile = os.Getenv("VSPHERE_CAFILE")
 	cfg.Global.Thumbprint = os.Getenv("VSPHERE_THUMBPRINT")
 
+	cfg.Labels.Region = os.Getenv("VSPHERE_LABEL_REGION")
+	cfg.Labels.Zone = os.Getenv("VSPHERE_LABEL_ZONE")
+
 	//Build VirtualCenter from ENVs
 	for _, e := range os.Environ() {
 		pair := strings.Split(e, "=")
