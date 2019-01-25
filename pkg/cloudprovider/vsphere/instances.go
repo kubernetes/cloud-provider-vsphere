@@ -56,12 +56,12 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 	}
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err != nil {
-		glog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
-		return i.nodeManager.nodeNameMap[string(nodeName)].NodeAddresses, nil
+		glog.V(2).Infof("instances.NodeAddresses() could NOT FIND node %s err: %v", string(nodeName), err)
+		return []v1.NodeAddress{}, ErrNodeNotFound
 	}
 
-	glog.V(4).Info("instances.NodeAddresses() NOT FOUND with ", string(nodeName))
-	return []v1.NodeAddress{}, ErrNodeNotFound
+	glog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
+	return i.nodeManager.nodeNameMap[string(nodeName)].NodeAddresses, nil
 }
 
 // NodeAddressesByProviderID returns all the valid addresses of the instance
