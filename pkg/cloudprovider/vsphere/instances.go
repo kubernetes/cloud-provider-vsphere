@@ -55,13 +55,17 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 		return node.NodeAddresses, nil
 	}
 
-	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err != nil {
-		glog.V(2).Infof("instances.NodeAddresses() could NOT FIND node %s err: %v", string(nodeName), err)
-		return []v1.NodeAddress{}, ErrNodeNotFound
+	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err == nil {
+		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
+			glog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
+			return []v1.NodeAddress{}, ErrNodeNotFound
+		}
+		glog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
+		return i.nodeManager.nodeNameMap[string(nodeName)].NodeAddresses, nil
 	}
 
-	glog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
-	return i.nodeManager.nodeNameMap[string(nodeName)].NodeAddresses, nil
+	glog.V(4).Info("instances.NodeAddresses() NOT FOUND with ", string(nodeName))
+	return []v1.NodeAddress{}, ErrNodeNotFound
 }
 
 // NodeAddressesByProviderID returns all the valid addresses of the instance
@@ -108,7 +112,11 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 	}
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err == nil {
-		glog.V(2).Info("instances.InstanceID() FOUND with ", string(nodeName))
+		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
+			glog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
+			return "", ErrNodeNotFound
+		}
+		glog.V(2).Infof("instances.InstanceID() FOUND with %s", string(nodeName))
 		return i.nodeManager.nodeNameMap[string(nodeName)].UUID, nil
 	}
 

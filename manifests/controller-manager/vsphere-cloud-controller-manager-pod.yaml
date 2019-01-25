@@ -36,9 +36,9 @@ spec:
     runAsUser: 1001
   serviceAccountName: cloud-controller-manager
   volumes:
-  - name: cloud-config-volume
-    configMap:
-      name: cloud-config
+    - name: cloud-config-volume
+      configMap:
+        name: cloud-config
 ---
 apiVersion: v1
 kind: Service

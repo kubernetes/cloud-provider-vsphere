@@ -1,0 +1,12 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: my-csi-app
+spec:
+  containers:
+    - name: my-frontend
+      image: busybox
+      command: [ "sleep", "1000000" ]
+#  nodeSelector:
+#    failure-domain.beta.kubernetes.io/region: IF_USING_ZONES_REPLACE_WITH_TARGETED_REGION_VALUE
+#    failure-domain.beta.kubernetes.io/zone: IF_USING_ZONES_REPLACE_WITH_TARGETED_ZONE_VALUE
