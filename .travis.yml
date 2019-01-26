@@ -90,7 +90,7 @@ jobs:
         - GCS_BUCKET=k8s-conformance-vsphere; [ "${CCM}" = "true" ] && GCS_BUCKET=k8s-conformance-cloud-provider-vsphere; export GCS_BUCKET; echo "GCS_BUCKET=${GCS_BUCKET}"
         - REPO_SLUG_SHA=$(echo $(TRAVIS_REPO_SLUG) | sha1sum | cut -c1-7); export REPO_SLUG_SHA; echo "REPO_SLUG_SHA=${REPO_SLUG_SHA}"
         - REAL_CLUSTER_NAME="${CLUSTER_NAME}-${REPO_SLUG_SHA}-${TRAVIS_BUILD_NUMBER}"; export REAL_CLUSTER_NAME; echo "REAL_CLUSTER_NAME=${REAL_CLUSTER_NAME}"
-        - export DOCKER_RUN="docker run -it --rm -v $(pwd)/data:/tf/data -v $(pwd)/key-file.json:/tf/data/key-file.json:ro -v $(pwd)/data/.terraform/plugins:/tf/.terraform/plugins --env-file vmc-info.env --env TF_VAR_wrk_count=3 --env TF_VAR_k8s_version="$K8S_VERSION" --env TF_VAR_cloud_provider="${CLOUD_PROVIDER}" "${E2E_IMAGE}" "${REAL_CLUSTER_NAME}""
+        - export DOCKER_RUN="docker run -it --rm -v $(pwd)/data:/tf/data -v $(pwd)/key-file.json:/tf/data/key-file.json:ro -v $(pwd)/data/.terraform/plugins:/tf/.terraform/plugins --env-file vmc-info.env --env TF_VAR_wrk_count=3 --env TF_VAR_k8s_version="$K8S_VERSION" --env TF_VAR_cloud_provider="${CLOUD_PROVIDER}" --env TF_VAR_yakity_url="${SK8_URL}" "${E2E_IMAGE}" "${REAL_CLUSTER_NAME}""
         - echo "DOCKER_RUN=${DOCKER_RUN}"
       script:
         - ${DOCKER_RUN} up
