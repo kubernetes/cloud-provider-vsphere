@@ -107,8 +107,6 @@ jobs:
       env: CCM=true K8S_VERSION=release/latest-1.12 CLUSTER_NAME=v1-12 GCS_PATH=release/v1.12 EVENT_TYPE='^(push|cron)$' COMMIT_TRIGGER_YES='\/ci-ccm-conformance' COMMIT_TRIGGER_NO='\/ci-ccm-noconformance'
     - <<: *conformance-test-stage
       env: CCM=true K8S_VERSION=release/latest-1.11 CLUSTER_NAME=v1-11 GCS_PATH=release/v1.11 EVENT_TYPE='^(push|cron)$' COMMIT_TRIGGER_YES='\/ci-ccm-conformance' COMMIT_TRIGGER_NO='\/ci-ccm-noconformance'
-    - <<: *conformance-test-stage
-      env: CCM=true K8S_VERSION=release/latest-1.10 CLUSTER_NAME=v1-10 GCS_PATH=release/v1.10 EVENT_TYPE='^(push|cron)$' COMMIT_TRIGGER_YES='\/ci-ccm-conformance' COMMIT_TRIGGER_NO='\/ci-ccm-noconformance'
 
     # In-tree conformance tests
     - <<: *conformance-test-stage
@@ -117,5 +115,3 @@ jobs:
       env: CCM=false K8S_VERSION=release/latest-1.12 CLUSTER_NAME=v1-12 GCS_PATH=release/v1.12 EVENT_TYPE='^cron$' COMMIT_TRIGGER_YES='\/ci-conformance' COMMIT_TRIGGER_NO='\/ci-noconformance'
     - <<: *conformance-test-stage
       env: CCM=false K8S_VERSION=release/latest-1.11 CLUSTER_NAME=v1-11 GCS_PATH=release/v1.11 EVENT_TYPE='^cron$' COMMIT_TRIGGER_YES='\/ci-conformance' COMMIT_TRIGGER_NO='\/ci-noconformance'
-    - <<: *conformance-test-stage
-      env: CCM=false K8S_VERSION=release/latest-1.10 CLUSTER_NAME=v1-10 GCS_PATH=release/v1.10 EVENT_TYPE='^cron$' COMMIT_TRIGGER_YES='\/ci-conformance' COMMIT_TRIGGER_NO='\/ci-noconformance'
