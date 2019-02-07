@@ -52,8 +52,14 @@ type FcdDiscoveryInfo struct {
 	VcServer   string
 }
 
-// DiscoveryInfo contains VC+DC info based on a given zone
-type DiscoveryInfo struct {
+// ListDiscoveryInfo represents a VC/DC pair
+type ListDiscoveryInfo struct {
+	VcServer   string
+	DataCenter *vclib.Datacenter
+}
+
+// ZoneDiscoveryInfo contains VC+DC info based on a given zone
+type ZoneDiscoveryInfo struct {
 	DataCenter *vclib.Datacenter
 	VcServer   string
 }

@@ -25,6 +25,7 @@ const (
 	DiskNotFoundErrMsg         = "No vSphere disk ID/Name found"
 	InvalidVolumeOptionsErrMsg = "VolumeOptions verification failed"
 	NoVMFoundErrMsg            = "No VM found"
+	NoZoneRegionFoundErrMsg    = "Unable to find the Zone/Region pair"
 	NoDatastoreFoundErrMsg     = "Datastore not found"
 	NoDatacenterFoundErrMsg    = "Datacenter not found"
 )
@@ -36,6 +37,7 @@ var (
 	ErrNoDiskIDFound        = errors.New(DiskNotFoundErrMsg)
 	ErrInvalidVolumeOptions = errors.New(InvalidVolumeOptionsErrMsg)
 	ErrNoVMFound            = errors.New(NoVMFoundErrMsg)
+	ErrNoZoneRegionFound    = errors.New(NoZoneRegionFoundErrMsg)
 	ErrNoDatastoreFound     = errors.New(NoDatastoreFoundErrMsg)
 	ErrNoDatacenterFound    = errors.New(NoDatacenterFoundErrMsg)
 )

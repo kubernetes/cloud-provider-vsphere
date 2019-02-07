@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/golang/glog"
@@ -65,6 +64,17 @@ func GetAllDatacenter(ctx context.Context, connection *VSphereConnection) ([]*Da
 	}
 
 	return dc, nil
+}
+
+// GetNumberOfDatacenters returns the number of DataCenters in this vCenter
+func GetNumberOfDatacenters(ctx context.Context, connection *VSphereConnection) (int, error) {
+	finder := find.NewFinder(connection.Client, false)
+	datacenters, err := finder.DatacenterList(ctx, "*")
+	if err != nil {
+		glog.Errorf("Failed to find the datacenter. err: %+v", err)
+		return 0, err
+	}
+	return len(datacenters), nil
 }
 
 // GetVMByDNSName gets the VM object from the given dns name
@@ -574,10 +584,6 @@ func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassD
 
 		firstClassDisks = append(firstClassDisks, disks...)
 	}
-
-	sort.Slice(firstClassDisks, func(i, j int) bool {
-		return firstClassDisks[i].Config.Id.Id > firstClassDisks[j].Config.Id.Id
-	})
 
 	return firstClassDisks, nil
 }
