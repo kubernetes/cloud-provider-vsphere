@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -53,7 +53,7 @@ func (secretCredentialManager *SecretCredentialManager) GetCredential(server str
 				return nil, err
 			}
 			// Handle secrets deletion by finding credentials from cache
-			glog.Warningf("secret %q not found in namespace %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace)
+			klog.Warningf("secret %q not found in namespace %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace)
 		}
 	}
 
@@ -61,13 +61,13 @@ func (secretCredentialManager *SecretCredentialManager) GetCredential(server str
 	if secretCredentialManager.SecretsDirectory != "" {
 		err := secretCredentialManager.updateCredentialsMapFile()
 		if err != nil {
-			glog.Warningf("Failed parsing SecretsDirectory %q: %q", secretCredentialManager.SecretsDirectory, err)
+			klog.Warningf("Failed parsing SecretsDirectory %q: %q", secretCredentialManager.SecretsDirectory, err)
 		}
 	}
 
 	credential, found := secretCredentialManager.Cache.GetCredential(server)
 	if !found {
-		glog.Errorf("credentials not found for server %q", server)
+		klog.Errorf("credentials not found for server %q", server)
 		return nil, ErrCredentialsNotFound
 	}
 	return &credential, nil
@@ -76,13 +76,13 @@ func (secretCredentialManager *SecretCredentialManager) GetCredential(server str
 func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapK8s() error {
 	secret, err := secretCredentialManager.SecretLister.Secrets(secretCredentialManager.SecretNamespace).Get(secretCredentialManager.SecretName)
 	if err != nil {
-		glog.Warningf("Cannot get secret %s in namespace %s. error: %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace, err)
+		klog.Warningf("Cannot get secret %s in namespace %s. error: %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace, err)
 		return err
 	}
 	cacheSecret := secretCredentialManager.Cache.GetSecret()
 	if cacheSecret != nil &&
 		cacheSecret.GetResourceVersion() == secret.GetResourceVersion() {
-		glog.V(2).Infof("VCP SecretCredentialManager: Secret %q will not be updated in cache. Since, secrets have same resource version %q", secretCredentialManager.SecretName, cacheSecret.GetResourceVersion())
+		klog.V(2).Infof("VCP SecretCredentialManager: Secret %q will not be updated in cache. Since, secrets have same resource version %q", secretCredentialManager.SecretName, cacheSecret.GetResourceVersion())
 		return nil
 	}
 	secretCredentialManager.Cache.UpdateSecret(secret)
@@ -102,20 +102,20 @@ func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapFile
 	files, err := ioutil.ReadDir(secretCredentialManager.SecretsDirectory)
 	if err != nil {
 		secretCredentialManager.SecretsDirectoryParse = true
-		glog.Warningf("Failed to find secrets directory %s. error: %q", secretCredentialManager.SecretsDirectory, err)
+		klog.Warningf("Failed to find secrets directory %s. error: %q", secretCredentialManager.SecretsDirectory, err)
 		return err
 	}
 
 	for _, f := range files {
 		if f.IsDir() {
-			glog.Warningf("Skipping parse of directory: %s", f.Name())
+			klog.Warningf("Skipping parse of directory: %s", f.Name())
 			continue
 		}
 
 		fullFilePath := secretCredentialManager.SecretsDirectory + "/" + f.Name()
 		contents, err := ioutil.ReadFile(fullFilePath)
 		if err != nil {
-			glog.Warningf("Cannot read  file %s. error: %q", fullFilePath, err)
+			klog.Warningf("Cannot read  file %s. error: %q", fullFilePath, err)
 			continue
 		}
 
@@ -161,10 +161,10 @@ func (cache *SecretCache) parseSecret() error {
 
 	var data map[string][]byte
 	if cache.Secret != nil {
-		glog.V(3).Infof("parseSecret using k8s secret")
+		klog.V(3).Infof("parseSecret using k8s secret")
 		data = cache.Secret.Data
 	} else if cache.SecretFile != nil {
-		glog.V(3).Infof("parseSecret using secrets directory")
+		klog.V(3).Infof("parseSecret using secrets directory")
 		data = cache.SecretFile
 	}
 
@@ -191,13 +191,13 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 			}
 			config[vcServer].User = string(credentialValue)
 		} else {
-			glog.Errorf("Unknown secret key %s", credentialKey)
+			klog.Errorf("Unknown secret key %s", credentialKey)
 			return ErrUnknownSecretKey
 		}
 	}
 	for vcServer, credential := range config {
 		if credential.User == "" || credential.Password == "" {
-			glog.Errorf("Username/Password is missing for server %s", vcServer)
+			klog.Errorf("Username/Password is missing for server %s", vcServer)
 			return ErrCredentialMissing
 		}
 	}

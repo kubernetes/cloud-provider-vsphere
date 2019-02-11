@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"gopkg.in/gcfg.v1"
 )
@@ -104,7 +104,7 @@ func ConfigFromEnv() (cfg Config, ok bool) {
 		RoundTripCount = DefaultRoundTripperCount
 	}
 	if err != nil {
-		glog.Fatalf("Failed to parse VSPHERE_ROUNDTRIP_COUNT: %s", err)
+		klog.Fatalf("Failed to parse VSPHERE_ROUNDTRIP_COUNT: %s", err)
 	}
 	cfg.Global.RoundTripperCount = RoundTripCount
 
@@ -115,7 +115,7 @@ func ConfigFromEnv() (cfg Config, ok bool) {
 		InsecureFlag = false
 	}
 	if err != nil {
-		glog.Errorf("Failed to parse VSPHERE_INSECURE: %s", err)
+		klog.Errorf("Failed to parse VSPHERE_INSECURE: %s", err)
 		InsecureFlag = false
 	}
 	cfg.Global.InsecureFlag = InsecureFlag
@@ -127,7 +127,7 @@ func ConfigFromEnv() (cfg Config, ok bool) {
 		APIDisable = true
 	}
 	if err != nil {
-		glog.Errorf("Failed to parse VSPHERE_API_DISABLE: %s", err)
+		klog.Errorf("Failed to parse VSPHERE_API_DISABLE: %s", err)
 		APIDisable = true
 	}
 	cfg.Global.APIDisable = APIDisable
@@ -270,9 +270,9 @@ func fixUpConfigFromFile(cfg *Config) error {
 
 	// vsphere.conf is no longer supported in the old format.
 	for vcServer, vcConfig := range cfg.VirtualCenter {
-		glog.V(4).Infof("Initializing vc server %s", vcServer)
+		klog.V(4).Infof("Initializing vc server %s", vcServer)
 		if vcServer == "" {
-			glog.Error(InvalidVCenterIPErrMsg)
+			klog.Error(InvalidVCenterIPErrMsg)
 			return ErrInvalidVCenterIP
 		}
 
@@ -280,14 +280,14 @@ func fixUpConfigFromFile(cfg *Config) error {
 			if vcConfig.User == "" {
 				vcConfig.User = cfg.Global.User
 				if vcConfig.User == "" {
-					glog.Errorf("vcConfig.User is empty for vc %s!", vcServer)
+					klog.Errorf("vcConfig.User is empty for vc %s!", vcServer)
 					return ErrUsernameMissing
 				}
 			}
 			if vcConfig.Password == "" {
 				vcConfig.Password = cfg.Global.Password
 				if vcConfig.Password == "" {
-					glog.Errorf("vcConfig.Password is empty for vc %s!", vcServer)
+					klog.Errorf("vcConfig.Password is empty for vc %s!", vcServer)
 					return ErrPasswordMissing
 				}
 			}

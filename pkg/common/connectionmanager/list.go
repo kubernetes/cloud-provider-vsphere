@@ -22,14 +22,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // ListAllVCandDCPairs returns all VC/DC pairs
 func (cm *ConnectionManager) ListAllVCandDCPairs(ctx context.Context) ([]*ListDiscoveryInfo, error) {
-	glog.V(4).Infof("ListAllVCandDCPairs called")
+	klog.V(4).Infof("ListAllVCandDCPairs called")
 
 	listOfVCAndDCPairs := make([]*ListDiscoveryInfo, 0)
 
@@ -46,14 +46,14 @@ func (cm *ConnectionManager) ListAllVCandDCPairs(ctx context.Context) ([]*ListDi
 		}
 
 		if err != nil {
-			glog.Error("Connect error vc:", err)
+			klog.Error("Connect error vc:", err)
 			continue
 		}
 
 		if vsi.Cfg.Datacenters == "" {
 			datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
 			if err != nil {
-				glog.Error("GetAllDatacenter error dc:", err)
+				klog.Error("GetAllDatacenter error dc:", err)
 				continue
 			}
 		} else {
@@ -65,7 +65,7 @@ func (cm *ConnectionManager) ListAllVCandDCPairs(ctx context.Context) ([]*ListDi
 				}
 				datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
 				if err != nil {
-					glog.Error("GetDatacenter error dc:", err)
+					klog.Error("GetDatacenter error dc:", err)
 					continue
 				}
 				datacenterObjs = append(datacenterObjs, datacenterObj)

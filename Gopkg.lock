@@ -1086,6 +1086,14 @@
   version = "kubernetes-1.11.0"
 
 [[projects]]
+  digest = "1:72fd56341405f53c745377e0ebc4abeff87f1a048e0eea6568a20212650f5a82"
+  name = "k8s.io/klog"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "71442cd4037d612096940ceb0f3fec3f7fff66e0"
+  version = "v0.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:a8a0fdd623b2a37c433d137bddfab6b155e988efbc7cd68c18f9923dce6c8742"
   name = "k8s.io/kube-openapi"
@@ -1197,7 +1205,6 @@
   input-imports = [
     "github.com/akutz/gofsutil",
     "github.com/container-storage-interface/spec/lib/go/csi",
-    "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/rexray/gocsi",
@@ -1252,6 +1259,7 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
+    "k8s.io/klog",
     "k8s.io/kubernetes/cmd/cloud-controller-manager/app",
     "k8s.io/kubernetes/cmd/cloud-controller-manager/app/options",
     "k8s.io/kubernetes/pkg/apis/core/v1/helper",

@@ -22,7 +22,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -64,7 +64,7 @@ func (s *server) Start() {
 	go func() {
 		lis, err := net.Listen("tcp", s.binding)
 		if err != nil {
-			glog.Fatalf("Server Listen() failed: %s", err)
+			klog.Fatalf("Server Listen() failed: %s", err)
 
 		}
 

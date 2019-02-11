@@ -19,7 +19,7 @@ package vclib
 import (
 	"context"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
@@ -46,7 +46,7 @@ type StoragePodInfo struct {
 // PopulateChildDatastoreInfos discovers the child DatastoreInfos backed by this StoragePodInfo
 func (spi *StoragePodInfo) PopulateChildDatastoreInfos(ctx context.Context, refresh bool) error {
 	if refresh {
-		glog.Infof("Re-discover datastore infos")
+		klog.Infof("Re-discover datastore infos")
 	}
 	if len(spi.DatastoreInfos) > 0 && !refresh {
 		return nil
@@ -54,7 +54,7 @@ func (spi *StoragePodInfo) PopulateChildDatastoreInfos(ctx context.Context, refr
 
 	err := spi.PopulateChildDatastores(ctx, false)
 	if err != nil {
-		glog.Errorf("PopulateChildDatastores failed. Err: %v", err)
+		klog.Errorf("PopulateChildDatastores failed. Err: %v", err)
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (spi *StoragePodInfo) PopulateChildDatastoreInfos(ctx context.Context, refr
 	properties := []string{DatastoreInfoProperty}
 	err = pc.Retrieve(ctx, dsList, properties, &dsMoList)
 	if err != nil {
-		glog.Errorf("Failed to get Datastore managed objects from datastore objects."+
+		klog.Errorf("Failed to get Datastore managed objects from datastore objects."+
 			" dsObjList: %+v, properties: %+v, err: %v", dsList, properties, err)
 		return err
 	}
@@ -91,7 +91,7 @@ func (spi *StoragePodInfo) PopulateChildDatastoreInfos(ctx context.Context, refr
 func (spi *StoragePodInfo) ListFirstClassDisksInfo(ctx context.Context) ([]*FirstClassDiskInfo, error) {
 	err := spi.PopulateChildDatastoreInfos(ctx, false)
 	if err != nil {
-		glog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
+		klog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
 		return nil, err
 	}
 
@@ -101,7 +101,7 @@ func (spi *StoragePodInfo) ListFirstClassDisksInfo(ctx context.Context) ([]*Firs
 	for _, child := range spi.DatastoreInfos {
 		oids, err := m.List(ctx, child)
 		if err != nil {
-			glog.Errorf("Failed to list disks. Err: %v", err)
+			klog.Errorf("Failed to list disks. Err: %v", err)
 			return nil, err
 		}
 
@@ -132,7 +132,7 @@ func (spi *StoragePodInfo) ListFirstClassDisksInfo(ctx context.Context) ([]*Firs
 func (spi *StoragePodInfo) GetFirstClassDiskInfo(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDiskInfo, error) {
 	err := spi.PopulateChildDatastoreInfos(ctx, false)
 	if err != nil {
-		glog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
+		klog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
 		return nil, err
 	}
 
@@ -141,7 +141,7 @@ func (spi *StoragePodInfo) GetFirstClassDiskInfo(ctx context.Context, diskID str
 	for _, child := range spi.DatastoreInfos {
 		oids, err := m.List(ctx, child)
 		if err != nil {
-			glog.Errorf("Failed to list disks. Err: %v", err)
+			klog.Errorf("Failed to list disks. Err: %v", err)
 			return nil, err
 		}
 
@@ -175,7 +175,7 @@ func (spi *StoragePodInfo) GetFirstClassDiskInfo(ctx context.Context, diskID str
 func (spi *StoragePodInfo) GetDatastoreThatOwnsFCD(ctx context.Context, diskID string) (*DatastoreInfo, error) {
 	err := spi.PopulateChildDatastoreInfos(ctx, false)
 	if err != nil {
-		glog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
+		klog.Errorf("PopulateChildDatastoreInfos failed. Err: %v", err)
 		return nil, err
 	}
 
@@ -184,7 +184,7 @@ func (spi *StoragePodInfo) GetDatastoreThatOwnsFCD(ctx context.Context, diskID s
 	for _, child := range spi.DatastoreInfos {
 		oids, err := m.List(ctx, child)
 		if err != nil {
-			glog.Errorf("Failed to list disks. Err: %v", err)
+			klog.Errorf("Failed to list disks. Err: %v", err)
 			return nil, err
 		}
 
@@ -206,7 +206,7 @@ func (spi *StoragePodInfo) GetDatastoreThatOwnsFCD(ctx context.Context, diskID s
 // PopulateChildDatastores discovers the child Datastores backed by this StoragePod
 func (sp *StoragePod) PopulateChildDatastores(ctx context.Context, refresh bool) error {
 	if refresh {
-		glog.Infof("Re-discover datastores")
+		klog.Infof("Re-discover datastores")
 	}
 	if len(sp.Datastores) > 0 && !refresh {
 		return nil
@@ -214,7 +214,7 @@ func (sp *StoragePod) PopulateChildDatastores(ctx context.Context, refresh bool)
 
 	children, err := sp.Children(ctx)
 	if err != nil {
-		glog.Errorf("Failed to list disks. Err: %v", err)
+		klog.Errorf("Failed to list disks. Err: %v", err)
 		return err
 	}
 
@@ -233,7 +233,7 @@ func (sp *StoragePod) PopulateChildDatastores(ctx context.Context, refresh bool)
 func (sp *StoragePod) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDisk, error) {
 	err := sp.PopulateChildDatastores(ctx, false)
 	if err != nil {
-		glog.Errorf("PopulateChildDatastores failed. Err: %v", err)
+		klog.Errorf("PopulateChildDatastores failed. Err: %v", err)
 		return nil, err
 	}
 
@@ -243,7 +243,7 @@ func (sp *StoragePod) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDis
 	for _, child := range sp.Datastores {
 		oids, err := m.List(ctx, child)
 		if err != nil {
-			glog.Errorf("Failed to list disks. Err: %v", err)
+			klog.Errorf("Failed to list disks. Err: %v", err)
 			return nil, err
 		}
 
@@ -270,7 +270,7 @@ func (sp *StoragePod) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDis
 func (sp *StoragePod) GetFirstClassDisk(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDisk, error) {
 	err := sp.PopulateChildDatastores(ctx, false)
 	if err != nil {
-		glog.Errorf("PopulateChildDatastores failed. Err: %v", err)
+		klog.Errorf("PopulateChildDatastores failed. Err: %v", err)
 		return nil, err
 	}
 
@@ -279,7 +279,7 @@ func (sp *StoragePod) GetFirstClassDisk(ctx context.Context, diskID string, find
 	for _, child := range sp.Datastores {
 		oids, err := m.List(ctx, child)
 		if err != nil {
-			glog.Errorf("Failed to list disks. Err: %v", err)
+			klog.Errorf("Failed to list disks. Err: %v", err)
 			return nil, err
 		}
 

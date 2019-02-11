@@ -20,7 +20,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/client-go/listers/core/v1"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -43,7 +43,7 @@ const (
 
 func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *ConnectionManager {
 	if secretLister != nil {
-		glog.V(2).Info("NewConnectionManager with SecretLister")
+		klog.V(2).Info("NewConnectionManager with SecretLister")
 		return &ConnectionManager{
 			VsphereInstanceMap: generateInstanceMap(config),
 			credentialManager: &cm.SecretCredentialManager{
@@ -57,7 +57,7 @@ func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *Co
 		}
 	}
 	if config.Global.SecretsDirectory != "" {
-		glog.V(2).Info("NewConnectionManager generic CO")
+		klog.V(2).Info("NewConnectionManager generic CO")
 		return &ConnectionManager{
 			VsphereInstanceMap: generateInstanceMap(config),
 			credentialManager: &cm.SecretCredentialManager{
@@ -70,7 +70,7 @@ func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *Co
 		}
 	}
 
-	glog.V(2).Info("NewConnectionManager creds from config")
+	klog.V(2).Info("NewConnectionManager creds from config")
 	return &ConnectionManager{
 		VsphereInstanceMap: generateInstanceMap(config),
 		credentialManager: &cm.SecretCredentialManager{
@@ -135,17 +135,17 @@ func (cm *ConnectionManager) ConnectByInstance(ctx context.Context, vsphereInsta
 	}
 
 	if !vclib.IsInvalidCredentialsError(err) || cm.credentialManager == nil {
-		glog.Errorf("Cannot connect to vCenter with err: %v", err)
+		klog.Errorf("Cannot connect to vCenter with err: %v", err)
 		return err
 	}
 
-	glog.V(2).Infof("Invalid credentials. Cannot connect to server %q. "+
+	klog.V(2).Infof("Invalid credentials. Cannot connect to server %q. "+
 		"Fetching credentials from secrets.", vsphereInstance.Conn.Hostname)
 
 	// Get latest credentials from SecretCredentialManager
 	credentials, err := cm.credentialManager.GetCredential(vsphereInstance.Conn.Hostname)
 	if err != nil {
-		glog.Error("Failed to get credentials from Secret Credential Manager with err:", err)
+		klog.Error("Failed to get credentials from Secret Credential Manager with err:", err)
 		return err
 	}
 	vsphereInstance.Conn.UpdateCredentials(credentials.User, credentials.Password)
@@ -167,9 +167,9 @@ func (cm *ConnectionManager) Verify() error {
 	for vcServer := range cm.VsphereInstanceMap {
 		err := cm.Connect(context.Background(), vcServer)
 		if err == nil {
-			glog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
+			klog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
 		} else {
-			glog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
+			klog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
 			return err
 		}
 	}
@@ -180,9 +180,9 @@ func (cm *ConnectionManager) VerifyWithContext(ctx context.Context) error {
 	for vcServer := range cm.VsphereInstanceMap {
 		err := cm.Connect(ctx, vcServer)
 		if err == nil {
-			glog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
+			klog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
 		} else {
-			glog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
+			klog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
 			return err
 		}
 	}

@@ -21,7 +21,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/api/core/v1"
 	clientv1 "k8s.io/client-go/listers/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
@@ -64,22 +64,22 @@ func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeM
 
 // RegisterNode - Handler when node is removed from k8s cluster.
 func (nm *NodeManager) RegisterNode(node *v1.Node) {
-	glog.V(4).Info("RegisterNode ENTER: ", node.Name)
+	klog.V(4).Info("RegisterNode ENTER: ", node.Name)
 	nm.addNode(node)
 	nm.DiscoverNode(ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID), FindVMByUUID)
-	glog.V(4).Info("RegisterNode LEAVE: ", node.Name)
+	klog.V(4).Info("RegisterNode LEAVE: ", node.Name)
 }
 
 // UnregisterNode - Handler when node is removed from k8s cluster.
 func (nm *NodeManager) UnregisterNode(node *v1.Node) {
-	glog.V(4).Info("UnregisterNode ENTER: ", node.Name)
+	klog.V(4).Info("UnregisterNode ENTER: ", node.Name)
 	nm.removeNode(node)
-	glog.V(4).Info("UnregisterNode LEAVE: ", node.Name)
+	klog.V(4).Info("UnregisterNode LEAVE: ", node.Name)
 }
 
 func (nm *NodeManager) addNodeInfo(node *NodeInfo) {
 	nm.nodeInfoLock.Lock()
-	glog.V(4).Info("addNodeInfo NodeName: ", node.NodeName, ", UUID: ", node.UUID)
+	klog.V(4).Info("addNodeInfo NodeName: ", node.NodeName, ", UUID: ", node.UUID)
 	nm.nodeNameMap[node.NodeName] = node
 	nm.nodeUUIDMap[node.UUID] = node
 	nm.AddNodeInfoToVCList(node.vcServer, node.dataCenter.Name(), node)
@@ -89,7 +89,7 @@ func (nm *NodeManager) addNodeInfo(node *NodeInfo) {
 func (nm *NodeManager) addNode(node *v1.Node) {
 	nm.nodeRegInfoLock.Lock()
 	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
-	glog.V(4).Info("addNode NodeName: ", node.GetName(), ", UID: ", uuid)
+	klog.V(4).Info("addNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	nm.nodeRegUUIDMap[uuid] = node
 	nm.nodeRegInfoLock.Unlock()
 }
@@ -97,7 +97,7 @@ func (nm *NodeManager) addNode(node *v1.Node) {
 func (nm *NodeManager) removeNode(node *v1.Node) {
 	nm.nodeRegInfoLock.Lock()
 	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
-	glog.V(4).Info("removeNode NodeName: ", node.GetName(), ", UID: ", uuid)
+	klog.V(4).Info("removeNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	delete(nm.nodeRegUUIDMap, uuid)
 	nm.nodeRegInfoLock.Unlock()
 }
@@ -107,13 +107,13 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 
 	vmDI, err := nm.connectionManager.WhichVCandDCByNodeId(ctx, nodeID, cm.FindVM(searchBy))
 	if err != nil {
-		glog.Errorf("WhichVCandDCByNodeId failed. Err: %v", err)
+		klog.Errorf("WhichVCandDCByNodeId failed. Err: %v", err)
 	}
 
 	var oVM mo.VirtualMachine
 	err = vmDI.VM.Properties(ctx, vmDI.VM.Reference(), []string{"guest"}, &oVM)
 	if err != nil {
-		glog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
+		klog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
 			vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name(), err)
 		return err
 	}
@@ -138,9 +138,9 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 		}
 	}
 
-	glog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
+	klog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
 		nodeID, vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name())
-	glog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
+	klog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
 
 	nodeInfo := &NodeInfo{dataCenter: vmDI.DataCenter, vm: vmDI.VM, vcServer: vmDI.VcServer,
 		UUID: vmDI.UUID, NodeName: vmDI.NodeName, NodeAddresses: addrs}
@@ -200,7 +200,7 @@ func (nm *NodeManager) datacenterToNodeList(vmList map[string]*NodeInfo, nodeLis
 			case v1.NodeHostName:
 				pbNode.Dnsnames = append(pbNode.Dnsnames, address.Address)
 			default:
-				glog.Warning("Unknown/unsupported address type:", address.Type)
+				klog.Warning("Unknown/unsupported address type:", address.Type)
 			}
 		}
 		*nodeList = append(*nodeList, pbNode)

@@ -38,7 +38,7 @@ import (
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -90,7 +90,7 @@ the cloud specific control loops shipped with Kubernetes.`,
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	glog.V(1).Infof("vsphere-cloud-controller-manager version: %s", version)
+	klog.V(1).Infof("vsphere-cloud-controller-manager version: %s", version)
 
 	s.CloudProvider.Name = vsphere.ProviderName
 	if err := command.Execute(); err != nil {
