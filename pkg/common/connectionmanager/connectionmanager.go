@@ -20,8 +20,8 @@ import (
 	"context"
 	"sync"
 
-	"k8s.io/klog"
 	"k8s.io/client-go/listers/core/v1"
+	"k8s.io/klog"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
@@ -187,4 +187,18 @@ func (cm *ConnectionManager) VerifyWithContext(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// APIVersion returns the version of the vCenter API
+func (cm *ConnectionManager) APIVersion(vcenter string) (string, error) {
+	if err := cm.Connect(context.Background(), vcenter); err != nil {
+		return "", err
+	}
+
+	instance := cm.VsphereInstanceMap[vcenter]
+	if instance == nil || instance.Conn.Client == nil {
+		return "", ErrConnectionNotFound
+	}
+
+	return instance.Conn.Client.ServiceContent.About.ApiVersion, nil
 }
