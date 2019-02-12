@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
@@ -46,32 +46,32 @@ const (
 // WhichVCandDCByZone gets the corresponding VC+DC combo that supports the availability zone
 func (cm *ConnectionManager) WhichVCandDCByZone(ctx context.Context,
 	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	glog.V(4).Infof("WhichVCandDCByZone called with zone: %s and region: %s", zoneLooking, regionLooking)
+	klog.V(4).Infof("WhichVCandDCByZone called with zone: %s and region: %s", zoneLooking, regionLooking)
 
 	// Need at least one VC
 	numOfVCs := len(cm.VsphereInstanceMap)
 	if numOfVCs == 0 {
 		err := ErrMustHaveAtLeastOneVCDC
-		glog.Errorf("%v", err)
+		klog.Errorf("%v", err)
 		return nil, err
 	}
 
 	if numOfVCs == 1 {
-		glog.V(4).Info("Single VC Detected")
+		klog.V(4).Info("Single VC Detected")
 		return cm.getDIFromSingleVC(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
 	}
 
-	glog.V(4).Info("Multi VC Detected")
+	klog.V(4).Info("Multi VC Detected")
 	return cm.getDIFromMultiVCorDC(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
 }
 
 func (cm *ConnectionManager) getDIFromSingleVC(ctx context.Context,
 	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	glog.V(4).Infof("getDIFromSingleVC called with zone: %s and region: %s", zoneLooking, regionLooking)
+	klog.V(4).Infof("getDIFromSingleVC called with zone: %s and region: %s", zoneLooking, regionLooking)
 
 	if len(cm.VsphereInstanceMap) != 1 {
 		err := ErrUnsupportedConfiguration
-		glog.Errorf("%v", err)
+		klog.Errorf("%v", err)
 		return nil, err
 	}
 
@@ -94,22 +94,22 @@ func (cm *ConnectionManager) getDIFromSingleVC(ctx context.Context,
 
 	numOfDc, err := vclib.GetNumberOfDatacenters(ctx, tmpVsi.Conn)
 	if err != nil {
-		glog.Errorf("%v", err)
+		klog.Errorf("%v", err)
 		return nil, err
 	}
 
 	// More than 1 DC in this VC
 	if numOfDc > 1 {
-		glog.V(3).Info("Multi Datacenter configuration detected")
+		klog.V(3).Info("Multi Datacenter configuration detected")
 		return cm.getDIFromMultiVCorDC(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
 	}
 
 	// We are sure this is single VC and DC
-	glog.V(3).Info("Single vCenter/Datacenter configuration detected")
+	klog.V(3).Info("Single vCenter/Datacenter configuration detected")
 
 	datacenterObjs, err := vclib.GetAllDatacenter(ctx, tmpVsi.Conn)
 	if err != nil {
-		glog.Error("GetAllDatacenter failed. Err:", err)
+		klog.Error("GetAllDatacenter failed. Err:", err)
 		return nil, err
 	}
 
@@ -123,11 +123,11 @@ func (cm *ConnectionManager) getDIFromSingleVC(ctx context.Context,
 
 func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	glog.V(4).Infof("getDIFromMultiVCorDC called with zone: %s and region: %s", zoneLooking, regionLooking)
+	klog.V(4).Infof("getDIFromMultiVCorDC called with zone: %s and region: %s", zoneLooking, regionLooking)
 
 	if len(zoneLabel) == 0 || len(regionLabel) == 0 || len(zoneLooking) == 0 || len(regionLooking) == 0 {
 		err := ErrMultiVCRequiresZones
-		glog.Errorf("%v", err)
+		klog.Errorf("%v", err)
 		return nil, err
 	}
 
@@ -141,19 +141,19 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 	// Mutli VC/DC configurations really shouldn't be using individual zone/region labels on Hosts
 	// Searching for labels per host is expensive in this configuration
 	// Consider using zone/region on Datacenters, Clusters, or ResourcePools
-	glog.Warning("Mutli VC/DC configurations really shouldn't be using individual zone/region labels on Hosts")
-	glog.Warning("Searching for labels per host is expensive in this configuration")
-	glog.Warning("Consider using zone/region on Datacenters, Clusters, or ResourcePools")
+	klog.Warning("Mutli VC/DC configurations really shouldn't be using individual zone/region labels on Hosts")
+	klog.Warning("Searching for labels per host is expensive in this configuration")
+	klog.Warning("Consider using zone/region on Datacenters, Clusters, or ResourcePools")
 	return cm.getDIFromMultiVCorDCVM(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
 }
 
 func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	glog.V(4).Infof("getDIFromMultiVCorDCNonVM called with zone: %s and region: %s", zoneLooking, regionLooking)
+	klog.V(4).Infof("getDIFromMultiVCorDCNonVM called with zone: %s and region: %s", zoneLooking, regionLooking)
 
 	if len(zoneLabel) == 0 || len(regionLabel) == 0 || len(zoneLooking) == 0 || len(regionLooking) == 0 {
 		err := ErrMultiVCRequiresZones
-		glog.Errorf("%v", err)
+		klog.Errorf("%v", err)
 		return nil, err
 	}
 
@@ -212,7 +212,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 			}
 
 			if err != nil {
-				glog.Error("getDIFromMultiVCorDCNonVM error vc:", err)
+				klog.Error("getDIFromMultiVCorDCNonVM error vc:", err)
 				setGlobalErr(err)
 				continue
 			}
@@ -220,7 +220,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 			if vsi.Cfg.Datacenters == "" {
 				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
 				if err != nil {
-					glog.Error("getDIFromMultiVCorDCNonVM error dc:", err)
+					klog.Error("getDIFromMultiVCorDCNonVM error dc:", err)
 					setGlobalErr(err)
 					continue
 				}
@@ -233,7 +233,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 					}
 					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
 					if err != nil {
-						glog.Error("getDIFromMultiVCorDCNonVM error dc:", err)
+						klog.Error("getDIFromMultiVCorDCNonVM error dc:", err)
 						setGlobalErr(err)
 						continue
 					}
@@ -252,14 +252,14 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 
 				clusterList, err := finder.ClusterComputeResourceList(ctx, "*")
 				if err != nil {
-					glog.Errorf("ClusterComputeResourceList failed in vc=%s and datacenter=%s: %v",
+					klog.Errorf("ClusterComputeResourceList failed in vc=%s and datacenter=%s: %v",
 						vc, datacenterObj.Name(), err)
 					setGlobalErr(err)
 					continue
 				}
 
 				for _, cluster := range clusterList {
-					glog.V(4).Infof("Finding zone in vc=%s and datacenter=%s and cluster=%s",
+					klog.V(4).Infof("Finding zone in vc=%s and datacenter=%s and cluster=%s",
 						vc, datacenterObj.Name(), cluster.Name())
 					queueChannel <- &zoneSearch{
 						vc:         vc,
@@ -278,20 +278,20 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 		go func() {
 			for res := range queueChannel {
 
-				glog.V(3).Infof("Checking zones for cluster: %s", res.cluster.Name())
+				klog.V(3).Infof("Checking zones for cluster: %s", res.cluster.Name())
 				result, err := cm.LookupZoneByMoref(ctx, res.datacenter, res.cluster.Reference(), zoneLabel, regionLabel, true)
 				if err != nil {
-					glog.Errorf("Failed to find zone: %s and region: %s for cluster %s", zoneLabel, regionLabel, res.cluster.Name())
+					klog.Errorf("Failed to find zone: %s and region: %s for cluster %s", zoneLabel, regionLabel, res.cluster.Name())
 					continue
 				}
 
 				if !strings.EqualFold(result[ZoneLabel], zoneLooking) ||
 					!strings.EqualFold(result[RegionLabel], regionLooking) {
-					glog.V(4).Infof("Does not match region: %s and zone: %s", result[RegionLabel], result[ZoneLabel])
+					klog.V(4).Infof("Does not match region: %s and zone: %s", result[RegionLabel], result[ZoneLabel])
 					continue
 				}
 
-				glog.Infof("Found zone: %s and region: %s for cluster %s", zoneLooking, regionLooking, res.cluster.Name())
+				klog.Infof("Found zone: %s and region: %s for cluster %s", zoneLooking, regionLooking, res.cluster.Name())
 				zoneInfo = &ZoneDiscoveryInfo{
 					VcServer:   res.vc,
 					DataCenter: res.datacenter,
@@ -311,17 +311,17 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 		return nil, *globalErr
 	}
 
-	glog.V(4).Infof("getDIFromMultiVCorDCNonVM: zone: %s and region: %s not found", zoneLabel, regionLabel)
+	klog.V(4).Infof("getDIFromMultiVCorDCNonVM: zone: %s and region: %s not found", zoneLabel, regionLabel)
 	return nil, vclib.ErrNoZoneRegionFound
 }
 
 func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	glog.V(4).Infof("getDIFromMultiVCorDCVM called with zone: %s and region: %s", zoneLooking, regionLooking)
+	klog.V(4).Infof("getDIFromMultiVCorDCVM called with zone: %s and region: %s", zoneLooking, regionLooking)
 
 	if len(zoneLabel) == 0 || len(regionLabel) == 0 || len(zoneLooking) == 0 || len(regionLooking) == 0 {
 		err := ErrMultiVCRequiresZones
-		glog.Errorf("%v", err)
+		klog.Errorf("%v", err)
 		return nil, err
 	}
 
@@ -380,7 +380,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 			}
 
 			if err != nil {
-				glog.Error("getDIFromMultiVCorDCVM error vc:", err)
+				klog.Error("getDIFromMultiVCorDCVM error vc:", err)
 				setGlobalErr(err)
 				continue
 			}
@@ -388,7 +388,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 			if vsi.Cfg.Datacenters == "" {
 				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
 				if err != nil {
-					glog.Error("getDIFromMultiVCorDCVM error dc:", err)
+					klog.Error("getDIFromMultiVCorDCVM error dc:", err)
 					setGlobalErr(err)
 					continue
 				}
@@ -401,7 +401,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 					}
 					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
 					if err != nil {
-						glog.Error("getDIFromMultiVCorDCVM error dc:", err)
+						klog.Error("getDIFromMultiVCorDCVM error dc:", err)
 						setGlobalErr(err)
 						continue
 					}
@@ -420,12 +420,12 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 
 				hostList, err := finder.HostSystemList(ctx, "*/*")
 				if err != nil {
-					glog.Errorf("HostSystemList failed: %v", err)
+					klog.Errorf("HostSystemList failed: %v", err)
 					continue
 				}
 
 				for _, host := range hostList {
-					glog.V(3).Infof("Finding zone in vc=%s and datacenter=%s for host: %s", vc, datacenterObj.Name(), host.Name())
+					klog.V(3).Infof("Finding zone in vc=%s and datacenter=%s for host: %s", vc, datacenterObj.Name(), host.Name())
 					queueChannel <- &zoneSearch{
 						vc:         vc,
 						datacenter: datacenterObj,
@@ -443,20 +443,20 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 		go func() {
 			for res := range queueChannel {
 
-				glog.V(3).Infof("Checking zones for host: %s", res.host.Name())
+				klog.V(3).Infof("Checking zones for host: %s", res.host.Name())
 				result, err := cm.LookupZoneByMoref(ctx, res.datacenter, res.host.Reference(), zoneLabel, regionLabel, false)
 				if err == nil {
-					glog.Errorf("Failed to find zone: %s and region: %s for host %s", zoneLabel, regionLabel, res.host.Name())
+					klog.Errorf("Failed to find zone: %s and region: %s for host %s", zoneLabel, regionLabel, res.host.Name())
 					continue
 				}
 
 				if !strings.EqualFold(result[ZoneLabel], zoneLooking) ||
 					!strings.EqualFold(result[RegionLabel], regionLooking) {
-					glog.V(4).Infof("Does not match region: %s and zone: %s", result[RegionLabel], result[ZoneLabel])
+					klog.V(4).Infof("Does not match region: %s and zone: %s", result[RegionLabel], result[ZoneLabel])
 					continue
 				}
 
-				glog.Infof("Found zone: %s and region: %s for host %s", zoneLooking, regionLooking, res.host.Name())
+				klog.Infof("Found zone: %s and region: %s for host %s", zoneLooking, regionLooking, res.host.Name())
 				zoneInfo = &ZoneDiscoveryInfo{
 					VcServer:   res.vc,
 					DataCenter: res.datacenter,
@@ -476,7 +476,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 		return nil, *globalErr
 	}
 
-	glog.V(4).Infof("getDIFromMultiVCorDCVM: zone: %s and region: %s not found", zoneLabel, regionLabel)
+	klog.V(4).Infof("getDIFromMultiVCorDCVM: zone: %s and region: %s not found", zoneLabel, regionLabel)
 	return nil, vclib.ErrNoZoneRegionFound
 }
 
@@ -508,7 +508,7 @@ func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *
 	vsi := cm.VsphereInstanceMap[vcServer]
 	if vsi == nil {
 		err := ErrConnectionNotFound
-		glog.Errorf("Unable to find Connection for %s", vcServer)
+		klog.Errorf("Unable to find Connection for %s", vcServer)
 		return nil, err
 	}
 
@@ -522,7 +522,7 @@ func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *
 			// example result: ["Folder", "Datacenter", "Cluster", "Host"]
 			objects, err = mo.Ancestors(ctx, dataCenter.Client(), pc, moRef)
 			if err != nil {
-				glog.Errorf("Ancestors failed for %s with err %v", moRef, err)
+				klog.Errorf("Ancestors failed for %s with err %v", moRef, err)
 				return err
 			}
 		} else {
@@ -530,7 +530,7 @@ func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *
 			pc := property.DefaultCollector(dataCenter.Client())
 			err = pc.RetrieveOne(ctx, moRef, []string{"summary"}, &moHost)
 			if err != nil {
-				glog.Errorf("RetrieveOne failed for %s with err %v", moRef, err)
+				klog.Errorf("RetrieveOne failed for %s with err %v", moRef, err)
 				return err
 			}
 			objects = make([]mo.ManagedEntity, 0)
@@ -540,26 +540,26 @@ func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *
 		// search the hierarchy, example order: ["Host", "Cluster", "Datacenter", "Folder"]
 		for i := range objects {
 			obj := objects[len(objects)-1-i]
-			glog.V(4).Infof("Name: %s, Type: %s", obj.Self.Value, obj.Self.Type)
+			klog.V(4).Infof("Name: %s, Type: %s", obj.Self.Value, obj.Self.Type)
 			tags, err := client.ListAttachedTags(ctx, obj)
 			if err != nil {
-				glog.Errorf("Cannot list attached tags. Err: %v", err)
+				klog.Errorf("Cannot list attached tags. Err: %v", err)
 				return err
 			}
 			for _, value := range tags {
 				tag, err := client.GetTag(ctx, value)
 				if err != nil {
-					glog.Errorf("Zones Get tag %s: %s", value, err)
+					klog.Errorf("Zones Get tag %s: %s", value, err)
 					return err
 				}
 				category, err := client.GetCategory(ctx, tag.CategoryID)
 				if err != nil {
-					glog.Errorf("Zones Get category %s error", value)
+					klog.Errorf("Zones Get category %s error", value)
 					return err
 				}
 
 				found := func() {
-					glog.V(2).Infof("Found %s tag (%s) attached to %s", category.Name, tag.Name, moRef)
+					klog.V(2).Infof("Found %s tag (%s) attached to %s", category.Name, tag.Name, moRef)
 				}
 				switch {
 				case category.Name == zoneLabel:
@@ -590,7 +590,7 @@ func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *
 		return nil
 	})
 	if err != nil {
-		glog.Errorf("Get zone for mo: %s: %s", moRef, err)
+		klog.Errorf("Get zone for mo: %s: %s", moRef, err)
 		return nil, err
 	}
 	return result, nil

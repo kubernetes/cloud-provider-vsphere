@@ -20,7 +20,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"github.com/vmware/govmomi/vim25/mo"
 
 	k8stypes "k8s.io/apimachinery/pkg/types"
@@ -39,40 +39,40 @@ func newZones(nodeManager *NodeManager, zone string, region string) cloudprovide
 
 // GetZone implements Zones.GetZone for In-Tree providers
 func (z *zones) GetZone(ctx context.Context) (cloudprovider.Zone, error) {
-	glog.V(4).Info("zones.GetZone() called")
+	klog.V(4).Info("zones.GetZone() called")
 
 	zone := cloudprovider.Zone{}
 
 	nodeName, err := os.Hostname()
 	if err != nil {
-		glog.V(2).Info("Failed to get hostname. Err: ", err)
+		klog.V(2).Info("Failed to get hostname. Err: ", err)
 		return zone, err
 	}
 
 	node, ok := z.nodeManager.nodeNameMap[nodeName]
 	if !ok {
-		glog.V(2).Info("zones.GetZone() NOT FOUND with ", nodeName)
+		klog.V(2).Info("zones.GetZone() NOT FOUND with ", nodeName)
 		return zone, ErrVMNotFound
 	}
 
 	vmHost, err := node.vm.HostSystem(ctx)
 	if err != nil {
-		glog.Errorf("Failed to get host system for VM: %q. err: %+v", node.vm.InventoryPath, err)
+		klog.Errorf("Failed to get host system for VM: %q. err: %+v", node.vm.InventoryPath, err)
 		return zone, err
 	}
 
 	var oHost mo.HostSystem
 	err = vmHost.Properties(ctx, vmHost.Reference(), []string{"summary"}, &oHost)
 	if err != nil {
-		glog.Errorf("Failed to get host system properties. err: %+v", err)
+		klog.Errorf("Failed to get host system properties. err: %+v", err)
 		return zone, err
 	}
-	glog.V(4).Infof("Host owning VM is %s", oHost.Summary.Config.Name)
+	klog.V(4).Infof("Host owning VM is %s", oHost.Summary.Config.Name)
 
 	zoneResult, err := z.nodeManager.connectionManager.LookupZoneByMoref(
 		ctx, node.dataCenter, vmHost.Reference(), z.zone, z.region, true)
 	if err != nil {
-		glog.Errorf("Failed to get host system properties. err: %+v", err)
+		klog.Errorf("Failed to get host system properties. err: %+v", err)
 		return zone, err
 	}
 
@@ -86,34 +86,34 @@ func (z *zones) GetZone(ctx context.Context) (cloudprovider.Zone, error) {
 
 // GetZoneByNodeName implements Zones.GetZone for Out-Tree providers
 func (z *zones) GetZoneByNodeName(ctx context.Context, nodeName k8stypes.NodeName) (cloudprovider.Zone, error) {
-	glog.V(4).Info("zones.GetZoneByNodeName() called with ", string(nodeName))
+	klog.V(4).Info("zones.GetZoneByNodeName() called with ", string(nodeName))
 
 	zone := cloudprovider.Zone{}
 
 	node, ok := z.nodeManager.nodeNameMap[string(nodeName)]
 	if !ok {
-		glog.V(2).Info("zones.GetZoneByNodeName() NOT FOUND with ", string(nodeName))
+		klog.V(2).Info("zones.GetZoneByNodeName() NOT FOUND with ", string(nodeName))
 		return zone, ErrVMNotFound
 	}
 
 	vmHost, err := node.vm.HostSystem(ctx)
 	if err != nil {
-		glog.Errorf("Failed to get host system for VM: %q. err: %+v", node.vm.InventoryPath, err)
+		klog.Errorf("Failed to get host system for VM: %q. err: %+v", node.vm.InventoryPath, err)
 		return zone, err
 	}
 
 	var oHost mo.HostSystem
 	err = vmHost.Properties(ctx, vmHost.Reference(), []string{"summary"}, &oHost)
 	if err != nil {
-		glog.Errorf("Failed to get host system properties. err: %+v", err)
+		klog.Errorf("Failed to get host system properties. err: %+v", err)
 		return zone, err
 	}
-	glog.V(4).Infof("Host owning VM is %s", oHost.Summary.Config.Name)
+	klog.V(4).Infof("Host owning VM is %s", oHost.Summary.Config.Name)
 
 	zoneResult, err := z.nodeManager.connectionManager.LookupZoneByMoref(
 		ctx, node.dataCenter, vmHost.Reference(), z.zone, z.region, true)
 	if err != nil {
-		glog.Errorf("Failed to get host system properties. err: %+v", err)
+		klog.Errorf("Failed to get host system properties. err: %+v", err)
 		return zone, err
 	}
 
@@ -125,35 +125,35 @@ func (z *zones) GetZoneByNodeName(ctx context.Context, nodeName k8stypes.NodeNam
 
 // GetZoneByProviderID implements Zones.GetZone for Out-Tree providers
 func (z *zones) GetZoneByProviderID(ctx context.Context, providerID string) (cloudprovider.Zone, error) {
-	glog.V(4).Info("zones.GetZoneByProviderID() called with ", providerID)
+	klog.V(4).Info("zones.GetZoneByProviderID() called with ", providerID)
 
 	zone := cloudprovider.Zone{}
 	uid := GetUUIDFromProviderID(providerID)
 
 	node, ok := z.nodeManager.nodeUUIDMap[uid]
 	if !ok {
-		glog.V(2).Info("zones.GetZoneByProviderID() NOT FOUND with ", uid)
+		klog.V(2).Info("zones.GetZoneByProviderID() NOT FOUND with ", uid)
 		return zone, ErrVMNotFound
 	}
 
 	vmHost, err := node.vm.HostSystem(ctx)
 	if err != nil {
-		glog.Errorf("Failed to get host system for VM: %q. err: %+v", node.vm.InventoryPath, err)
+		klog.Errorf("Failed to get host system for VM: %q. err: %+v", node.vm.InventoryPath, err)
 		return zone, err
 	}
 
 	var oHost mo.HostSystem
 	err = vmHost.Properties(ctx, vmHost.Reference(), []string{"summary"}, &oHost)
 	if err != nil {
-		glog.Errorf("Failed to get host system properties. err: %+v", err)
+		klog.Errorf("Failed to get host system properties. err: %+v", err)
 		return zone, err
 	}
-	glog.V(4).Infof("Host owning VM is %s", oHost.Summary.Config.Name)
+	klog.V(4).Infof("Host owning VM is %s", oHost.Summary.Config.Name)
 
 	zoneResult, err := z.nodeManager.connectionManager.LookupZoneByMoref(
 		ctx, node.dataCenter, vmHost.Reference(), z.zone, z.region, true)
 	if err != nil {
-		glog.Errorf("Failed to get host system properties. err: %+v", err)
+		klog.Errorf("Failed to get host system properties. err: %+v", err)
 		return zone, err
 	}
 

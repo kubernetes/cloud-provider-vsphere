@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/cloudprovider"
@@ -47,24 +47,24 @@ func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
 // When nodeName identifies more than one instance, only the first will be
 // considered.
 func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) ([]v1.NodeAddress, error) {
-	glog.V(4).Info("instances.NodeAddresses() called with ", string(nodeName))
+	klog.V(4).Info("instances.NodeAddresses() called with ", string(nodeName))
 
 	// Check if node has been discovered already
 	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
-		glog.V(2).Info("instances.NodeAddresses() CACHED with ", string(nodeName))
+		klog.V(2).Info("instances.NodeAddresses() CACHED with ", string(nodeName))
 		return node.NodeAddresses, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err == nil {
 		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
-			glog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
+			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
 			return []v1.NodeAddress{}, ErrNodeNotFound
 		}
-		glog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
+		klog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
 		return i.nodeManager.nodeNameMap[string(nodeName)].NodeAddresses, nil
 	}
 
-	glog.V(4).Info("instances.NodeAddresses() NOT FOUND with ", string(nodeName))
+	klog.V(4).Info("instances.NodeAddresses() NOT FOUND with ", string(nodeName))
 	return []v1.NodeAddress{}, ErrNodeNotFound
 }
 
@@ -72,21 +72,21 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 // identified by providerID. Only the public/private IPv4 addresses will be
 // considered for now.
 func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID string) ([]v1.NodeAddress, error) {
-	glog.V(4).Info("instances.NodeAddressesByProviderID() called with ", providerID)
+	klog.V(4).Info("instances.NodeAddressesByProviderID() called with ", providerID)
 
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
 	if node, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
-		glog.V(2).Info("instances.NodeAddressesByProviderID() CACHED with ", uid)
+		klog.V(2).Info("instances.NodeAddressesByProviderID() CACHED with ", uid)
 		return node.NodeAddresses, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(uid, FindVMByUUID); err == nil {
-		glog.V(2).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
+		klog.V(2).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
 		return i.nodeManager.nodeUUIDMap[uid].NodeAddresses, nil
 	}
 
-	glog.V(4).Info("instances.NodeAddressesByProviderID() NOT FOUND with ", uid)
+	klog.V(4).Info("instances.NodeAddressesByProviderID() NOT FOUND with ", uid)
 	return []v1.NodeAddress{}, ErrNodeNotFound
 }
 
@@ -97,80 +97,80 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 // When nodeName identifies more than one instance, only the first will be
 // considered.
 func (i *instances) ExternalID(ctx context.Context, nodeName types.NodeName) (string, error) {
-	glog.V(4).Info("instances.ExternalID() called with ", nodeName)
+	klog.V(4).Info("instances.ExternalID() called with ", nodeName)
 	return i.InstanceID(ctx, nodeName)
 }
 
 // InstanceID returns the cloud provider ID of the instance identified by nodeName.
 func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (string, error) {
-	glog.V(4).Info("instances.InstanceID() called with ", nodeName)
+	klog.V(4).Info("instances.InstanceID() called with ", nodeName)
 
 	// Check if node has been discovered already
 	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
-		glog.V(2).Info("instances.InstanceID() CACHED with ", string(nodeName))
+		klog.V(2).Info("instances.InstanceID() CACHED with ", string(nodeName))
 		return node.UUID, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err == nil {
 		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
-			glog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
+			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
 			return "", ErrNodeNotFound
 		}
-		glog.V(2).Infof("instances.InstanceID() FOUND with %s", string(nodeName))
+		klog.V(2).Infof("instances.InstanceID() FOUND with %s", string(nodeName))
 		return i.nodeManager.nodeNameMap[string(nodeName)].UUID, nil
 	}
 
-	glog.V(4).Info("instances.InstanceID() NOT FOUND with ", string(nodeName))
+	klog.V(4).Info("instances.InstanceID() NOT FOUND with ", string(nodeName))
 	return "", ErrNodeNotFound
 }
 
 // InstanceType returns the type of the instance identified by name.
 func (i *instances) InstanceType(ctx context.Context, name types.NodeName) (string, error) {
-	glog.V(4).Info("instances.InstanceType() called")
+	klog.V(4).Info("instances.InstanceType() called")
 	return "vsphere-vm", nil
 }
 
 // InstanceTypeByProviderID returns the type of the instance identified by providerID.
 func (i *instances) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
-	glog.V(4).Info("instances.InstanceTypeByProviderID() called")
+	klog.V(4).Info("instances.InstanceTypeByProviderID() called")
 	return "vsphere-vm", nil
 }
 
 // AddSSHKeyToAllInstances is not implemented; it always returns an error.
 func (i *instances) AddSSHKeyToAllInstances(ctx context.Context, user string, keyData []byte) error {
-	glog.V(4).Info("instances.AddSSHKeyToAllInstances() called")
+	klog.V(4).Info("instances.AddSSHKeyToAllInstances() called")
 	return cloudprovider.NotImplemented
 }
 
 // CurrentNodeName returns hostname as a NodeName value.
 func (i *instances) CurrentNodeName(ctx context.Context, hostname string) (types.NodeName, error) {
-	glog.V(4).Info("instances.CurrentNodeName() called")
+	klog.V(4).Info("instances.CurrentNodeName() called")
 	return types.NodeName(hostname), nil
 }
 
 // InstanceExistsByProviderID returns true if the instance identified by
 // providerID is running.
 func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID string) (bool, error) {
-	glog.V(4).Info("instances.InstanceExistsByProviderID() called with ", providerID)
+	klog.V(4).Info("instances.InstanceExistsByProviderID() called with ", providerID)
 
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
 	if _, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
-		glog.V(2).Info("instances.InstanceExistsByProviderID() CACHED with ", uid)
+		klog.V(2).Info("instances.InstanceExistsByProviderID() CACHED with ", uid)
 		return true, nil
 	}
 
 	if err := i.nodeManager.DiscoverNode(uid, FindVMByUUID); err == nil {
-		glog.V(2).Info("instances.InstanceExistsByProviderID() EXISTS with ", uid)
+		klog.V(2).Info("instances.InstanceExistsByProviderID() EXISTS with ", uid)
 		return true, err
 	}
 
-	glog.V(4).Info("instances.InstanceExistsByProviderID() NOT FOUND with ", uid)
+	klog.V(4).Info("instances.InstanceExistsByProviderID() NOT FOUND with ", uid)
 	return false, nil
 }
 
 // InstanceShutdownByProviderID returns true if the instance is in safe state to detach volumes
 func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID string) (bool, error) {
-	glog.V(4).Info("instances.InstanceShutdownByProviderID() called")
+	klog.V(4).Info("instances.InstanceShutdownByProviderID() called")
 	return false, cloudprovider.NotImplemented
 }

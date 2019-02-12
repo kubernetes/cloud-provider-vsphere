@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -60,7 +60,7 @@ func (ds *Datastore) CreateDirectory(ctx context.Context, directoryPath string, 
 		}
 		return err
 	}
-	glog.V(LogLevel).Infof("Created dir with path as %+q", directoryPath)
+	klog.V(LogLevel).Infof("Created dir with path as %+q", directoryPath)
 	return nil
 }
 
@@ -70,7 +70,7 @@ func (ds *Datastore) GetType(ctx context.Context) (string, error) {
 	pc := property.DefaultCollector(ds.Client())
 	err := pc.RetrieveOne(ctx, ds.Datastore.Reference(), []string{"summary"}, &dsMo)
 	if err != nil {
-		glog.Errorf("Failed to retrieve datastore summary property. err: %v", err)
+		klog.Errorf("Failed to retrieve datastore summary property. err: %v", err)
 		return "", err
 	}
 	return dsMo.Summary.Type, nil
@@ -82,7 +82,7 @@ func (ds *Datastore) GetName(ctx context.Context) (string, error) {
 	pc := property.DefaultCollector(ds.Client())
 	err := pc.RetrieveOne(ctx, ds.Datastore.Reference(), []string{DatastoreInfoProperty}, &dsMo)
 	if err != nil {
-		glog.Errorf("Failed to retrieve datastore info property. err: %v", err)
+		klog.Errorf("Failed to retrieve datastore info property. err: %v", err)
 		return "", err
 	}
 	return dsMo.Info.GetDatastoreInfo().Name, nil
@@ -93,7 +93,7 @@ func (ds *Datastore) GetName(ctx context.Context) (string, error) {
 func (ds *Datastore) IsCompatibleWithStoragePolicy(ctx context.Context, storagePolicyID string) (bool, string, error) {
 	pbmClient, err := NewPbmClient(ctx, ds.Client())
 	if err != nil {
-		glog.Errorf("Failed to get new PbmClient Object. err: %v", err)
+		klog.Errorf("Failed to get new PbmClient Object. err: %v", err)
 		return false, "", err
 	}
 	return pbmClient.IsDatastoreCompatible(ctx, storagePolicyID, ds)
@@ -105,7 +105,7 @@ func (ds *Datastore) ListFirstClassDisks(ctx context.Context) ([]*FirstClassDisk
 
 	oids, err := m.List(ctx, ds.Reference())
 	if err != nil {
-		glog.Errorf("Failed to list disks. Err: %v", err)
+		klog.Errorf("Failed to list disks. Err: %v", err)
 		return nil, err
 	}
 
@@ -134,7 +134,7 @@ func (ds *Datastore) GetFirstClassDisk(ctx context.Context, diskID string, findB
 
 	oids, err := m.List(ctx, ds.Reference())
 	if err != nil {
-		glog.Errorf("Failed to list disks. Err: %v", err)
+		klog.Errorf("Failed to list disks. Err: %v", err)
 		return nil, err
 	}
 
@@ -165,7 +165,7 @@ func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*First
 
 	oids, err := m.List(ctx, dsi.Reference())
 	if err != nil {
-		glog.Errorf("Failed to list disks. Err: %v", err)
+		klog.Errorf("Failed to list disks. Err: %v", err)
 		return nil, err
 	}
 
@@ -198,7 +198,7 @@ func (dsi *DatastoreInfo) GetFirstClassDiskInfo(ctx context.Context, diskID stri
 
 	oids, err := m.List(ctx, dsi.Reference())
 	if err != nil {
-		glog.Errorf("Failed to list disks. Err: %v", err)
+		klog.Errorf("Failed to list disks. Err: %v", err)
 		return nil, err
 	}
 

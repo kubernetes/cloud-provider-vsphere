@@ -20,7 +20,7 @@ import (
 	"io"
 	"runtime"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
@@ -62,7 +62,7 @@ func newVSphere(cfg vcfg.Config, finalize ...bool) (*VSphere, error) {
 func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) {
 	client, err := clientBuilder.Client(vs.cfg.Global.ServiceAccount)
 	if err == nil {
-		glog.V(1).Info("Kubernetes Client Init Succeeded")
+		klog.V(1).Info("Kubernetes Client Init Succeeded")
 
 		vs.informMgr = k8s.NewInformer(&client)
 
@@ -75,38 +75,38 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 		vs.informMgr.Listen()
 
 		if !vs.cfg.Global.APIDisable {
-			glog.V(1).Info("Starting the API Server")
+			klog.V(1).Info("Starting the API Server")
 			vs.server.Start()
 		} else {
-			glog.V(1).Info("API Server is disabled")
+			klog.V(1).Info("API Server is disabled")
 		}
 	} else {
-		glog.Errorf("Kubernetes Client Init Failed: %v", err)
+		klog.Errorf("Kubernetes Client Init Failed: %v", err)
 	}
 }
 
 func (vs *VSphere) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
-	glog.V(1).Info("The vSphere cloud provider does not support load balancers")
+	klog.V(1).Info("The vSphere cloud provider does not support load balancers")
 	return nil, false
 }
 
 func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
-	glog.V(1).Info("Enabling Instances interface on vSphere cloud provider")
+	klog.V(1).Info("Enabling Instances interface on vSphere cloud provider")
 	return vs.instances, true
 }
 
 func (vs *VSphere) Zones() (cloudprovider.Zones, bool) {
-	glog.V(1).Info("Enabling Zones interface on vSphere cloud provider")
+	klog.V(1).Info("Enabling Zones interface on vSphere cloud provider")
 	return vs.zones, true
 }
 
 func (vs *VSphere) Clusters() (cloudprovider.Clusters, bool) {
-	glog.V(1).Info("The vSphere cloud provider does not support clusters")
+	klog.V(1).Info("The vSphere cloud provider does not support clusters")
 	return nil, false
 }
 
 func (vs *VSphere) Routes() (cloudprovider.Routes, bool) {
-	glog.V(1).Info("The vSphere cloud provider does not support routes")
+	klog.V(1).Info("The vSphere cloud provider does not support routes")
 	return nil, false
 }
 
@@ -151,7 +151,7 @@ func logout(vs *VSphere) {
 func (vs *VSphere) nodeAdded(obj interface{}) {
 	node, ok := obj.(*v1.Node)
 	if node == nil || !ok {
-		glog.Warningf("nodeAdded: unrecognized object %+v", obj)
+		klog.Warningf("nodeAdded: unrecognized object %+v", obj)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (vs *VSphere) nodeAdded(obj interface{}) {
 func (vs *VSphere) nodeDeleted(obj interface{}) {
 	node, ok := obj.(*v1.Node)
 	if node == nil || !ok {
-		glog.Warningf("nodeDeleted: unrecognized object %+v", obj)
+		klog.Warningf("nodeDeleted: unrecognized object %+v", obj)
 		return
 	}
 

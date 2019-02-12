@@ -19,7 +19,7 @@ package vclib
 import (
 	"context"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"github.com/vmware/govmomi/object"
 )
 
@@ -33,7 +33,7 @@ type Folder struct {
 func (folder *Folder) GetVirtualMachines(ctx context.Context) ([]*VirtualMachine, error) {
 	vmFolders, err := folder.Children(ctx)
 	if err != nil {
-		glog.Errorf("Failed to get children from Folder: %s. err: %+v", folder.InventoryPath, err)
+		klog.Errorf("Failed to get children from Folder: %s. err: %+v", folder.InventoryPath, err)
 		return nil, err
 	}
 	var vmObjList []*VirtualMachine

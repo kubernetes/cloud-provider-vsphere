@@ -19,7 +19,7 @@ package kubernetes
 import (
 	"os"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
@@ -35,19 +35,19 @@ func NewClient(name string) (clientset.Interface, error) {
 
 	var config *restclient.Config
 	if kubecfgPath != "" {
-		glog.V(2).Info("k8s client using kubeconfig")
+		klog.V(2).Info("k8s client using kubeconfig")
 		var err error
 		config, err = clientcmd.BuildConfigFromFlags("", kubecfgPath)
 		if err != nil {
-			glog.Errorf("BuildConfigFromFlags failed %q", err)
+			klog.Errorf("BuildConfigFromFlags failed %q", err)
 			return nil, err
 		}
 	} else {
-		glog.V(2).Info("k8s client using in-cluster config")
+		klog.V(2).Info("k8s client using in-cluster config")
 		var err error
 		config, err = restclient.InClusterConfig()
 		if err != nil {
-			glog.Errorf("InClusterConfig failed %q", err)
+			klog.Errorf("InClusterConfig failed %q", err)
 			return nil, err
 		}
 	}
@@ -61,7 +61,7 @@ func NewClient(name string) (clientset.Interface, error) {
 func NewClientOrDie(name string) clientset.Interface {
 	client, err := NewClient(name)
 	if err != nil {
-		glog.Fatalf("InClusterConfig failed %q", err)
+		klog.Fatalf("InClusterConfig failed %q", err)
 	}
 
 	return client
