@@ -24,11 +24,11 @@ import (
 	neturl "net/url"
 	"sync"
 
-	"k8s.io/klog"
 	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/sts"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/soap"
+	"k8s.io/klog"
 )
 
 // VSphereConnection contains information for connecting to vCenter
