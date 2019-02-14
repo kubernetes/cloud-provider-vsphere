@@ -21,10 +21,10 @@ import (
 	"errors"
 	"net"
 
-	"k8s.io/klog"
 	"k8s.io/api/core/v1"
 	clientv1 "k8s.io/client-go/listers/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
+	"k8s.io/klog"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
 	"github.com/vmware/govmomi/vim25/mo"
@@ -65,15 +65,17 @@ func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeM
 // RegisterNode - Handler when node is removed from k8s cluster.
 func (nm *NodeManager) RegisterNode(node *v1.Node) {
 	klog.V(4).Info("RegisterNode ENTER: ", node.Name)
-	nm.addNode(node)
-	nm.DiscoverNode(ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID), FindVMByUUID)
+	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
+	nm.DiscoverNode(uuid, FindVMByUUID)
+	nm.addNode(uuid, node)
 	klog.V(4).Info("RegisterNode LEAVE: ", node.Name)
 }
 
 // UnregisterNode - Handler when node is removed from k8s cluster.
 func (nm *NodeManager) UnregisterNode(node *v1.Node) {
 	klog.V(4).Info("UnregisterNode ENTER: ", node.Name)
-	nm.removeNode(node)
+	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
+	nm.removeNode(uuid, node)
 	klog.V(4).Info("UnregisterNode LEAVE: ", node.Name)
 }
 
@@ -86,28 +88,54 @@ func (nm *NodeManager) addNodeInfo(node *NodeInfo) {
 	nm.nodeInfoLock.Unlock()
 }
 
-func (nm *NodeManager) addNode(node *v1.Node) {
+func (nm *NodeManager) addNode(uuid string, node *v1.Node) {
 	nm.nodeRegInfoLock.Lock()
-	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
 	klog.V(4).Info("addNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	nm.nodeRegUUIDMap[uuid] = node
 	nm.nodeRegInfoLock.Unlock()
 }
 
-func (nm *NodeManager) removeNode(node *v1.Node) {
+func (nm *NodeManager) removeNode(uuid string, node *v1.Node) {
 	nm.nodeRegInfoLock.Lock()
-	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
 	klog.V(4).Info("removeNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	delete(nm.nodeRegUUIDMap, uuid)
 	nm.nodeRegInfoLock.Unlock()
 }
 
+func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, searchBy FindVM) (*cm.VmDiscoveryInfo, error) {
+	// Search by NodeName
+	if searchBy == FindVMByName {
+		return nm.connectionManager.WhichVCandDCByNodeId(ctx, nodeID, cm.FindVM(searchBy))
+	}
+
+	// Search by UUID
+	vmDI, err := nm.connectionManager.WhichVCandDCByNodeId(ctx, nodeID, cm.FindVM(searchBy))
+	if err == nil {
+		klog.Infof("Discovered VM using normal UUID format")
+		return vmDI, err
+	}
+
+	// Need to lookup the original format of the UUID because photon 2.0 formats the UUID
+	// different from Photon 3, RHEL, CentOS, Ubuntu, and etc
+	klog.Errorf("WhichVCandDCByNodeId failed using normally formatted UUID. Err: %v", err)
+	reverseUUID := ConvertK8sUUIDtoNormal(nodeID)
+	vmDI, err = nm.connectionManager.WhichVCandDCByNodeId(ctx, reverseUUID, cm.FindVM(searchBy))
+	if err == nil {
+		klog.Infof("Discovered VM using reverse UUID format")
+		return vmDI, err
+	}
+
+	klog.Errorf("WhichVCandDCByNodeId failed using reverse formatted UUID. Err: %v", err)
+	return nil, err
+}
+
 func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
 	ctx := context.Background()
 
-	vmDI, err := nm.connectionManager.WhichVCandDCByNodeId(ctx, nodeID, cm.FindVM(searchBy))
+	vmDI, err := nm.shakeOutNodeIDLookup(ctx, nodeID, searchBy)
 	if err != nil {
-		klog.Errorf("WhichVCandDCByNodeId failed. Err: %v", err)
+		klog.Errorf("shakeOutNodeIDLookup failed. Err=%v", err)
+		return err
 	}
 
 	var oVM mo.VirtualMachine

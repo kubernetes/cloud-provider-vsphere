@@ -44,13 +44,7 @@ func TestRegUnregNode(t *testing.T) {
 	}
 	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
 
-	nm := NodeManager{
-		nodeNameMap:       make(map[string]*NodeInfo),
-		nodeUUIDMap:       make(map[string]*NodeInfo),
-		nodeRegUUIDMap:    make(map[string]*v1.Node),
-		vcList:            make(map[string]*VCenterInfo),
-		connectionManager: vsphere.connectionManager,
-	}
+	nm := newNodeManager(vsphere.connectionManager, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
@@ -117,13 +111,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
 	defer vsphere.connectionManager.Logout()
 
-	nm := NodeManager{
-		nodeNameMap:       make(map[string]*NodeInfo),
-		nodeUUIDMap:       make(map[string]*NodeInfo),
-		nodeRegUUIDMap:    make(map[string]*v1.Node),
-		vcList:            make(map[string]*VCenterInfo),
-		connectionManager: vsphere.connectionManager,
-	}
+	nm := newNodeManager(vsphere.connectionManager, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
@@ -162,13 +150,7 @@ func TestExport(t *testing.T) {
 	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
 	defer vsphere.connectionManager.Logout()
 
-	nm := NodeManager{
-		nodeNameMap:       make(map[string]*NodeInfo),
-		nodeUUIDMap:       make(map[string]*NodeInfo),
-		nodeRegUUIDMap:    make(map[string]*v1.Node),
-		vcList:            make(map[string]*VCenterInfo),
-		connectionManager: vsphere.connectionManager,
-	}
+	nm := newNodeManager(vsphere.connectionManager, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
