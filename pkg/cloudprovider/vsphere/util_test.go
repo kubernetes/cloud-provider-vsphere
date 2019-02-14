@@ -39,3 +39,17 @@ func TestUUIDConvert2(t *testing.T) {
 		t.Errorf("Failed to translate UUID")
 	}
 }
+
+func TestUUIDConvertAndRevert(t *testing.T) {
+	k8sUUID := "42278c9d-79fb-f2af-b060-d7f167fa261c"
+
+	//converts
+	tmpUUID := ConvertK8sUUIDtoNormal(k8sUUID)
+
+	//reverts to original
+	orgUUID := ConvertK8sUUIDtoNormal(tmpUUID)
+
+	if orgUUID != "42278c9d-79fb-f2af-b060-d7f167fa261c" {
+		t.Errorf("Failed to revert UUID")
+	}
+}
