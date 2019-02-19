@@ -17,9 +17,11 @@ Steps that will be covered in deploying `cloud-provider-vsphere`:
 
 #### 1. Set the Kubernetes cluster to use an external Cloud Controller Manager
 
-This is already covered in the Kubernetes documentation. Please take a look at configuration guidelines located [here](https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#running-cloud-controller-manager).
+This is already covered in the Kubernetes documentation. Please take a look at and also understand all the configuration options presented in the documentation located [here](https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#running-cloud-controller-manager). You may need to apply all or only a subset of these options depending on the version of Kubernetes being used, how the Kubernetes cluster was setup, the Kubernetes distribution being used, and etc. Please read through and understand which options are relevant to your particular version of your Kubernetes cluster.
 
-> **NOTE**: According to the above documentation, enabling the external provider should automatically add a taint `node.cloudprovider.kubernetes.io/uninitialized` with an effect `NoSchedule` during initialization. This may not occur leading to partially initialized nodes. If this occurs, the taint can manually be applied *BEFORE* launching the cloud controller manager by running the following command:
+For most installations, it should be sufficient to only set `--cloud-provider=external` on all Kubernetes master and worker nodes for `cloud-provider-vsphere` (configuration file typically located at: /etc/sysconfig/kubelet). Again, please consult the external cloud provider documentation if it's unclear how to setup the `cloud-provider-vsphere` for use in your Kubernetes cluster.
+
+> **NOTE**: According to the above documentation, enabling the external provider should automatically add a taint `node.cloudprovider.kubernetes.io/uninitialized` with an effect `NoSchedule` during initialization. This may not occur, depending on the version of Kuberenetes you are attempting to run, leading to partially initialized nodes. If this occurs, the taint can manually be applied *BEFORE* launching the cloud controller manager by running the following command:
 
 ```bash
 [k8suser@k8master ~]$ kubectl taint nodes YOUR_NODE_NAME node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
