@@ -23,13 +23,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s.io/klog"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/govmomi/vslm"
+	"k8s.io/klog"
 )
 
 // Datacenter extends the govmomi Datacenter object
@@ -364,8 +364,9 @@ func (dc *Datacenter) GetAllDatastoreClusters(ctx context.Context, child bool) (
 	storagePods, err := finder.DatastoreClusterList(ctx, "*")
 	if err != nil {
 		klog.Errorf("Failed to get all the datastore clusters. err: %+v", err)
-		return nil, err
+		return nil, ErrNoDataStoreClustersFound
 	}
+
 	var spList []types.ManagedObjectReference
 	for _, sp := range storagePods {
 		spList = append(spList, sp.Reference())
@@ -536,10 +537,10 @@ func (dc *Datacenter) GetFirstClassDisk(ctx context.Context,
 }
 
 func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassDiskInfo, error) {
-	storagePods, err := dc.GetAllDatastoreClusters(ctx, true)
-	if err != nil {
-		klog.Errorf("GetAllDatastoreClusters failed. Err: %v", err)
-		return nil, err
+	storagePods, errDsClusters := dc.GetAllDatastoreClusters(ctx, true)
+	if errDsClusters != ErrNoDataStoreClustersFound {
+		klog.Warningf("GetAllDatastoreClusters failed. Err: %v", errDsClusters)
+		return nil, errDsClusters
 	}
 
 	datastores, err := dc.GetAllDatastores(ctx)
@@ -551,23 +552,25 @@ func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassD
 	alreadyVisited := make([]string, 0)
 	firstClassDisks := make([]*FirstClassDiskInfo, 0)
 
-	for _, storagePod := range storagePods {
-		err := storagePod.PopulateChildDatastoreInfos(ctx, false)
-		if err != nil {
-			klog.Warningf("PopulateChildDatastores failed. Err: %v", err)
-			continue
-		}
-		for _, datastore := range storagePod.DatastoreInfos {
-			alreadyVisited = append(alreadyVisited, datastore.Info.Name)
-		}
+	if errDsClusters != ErrNoDataStoreClustersFound {
+		for _, storagePod := range storagePods {
+			err := storagePod.PopulateChildDatastoreInfos(ctx, false)
+			if err != nil {
+				klog.Warningf("PopulateChildDatastores failed. Err: %v", err)
+				continue
+			}
+			for _, datastore := range storagePod.DatastoreInfos {
+				alreadyVisited = append(alreadyVisited, datastore.Info.Name)
+			}
 
-		disks, err := storagePod.ListFirstClassDisksInfo(ctx)
-		if err != nil {
-			klog.Warningf("ListFirstClassDisks failed for %s. Err: %v", storagePod.Name(), err)
-			continue
-		}
+			disks, err := storagePod.ListFirstClassDisksInfo(ctx)
+			if err != nil {
+				klog.Warningf("ListFirstClassDisks failed for %s. Err: %v", storagePod.Name(), err)
+				continue
+			}
 
-		firstClassDisks = append(firstClassDisks, disks...)
+			firstClassDisks = append(firstClassDisks, disks...)
+		}
 	}
 
 	for _, datastore := range datastores {

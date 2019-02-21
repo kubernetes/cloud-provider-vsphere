@@ -20,24 +20,26 @@ import "errors"
 
 // Error Messages
 const (
-	FileAlreadyExistErrMsg     = "File requested already exist"
-	NoDevicesFoundErrMsg       = "No devices found"
-	DiskNotFoundErrMsg         = "No vSphere disk ID/Name found"
-	InvalidVolumeOptionsErrMsg = "VolumeOptions verification failed"
-	NoVMFoundErrMsg            = "No VM found"
-	NoZoneRegionFoundErrMsg    = "Unable to find the Zone/Region pair"
-	NoDatastoreFoundErrMsg     = "Datastore not found"
-	NoDatacenterFoundErrMsg    = "Datacenter not found"
+	FileAlreadyExistErrMsg         = "File requested already exist"
+	NoDevicesFoundErrMsg           = "No devices found"
+	DiskNotFoundErrMsg             = "No vSphere disk ID/Name found"
+	InvalidVolumeOptionsErrMsg     = "VolumeOptions verification failed"
+	NoVMFoundErrMsg                = "No VM found"
+	NoZoneRegionFoundErrMsg        = "Unable to find the Zone/Region pair"
+	NoDatastoreFoundErrMsg         = "Datastore not found"
+	NoDatacenterFoundErrMsg        = "Datacenter not found"
+	NoDataStoreClustersFoundErrMsg = "No DatastoreClusters Found"
 )
 
 // Error constants
 var (
-	ErrFileAlreadyExist     = errors.New(FileAlreadyExistErrMsg)
-	ErrNoDevicesFound       = errors.New(NoDevicesFoundErrMsg)
-	ErrNoDiskIDFound        = errors.New(DiskNotFoundErrMsg)
-	ErrInvalidVolumeOptions = errors.New(InvalidVolumeOptionsErrMsg)
-	ErrNoVMFound            = errors.New(NoVMFoundErrMsg)
-	ErrNoZoneRegionFound    = errors.New(NoZoneRegionFoundErrMsg)
-	ErrNoDatastoreFound     = errors.New(NoDatastoreFoundErrMsg)
-	ErrNoDatacenterFound    = errors.New(NoDatacenterFoundErrMsg)
+	ErrFileAlreadyExist         = errors.New(FileAlreadyExistErrMsg)
+	ErrNoDevicesFound           = errors.New(NoDevicesFoundErrMsg)
+	ErrNoDiskIDFound            = errors.New(DiskNotFoundErrMsg)
+	ErrInvalidVolumeOptions     = errors.New(InvalidVolumeOptionsErrMsg)
+	ErrNoVMFound                = errors.New(NoVMFoundErrMsg)
+	ErrNoZoneRegionFound        = errors.New(NoZoneRegionFoundErrMsg)
+	ErrNoDatastoreFound         = errors.New(NoDatastoreFoundErrMsg)
+	ErrNoDatacenterFound        = errors.New(NoDatacenterFoundErrMsg)
+	ErrNoDataStoreClustersFound = errors.New(NoDataStoreClustersFoundErrMsg)
 )
