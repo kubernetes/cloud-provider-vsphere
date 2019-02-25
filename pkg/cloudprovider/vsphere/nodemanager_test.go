@@ -21,13 +21,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/simulator"
-	"github.com/vmware/govmomi/vim25/methods"
-	"github.com/vmware/govmomi/vim25/soap"
-	"github.com/vmware/govmomi/vim25/types"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
@@ -87,19 +83,6 @@ func TestRegUnregNode(t *testing.T) {
 	}
 }
 
-type SearchIndex struct {
-	*simulator.SearchIndex
-	vm *simulator.VirtualMachine
-}
-
-func (s *SearchIndex) FindByDnsName(req *types.FindByDnsName) soap.HasFault {
-	res := &methods.FindByDnsNameBody{Res: new(types.FindByDnsNameResponse)}
-	if req.VmSearch && strings.EqualFold(req.DnsName, s.vm.Name) {
-		res.Res.Returnval = &s.vm.Self
-	}
-	return res
-}
-
 func TestDiscoverNodeByName(t *testing.T) {
 	cfg, ok := configFromEnvOrSim()
 	defer ok()
@@ -114,17 +97,13 @@ func TestDiscoverNodeByName(t *testing.T) {
 	nm := newNodeManager(vsphere.connectionManager, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
 	name := vm.Name
 
-	vsi := nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
 	err = nm.connectionManager.Connect(context.Background(), cfg.Global.VCenterIP)
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
-
-	search := object.NewSearchIndex(vsi.Conn.Client)
-	si := simulator.Map.Get(search.Reference()).(*simulator.SearchIndex)
-	simulator.Map.Put(&SearchIndex{si, vm})
 
 	err = nm.DiscoverNode(name, FindVMByName)
 	if err != nil {
