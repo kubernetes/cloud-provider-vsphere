@@ -493,7 +493,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:324f1888e6b2dcfa1efa164ae9a874e77b40ac5f785e2eb548d3ae86f502731f"
+  digest = "1:def93e6ee66630a1ce72a909c9a5b6079e03bb6cd3bc27ff5b15f6ccc48dfaf8"
   name = "github.com/vmware/govmomi"
   packages = [
     ".",
@@ -537,7 +537,7 @@
     "vslm",
   ]
   pruneopts = "UT"
-  revision = "6712f991d8852a25ae4304a720463301c1ac4c64"
+  revision = "3ee8bd5caec4398650ed36dd12e7c140588151ef"
 
 [[projects]]
   branch = "master"

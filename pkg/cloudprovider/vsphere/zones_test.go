@@ -15,6 +15,7 @@ package vsphere
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"k8s.io/api/core/v1"
@@ -113,7 +114,13 @@ func TestZones(t *testing.T) {
 	pc := property.DefaultCollector(vsi.Conn.Client)
 
 	// Tag manager instance
-	m := tags.NewManager(rest.NewClient(vsi.Conn.Client))
+	c := rest.NewClient(vsi.Conn.Client)
+	user := url.UserPassword(vsi.Conn.Username, vsi.Conn.Password)
+	if err := c.Login(ctx, user); err != nil {
+		t.Fatalf("Rest login failed. err=%v", err)
+	}
+
+	m := tags.NewManager(c)
 
 	// Create a region category
 	regionID, err := m.CreateCategory(ctx, &tags.Category{Name: vs.cfg.Labels.Region})

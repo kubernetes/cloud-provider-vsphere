@@ -57,11 +57,11 @@ func (cm *ConnectionManager) WhichVCandDCByZone(ctx context.Context,
 	}
 
 	if numOfVCs == 1 {
-		klog.V(4).Info("Single VC Detected")
+		klog.Info("Single VC Detected")
 		return cm.getDIFromSingleVC(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
 	}
 
-	klog.V(4).Info("Multi VC Detected")
+	klog.Info("Multi VC Detected")
 	return cm.getDIFromMultiVCorDC(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
 }
 
@@ -100,12 +100,12 @@ func (cm *ConnectionManager) getDIFromSingleVC(ctx context.Context,
 
 	// More than 1 DC in this VC
 	if numOfDc > 1 {
-		klog.V(3).Info("Multi Datacenter configuration detected")
+		klog.Info("Multi Datacenter configuration detected")
 		return cm.getDIFromMultiVCorDC(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
 	}
 
 	// We are sure this is single VC and DC
-	klog.V(3).Info("Single vCenter/Datacenter configuration detected")
+	klog.Info("Single vCenter/Datacenter configuration detected")
 
 	datacenterObjs, err := vclib.GetAllDatacenter(ctx, tmpVsi.Conn)
 	if err != nil {
@@ -149,7 +149,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 
 func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	klog.V(4).Infof("getDIFromMultiVCorDCNonVM called with zone: %s and region: %s", zoneLooking, regionLooking)
+	klog.Infof("getDIFromMultiVCorDCNonVM called with zone: %s and region: %s", zoneLooking, regionLooking)
 
 	if len(zoneLabel) == 0 || len(regionLabel) == 0 || len(zoneLooking) == 0 || len(regionLooking) == 0 {
 		err := ErrMultiVCRequiresZones
@@ -259,7 +259,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 				}
 
 				for _, cluster := range clusterList {
-					klog.V(4).Infof("Finding zone in vc=%s and datacenter=%s and cluster=%s",
+					klog.V(3).Infof("Finding zone in vc=%s and datacenter=%s and cluster=%s",
 						vc, datacenterObj.Name(), cluster.Name())
 					queueChannel <- &zoneSearch{
 						vc:         vc,
