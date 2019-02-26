@@ -61,16 +61,23 @@ rIiZs5QbKdycsv9gQJzwQAogC8o04X3Zz3dsoX+h4A==
 
 // configFromSim starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with an empty tls.Config.
-func configFromSim() (vcfg.Config, func()) {
-	return configFromSimWithTLS(new(tls.Config), true)
+func configFromSim(multiDc bool) (vcfg.Config, func()) {
+	return configFromSimWithTLS(new(tls.Config), true, multiDc)
 }
 
 // configFromSimWithTLS starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with a tls.Config. The returned client
 // config can be configured to allow/decline insecure connections.
-func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Config, func()) {
+func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc bool) (vcfg.Config, func()) {
 	var cfg vcfg.Config
 	model := simulator.VPX()
+
+	if multiDc {
+		model.Datacenter = 2
+		model.Datastore = 1
+		model.Cluster = 1
+		model.Host = 0
+	}
 
 	err := model.Create()
 	if err != nil {
@@ -97,7 +104,12 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Con
 	cfg.Global.VCenterPort = s.URL.Port()
 	cfg.Global.User = s.URL.User.Username()
 	cfg.Global.Password, _ = s.URL.User.Password()
-	cfg.Global.Datacenters = vclib.TestDefaultDatacenter
+	// Configure region and zone categories
+	if multiDc {
+		cfg.Global.Datacenters = "DC0,DC1"
+	} else {
+		cfg.Global.Datacenters = vclib.TestDefaultDatacenter
+	}
 	cfg.VirtualCenter = make(map[string]*vcfg.VirtualCenterConfig)
 	cfg.VirtualCenter[s.URL.Hostname()] = &vcfg.VirtualCenterConfig{
 		User:         cfg.Global.User,
@@ -107,6 +119,10 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Con
 		Datacenters:  cfg.Global.Datacenters,
 	}
 
+	// Configure region and zone categories
+	cfg.Labels.Region = "k8s-region"
+	cfg.Labels.Zone = "k8s-zone"
+
 	return cfg, func() {
 		s.Close()
 		model.Remove()
@@ -114,12 +130,12 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool) (vcfg.Con
 }
 
 // configFromEnvOrSim returns config from configFromEnv if set, otherwise returns configFromSim.
-func configFromEnvOrSim() (vcfg.Config, func()) {
+func configFromEnvOrSim(multiDc bool) (vcfg.Config, func()) {
 	cfg, ok := vcfg.ConfigFromEnv()
 	if ok {
 		return cfg, func() {}
 	}
-	return configFromSim()
+	return configFromSim(multiDc)
 }
 
 func TestNewVSphere(t *testing.T) {
@@ -135,7 +151,7 @@ func TestNewVSphere(t *testing.T) {
 }
 
 func TestVSphereLogin(t *testing.T) {
-	cfg, cleanup := configFromEnvOrSim()
+	cfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 
 	// Create vSphere configuration object
@@ -164,7 +180,7 @@ func TestVSphereLogin(t *testing.T) {
 }
 
 func TestVSphereLoginByToken(t *testing.T) {
-	cfg, cleanup := configFromSim()
+	cfg, cleanup := configFromSim(false)
 	defer cleanup()
 
 	// Configure for SAML token auth

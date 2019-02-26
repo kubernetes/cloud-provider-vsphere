@@ -20,6 +20,26 @@ import (
 	"testing"
 )
 
+func TestUUIDFromProviderID(t *testing.T) {
+	providerID := "vsphere://423740e7-c66e-05e3-9d0b-9e1205b24d43"
+
+	UUID := GetUUIDFromProviderID(providerID)
+
+	if UUID != "423740e7-c66e-05e3-9d0b-9e1205b24d43" {
+		t.Errorf("Failed to extract UUID")
+	}
+}
+
+func TestUUIDFromUUID(t *testing.T) {
+	UUIDOrg := "423740e7-c66e-05e3-9d0b-9e1205b24d43"
+
+	UUIDNew := GetUUIDFromProviderID(UUIDOrg)
+
+	if UUIDOrg != UUIDNew {
+		t.Errorf("Failed to just return the UUID")
+	}
+}
+
 func TestUUIDConvert1(t *testing.T) {
 	k8sUUID := "56492e42-22ad-3911-6d72-59cc8f26bc90"
 
