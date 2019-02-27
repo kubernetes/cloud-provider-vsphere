@@ -36,28 +36,22 @@ func TestZones(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a vcsim instance
-	cfg, close := configFromEnvOrSim()
+	cfg, close := configFromEnvOrSim(false)
 	defer close()
 
-	// Configure region and zone categories
-	cfg.Labels.Region = "k8s-region"
-	cfg.Labels.Zone = "k8s-zone"
+	// Create configuration object
+	connMgr := cm.NewConnectionManager(&cfg, nil)
+	defer connMgr.Logout()
 
-	// Create vSphere configuration object
-	vs, err := newVSphere(cfg)
-	if err != nil {
-		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
-	}
-	vs.connectionManager = cm.NewConnectionManager(&cfg, nil)
-	vs.nodeManager = newNodeManager(vs.connectionManager, nil)
-	vs.zones = newZones(vs.nodeManager, cfg.Labels.Zone, cfg.Labels.Region)
+	nm := newNodeManager(connMgr, nil)
+	zones := newZones(nm, cfg.Labels.Zone, cfg.Labels.Region)
 
 	// Create vSphere client
-	err = vs.connectionManager.Connect(ctx, cfg.Global.VCenterIP)
+	err := connMgr.Connect(ctx, cfg.Global.VCenterIP)
 	if err != nil {
 		t.Errorf("Failed to connect to vSphere: %s", err)
 	}
-	vsi := vs.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
+	vsi := connMgr.VsphereInstanceMap[cfg.Global.VCenterIP]
 
 	// Get a simulator VM
 	myvm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
@@ -80,15 +74,15 @@ func TestZones(t *testing.T) {
 		},
 	}
 
-	vs.nodeManager.RegisterNode(node)
+	nm.RegisterNode(node)
 
-	if len(vs.nodeManager.nodeNameMap) != 1 {
+	if len(nm.nodeNameMap) != 1 {
 		t.Fatalf("Failed: nodeNameMap should be a length of 1")
 	}
-	if len(vs.nodeManager.nodeUUIDMap) != 1 {
+	if len(nm.nodeUUIDMap) != 1 {
 		t.Fatalf("Failed: nodeUUIDMap should be a length of  1")
 	}
-	if len(vs.nodeManager.nodeRegUUIDMap) != 1 {
+	if len(nm.nodeRegUUIDMap) != 1 {
 		t.Fatalf("Failed: nodeRegUUIDMap should be a length of  1")
 	}
 
@@ -123,7 +117,7 @@ func TestZones(t *testing.T) {
 	m := tags.NewManager(c)
 
 	// Create a region category
-	regionID, err := m.CreateCategory(ctx, &tags.Category{Name: vs.cfg.Labels.Region})
+	regionID, err := m.CreateCategory(ctx, &tags.Category{Name: cfg.Labels.Region})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +129,7 @@ func TestZones(t *testing.T) {
 	}
 
 	// Create a zone category
-	zoneID, err := m.CreateCategory(ctx, &tags.Category{Name: vs.cfg.Labels.Zone})
+	zoneID, err := m.CreateCategory(ctx, &tags.Category{Name: cfg.Labels.Zone})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,12 +155,6 @@ func TestZones(t *testing.T) {
 	// Attach a random tag to VM's host
 	if err = m.AttachTag(ctx, randomID, host); err != nil {
 		t.Fatal(err)
-	}
-
-	// Expecting Zones() to return true, indicating VCP supports the Zones interface
-	zones, ok := vs.Zones()
-	if !ok {
-		t.Fatalf("zones=%t", ok)
 	}
 
 	// GetZone() tests, covering error and success paths

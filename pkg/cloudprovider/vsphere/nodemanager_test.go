@@ -31,16 +31,13 @@ import (
 )
 
 func TestRegUnregNode(t *testing.T) {
-	cfg, ok := configFromEnvOrSim()
+	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	vsphere, err := newVSphere(cfg)
-	if err != nil {
-		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
-	}
-	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
+	connMgr := cm.NewConnectionManager(&cfg, nil)
+	defer connMgr.Logout()
 
-	nm := newNodeManager(vsphere.connectionManager, nil)
+	nm := newNodeManager(connMgr, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
@@ -84,23 +81,19 @@ func TestRegUnregNode(t *testing.T) {
 }
 
 func TestDiscoverNodeByName(t *testing.T) {
-	cfg, ok := configFromEnvOrSim()
+	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	vsphere, err := newVSphere(cfg)
-	if err != nil {
-		t.Errorf("Failed to construct/authenticate vSphere: %s", err)
-	}
-	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
-	defer vsphere.connectionManager.Logout()
+	connMgr := cm.NewConnectionManager(&cfg, nil)
+	defer connMgr.Logout()
 
-	nm := newNodeManager(vsphere.connectionManager, nil)
+	nm := newNodeManager(connMgr, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
 	name := vm.Name
 
-	err = nm.connectionManager.Connect(context.Background(), cfg.Global.VCenterIP)
+	err := connMgr.Connect(context.Background(), cfg.Global.VCenterIP)
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
@@ -119,17 +112,13 @@ func TestDiscoverNodeByName(t *testing.T) {
 }
 
 func TestExport(t *testing.T) {
-	cfg, ok := configFromEnvOrSim()
+	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	vsphere, err := newVSphere(cfg)
-	if err != nil {
-		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
-	}
-	vsphere.connectionManager = cm.NewConnectionManager(&cfg, nil)
-	defer vsphere.connectionManager.Logout()
+	connMgr := cm.NewConnectionManager(&cfg, nil)
+	defer connMgr.Logout()
 
-	nm := newNodeManager(vsphere.connectionManager, nil)
+	nm := newNodeManager(connMgr, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
