@@ -74,11 +74,11 @@ jobs:
           (env(CCM) = true AND branch = master AND type =~ env(EVENT_TYPE)) OR
           (
             commit_message =~ env(COMMIT_TRIGGER_YES) AND
-            (fork = true OR sender =~ env(OWNERS))
+            (repo != 'kubernetes/cloud-provider-vsphere' OR sender =~ env(OWNERS))
           )
         ) AND NOT (
           commit_message =~ env(COMMIT_TRIGGER_NO) AND
-          (fork = true OR sender =~ env(OWNERS))
+          (repo != 'kubernetes/cloud-provider-vsphere' OR sender =~ env(OWNERS))
         )
 
       before_script:
