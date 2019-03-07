@@ -18,6 +18,18 @@ ignored = ["k8s.io/cloud-provider-vsphere"]
   version = "0.1.2"
 
 [[constraint]]
+  name = "github.com/akutz/memconn"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/onsi/ginkgo"
+  version = "1.7.0"
+
+[[constraint]]
+  name = "github.com/onsi/gomega"
+  version = "1.4.0"
+
+[[constraint]]
   name = "k8s.io/klog"
   version = "0.2.0"
 
@@ -72,6 +84,10 @@ ignored = ["k8s.io/cloud-provider-vsphere"]
 [[override]]
   name = "k8s.io/kubernetes"
   version = "1.11.0"
+
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
 
 [prune]
   go-tests = true

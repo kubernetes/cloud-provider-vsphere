@@ -80,7 +80,7 @@ test: unit
 check: vendor fmt vet lint
 
 unit: vendor
-	go test -tags=unit $(shell go list ./...) $(TESTARGS)
+	go test $(shell go list ./...) $(TESTARGS)
 
 fmt:
 	hack/verify-gofmt.sh
