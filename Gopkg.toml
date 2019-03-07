@@ -17,9 +17,9 @@ ignored = ["k8s.io/cloud-provider-vsphere"]
   name = "github.com/akutz/gofsutil"
   version = "0.1.2"
 
-[[override]]
-  branch = "master"
-  name = "github.com/golang/glog"
+[[constraint]]
+  name = "k8s.io/klog"
+  version = "0.2.0"
 
 [[override]]
   branch = "master"
