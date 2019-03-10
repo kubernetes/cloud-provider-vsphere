@@ -5,7 +5,7 @@ dist:           xenial
 
 # Set the version of Go.
 language:       go
-go:             1.11.5
+go:             "1.11.5"
 
 # All jobs require Docker.
 sudo:           required
