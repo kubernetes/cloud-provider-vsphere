@@ -1,3 +1,7 @@
+/image-ccm-*.tar
+/vsphere-cloud-controller-manager.*
+/cloud-provider-vsphere-*.tar.gz
+/cloud-provider-vsphere-*.zip
 
 *.json
 *.sublime-project

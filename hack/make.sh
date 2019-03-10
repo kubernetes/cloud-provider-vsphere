@@ -28,7 +28,8 @@
 TERM_FLAGS="-i"
 echo "${-}" | grep -q i && TERM_FLAGS="${TERM_FLAGS}t"
 
-docker run ${TERM_FLAGS} \
-  -v "$(pwd)":/go/src/k8s.io/cloud-provider-vsphere:z \
-  -w /go/src/k8s.io/cloud-provider-vsphere \
-  golang:1.11 make "${@}"
+# shellcheck disable=2086
+docker run --rm ${TERM_FLAGS} ${DOCKER_OPTS} \
+  -v "$(pwd)":/build:z \
+  -w /build \
+  golang:1.11.5 make "${@}"

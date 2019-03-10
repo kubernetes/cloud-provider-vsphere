@@ -14,30 +14,25 @@ This section outlines how to build the cloud provider with and without Docker.
 
 ### Building locally
 
-Clone this repository to `$GOPATH/src/k8s.io/cloud-provider-vsphere`. Please note that this path is not the same as the project's location in GitHub. Failing to clone the repository to the prescribed path causes the Go dependency tool `dep` and builds to fail.
+Build locally with the following command:
 
 ```shell
-$ make
+$ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
+  make -C cloud-provider-vsphere
 ```
+
+The project uses [Go modules](https://github.com/golang/go/wiki/Modules) and:
+* Requires Go 1.11+
+* Should not be cloned into the `$GOPATH`
 
 ### Building with Docker
 
-It is also possible to build the cloud provider with Docker in order to ensure a clean build environment. When building with Docker this repository may be cloned anywhere in or out of the `$GOPATH`. For example, the following script clones and builds the cloud-provider using a temporary directory:
-
-**Note**: Python is used to resolve the temporary directory's real path. This step is required on macOS due to Docker's restrictions on which directories can be shared with a container. The script has been tested on Linux as well.
+It is also possible to build the cloud provider with Docker in order to ensure a clean build environment:
 
 ```shell
-$ cd $(python -c "import os; print(os.path.realpath('$(mktemp -d)'))") && \
-  git clone https://github.com/kubernetes/cloud-provider-vsphere . && \
-  hack/make.sh
+$ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
+  make -C cloud-provider-vsphere build-with-docker
 ```
-
-### The dep tool hangs
-
-The `dep` tool may freeze when running locally and not via the `hack/make.sh` command that uses the Docker image. If this happens, please check the following:
-
-1. The repository must be cloned to `$GOPATH/src/k8s.io/cloud-provider-vsphere`. This is not the same path as the project's location in GitHub, but rather reflects the project's Go packages' vanity import path.
-2. The Mercurial client `hg` must be installed in order to fetch the dependency `bitbucket.org/ww/goautoneg`. Otherwise `dep` will [hang](https://github.com/kubernetes/test-infra/blob/master/docs/dep.md#tips) indefinitely without any indication as to the reason.
 
 ## Contributing
 

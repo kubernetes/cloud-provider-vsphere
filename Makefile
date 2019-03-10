@@ -1,191 +1,205 @@
-# golang-client Makefile
-# Follows the interface defined in the Golang CTI proposed
-# in https://review.openstack.org/410355
-
 all: build
-#REPO_VERSION?=$(shell git describe --tags)
 
-GIT_HOST = k8s.io
+# Get the absolute path and name of the current directory.
+PWD := $(abspath .)
+BASE_DIR := $(notdir $(PWD))
 
-PWD := $(shell pwd)
-BASE_DIR := $(shell basename $(PWD))
-# Keep an existing GOPATH, make a private one if it is undefined
-GOPATH_DEFAULT := $(PWD)/.go
-export GOPATH ?= $(GOPATH_DEFAULT)
-GOBIN_DEFAULT := $(GOPATH)/bin
-export GOBIN ?= $(GOBIN_DEFAULT)
-TESTARGS_DEFAULT := "-v"
-export TESTARGS ?= $(TESTARGS_DEFAULT)
-PKG := $(shell awk  -F "\"" '/^ignored = / { print $$2 }' Gopkg.toml)
-DEST := $(GOPATH)/src/$(GIT_HOST)/$(BASE_DIR)
-SOURCES := $(shell find . -name *.go -not -path "./vendor/**/*")
-HAS_MERCURIAL := $(shell command -v hg;)
-HAS_DEP := $(shell command -v dep;)
-HAS_LINT := $(shell command -v golint;)
-HAS_GOX := $(shell command -v gox;)
-GOX_PARALLEL ?= 3
-TARGETS ?= darwin/amd64 linux/amd64 linux/386 linux/arm linux/arm64 linux/ppc64le
-DIST_DIRS         = find * -type d -exec
+################################################################################
+##                             VERIFY GO VERSION                              ##
+################################################################################
+# Go 1.11+ required for Go modules.
+GO_VERSION_EXP := "go1.11"
+GO_VERSION_ACT := $(shell a="$$(go version | awk '{print $$3}')" && test $$(printf '%s\n%s' "$${a}" "$(GO_VERSION_EXP)" | sort | tail -n 1) = "$${a}" && printf '%s' "$${a}")
+ifndef GO_VERSION_ACT
+$(error Requires Go $(GO_VERSION_EXP)+ for Go module support)
+endif
+MOD_NAME := $(shell head -n 1 <go.mod | awk '{print $$2}')
 
-GOOS ?= $(shell go env GOOS)
-VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
-                 git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
-GOFLAGS   :=
-TAGS      :=
-LDFLAGSCCM := "-w -s -X 'main.version=${VERSION}'"
-LDFLAGSCSI := "-w -s -X 'k8s.io/cloud-provider-vsphere/pkg/csi/service.version=${VERSION}'"
-REGISTRY ?= gcr.io/cloud-provider-vsphere
-PUSH_LATEST ?= TRUE
-
-ifneq ("$(DEST)", "$(PWD)")
-    $(error Please run 'make' from $(DEST). Current directory is $(PWD))
+################################################################################
+##                             VERIFY BUILD PATH                              ##
+################################################################################
+ifneq (on,$(GO111MODULE))
+export GO111MODULE := on
+# The cloud provider should not be cloned inside the GOPATH.
+GOPATH := $(shell go env GOPATH)
+ifeq (/src/$(MOD_NAME),$(subst $(GOPATH),,$(PWD)))
+$(warning This project uses Go modules and should not be cloned into the GOPATH)
+endif
 endif
 
-# CTI targets
-
-$(GOBIN):
-	@echo "create gobin"
-	mkdir -p $(GOBIN)
-
-vendor: | $(GOBIN)
-	@$(MAKE) --always-make Gopkg.lock
-.PHONY: vendor
-vendor-update: | $(GOBIN)
-	@DEP_FLAGS=" -update" $(MAKE) --always-make Gopkg.lock
-Gopkg.lock: Gopkg.toml $(SOURCES)
+################################################################################
+##                                DEPENDENCIES                                ##
+################################################################################
+# Ensure Mercurial is installed.
+HAS_MERCURIAL := $(shell command -v hg 2>/dev/null)
 ifndef HAS_MERCURIAL
-	pip install Mercurial
+.PHONY: install-hg
+install-hg:
+	pip install --user Mercurial
+deps: install-hg
 endif
-ifndef HAS_DEP
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-endif
-	dep ensure -v$(DEP_FLAGS) && touch vendor
 
-build: vsphere-cloud-controller-manager vsphere-csi
+# Verify the dependencies are in place.
+.PHONY: deps
+deps:
+	go mod download && go mod verify
 
-vsphere-cloud-controller-manager: vendor $(SOURCES)
-	CGO_ENABLED=0 GOOS=$(GOOS) go build \
-		-ldflags $(LDFLAGSCCM) \
-		-o vsphere-cloud-controller-manager \
-		cmd/vsphere-cloud-controller-manager/main.go
+################################################################################
+##                              BUILD BINARIES                                ##
+################################################################################
+# Unless otherwise specified the binaries should be built for linux-amd64.
+GOOS ?= linux
+GOARCH ?= amd64
 
-vsphere-csi: vendor $(SOURCES)
-	CGO_ENABLED=0 GOOS=$(GOOS) go build \
-		-ldflags $(LDFLAGSCSI) \
-		-o vsphere-csi \
-		cmd/vsphere-csi/main.go
+# Ensure the version is injected into the binaries via a linker flag.
+VERSION := $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+LDFLAGS := "-w -s -X 'main.version=$(VERSION)'"
 
+# The cloud controller binary.
+CCM_BIN_NAME := vsphere-cloud-controller-manager
+CCM_BIN := $(CCM_BIN_NAME).$(GOOS)_$(GOARCH)
+$(CCM_BIN): cmd/$(CCM_BIN_NAME)/main.go
+$(CCM_BIN): go.mod go.sum
+$(CCM_BIN): $(addsuffix /*,$(shell go list -f '{{ join .Deps "\n" }}' ./cmd/$(CCM_BIN_NAME) | grep $(MOD_NAME) | sed 's~$(MOD_NAME)~.~'))
+$(CCM_BIN):
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags $(LDFLAGS) -o $@ $<
+
+# The default build target.
+build: $(CCM_BIN)
+build-with-docker:
+	hack/make.sh
+
+################################################################################
+##                                CROSS BUILD                                 ##
+################################################################################
+BUILD_TARGETS ?= darwin_amd64 linux_amd64 linux_386 linux_arm linux_arm64 linux_ppc64le
+BUILD_TARGETS := $(filter-out $(GOOS)_$(GOARCH),$(BUILD_TARGETS))
+BUILD_TARGETS_BINS := $(addprefix $(CCM_BIN_NAME).,$(BUILD_TARGETS))
+$(BUILD_TARGETS_BINS):
+	GOOS=$(word 1,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) $(MAKE) build
+cross-build: $(CCM_BIN) $(BUILD_TARGETS_BINS)
+
+################################################################################
+##                                   DIST                                     ##
+################################################################################
+DIST_NAME := cloud-provider-vsphere-$(VERSION)
+DIST_TGZ := $(DIST_NAME)-$(GOOS)_$(GOARCH).tar.gz
+dist-tgz: $(DIST_TGZ)
+$(DIST_TGZ): $(CCM_BIN)
+	_temp_dir=$$(mktemp -d) && cp $< "$${_temp_dir}/$(CCM_BIN_NAME)" && \
+	tar czf $@ README.md LICENSE -C "$${_temp_dir}" "$(CCM_BIN_NAME)" && \
+	rm -fr "$${_temp_dir}"
+
+DIST_ZIP := $(DIST_NAME)-$(GOOS)_$(GOARCH).zip
+dist-zip: $(DIST_ZIP)
+$(DIST_ZIP): $(CCM_BIN)
+	_temp_dir=$$(mktemp -d) && cp $< "$${_temp_dir}/$(CCM_BIN_NAME)" && \
+	zip -j $@ README.md LICENSE "$${_temp_dir}/$(CCM_BIN_NAME)" && \
+	rm -fr "$${_temp_dir}"
+
+dist: $(DIST_ZIP) $(DIST_TGZ)
+
+################################################################################
+##                                CROSS DIST                                  ##
+################################################################################
+DIST_TARGETS := $(BUILD_TARGETS)
+DIST_TARGETS := $(addprefix $(DIST_NAME)-,$(DIST_TARGETS))
+DIST_TARGETS_TGZS := $(addsuffix .tar.gz,$(DIST_TARGETS))
+DIST_TARGETS_ZIPS := $(addsuffix .zip,$(DIST_TARGETS))
+
+$(DIST_TARGETS_TGZS):
+	GOOS=$(word 1,$(subst _, ,$(subst $(DIST_NAME)-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(DIST_NAME)-,,$(subst .tar.gz,,$@)))) $(MAKE) dist-tgz
+$(DIST_TARGETS_ZIPS):
+	GOOS=$(word 1,$(subst _, ,$(subst $(DIST_NAME)-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(DIST_NAME)-,,$(subst .zip,,$@)))) $(MAKE) dist-zip
+cross-dist-tgzs: $(DIST_TGZ) $(DIST_TARGETS_TGZS)
+cross-dist-zips: $(DIST_ZIP) $(DIST_TARGETS_ZIPS)
+cross-dist: cross-dist-tgzs cross-dist-zips
+
+################################################################################
+##                                 TESTING                                    ##
+################################################################################
+PKGS_WITH_TESTS := $(sort $(shell find . -name "*_test.go" -type f -exec dirname \{\} \;))
+TEST_FLAGS ?= -v
+.PHONY: unit
+unit:
+	env -u VSPHERE_SERVER -u VSPHERE_PASSWORD -u VSPHERE_USER go test $(TEST_FLAGS) -tags=unit $(PKGS_WITH_TESTS)
+
+# The default test target.
+.PHONY: test
 test: unit
 
-check: vendor fmt vet lint
+.PHONY: cover
+cover: TEST_FLAGS += -cover
+cover: test
 
-unit: vendor
-	go test $(shell go list ./...) $(TESTARGS)
-
+################################################################################
+##                                 LINTING                                    ##
+################################################################################
+.PHONY: fmt
 fmt:
-	hack/verify-gofmt.sh
+	find . -name "*.go" | grep -v vendor | xargs gofmt -s -w
 
-lint:
-ifndef HAS_LINT
-		go get -u github.com/golang/lint/golint
-		echo "installing lint"
-endif
-	hack/verify-golint.sh
-
+.PHONY: vet
 vet:
 	go vet ./...
 
-cover: vendor
-	go test -tags=unit $(shell go list ./...) -cover
-
-docs:
-	@echo "$@ not yet implemented"
-
-godoc:
-	@echo "$@ not yet implemented"
-
-releasenotes:
-	@echo "Reno not yet implemented for this repo"
-
-translation:
-	@echo "$@ not yet implemented"
-
-# Do the work here
-
-# Set up the development environment
-env:
-	@echo "PWD: $(PWD)"
-	@echo "BASE_DIR: $(BASE_DIR)"
-	@echo "GOPATH: $(GOPATH)"
-	@echo "GOROOT: $(GOROOT)"
-	@echo "DEST: $(DEST)"
-	@echo "PKG: $(PKG)"
-	go version
-	go env
-
-# Get our dev/test dependencies in place
-bootstrap:
-	tools/test-setup.sh
-
-.bindep:
-	virtualenv .bindep
-	.bindep/bin/pip install -i https://pypi.python.org/simple bindep
-
-bindep: .bindep
-	@.bindep/bin/bindep -b -f bindep.txt || true
-
-install-distro-packages:
-	tools/install-distro-packages.sh
-
-clean:
-	rm -rf _dist .bindep vsphere-cloud-controller-manager vsphere-csi
-
-realclean: clean
-	rm -rf vendor
-	if [ "$(GOPATH)" = "$(GOPATH_DEFAULT)" ]; then \
-		rm -rf $(GOPATH); \
-	fi
-
-shell:
-	$(SHELL) -i
-
-images: image-controller-manager image-csi
-
-image-controller-manager: vendor vsphere-cloud-controller-manager
-ifeq ($(GOOS),linux)
-	cp vsphere-cloud-controller-manager cluster/images/controller-manager
-	docker build -t $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION) cluster/images/controller-manager
-ifeq ("$(PUSH_LATEST)","TRUE")
-	docker tag $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION) $(REGISTRY)/vsphere-cloud-controller-manager:latest
+HAS_LINT := $(shell command -v golint 2>/dev/null)
+.PHONY: lint
+lint:
+ifndef HAS_LINT
+	cd / && GO111MODULE=off go get -u github.com/golang/lint/golint
 endif
-	rm cluster/images/controller-manager/vsphere-cloud-controller-manager
-else
+	go list ./... | xargs golint -set_exit_status | sed 's~$(PWD)~.~'
+
+.PHONY: check
+check:
+	{ $(MAKE) fmt  || exit_code_1="$${?}"; } && \
+	{ $(MAKE) vet  || exit_code_2="$${?}"; } && \
+	{ $(MAKE) lint || exit_code_3="$${?}"; } && \
+	{ [ -z "$${exit_code_1}" ] || echo "fmt  failed: $${exit_code_1}" 1>&2; } && \
+	{ [ -z "$${exit_code_2}" ] || echo "vet  failed: $${exit_code_2}" 1>&2; } && \
+	{ [ -z "$${exit_code_3}" ] || echo "lint failed: $${exit_code_3}" 1>&2; } && \
+	{ [ -z "$${exit_code_1}" ] || exit "$${exit_code_1}"; } && \
+	{ [ -z "$${exit_code_2}" ] || exit "$${exit_code_2}"; } && \
+	{ [ -z "$${exit_code_3}" ] || exit "$${exit_code_3}"; } && \
+	exit 0
+
+.PHONY: check-warn
+check-warn:
+	-$(MAKE) check
+
+################################################################################
+##                                 BUILD IMAGES                               ##
+################################################################################
+REGISTRY ?= gcr.io/cloud-provider-vsphere
+IMAGE_CONTROLLER_MANAGER := $(REGISTRY)/vsphere-cloud-controller-manager
+IMAGE_CONTROLLER_MANAGER_TAR := image-ccm-$(VERSION).tar
+ifneq ($(GOOS),linux)
+$(IMAGE_CONTROLLER_MANAGER) $(IMAGE_CONTROLLER_MANAGER_TAR):
 	$(error Please set GOOS=linux for building the image)
-endif
-
-image-csi: vendor vsphere-csi
-ifeq ($(GOOS),linux)
-	cp vsphere-csi cluster/images/csi
-	docker build -t $(REGISTRY)/vsphere-csi:$(VERSION) cluster/images/csi
-ifeq ("$(PUSH_LATEST)","TRUE")
-	docker tag $(REGISTRY)/vsphere-csi:$(VERSION) $(REGISTRY)/vsphere-csi:latest
-endif
-	rm cluster/images/csi/vsphere-csi
 else
-	$(error Please set GOOS=linux for building the image)
+$(IMAGE_CONTROLLER_MANAGER) $(IMAGE_CONTROLLER_MANAGER_TAR): $(CCM_BIN)
+	cp -f $< cluster/images/controller-manager/vsphere-cloud-controller-manager
+	docker build -t $(IMAGE_CONTROLLER_MANAGER):$(VERSION) cluster/images/controller-manager
+	docker tag $(IMAGE_CONTROLLER_MANAGER):$(VERSION) $(IMAGE_CONTROLLER_MANAGER):latest
+	docker save $(IMAGE_CONTROLLER_MANAGER):$(VERSION) -o $@
+	docker save $(IMAGE_CONTROLLER_MANAGER):$(VERSION) -o image-ccm-latest.tar
 endif
 
-upload-images: images
-	@echo "push images to $(REGISTRY)"
+image image-ccm: $(IMAGE_CONTROLLER_MANAGER_TAR)
+images: $(IMAGE_CONTROLLER_MANAGER_TAR)
 
+################################################################################
+##                                  PUSH IMAGES                               ##
+################################################################################
+.PHONY: login-to-image-registry
+login-to-image-registry:
 # Push images to a gcr.io registry.
 ifneq (,$(findstring gcr.io,$(REGISTRY))) # begin gcr.io
-
 # Log into the registry with a gcr.io JSON key file.
 ifneq (,$(strip $(GCR_KEY_FILE))) # begin gcr.io-key
 	@echo "logging into gcr.io registry with key file"
 	docker login -u _json_key --password-stdin https://gcr.io <"$(GCR_KEY_FILE)"
-
 # Log into the registry with a Docker gcloud auth helper.
 else # end gcr.io-key / begin gcr.io-gcloud
 	@command -v gcloud >/dev/null 2>&1 || \
@@ -195,10 +209,8 @@ else # end gcr.io-key / begin gcr.io-gcloud
 	    echo 'gcloud helper registration failed' 1>&2; exit 1; }
 	@echo "logging into gcr.io registry with gcloud auth helper"
 endif # end gcr.io-gcloud / end gcr.io
-
 # Push images to a Docker registry.
 else # begin docker
-
 # Log into the registry with a Docker username and password.
 ifneq (,$(strip $(DOCKER_USERNAME))) # begin docker-username
 ifneq (,$(strip $(DOCKER_PASSWORD))) # begin docker-password
@@ -206,37 +218,47 @@ ifneq (,$(strip $(DOCKER_PASSWORD))) # begin docker-password
 	docker login -u="$(DOCKER_USERNAME)" -p="$(DOCKER_PASSWORD)"
 endif # end docker-password
 endif # end docker-username
-
 endif # end docker
-	docker push $(REGISTRY)/vsphere-cloud-controller-manager:$(VERSION)
-ifeq ("$(PUSH_LATEST)","TRUE")
-	docker push $(REGISTRY)/vsphere-cloud-controller-manager:latest
-endif
-	docker push $(REGISTRY)/vsphere-csi:$(VERSION)
-ifeq ("$(PUSH_LATEST)","TRUE")
-	docker push $(REGISTRY)/vsphere-csi:latest
-endif
 
+.PHONY: upload-$(IMAGE_CONTROLLER_MANAGER)
+upload-ccm-image: upload-$(IMAGE_CONTROLLER_MANAGER)
+upload-$(IMAGE_CONTROLLER_MANAGER): $(IMAGE_CONTROLLER_MANAGER_TAR)
+	docker push $(IMAGE_CONTROLLER_MANAGER):$(VERSION)
+	docker push $(IMAGE_CONTROLLER_MANAGER):latest
+
+.PHONY: upload-images
+upload-images: images
+	@echo "push images to $(REGISTRY)"
+	$(MAKE) login-to-image-registry
+	$(MAKE) upload-$(IMAGE_CONTROLLER_MANAGER)
+
+################################################################################
+##                               PRINT VERISON                                ##
+################################################################################
+.PHONY: version
 version:
-	@echo ${VERSION}
+	@echo $(VERSION)
 
-.PHONY: build-cross
-build-cross: LDFLAGS += -extldflags "-static"
-build-cross: vendor
-ifndef HAS_GOX
-	go get -u github.com/mitchellh/gox
-endif
-	CGO_ENABLED=0 gox -parallel=$(GOX_PARALLEL) -output="_dist/{{.OS}}-{{.Arch}}/{{.Dir}}" -osarch='$(TARGETS)' $(GOFLAGS) $(if $(TAGS),-tags '$(TAGS)',) -ldflags '$(LDFLAGS)' $(GIT_HOST)/$(BASE_DIR)/cmd/vsphere-cloud-controller-manager/
+################################################################################
+##                                 CLEAN                                      ##
+################################################################################
+.PHONY: clean
+clean:
+	@rm -f $(CCM_BIN) cloud-provider-vsphere-*.tar.gz cloud-provider-vsphere-*.zip image-ccm-*.tar image-ccm-latest.tar
+	GO111MODULE=off go clean -i -x
 
-.PHONY: dist
-dist: build-cross
-	( \
-		cd _dist && \
-		$(DIST_DIRS) cp ../LICENSE {} \; && \
-		$(DIST_DIRS) cp ../README.md {} \; && \
-		$(DIST_DIRS) tar -zcf cloud-provider-vsphere-$(VERSION)-{}.tar.gz {} \; && \
-		$(DIST_DIRS) zip -r cloud-provider-vsphere-$(VERSION)-{}.zip {} \; \
-	)
+CLEAN_TARGETS := $(addprefix clean-,$(BUILD_TARGETS))
+.PHONY: $(CLEAN_TARGETS)
+$(CLEAN_TARGETS):
+	GOOS=$(word 1,$(subst _, ,$(subst clean-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst clean-,,$@))) $(MAKE) clean
 
-.PHONY: bindep build clean cover docs fmt lint realclean \
-	relnotes test translation version build-cross dist vendor-update
+.PHONY: cross-clean
+cross-clean: clean $(CLEAN_TARGETS)
+
+################################################################################
+##                                TODO(akutz)                                 ##
+################################################################################
+TODO := docs godoc releasenotes translation
+.PHONY: $(TODO)
+$(TODO):
+	@echo "$@ not yet implemented"
