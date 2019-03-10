@@ -73,7 +73,7 @@ func TestInstance(t *testing.T) {
 	/*
 	 * Setup
 	 */
-	connMgr := cm.NewConnectionManager(&cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil)
 	nm := newMyNodeManager(connMgr, nil)
 	instances := newInstances(&nm.NodeManager)
 

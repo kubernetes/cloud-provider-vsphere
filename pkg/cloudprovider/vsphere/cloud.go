@@ -47,7 +47,7 @@ func init() {
 }
 
 // Creates new Controller node interface and returns
-func newVSphere(cfg vcfg.Config, finalize ...bool) (*VSphere, error) {
+func newVSphere(cfg *vcfg.Config, finalize ...bool) (*VSphere, error) {
 	vs, err := buildVSphereFromConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func (vs *VSphere) HasClusterID() bool {
 }
 
 // Initializes vSphere from vSphere CloudProvider Configuration
-func buildVSphereFromConfig(cfg vcfg.Config) (*VSphere, error) {
+func buildVSphereFromConfig(cfg *vcfg.Config) (*VSphere, error) {
 	nm := NodeManager{
 		nodeNameMap:    make(map[string]*NodeInfo),
 		nodeUUIDMap:    make(map[string]*NodeInfo),
@@ -134,7 +134,7 @@ func buildVSphereFromConfig(cfg vcfg.Config) (*VSphere, error) {
 	var nodeMgr server.NodeManagerInterface
 	nodeMgr = &nm
 	vs := VSphere{
-		cfg:         &cfg,
+		cfg:         cfg,
 		nodeManager: &nm,
 		instances:   newInstances(&nm),
 		zones:       newZones(&nm, cfg.Labels.Zone, cfg.Labels.Region),

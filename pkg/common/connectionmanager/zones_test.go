@@ -47,7 +47,7 @@ func TestWhichVCandDCByZoneSingleDC(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(&config, nil)
+	connMgr := NewConnectionManager(config, nil)
 	defer connMgr.Logout()
 
 	// context
@@ -70,7 +70,7 @@ func TestWhichVCandDCByZoneMultiDC(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(&config, nil)
+	connMgr := NewConnectionManager(config, nil)
 	defer connMgr.Logout()
 
 	// context
@@ -177,7 +177,7 @@ func TestLookupZoneByMoref(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(&config, nil)
+	connMgr := NewConnectionManager(config, nil)
 	defer connMgr.Logout()
 
 	// context

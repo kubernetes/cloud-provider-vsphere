@@ -40,7 +40,7 @@ func TestZones(t *testing.T) {
 	defer close()
 
 	// Create configuration object
-	connMgr := cm.NewConnectionManager(&cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)
