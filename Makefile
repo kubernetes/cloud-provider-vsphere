@@ -131,9 +131,10 @@ dist: dist-ccm dist-csi
 ################################################################################
 .PHONY: clean
 clean:
+	@rm -f Dockerfile*
 	@rm -f $(CCM_BIN) cloud-provider-vsphere-*.tar.gz cloud-provider-vsphere-*.zip \
 		$(CSI_BIN) vsphere-csi-*.tar.gz vsphere-csi-*.zip \
-		image-*-*.tar image-*-latest.tar
+		image-*.tar image-*.d
 	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME) ./cmd/$(CSI_BIN_NAME)
 
 ################################################################################
@@ -319,7 +320,7 @@ else # end gcr.io-key / begin gcr.io-gcloud
 	  { echo 'gcloud auth helper unavailable' 1>&2; exit 1; }
 	@grep -F 'gcr.io": "gcloud"' "$(HOME)/.docker/config.json" >/dev/null 2>&1 || \
 	  { gcloud auth configure-docker --quiet || \
-	    echo 'gcloud helper registration failed' 1>&2; exit 1; }
+	    { echo 'gcloud helper registration failed' 1>&2; exit 1; }; }
 	@echo "logging into gcr.io registry with gcloud auth helper"
 endif # end gcr.io-gcloud / end gcr.io
 # Push images to a Docker registry.
@@ -347,6 +348,34 @@ push-$(IMAGE_CSI) upload-$(IMAGE_CSI): $(IMAGE_CSI_TAR) login-to-image-registry
 
 .PHONY: push-images upload-images
 push-images upload-images: upload-ccm-image upload-csi-image
+
+################################################################################
+##                               GOLANG IMAGES                                ##
+################################################################################
+IMAGE_GO_VERSION ?= $(shell grep '^go:' <".travis.yml" | sed 's/^\(go:[[:space:]]\{0,\}\"\{0,1\}\)\([^[:space:]\"]\{1,\}\)\(\"\{0,1\}\)$$/\2/')
+IMAGE_GO := image-golang-$(IMAGE_GO_VERSION)-$(VERSION).d
+build-golang-image golang-image: $(IMAGE_GO)
+build-golang-%-image golang-%-image:
+	$(MAKE) image-golang-$*-$(VERSION).d
+Dockerfile.golang-%: hack/images/golang/Dockerfile
+	sed 's~{{GO_VERSION}}~$*~g' <$< >$@
+image-golang-%-$(VERSION).d: Dockerfile.golang-% go.mod go.sum
+	docker build -t $(REGISTRY)/golang-$*:$(VERSION) -f $< .
+	docker tag $(REGISTRY)/golang-$*:$(VERSION) $(REGISTRY)/golang-$*:latest
+	@touch $@
+
+.PHONY: push-golang-image upload-golang-image
+push-golang-image upload-golang-image: upload-golang-$(IMAGE_GO_VERSION)-$(VERSION)-image
+push-golang-%-image upload-golang-%-image:
+	$(MAKE) upload-golang-$*-$(VERSION)-image
+upload-golang-%-$(VERSION)-image push-golang-%-$(VERSION)-image: image-golang-%-$(VERSION).d login-to-image-registry
+	docker push $(REGISTRY)/golang-$*:$(VERSION)
+	docker push $(REGISTRY)/golang-$*:latest
+
+IMAGE_GO_VERSIONS := 1.11 1.11.0 1.11.1 1.11.2 1.11.3 1.11.4 1.11.5
+IMAGE_GO_VERSIONS += 1.12 1.12.0
+build-golang-images golang-images: $(addprefix image-golang-,$(addsuffix -$(VERSION).d,$(IMAGE_GO_VERSIONS)))
+push-golang-images upload-golang-images: $(addprefix upload-golang-,$(addsuffix -$(VERSION)-image,$(IMAGE_GO_VERSIONS)))
 
 ################################################################################
 ##                               PRINT VERISON                                ##
