@@ -42,6 +42,7 @@ const (
 	MissingUsernameErrMsg  = "Username is missing"
 	MissingPasswordErrMsg  = "Password is missing"
 	InvalidVCenterIPErrMsg = "vsphere.conf does not have the VirtualCenter IP address specified"
+	MissingVCenterErrMsg   = "No Virtual Center hosts defined"
 )
 
 // Error constants
@@ -49,6 +50,7 @@ var (
 	ErrUsernameMissing  = errors.New(MissingUsernameErrMsg)
 	ErrPasswordMissing  = errors.New(MissingPasswordErrMsg)
 	ErrInvalidVCenterIP = errors.New(InvalidVCenterIPErrMsg)
+	ErrMissingVCenter   = errors.New(MissingVCenterErrMsg)
 )
 
 func getEnvKeyValue(match string, partial bool) (string, string, error) {
@@ -78,84 +80,99 @@ func getEnvKeyValue(match string, partial bool) (string, string, error) {
 	return "", "", fmt.Errorf("Failed to find %s with %s", matchType, match)
 }
 
-//ConfigFromEnv allows setting configuration via environment variables.
-func ConfigFromEnv() (cfg Config, ok bool) {
-	var err error
+// ConfigFromEnv allows setting configuration via environment variables.
+// if a config object is passed in, the populated env vars will overwrite
+// existing ones
+func ConfigFromEnv(cfg *Config) error {
+
+	if cfg == nil {
+		return fmt.Errorf("Config object cannot be nil")
+	}
 
 	//Init
-	cfg.VirtualCenter = make(map[string]*VirtualCenterConfig)
+	if cfg.VirtualCenter == nil {
+		cfg.VirtualCenter = make(map[string]*VirtualCenterConfig)
+	}
 
 	//Globals
-	cfg.Global.VCenterIP = os.Getenv("VSPHERE_VCENTER")
-	cfg.Global.VCenterPort = os.Getenv("VSPHERE_VCENTER_PORT")
-	cfg.Global.User = os.Getenv("VSPHERE_USER")
-	cfg.Global.Password = os.Getenv("VSPHERE_PASSWORD")
-	cfg.Global.Datacenters = os.Getenv("VSPHERE_DATACENTER")
-	cfg.Global.SecretName = os.Getenv("VSPHERE_SECRET_NAME")
-	cfg.Global.SecretNamespace = os.Getenv("VSPHERE_SECRET_NAMESPACE")
-	cfg.Global.ServiceAccount = os.Getenv("VSPHERE_SERVICE_ACCOUNT")
+	if v := os.Getenv("VSPHERE_VCENTER"); v != "" {
+		cfg.Global.VCenterIP = v
+	}
+	if v := os.Getenv("VSPHERE_VCENTER_PORT"); v != "" {
+		cfg.Global.VCenterPort = v
+	}
+	if v := os.Getenv("VSPHERE_USER"); v != "" {
+		cfg.Global.User = v
+	}
+	if v := os.Getenv("VSPHERE_PASSWORD"); v != "" {
+		cfg.Global.Password = v
+	}
+	if v := os.Getenv("VSPHERE_DATACENTER"); v != "" {
+		cfg.Global.Datacenters = v
+	}
+	if v := os.Getenv("VSPHERE_SECRET_NAME"); v != "" {
+		cfg.Global.SecretName = v
+	}
+	if v := os.Getenv("VSPHERE_SECRET_NAMESPACE"); v != "" {
+		cfg.Global.SecretNamespace = v
+	}
+	if v := os.Getenv("VSPHERE_SERVICE_ACCOUNT"); v != "" {
+		cfg.Global.ServiceAccount = v
+	}
 
-	var RoundTripCount uint
-	if os.Getenv("VSPHERE_ROUNDTRIP_COUNT") != "" {
-		var tmp uint64
-		tmp, err = strconv.ParseUint(os.Getenv("VSPHERE_ROUNDTRIP_COUNT"), 10, 32)
-		RoundTripCount = uint(tmp)
-	} else {
-		RoundTripCount = DefaultRoundTripperCount
+	if v := os.Getenv("VSPHERE_ROUNDTRIP_COUNT"); v != "" {
+		tmp, err := strconv.ParseUint(v, 10, 32)
+		if err != nil {
+			klog.Errorf("Failed to parse VSPHERE_ROUNDTRIP_COUNT: %s", err)
+		} else {
+			cfg.Global.RoundTripperCount = uint(tmp)
+		}
 	}
-	if err != nil {
-		klog.Fatalf("Failed to parse VSPHERE_ROUNDTRIP_COUNT: %s", err)
-	}
-	cfg.Global.RoundTripperCount = RoundTripCount
 
-	var InsecureFlag bool
-	if os.Getenv("VSPHERE_INSECURE") != "" {
-		InsecureFlag, err = strconv.ParseBool(os.Getenv("VSPHERE_INSECURE"))
-	} else {
-		InsecureFlag = false
+	if v := os.Getenv("VSPHERE_INSECURE"); v != "" {
+		InsecureFlag, err := strconv.ParseBool(v)
+		if err != nil {
+			klog.Errorf("Failed to parse VSPHERE_INSECURE: %s", err)
+		} else {
+			cfg.Global.InsecureFlag = InsecureFlag
+		}
 	}
-	if err != nil {
-		klog.Errorf("Failed to parse VSPHERE_INSECURE: %s", err)
-		InsecureFlag = false
-	}
-	cfg.Global.InsecureFlag = InsecureFlag
 
-	var APIDisable bool
-	if os.Getenv("VSPHERE_API_DISABLE") != "" {
-		APIDisable, err = strconv.ParseBool(os.Getenv("VSPHERE_API_DISABLE"))
-	} else {
-		APIDisable = true
+	if v := os.Getenv("VSPHERE_API_DISABLE"); v != "" {
+		APIDisable, err := strconv.ParseBool(v)
+		if err != nil {
+			klog.Errorf("Failed to parse VSPHERE_API_DISABLE: %s", err)
+		} else {
+			cfg.Global.APIDisable = APIDisable
+		}
 	}
-	if err != nil {
-		klog.Errorf("Failed to parse VSPHERE_API_DISABLE: %s", err)
-		APIDisable = true
-	}
-	cfg.Global.APIDisable = APIDisable
 
-	var APIBinding string
-	if os.Getenv("VSPHERE_API_BINDING") != "" {
-		APIBinding = os.Getenv("VSPHERE_API_BINDING")
-	} else {
-		APIBinding = DefaultAPIBinding
+	if v := os.Getenv("VSPHERE_API_BINDING"); v != "" {
+		cfg.Global.APIBinding = v
 	}
-	cfg.Global.APIBinding = APIBinding
 
-	var SecretsDirectory string
-	if os.Getenv("VSPHERE_SECRETS_DIRECTORY") != "" {
-		SecretsDirectory = os.Getenv("VSPHERE_SECRETS_DIRECTORY")
-	} else {
-		SecretsDirectory = DefaultSecretDirectory
+	if v := os.Getenv("VSPHERE_SECRETS_DIRECTORY"); v != "" {
+		cfg.Global.SecretsDirectory = v
 	}
-	if _, err := os.Stat(SecretsDirectory); os.IsNotExist(err) {
-		SecretsDirectory = "" //Dir does not exist, set to empty string
+	if cfg.Global.SecretsDirectory == "" {
+		cfg.Global.SecretsDirectory = DefaultSecretDirectory
 	}
-	cfg.Global.SecretsDirectory = SecretsDirectory
+	if _, err := os.Stat(cfg.Global.SecretsDirectory); os.IsNotExist(err) {
+		cfg.Global.SecretsDirectory = "" //Dir does not exist, set to empty string
+	}
 
-	cfg.Global.CAFile = os.Getenv("VSPHERE_CAFILE")
-	cfg.Global.Thumbprint = os.Getenv("VSPHERE_THUMBPRINT")
-
-	cfg.Labels.Region = os.Getenv("VSPHERE_LABEL_REGION")
-	cfg.Labels.Zone = os.Getenv("VSPHERE_LABEL_ZONE")
+	if v := os.Getenv("VSPHERE_CAFILE"); v != "" {
+		cfg.Global.CAFile = v
+	}
+	if v := os.Getenv("VSPHERE_THUMBPRINT"); v != "" {
+		cfg.Global.Thumbprint = v
+	}
+	if v := os.Getenv("VSPHERE_LABEL_REGION"); v != "" {
+		cfg.Labels.Region = v
+	}
+	if v := os.Getenv("VSPHERE_LABEL_ZONE"); v != "" {
+		cfg.Labels.Zone = v
+	}
 
 	//Build VirtualCenter from ENVs
 	for _, e := range os.Environ() {
@@ -239,19 +256,15 @@ func ConfigFromEnv() (cfg Config, ok bool) {
 		}
 	}
 
-	//Valid config?
-	for _, vcConfig := range cfg.VirtualCenter {
-		if (vcConfig.User == "" && vcConfig.Password == "") ||
-			(vcConfig.CAFile == "" && vcConfig.Thumbprint == "") {
-			ok = false
-			return
-		}
+	err := validateConfig(cfg)
+	if err != nil {
+		return err
 	}
-	ok = (cfg.Global.VCenterIP != "" && cfg.Global.User != "" && cfg.Global.Password != "")
-	return
+
+	return nil
 }
 
-func fixUpConfigFromFile(cfg *Config) error {
+func validateConfig(cfg *Config) error {
 	//Fix default global values
 	if cfg.Global.RoundTripperCount == 0 {
 		cfg.Global.RoundTripperCount = DefaultRoundTripperCount
@@ -262,10 +275,35 @@ func fixUpConfigFromFile(cfg *Config) error {
 	if cfg.Global.VCenterPort == "" {
 		cfg.Global.VCenterPort = DefaultVCenterPort
 	}
+	if cfg.Global.APIBinding == "" {
+		cfg.Global.APIBinding = DefaultAPIBinding
+	}
 
 	isSecretInfoProvided := true
 	if (cfg.Global.SecretName == "" || cfg.Global.SecretNamespace == "") && cfg.Global.SecretsDirectory == "" {
 		isSecretInfoProvided = false
+	}
+
+	// Create a single instance of VSphereInstance for the Global VCenterIP if the
+	// VirtualCenter does not already exist in the map
+	if !isSecretInfoProvided && cfg.Global.VCenterIP != "" && cfg.VirtualCenter[cfg.Global.VCenterIP] == nil {
+		vcConfig := &VirtualCenterConfig{
+			User:              cfg.Global.User,
+			Password:          cfg.Global.Password,
+			VCenterPort:       cfg.Global.VCenterPort,
+			InsecureFlag:      cfg.Global.InsecureFlag,
+			Datacenters:       cfg.Global.Datacenters,
+			RoundTripperCount: cfg.Global.RoundTripperCount,
+			CAFile:            cfg.Global.CAFile,
+			Thumbprint:        cfg.Global.Thumbprint,
+		}
+		cfg.VirtualCenter[cfg.Global.VCenterIP] = vcConfig
+	}
+
+	// Must have at least one vCenter defined
+	if len(cfg.VirtualCenter) == 0 {
+		klog.Error(MissingVCenterErrMsg)
+		return ErrMissingVCenter
 	}
 
 	// vsphere.conf is no longer supported in the old format.
@@ -319,39 +357,26 @@ func fixUpConfigFromFile(cfg *Config) error {
 		}
 	}
 
-	// Create a single instance of VSphereInstance for the Global VCenterIP if the
-	// VirtualCenter does not already exist in the map
-	if !isSecretInfoProvided && cfg.Global.VCenterIP != "" && cfg.VirtualCenter[cfg.Global.VCenterIP] == nil {
-		vcConfig := &VirtualCenterConfig{
-			User:              cfg.Global.User,
-			Password:          cfg.Global.Password,
-			VCenterPort:       cfg.Global.VCenterPort,
-			InsecureFlag:      cfg.Global.InsecureFlag,
-			Datacenters:       cfg.Global.Datacenters,
-			RoundTripperCount: cfg.Global.RoundTripperCount,
-			CAFile:            cfg.Global.CAFile,
-			Thumbprint:        cfg.Global.Thumbprint,
-		}
-		cfg.VirtualCenter[cfg.Global.VCenterIP] = vcConfig
-	}
-
 	return nil
 }
 
-//ReadConfig parses vSphere cloud config file and stores it into VSphereConfig.
-func ReadConfig(config io.Reader) (Config, error) {
+// ReadConfig parses vSphere cloud config file and stores it into VSphereConfig.
+// Environment variables are also checked
+func ReadConfig(config io.Reader) (*Config, error) {
 	if config == nil {
-		return Config{}, fmt.Errorf("no vSphere cloud provider config file given")
+		return nil, fmt.Errorf("no vSphere cloud provider config file given")
 	}
 
-	cfg, _ := ConfigFromEnv()
+	cfg := &Config{}
 
-	err := gcfg.FatalOnly(gcfg.ReadInto(&cfg, config))
-	if err != nil {
-		return cfg, err
+	if err := gcfg.FatalOnly(gcfg.ReadInto(cfg, config)); err != nil {
+		return nil, err
 	}
 
-	err = fixUpConfigFromFile(&cfg)
+	// Env Vars should override config file entries if present
+	if err := ConfigFromEnv(cfg); err != nil {
+		return nil, err
+	}
 
-	return cfg, err
+	return cfg, nil
 }

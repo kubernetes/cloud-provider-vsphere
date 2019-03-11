@@ -17,17 +17,12 @@ limitations under the License.
 package config
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
 
-func TestReadConfigGlobal(t *testing.T) {
-	_, err := ReadConfig(nil)
-	if err == nil {
-		t.Errorf("Should fail when no config is provided: %s", err)
-	}
-
-	cfg, err := ReadConfig(strings.NewReader(`
+const basicConfig = `
 [Global]
 server = 0.0.0.0
 port = 443
@@ -36,7 +31,15 @@ password = password
 insecure-flag = true
 datacenters = us-west
 ca-file = /some/path/to/a/ca.pem
-`))
+`
+
+func TestReadConfigGlobal(t *testing.T) {
+	_, err := ReadConfig(nil)
+	if err == nil {
+		t.Errorf("Should fail when no config is provided: %s", err)
+	}
+
+	cfg, err := ReadConfig(strings.NewReader(basicConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
 	}
@@ -51,5 +54,27 @@ ca-file = /some/path/to/a/ca.pem
 
 	if cfg.Global.CAFile != "/some/path/to/a/ca.pem" {
 		t.Errorf("incorrect ca-file: %s", cfg.Global.CAFile)
+	}
+}
+
+func TestEnvOverridesFile(t *testing.T) {
+	ip := "127.0.0.1"
+	os.Setenv("VSPHERE_VCENTER", ip)
+	defer os.Unsetenv("VSPHERE_VCENTER")
+
+	cfg, err := ReadConfig(strings.NewReader(basicConfig))
+	if err != nil {
+		t.Fatalf("Should succeed when a valid config is provided: %s", err)
+	}
+
+	if cfg.Global.VCenterIP != ip {
+		t.Errorf("expected IP: %s, got: %s", ip, cfg.Global.VCenterIP)
+	}
+}
+
+func TestBlankEnvFails(t *testing.T) {
+	err := ConfigFromEnv(&Config{})
+	if err == nil {
+		t.Fatalf("Env only config should fail if env not set")
 	}
 }

@@ -33,23 +33,22 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
-func ParseConfig(configFile string) (config.Config, error) {
-	var cfg config.Config
+func ParseConfig(configFile string) (*config.Config, error) {
 	if len(configFile) == 0 {
-		return cfg, fmt.Errorf("Please specify vsphere cloud config file, e.g. --config vsphere.conf")
+		return nil, fmt.Errorf("Please specify vsphere cloud config file, e.g. --config vsphere.conf")
 	}
 	if _, err := os.Stat(configFile); err != nil {
-		return cfg, fmt.Errorf("Can not find config file %s, %v", configFile, err)
+		return nil, fmt.Errorf("Can not find config file %s, %v", configFile, err)
 	}
 	f, err := os.Open(configFile)
 	if err != nil {
-		return cfg, fmt.Errorf("Can not open config file %s, %v", configFile, err)
+		return nil, fmt.Errorf("Can not open config file %s, %v", configFile, err)
 	}
-	cfg, err = config.ReadConfig(f)
+	cfg, err := config.ReadConfig(f)
 	if err != nil {
-		return cfg, err
+		return nil, err
 	}
-	return cfg, err
+	return cfg, nil
 }
 
 // CheckVSphereConfig performs vSphere health check on VMs

@@ -34,7 +34,7 @@ func TestRegUnregNode(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(&cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)
@@ -84,7 +84,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(&cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)
@@ -115,7 +115,7 @@ func TestExport(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(&cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)

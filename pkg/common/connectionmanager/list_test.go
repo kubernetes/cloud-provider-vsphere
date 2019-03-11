@@ -41,15 +41,15 @@ func init() {
 
 // configFromSim starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with an empty tls.Config.
-func configFromSim(multiDc bool) (vcfg.Config, func()) {
+func configFromSim(multiDc bool) (*vcfg.Config, func()) {
 	return configFromSimWithTLS(new(tls.Config), true, multiDc)
 }
 
 // configFromSimWithTLS starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with a tls.Config. The returned client
 // config can be configured to allow/decline insecure connections.
-func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc bool) (vcfg.Config, func()) {
-	var cfg vcfg.Config
+func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc bool) (*vcfg.Config, func()) {
+	cfg := &vcfg.Config{}
 	model := simulator.VPX()
 
 	if multiDc {
@@ -109,19 +109,19 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	}
 }
 
-func configFromEnvOrSim(multiDc bool) (vcfg.Config, func()) {
-	cfg, ok := vcfg.ConfigFromEnv()
-	if ok {
-		return cfg, func() {}
+func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
+	cfg := &vcfg.Config{}
+	if err := vcfg.ConfigFromEnv(cfg); err != nil {
+		return configFromSim(multiDc)
 	}
-	return configFromSim(multiDc)
+	return cfg, func() {}
 }
 
 func TestListAllVcPairs(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(&config, nil)
+	connMgr := NewConnectionManager(config, nil)
 	defer connMgr.Logout()
 
 	// context
