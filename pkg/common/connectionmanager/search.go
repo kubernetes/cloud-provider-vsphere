@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/klog"
 	"github.com/vmware/govmomi/vim25/mo"
+	"k8s.io/klog"
 
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )

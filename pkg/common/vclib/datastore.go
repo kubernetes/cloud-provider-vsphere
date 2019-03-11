@@ -20,13 +20,13 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/klog"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/govmomi/vslm"
+	"k8s.io/klog"
 )
 
 // Datastore extends the govmomi Datastore object

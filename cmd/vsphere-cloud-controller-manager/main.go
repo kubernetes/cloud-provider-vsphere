@@ -38,9 +38,9 @@ import (
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 
-	"k8s.io/klog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"k8s.io/klog"
 )
 
 var version string
