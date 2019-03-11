@@ -66,6 +66,7 @@ var provisionCmd = &cobra.Command{
 	Run: RunProvision,
 }
 
+// AddProvision initializes the "provision" command.
 func AddProvision(cmd *cobra.Command) {
 
 	provisionCmd.Flags().StringVar(&configFile, "config", "", "VSphere cloud provider config file path")
@@ -83,6 +84,7 @@ func AddProvision(cmd *cobra.Command) {
 	cmd.AddCommand(provisionCmd)
 }
 
+// RunProvision executes the "provision" command.
 func RunProvision(cmd *cobra.Command, args []string) {
 	// TODO (fanz): implement provision
 	fmt.Println("Perform cloud provider provisioning...")

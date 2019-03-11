@@ -132,7 +132,7 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 // configFromEnvOrSim returns config from configFromEnv if set, otherwise returns configFromSim.
 func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
 	cfg := &vcfg.Config{}
-	if err := vcfg.ConfigFromEnv(cfg); err != nil {
+	if err := vcfg.FromEnv(cfg); err != nil {
 		return configFromSim(multiDc)
 	}
 	return cfg, func() {}
@@ -140,7 +140,7 @@ func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
 
 func TestNewVSphere(t *testing.T) {
 	cfg := &vcfg.Config{}
-	if err := vcfg.ConfigFromEnv(cfg); err != nil {
+	if err := vcfg.FromEnv(cfg); err != nil {
 		t.Skipf("No config found in environment")
 	}
 

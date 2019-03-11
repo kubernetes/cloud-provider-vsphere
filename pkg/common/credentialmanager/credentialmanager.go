@@ -27,18 +27,16 @@ import (
 	"k8s.io/klog"
 )
 
-// Error Messages
-const (
-	CredentialsNotFoundErrMsg = "Credentials not found"
-	CredentialMissingErrMsg   = "Username/Password is missing"
-	UnknownSecretKeyErrMsg    = "Unknown secret key"
-)
-
-// Error constants
+// Errors
 var (
-	ErrCredentialsNotFound = errors.New(CredentialsNotFoundErrMsg)
-	ErrCredentialMissing   = errors.New(CredentialMissingErrMsg)
-	ErrUnknownSecretKey    = errors.New(UnknownSecretKeyErrMsg)
+	// ErrCredentialsNotFound is returned when no credentials are configured.
+	ErrCredentialsNotFound = errors.New("Credentials not found")
+
+	// ErrCredentialMissing is returned when the credentials do not contain a username and/or password.
+	ErrCredentialMissing = errors.New("Username/Password is missing")
+
+	// ErrUnknownSecretKey is returned when the supplied key does not return a secret.
+	ErrUnknownSecretKey = errors.New("Unknown secret key")
 )
 
 // GetCredential returns credentials for the given vCenter Server.
@@ -127,24 +125,29 @@ func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapFile
 	return secretCredentialManager.Cache.parseSecret()
 }
 
+// GetSecret returns a Kubernetes secret.
 func (cache *SecretCache) GetSecret() *corev1.Secret {
 	cache.cacheLock.Lock()
 	defer cache.cacheLock.Unlock()
 	return cache.Secret
 }
 
+// UpdateSecret updates a Kubernetes secret with the provided data.
 func (cache *SecretCache) UpdateSecret(secret *corev1.Secret) {
 	cache.cacheLock.Lock()
 	defer cache.cacheLock.Unlock()
 	cache.Secret = secret
 }
 
+// UpdateSecretFile updates a Kubernetes secret with the provided data.
 func (cache *SecretCache) UpdateSecretFile(data map[string][]byte) {
 	cache.cacheLock.Lock()
 	defer cache.cacheLock.Unlock()
 	cache.SecretFile = data
 }
 
+// GetCredential returns the vCenter credentials from a Kubernetes secret
+// for the provided vCenter.
 func (cache *SecretCache) GetCredential(server string) (Credential, bool) {
 	cache.cacheLock.Lock()
 	defer cache.cacheLock.Unlock()

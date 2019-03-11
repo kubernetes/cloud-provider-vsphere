@@ -32,17 +32,21 @@ import (
 )
 
 const (
-	// API_VERSION gives the API version :)
-	API_VERSION = "0.0.1"
+	// APIVersion gives the API version :)
+	APIVersion = "0.0.1"
 
-	// RETRY_ATTEMPTS number of retries
-	RETRY_ATTEMPTS int = 3
+	// RetryAttempts is the number of times to retry a failed connection
+	// attempt.
+	RetryAttempts int = 3
 )
 
+// NodeManagerInterface describes types that can export a list of Kubernetes
+// nodes into the supplied slice address.
 type NodeManagerInterface interface {
 	ExportNodes(vcenter string, datacenter string, nodeList *[]*pb.Node) error
 }
 
+// GRPCServer describes an object that can start a gRPC server.
 type GRPCServer interface {
 	Start()
 }
@@ -85,7 +89,7 @@ func (s *server) ListNodes(ctx context.Context, request *pb.ListNodesRequest) (*
 // GetVersion implements obtaining the version of the API server
 func (s *server) GetVersion(ctx context.Context, request *pb.VersionRequest) (*pb.VersionReply, error) {
 	return &pb.VersionReply{
-		Version: API_VERSION,
+		Version: APIVersion,
 	}, nil
 }
 
@@ -105,7 +109,7 @@ func (s *server) Start() {
 	}()
 
 	//Wait until the server is up and running
-	for i := 0; i < RETRY_ATTEMPTS; i++ {
+	for i := 0; i < RetryAttempts; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), (5 * time.Second))
 		defer cancel()
 
@@ -123,7 +127,7 @@ func (s *server) Start() {
 			continue
 		}
 
-		klog.Infof("API_VERSION: %s", r.GetVersion())
+		klog.Infof("APIVersion: %s", r.GetVersion())
 		break
 	}
 }

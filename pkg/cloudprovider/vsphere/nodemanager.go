@@ -32,23 +32,18 @@ import (
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
-type FindVM int
-
-const (
-	FindVMByUUID FindVM = iota // 0
-	FindVMByName               // 1
-
-	// Error Messages
-	VCenterNotFoundErrMsg    = "vCenter not found"
-	DatacenterNotFoundErrMsg = "Datacenter not found"
-	VMNotFoundErrMsg         = "VM not found"
-)
-
-// Error constants
+// Errors
 var (
-	ErrVCenterNotFound    = errors.New(VCenterNotFoundErrMsg)
-	ErrDatacenterNotFound = errors.New(DatacenterNotFoundErrMsg)
-	ErrVMNotFound         = errors.New(VMNotFoundErrMsg)
+	// ErrVCenterNotFound is returned when the configured vCenter cannot be
+	// found.
+	ErrVCenterNotFound = errors.New("vCenter not found")
+
+	// ErrDatacenterNotFound is returned when the configured datacenter cannot
+	// be found.
+	ErrDatacenterNotFound = errors.New("Datacenter not found")
+
+	// ErrVMNotFound is returned when the specified VM cannot be found.
+	ErrVMNotFound = errors.New("VM not found")
 )
 
 func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeManager {
@@ -62,16 +57,16 @@ func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeM
 	}
 }
 
-// RegisterNode - Handler when node is removed from k8s cluster.
+// RegisterNode is the handler for when a node is added to a K8s cluster.
 func (nm *NodeManager) RegisterNode(node *v1.Node) {
 	klog.V(4).Info("RegisterNode ENTER: ", node.Name)
 	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
-	nm.DiscoverNode(uuid, FindVMByUUID)
+	nm.DiscoverNode(uuid, cm.FindVMByUUID)
 	nm.addNode(uuid, node)
 	klog.V(4).Info("RegisterNode LEAVE: ", node.Name)
 }
 
-// UnregisterNode - Handler when node is removed from k8s cluster.
+// UnregisterNode is the handler for when a node is removed from a K8s cluster.
 func (nm *NodeManager) UnregisterNode(node *v1.Node) {
 	klog.V(4).Info("UnregisterNode ENTER: ", node.Name)
 	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
@@ -102,14 +97,14 @@ func (nm *NodeManager) removeNode(uuid string, node *v1.Node) {
 	nm.nodeRegInfoLock.Unlock()
 }
 
-func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, searchBy FindVM) (*cm.VmDiscoveryInfo, error) {
+func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, searchBy cm.FindVM) (*cm.VMDiscoveryInfo, error) {
 	// Search by NodeName
-	if searchBy == FindVMByName {
-		return nm.connectionManager.WhichVCandDCByNodeId(ctx, nodeID, cm.FindVM(searchBy))
+	if searchBy == cm.FindVMByName {
+		return nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
 	}
 
 	// Search by UUID
-	vmDI, err := nm.connectionManager.WhichVCandDCByNodeId(ctx, nodeID, cm.FindVM(searchBy))
+	vmDI, err := nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
 	if err == nil {
 		klog.Infof("Discovered VM using normal UUID format")
 		return vmDI, err
@@ -117,19 +112,21 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 
 	// Need to lookup the original format of the UUID because photon 2.0 formats the UUID
 	// different from Photon 3, RHEL, CentOS, Ubuntu, and etc
-	klog.Errorf("WhichVCandDCByNodeId failed using normally formatted UUID. Err: %v", err)
+	klog.Errorf("WhichVCandDCByNodeID failed using normally formatted UUID. Err: %v", err)
 	reverseUUID := ConvertK8sUUIDtoNormal(nodeID)
-	vmDI, err = nm.connectionManager.WhichVCandDCByNodeId(ctx, reverseUUID, cm.FindVM(searchBy))
+	vmDI, err = nm.connectionManager.WhichVCandDCByNodeID(ctx, reverseUUID, cm.FindVM(searchBy))
 	if err == nil {
 		klog.Infof("Discovered VM using reverse UUID format")
 		return vmDI, err
 	}
 
-	klog.Errorf("WhichVCandDCByNodeId failed using reverse formatted UUID. Err: %v", err)
+	klog.Errorf("WhichVCandDCByNodeID failed using reverse formatted UUID. Err: %v", err)
 	return nil, err
 }
 
-func (nm *NodeManager) DiscoverNode(nodeID string, searchBy FindVM) error {
+// DiscoverNode finds a node's VM using the specified search value and search
+// type.
+func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	ctx := context.Background()
 
 	vmDI, err := nm.shakeOutNodeIDLookup(ctx, nodeID, searchBy)

@@ -120,7 +120,7 @@ func TestGRPCServerVersion(t *testing.T) {
 		t.Fatalf("could not greet: %v", err)
 	}
 
-	if !strings.EqualFold(API_VERSION, r.GetVersion()) {
-		t.Errorf("GetVersion mismatch %s != %s", API_VERSION, r.GetVersion())
+	if !strings.EqualFold(APIVersion, r.GetVersion()) {
+		t.Errorf("GetVersion mismatch %s != %s", APIVersion, r.GetVersion())
 	}
 }

@@ -28,6 +28,7 @@ import (
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
+// String returns the string representation of the FindVM constant.
 func (f FindVM) String() string {
 	switch f {
 	case FindVMByUUID:
@@ -39,10 +40,10 @@ func (f FindVM) String() string {
 	}
 }
 
-// WhichVCandDCByNodeId finds the VC/DC combo that owns a particular VM
-func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID string, searchBy FindVM) (*VmDiscoveryInfo, error) {
+// WhichVCandDCByNodeID finds the VC/DC combo that owns a particular VM
+func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID string, searchBy FindVM) (*VMDiscoveryInfo, error) {
 	if nodeID == "" {
-		klog.V(3).Info("WhichVCandDCByNodeId called but nodeID is empty")
+		klog.V(3).Info("WhichVCandDCByNodeID called but nodeID is empty")
 		return nil, vclib.ErrNoVMFound
 	}
 	type vmSearch struct {
@@ -56,16 +57,16 @@ func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID st
 	var wg sync.WaitGroup
 	var globalErr *error
 
-	queueChannel = make(chan *vmSearch, QUEUE_SIZE)
+	queueChannel = make(chan *vmSearch, QueueSize)
 
 	myNodeID := nodeID
 	if searchBy == FindVMByUUID {
-		klog.V(3).Info("WhichVCandDCByNodeId by UUID")
+		klog.V(3).Info("WhichVCandDCByNodeID by UUID")
 		myNodeID = strings.ToLower(nodeID)
 	} else {
-		klog.V(3).Info("WhichVCandDCByNodeId by Name")
+		klog.V(3).Info("WhichVCandDCByNodeID by Name")
 	}
-	klog.V(2).Info("WhichVCandDCByNodeId nodeID: ", myNodeID)
+	klog.V(2).Info("WhichVCandDCByNodeID nodeID: ", myNodeID)
 
 	vmFound := false
 	globalErr = nil
@@ -99,16 +100,16 @@ func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID st
 			}
 
 			var err error
-			for i := 0; i < NUM_OF_CONNECTION_ATTEMPTS; i++ {
+			for i := 0; i < NumConnectionAttempts; i++ {
 				err = cm.Connect(ctx, vc)
 				if err == nil {
 					break
 				}
-				time.Sleep(time.Duration(RETRY_ATTEMPT_DELAY_IN_SECONDS) * time.Second)
+				time.Sleep(time.Duration(RetryAttemptDelaySecs) * time.Second)
 			}
 
 			if err != nil {
-				klog.Error("WhichVCandDCByNodeId error vc:", err)
+				klog.Error("WhichVCandDCByNodeID error vc:", err)
 				setGlobalErr(err)
 				continue
 			}
@@ -116,7 +117,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID st
 			if vsi.Cfg.Datacenters == "" {
 				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
 				if err != nil {
-					klog.Error("WhichVCandDCByNodeId error dc:", err)
+					klog.Error("WhichVCandDCByNodeID error dc:", err)
 					setGlobalErr(err)
 					continue
 				}
@@ -129,7 +130,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID st
 					}
 					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
 					if err != nil {
-						klog.Error("WhichVCandDCByNodeId error dc:", err)
+						klog.Error("WhichVCandDCByNodeID error dc:", err)
 						setGlobalErr(err)
 						continue
 					}
@@ -153,8 +154,8 @@ func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID st
 		close(queueChannel)
 	}()
 
-	var vmInfo *VmDiscoveryInfo
-	for i := 0; i < POOL_SIZE; i++ {
+	var vmInfo *VMDiscoveryInfo
+	for i := 0; i < PoolSize; i++ {
 		wg.Add(1)
 		go func() {
 			for res := range queueChannel {
@@ -190,7 +191,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID st
 					nodeID, vm, res.vc, res.datacenter.Name())
 				klog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
 
-				vmInfo = &VmDiscoveryInfo{DataCenter: res.datacenter, VM: vm, VcServer: res.vc,
+				vmInfo = &VMDiscoveryInfo{DataCenter: res.datacenter, VM: vm, VcServer: res.vc,
 					UUID: oVM.Summary.Config.Uuid, NodeName: oVM.Guest.HostName}
 				setVMFound(true)
 				break
@@ -206,10 +207,11 @@ func (cm *ConnectionManager) WhichVCandDCByNodeId(ctx context.Context, nodeID st
 		return nil, *globalErr
 	}
 
-	klog.V(4).Infof("WhichVCandDCByNodeId: %q vm not found", myNodeID)
+	klog.V(4).Infof("WhichVCandDCByNodeID: %q vm not found", myNodeID)
 	return nil, vclib.ErrNoVMFound
 }
 
+// WhichVCandDCByFCDId searches for an FCD using the provided ID.
 func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID string) (*FcdDiscoveryInfo, error) {
 	if fcdID == "" {
 		klog.V(3).Info("WhichVCandDCByFCDId called but fcdID is empty")
@@ -228,7 +230,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 	var wg sync.WaitGroup
 	var globalErr *error
 
-	queueChannel = make(chan *fcdSearch, QUEUE_SIZE)
+	queueChannel = make(chan *fcdSearch, QueueSize)
 
 	fcdFound := false
 	globalErr = nil
@@ -262,12 +264,12 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 			}
 
 			var err error
-			for i := 0; i < NUM_OF_CONNECTION_ATTEMPTS; i++ {
+			for i := 0; i < NumConnectionAttempts; i++ {
 				err = cm.Connect(ctx, vc)
 				if err == nil {
 					break
 				}
-				time.Sleep(time.Duration(RETRY_ATTEMPT_DELAY_IN_SECONDS) * time.Second)
+				time.Sleep(time.Duration(RetryAttemptDelaySecs) * time.Second)
 			}
 
 			if err != nil {
@@ -317,7 +319,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 	}()
 
 	var fcdInfo *FcdDiscoveryInfo
-	for i := 0; i < POOL_SIZE; i++ {
+	for i := 0; i < PoolSize; i++ {
 		wg.Add(1)
 		go func() {
 			for res := range queueChannel {

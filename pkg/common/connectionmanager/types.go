@@ -36,8 +36,8 @@ type VSphereInstance struct {
 	Cfg  *vcfg.VirtualCenterConfig
 }
 
-// VmDiscoveryInfo contains VM info about a discovered VM
-type VmDiscoveryInfo struct {
+// VMDiscoveryInfo contains VM info about a discovered VM
+type VMDiscoveryInfo struct {
 	DataCenter *vclib.Datacenter
 	VM         *vclib.VirtualMachine
 	VcServer   string

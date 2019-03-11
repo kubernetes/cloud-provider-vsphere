@@ -39,7 +39,11 @@ import (
 
 //Well-known keys for k/v maps
 const (
-	ZoneLabel   = "Zone"
+
+	// ZoneLabel is the label for zones.
+	ZoneLabel = "Zone"
+
+	// RegionLabel is the label for regions.
 	RegionLabel = "Region"
 )
 
@@ -84,12 +88,12 @@ func (cm *ConnectionManager) getDIFromSingleVC(ctx context.Context,
 	}
 
 	var err error
-	for i := 0; i < NUM_OF_CONNECTION_ATTEMPTS; i++ {
+	for i := 0; i < NumConnectionAttempts; i++ {
 		err = cm.Connect(ctx, vc)
 		if err == nil {
 			break
 		}
-		time.Sleep(time.Duration(RETRY_ATTEMPT_DELAY_IN_SECONDS) * time.Second)
+		time.Sleep(time.Duration(RetryAttemptDelaySecs) * time.Second)
 	}
 
 	numOfDc, err := vclib.GetNumberOfDatacenters(ctx, tmpVsi.Conn)
@@ -169,7 +173,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 	var wg sync.WaitGroup
 	var globalErr *error
 
-	queueChannel = make(chan *zoneSearch, QUEUE_SIZE)
+	queueChannel = make(chan *zoneSearch, QueueSize)
 
 	zoneFound := false
 	globalErr = nil
@@ -203,12 +207,12 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 			}
 
 			var err error
-			for i := 0; i < NUM_OF_CONNECTION_ATTEMPTS; i++ {
+			for i := 0; i < NumConnectionAttempts; i++ {
 				err = cm.Connect(ctx, vc)
 				if err == nil {
 					break
 				}
-				time.Sleep(time.Duration(RETRY_ATTEMPT_DELAY_IN_SECONDS) * time.Second)
+				time.Sleep(time.Duration(RetryAttemptDelaySecs) * time.Second)
 			}
 
 			if err != nil {
@@ -273,7 +277,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
 	}()
 
 	var zoneInfo *ZoneDiscoveryInfo
-	for i := 0; i < POOL_SIZE; i++ {
+	for i := 0; i < PoolSize; i++ {
 		wg.Add(1)
 		go func() {
 			for res := range queueChannel {
@@ -337,7 +341,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 	var wg sync.WaitGroup
 	var globalErr *error
 
-	queueChannel = make(chan *zoneSearch, QUEUE_SIZE)
+	queueChannel = make(chan *zoneSearch, QueueSize)
 
 	zoneFound := false
 	globalErr = nil
@@ -371,12 +375,12 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 			}
 
 			var err error
-			for i := 0; i < NUM_OF_CONNECTION_ATTEMPTS; i++ {
+			for i := 0; i < NumConnectionAttempts; i++ {
 				err = cm.Connect(ctx, vc)
 				if err == nil {
 					break
 				}
-				time.Sleep(time.Duration(RETRY_ATTEMPT_DELAY_IN_SECONDS) * time.Second)
+				time.Sleep(time.Duration(RetryAttemptDelaySecs) * time.Second)
 			}
 
 			if err != nil {
@@ -438,7 +442,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 	}()
 
 	var zoneInfo *ZoneDiscoveryInfo
-	for i := 0; i < POOL_SIZE; i++ {
+	for i := 0; i < PoolSize; i++ {
 		wg.Add(1)
 		go func() {
 			for res := range queueChannel {
@@ -499,6 +503,7 @@ func removePortFromHost(host string) string {
 	return result
 }
 
+// LookupZoneByMoref searches for a zone using the provided managed object reference.
 func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *vclib.Datacenter,
 	moRef types.ManagedObjectReference, zoneLabel string, regionLabel string, checkAncestors bool) (map[string]string, error) {
 

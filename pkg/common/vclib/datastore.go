@@ -160,10 +160,10 @@ func (ds *Datastore) GetFirstClassDisk(ctx context.Context, diskID string, findB
 }
 
 // ListFirstClassDiskInfos gets a list of first class disks (FCD) on this datastore
-func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*FirstClassDiskInfo, error) {
-	m := vslm.NewObjectManager(dsi.Datacenter.Client())
+func (di *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*FirstClassDiskInfo, error) {
+	m := vslm.NewObjectManager(di.Datacenter.Client())
 
-	oids, err := m.List(ctx, dsi.Reference())
+	oids, err := m.List(ctx, di.Reference())
 	if err != nil {
 		klog.Errorf("Failed to list disks. Err: %v", err)
 		return nil, err
@@ -171,20 +171,20 @@ func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*First
 
 	var objs []*FirstClassDiskInfo
 	for _, id := range oids {
-		o, err := m.Retrieve(ctx, dsi.Reference(), id.Id)
+		o, err := m.Retrieve(ctx, di.Reference(), id.Id)
 		if err != nil {
 			return nil, err
 		}
 
 		objs = append(objs, &FirstClassDiskInfo{
 			&FirstClassDisk{
-				dsi.Datacenter,
+				di.Datacenter,
 				o,
 				TypeDatastore,
-				dsi.Datastore,
+				di.Datastore,
 				nil,
 			},
-			dsi,
+			di,
 			nil,
 		})
 	}
@@ -193,17 +193,17 @@ func (dsi *DatastoreInfo) ListFirstClassDiskInfos(ctx context.Context) ([]*First
 }
 
 // GetFirstClassDiskInfo gets a specific first class disks (FCD) on this datastore
-func (dsi *DatastoreInfo) GetFirstClassDiskInfo(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDiskInfo, error) {
-	m := vslm.NewObjectManager(dsi.Datacenter.Client())
+func (di *DatastoreInfo) GetFirstClassDiskInfo(ctx context.Context, diskID string, findBy FindFCD) (*FirstClassDiskInfo, error) {
+	m := vslm.NewObjectManager(di.Datacenter.Client())
 
-	oids, err := m.List(ctx, dsi.Reference())
+	oids, err := m.List(ctx, di.Reference())
 	if err != nil {
 		klog.Errorf("Failed to list disks. Err: %v", err)
 		return nil, err
 	}
 
 	for _, id := range oids {
-		o, err := m.Retrieve(ctx, dsi.Reference(), id.Id)
+		o, err := m.Retrieve(ctx, di.Reference(), id.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -212,13 +212,13 @@ func (dsi *DatastoreInfo) GetFirstClassDiskInfo(ctx context.Context, diskID stri
 			(findBy == FindFCDByID && o.Config.Id.Id == diskID) {
 			return &FirstClassDiskInfo{
 				&FirstClassDisk{
-					dsi.Datacenter,
+					di.Datacenter,
 					o,
 					TypeDatastore,
-					dsi.Datastore,
+					di.Datastore,
 					nil,
 				},
-				dsi,
+				di,
 				nil,
 			}, nil
 		}

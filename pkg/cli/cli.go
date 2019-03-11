@@ -33,6 +33,8 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
+// ParseConfig returns a config.Config object initialized with the values
+// from the supplied configuration file.
 func ParseConfig(configFile string) (*config.Config, error) {
 	if len(configFile) == 0 {
 		return nil, fmt.Errorf("Please specify vsphere cloud config file, e.g. --config vsphere.conf")

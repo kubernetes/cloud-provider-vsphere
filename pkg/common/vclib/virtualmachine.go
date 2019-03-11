@@ -380,6 +380,7 @@ func (vm *VirtualMachine) getVirtualDeviceByPath(ctx context.Context, diskPath s
 	return nil, nil
 }
 
+// GetVMUUID returns the VM's UUID.
 func (vm *VirtualMachine) GetVMUUID() (string, error) {
 	var o mo.VirtualMachine
 
@@ -391,6 +392,7 @@ func (vm *VirtualMachine) GetVMUUID() (string, error) {
 	return o.Config.Uuid, nil
 }
 
+// GetVMNodeName returns host name from the VM's guest operating system.
 func (vm *VirtualMachine) GetVMNodeName() (string, error) {
 	var o mo.VirtualMachine
 

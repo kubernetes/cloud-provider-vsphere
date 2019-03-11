@@ -28,19 +28,34 @@ import (
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
+// FindVM is the type that represents the types of searches used to
+// discover VMs.
 type FindVM int
 
 const (
+	// FindVMByUUID finds VMs with the provided UUID.
 	FindVMByUUID FindVM = iota // 0
-	FindVMByName               // 1
 
-	POOL_SIZE  int = 8
-	QUEUE_SIZE int = POOL_SIZE * 10
+	// FindVMByName finds VMs with the provided name.
+	FindVMByName // 1
 
-	NUM_OF_CONNECTION_ATTEMPTS     int = 3
-	RETRY_ATTEMPT_DELAY_IN_SECONDS int = 1
+	// PoolSize is the number of goroutines used in parallel to find a VM.
+	PoolSize int = 8
+
+	// QueueSize is the size of the channel buffer used to find objects.
+	// Only QueueSize objects may be placed into the queue before blocking.
+	QueueSize int = PoolSize * 10
+
+	// NumConnectionAttempts is the number of allowed connection attempts
+	// before an error is returned.
+	NumConnectionAttempts int = 3
+
+	// RetryAttemptDelaySecs is the number of seconds to wait between
+	// connection attempts.
+	RetryAttemptDelaySecs int = 1
 )
 
+// NewConnectionManager returns a new ConnectionManager object.
 func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *ConnectionManager {
 	if secretLister != nil {
 		klog.V(2).Info("NewConnectionManager with SecretLister")
@@ -111,6 +126,7 @@ var (
 	clientLock sync.Mutex
 )
 
+// Connect establishes a connection to the supplied vCenter.
 func (cm *ConnectionManager) Connect(ctx context.Context, vcenter string) error {
 	clientLock.Lock()
 	defer clientLock.Unlock()
@@ -152,6 +168,7 @@ func (cm *ConnectionManager) ConnectByInstance(ctx context.Context, vsphereInsta
 	return vsphereInstance.Conn.Connect(ctx)
 }
 
+// Logout closes existing connections to remote vCenter endpoints.
 func (cm *ConnectionManager) Logout() {
 	for _, vsphereIns := range cm.VsphereInstanceMap {
 		clientLock.Lock()
@@ -163,6 +180,8 @@ func (cm *ConnectionManager) Logout() {
 	}
 }
 
+// Verify validates the configuration by attempting to connect to the
+// configured, remote vCenter endpoints.
 func (cm *ConnectionManager) Verify() error {
 	for vcServer := range cm.VsphereInstanceMap {
 		err := cm.Connect(context.Background(), vcServer)
@@ -176,6 +195,8 @@ func (cm *ConnectionManager) Verify() error {
 	return nil
 }
 
+// VerifyWithContext is the same as Verify but allows a Go Context
+// to control the lifecycle of the connection event.
 func (cm *ConnectionManager) VerifyWithContext(ctx context.Context) error {
 	for vcServer := range cm.VsphereInstanceMap {
 		err := cm.Connect(ctx, vcServer)

@@ -30,27 +30,40 @@ import (
 )
 
 const (
-	DefaultRoundTripperCount uint   = 3
-	DefaultAPIBinding        string = ":43001"
+	// DefaultRoundTripperCount is the number of allowed round trips
+	// before an error is returned.
+	DefaultRoundTripperCount uint = 3
+
+	// DefaultAPIBinding is the default ADDRESS:PORT binding used for
+	// exposing the API service.
+	DefaultAPIBinding string = ":43001"
+
+	// DefaultK8sServiceAccount is the default name of the Kubernetes
+	// service account.
 	DefaultK8sServiceAccount string = "cloud-controller-manager"
-	DefaultVCenterPort       string = "443"
-	DefaultSecretDirectory   string = "/etc/cloud/secrets"
+
+	// DefaultVCenterPort is the default port used to access vCenter.
+	DefaultVCenterPort string = "443"
+
+	// DefaultSecretDirectory is the default path to the secrets directory.
+	DefaultSecretDirectory string = "/etc/cloud/secrets"
 )
 
-// Error Messages
-const (
-	MissingUsernameErrMsg  = "Username is missing"
-	MissingPasswordErrMsg  = "Password is missing"
-	InvalidVCenterIPErrMsg = "vsphere.conf does not have the VirtualCenter IP address specified"
-	MissingVCenterErrMsg   = "No Virtual Center hosts defined"
-)
-
-// Error constants
+// Errors
 var (
-	ErrUsernameMissing  = errors.New(MissingUsernameErrMsg)
-	ErrPasswordMissing  = errors.New(MissingPasswordErrMsg)
-	ErrInvalidVCenterIP = errors.New(InvalidVCenterIPErrMsg)
-	ErrMissingVCenter   = errors.New(MissingVCenterErrMsg)
+	// ErrUsernameMissing is returned when the provided username is empty.
+	ErrUsernameMissing = errors.New("Username is missing")
+
+	// ErrPasswordMissing is returned when the provided password is empty.
+	ErrPasswordMissing = errors.New("Password is missing")
+
+	// ErrInvalidVCenterIP is returned when the provided vCenter IP address is
+	// missing from the provided configuration.
+	ErrInvalidVCenterIP = errors.New("vsphere.conf does not have the VirtualCenter IP address specified")
+
+	// ErrMissingVCenter is returned when the provided configuration does not
+	// define any vCenters.
+	ErrMissingVCenter = errors.New("No Virtual Center hosts defined")
 )
 
 func getEnvKeyValue(match string, partial bool) (string, string, error) {
@@ -80,10 +93,11 @@ func getEnvKeyValue(match string, partial bool) (string, string, error) {
 	return "", "", fmt.Errorf("Failed to find %s with %s", matchType, match)
 }
 
-// ConfigFromEnv allows setting configuration via environment variables.
-// if a config object is passed in, the populated env vars will overwrite
-// existing ones
-func ConfigFromEnv(cfg *Config) error {
+// FromEnv initializes the provided configuratoin object with values
+// obtained from environment variables. If an environment variable is set
+// for a property that's already initialized, the environment variable's value
+// takes precedence.
+func FromEnv(cfg *Config) error {
 
 	if cfg == nil {
 		return fmt.Errorf("Config object cannot be nil")
@@ -302,7 +316,7 @@ func validateConfig(cfg *Config) error {
 
 	// Must have at least one vCenter defined
 	if len(cfg.VirtualCenter) == 0 {
-		klog.Error(MissingVCenterErrMsg)
+		klog.Error(ErrMissingVCenter)
 		return ErrMissingVCenter
 	}
 
@@ -310,7 +324,7 @@ func validateConfig(cfg *Config) error {
 	for vcServer, vcConfig := range cfg.VirtualCenter {
 		klog.V(4).Infof("Initializing vc server %s", vcServer)
 		if vcServer == "" {
-			klog.Error(InvalidVCenterIPErrMsg)
+			klog.Error(ErrInvalidVCenterIP)
 			return ErrInvalidVCenterIP
 		}
 
@@ -374,7 +388,7 @@ func ReadConfig(config io.Reader) (*Config, error) {
 	}
 
 	// Env Vars should override config file entries if present
-	if err := ConfigFromEnv(cfg); err != nil {
+	if err := FromEnv(cfg); err != nil {
 		return nil, err
 	}
 

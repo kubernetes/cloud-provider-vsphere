@@ -16,54 +16,114 @@ limitations under the License.
 
 package vclib
 
+// FindFCD is the type that represents the types of searches used to
+// discover FCDs.
 type FindFCD int
 
 const (
-	FindFCDByID   FindFCD = iota // 0
-	FindFCDByName                // 1
+	// FindFCDByID finds FCDs with the provided ID.
+	FindFCDByID FindFCD = iota // 0
+
+	// FindFCDByName finds FCDs with the provided name.
+	FindFCDByName // 1
 )
 
 // Volume Constnts
 const (
-	ThinDiskType             = "thin"
-	PreallocatedDiskType     = "preallocated"
+	// ThinDiskType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	ThinDiskType = "thin"
+	// PreallocatedDiskType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	PreallocatedDiskType = "preallocated"
+	// EagerZeroedThickDiskType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
 	EagerZeroedThickDiskType = "eagerZeroedThick"
-	ZeroedThickDiskType      = "zeroedThick"
+	// ZeroedThickDiskType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	ZeroedThickDiskType = "zeroedThick"
 )
 
 // Controller Constants
 const (
-	SCSIControllerLimit       = 4
+	// SCSIControllerLimit is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	SCSIControllerLimit = 4
+	// SCSIControllerDeviceLimit is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
 	SCSIControllerDeviceLimit = 15
-	SCSIDeviceSlots           = 16
-	SCSIReservedSlot          = 7
+	// SCSIDeviceSlots is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	SCSIDeviceSlots = 16
+	// SCSIReservedSlot is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	SCSIReservedSlot = 7
 
-	SCSIControllerType        = "scsi"
-	LSILogicControllerType    = "lsiLogic"
-	BusLogicControllerType    = "busLogic"
+	// SCSIControllerType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	SCSIControllerType = "scsi"
+	// LSILogicControllerType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	LSILogicControllerType = "lsiLogic"
+	// BusLogicControllerType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	BusLogicControllerType = "busLogic"
+	// LSILogicSASControllerType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
 	LSILogicSASControllerType = "lsiLogic-sas"
-	PVSCSIControllerType      = "pvscsi"
+	// PVSCSIControllerType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	PVSCSIControllerType = "pvscsi"
 )
 
 // Other Constants
 const (
-	LogLevel                   = 4
-	DatastoreProperty          = "datastore"
-	ResourcePoolProperty       = "resourcePool"
-	DatastoreInfoProperty      = "info"
+	// LogLevel is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	LogLevel = 4
+	// DatastoreProperty is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	DatastoreProperty = "datastore"
+	// ResourcePoolProperty is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	ResourcePoolProperty = "resourcePool"
+	// DatastoreInfoProperty is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	DatastoreInfoProperty = "info"
+	// StoragePodDrsEntryProperty is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
 	StoragePodDrsEntryProperty = "podStorageDrsEntry"
-	StoragePodProperty         = "summary"
-	VirtualMachineType         = "VirtualMachine"
-	RoundTripperDefaultCount   = 3
-	VSANDatastoreType          = "vsan"
-	DummyVMPrefixName          = "vsphere-k8s"
-	ActivePowerState           = "poweredOn"
+	// StoragePodProperty is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	StoragePodProperty = "summary"
+	// VirtualMachineType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	VirtualMachineType = "VirtualMachine"
+	// RoundTripperDefaultCount is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	RoundTripperDefaultCount = 3
+	// VSANDatastoreType is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	VSANDatastoreType = "vsan"
+	// DummyVMPrefixName is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	DummyVMPrefixName = "vsphere-k8s"
+	// ActivePowerState is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	ActivePowerState = "poweredOn"
 )
 
 // Test Constants
 const (
+	// TestDefaultDatacenter is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
 	TestDefaultDatacenter = "DC0"
-	TestDefaultDatastore  = "LocalDS_0"
-	TestDefaultNetwork    = "VM Network"
-	testNameNotFound      = "enoent"
+	// TestDefaultDatastore is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	TestDefaultDatastore = "LocalDS_0"
+	// TestDefaultNetwork is a good constant, yes it is!
+	// TODO(?) Provide better documentation.
+	TestDefaultNetwork = "VM Network"
+
+	testNameNotFound = "enoent"
 )

@@ -33,6 +33,8 @@ import (
 )
 
 const (
+	// ProviderName is the name of the cloud provider registered with
+	// Kubernetes.
 	ProviderName string = "vsphere"
 )
 
@@ -59,6 +61,7 @@ func newVSphere(cfg *vcfg.Config, finalize ...bool) (*VSphere, error) {
 	return vs, nil
 }
 
+// Initialize initializes the cloud provider.
 func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) {
 	client, err := clientBuilder.Client(vs.cfg.Global.ServiceAccount)
 	if err == nil {
@@ -85,39 +88,53 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 	}
 }
 
+// LoadBalancer returns a balancer interface. Also returns true if the
+// interface is supported, false otherwise.
 func (vs *VSphere) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
 	klog.V(1).Info("The vSphere cloud provider does not support load balancers")
 	return nil, false
 }
 
+// Instances returns an instances interface. Also returns true if the
+// interface is supported, false otherwise.
 func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
 	klog.V(1).Info("Enabling Instances interface on vSphere cloud provider")
 	return vs.instances, true
 }
 
+// Zones returns a zones interface. Also returns true if the interface
+// is supported, false otherwise.
 func (vs *VSphere) Zones() (cloudprovider.Zones, bool) {
 	klog.V(1).Info("Enabling Zones interface on vSphere cloud provider")
 	return vs.zones, true
 }
 
+// Clusters returns a clusters interface.  Also returns true if the interface
+// is supported, false otherwise.
 func (vs *VSphere) Clusters() (cloudprovider.Clusters, bool) {
 	klog.V(1).Info("The vSphere cloud provider does not support clusters")
 	return nil, false
 }
 
+// Routes returns a routes interface along with whether the interface
+// is supported.
 func (vs *VSphere) Routes() (cloudprovider.Routes, bool) {
 	klog.V(1).Info("The vSphere cloud provider does not support routes")
 	return nil, false
 }
 
+// ProviderName returns the cloud provider ID.
 func (vs *VSphere) ProviderName() string {
 	return ProviderName
 }
 
+// ScrubDNS is not implemented.
+// TODO(akutz) Add better documentation for this function.
 func (vs *VSphere) ScrubDNS(nameservers, searches []string) (nsOut, srchOut []string) {
 	return nil, nil
 }
 
+// HasClusterID returns true if a ClusterID is required and set/
 func (vs *VSphere) HasClusterID() bool {
 	return true
 }

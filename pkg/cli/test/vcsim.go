@@ -22,6 +22,9 @@ import (
 	"github.com/vmware/govmomi/simulator"
 )
 
+// NewServiceInstance returns a new vCenter simulator's model and
+// server object used to access the simulator's data and control its
+// lifecycle.
 func NewServiceInstance() (*simulator.Model, *simulator.Server, error) {
 	model := simulator.VPX()
 	err := model.Create()

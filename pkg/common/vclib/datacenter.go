@@ -359,6 +359,8 @@ func setNodeVolumeMap(
 	volumeMap[volumePath] = check
 }
 
+// GetAllDatastoreClusters returns all datastore clusters and optionally their
+// children.
 func (dc *Datacenter) GetAllDatastoreClusters(ctx context.Context, child bool) (map[string]*StoragePodInfo, error) {
 	finder := getFinder(dc)
 	storagePods, err := finder.DatastoreClusterList(ctx, "*")
@@ -438,6 +440,7 @@ func (dc *Datacenter) GetDatastoreClusterByName(ctx context.Context, name string
 	}, nil
 }
 
+// CreateFirstClassDisk creates a new first class disk.
 func (dc *Datacenter) CreateFirstClassDisk(ctx context.Context,
 	datastoreName string, datastoreType ParentDatastoreType,
 	diskName string, diskSize int64) error {
@@ -502,6 +505,7 @@ func (dc *Datacenter) CreateFirstClassDisk(ctx context.Context,
 	return nil
 }
 
+// GetFirstClassDisk searches for an existing FCD.
 func (dc *Datacenter) GetFirstClassDisk(ctx context.Context,
 	datastoreName string, datastoreType ParentDatastoreType,
 	diskID string, findBy FindFCD) (*FirstClassDiskInfo, error) {
@@ -536,6 +540,7 @@ func (dc *Datacenter) GetFirstClassDisk(ctx context.Context,
 	return fcd, nil
 }
 
+// GetAllFirstClassDisks returns all known FCDs.
 func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassDiskInfo, error) {
 	storagePods, errDsClusters := dc.GetAllDatastoreClusters(ctx, true)
 	if errDsClusters != ErrNoDataStoreClustersFound {
@@ -591,6 +596,7 @@ func (dc *Datacenter) GetAllFirstClassDisks(ctx context.Context) ([]*FirstClassD
 	return firstClassDisks, nil
 }
 
+// DoesFirstClassDiskExist returns information about an FCD if it exists.
 func (dc *Datacenter) DoesFirstClassDiskExist(ctx context.Context, fcdID string) (*FirstClassDiskInfo, error) {
 	datastores, err := dc.GetAllDatastores(ctx)
 	if err != nil {
@@ -610,6 +616,7 @@ func (dc *Datacenter) DoesFirstClassDiskExist(ctx context.Context, fcdID string)
 	return nil, ErrNoDiskIDFound
 }
 
+// DeleteFirstClassDisk deletes an FCD.
 func (dc *Datacenter) DeleteFirstClassDisk(ctx context.Context,
 	datastoreName string, datastoreType ParentDatastoreType, diskID string) error {
 

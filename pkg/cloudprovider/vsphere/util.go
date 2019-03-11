@@ -22,18 +22,23 @@ import (
 )
 
 const (
+	// ProviderPrefix is the Kubernetes cloud provider prefix for this
+	// cloud provider.
 	ProviderPrefix = "vsphere://"
 )
 
+// GetUUIDFromProviderID returns a UUID from the supplied cloud provider ID.
 func GetUUIDFromProviderID(providerID string) string {
 	return strings.TrimPrefix(providerID, ProviderPrefix)
 }
 
-// Reformats UUID to match vSphere format
+// ConvertK8sUUIDtoNormal reformats UUID to match VMware's format:
+//
 // Endian Safe : https://www.dmtf.org/standards/smbios/
-//            8   -  4 -  4 - 4  -    12
-//K8s:    56492e42-22ad-3911-6d72-59cc8f26bc90
-//VMware: 422e4956-ad22-1139-6d72-59cc8f26bc90
+//               8   -  4 -  4 - 4  -    12
+//
+// K8s:    56492e42-22ad-3911-6d72-59cc8f26bc90
+// VMware: 422e4956-ad22-1139-6d72-59cc8f26bc90
 func ConvertK8sUUIDtoNormal(k8sUUID string) string {
 	uuid := fmt.Sprintf("%s%s%s%s-%s%s-%s%s-%s-%s",
 		k8sUUID[6:8], k8sUUID[4:6], k8sUUID[2:4], k8sUUID[0:2],
