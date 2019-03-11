@@ -67,6 +67,7 @@ export CCM_BIN_SRCS
 endif
 $(CCM_BIN): $(CCM_BIN_SRCS)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags '$(LDFLAGS_CCM)' -o $@ $<
+	@touch $@
 
 # The CSI binary.
 CSI_BIN_NAME := vsphere-csi
@@ -79,6 +80,7 @@ export CSI_BIN_SRCS
 endif
 $(CSI_BIN): $(CSI_BIN_SRCS)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags '$(LDFLAGS_CSI)' -o $@ $<
+	@touch $@
 
 # The default build target.
 build: $(CCM_BIN) $(CSI_BIN)
