@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ func (nm *fakeNodeMgr) ExportNodes(vcenter string, datacenter string, nodeList *
 	return nil
 }
 
-func TestGRPCServerClient(t *testing.T) {
+func TestGRPCServerNodes(t *testing.T) {
 	//server
 	s := grpc.NewServer()
 	myServer := &server{
@@ -63,26 +64,17 @@ func TestGRPCServerClient(t *testing.T) {
 	reflection.Register(s)
 
 	myServer.Start()
+	defer myServer.Stop()
 
 	//client
-	var conn *grpc.ClientConn
-	var err error
-	for i := 0; i < 3; i++ {
-		conn, err = grpc.Dial(vcfg.DefaultAPIBinding, grpc.WithInsecure())
-		if err == nil {
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-	if err != nil {
-		t.Fatalf("did not connect: %v", err)
-	}
-
-	defer conn.Close()
-	c := pb.NewCloudProviderVsphereClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), (5 * time.Second))
 	defer cancel()
+
+	c, err := NewVSphereCloudProviderClient(ctx)
+	if err != nil {
+		t.Fatalf("could not greet: %v", err)
+	}
+
 	r, err := c.ListNodes(ctx, &pb.ListNodesRequest{})
 	if err != nil {
 		t.Fatalf("could not greet: %v", err)
@@ -97,5 +89,38 @@ func TestGRPCServerClient(t *testing.T) {
 
 	if !found {
 		t.Errorf("VM was not found!")
+	}
+}
+
+func TestGRPCServerVersion(t *testing.T) {
+	//server
+	s := grpc.NewServer()
+	myServer := &server{
+		binding: vcfg.DefaultAPIBinding,
+		s:       s,
+		nodeMgr: &fakeNodeMgr{},
+	}
+	pb.RegisterCloudProviderVsphereServer(s, myServer)
+	reflection.Register(s)
+
+	myServer.Start()
+	defer myServer.Stop()
+
+	//client
+	ctx, cancel := context.WithTimeout(context.Background(), (5 * time.Second))
+	defer cancel()
+
+	c, err := NewVSphereCloudProviderClient(ctx)
+	if err != nil {
+		t.Fatalf("could not greet: %v", err)
+	}
+
+	r, err := c.GetVersion(ctx, &pb.VersionRequest{})
+	if err != nil {
+		t.Fatalf("could not greet: %v", err)
+	}
+
+	if !strings.EqualFold(API_VERSION, r.GetVersion()) {
+		t.Errorf("GetVersion mismatch %s != %s", API_VERSION, r.GetVersion())
 	}
 }
