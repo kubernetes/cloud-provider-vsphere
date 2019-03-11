@@ -25,6 +25,7 @@ package cloudprovidervsphere;
 // The service definition.
 service CloudProviderVsphere {
   rpc ListNodes (ListNodesRequest) returns (ListNodesReply) {}
+  rpc GetVersion (VersionRequest) returns (VersionReply) {}
 }
 
 message ListNodesRequest {
@@ -45,3 +46,11 @@ message ListNodesReply {
 	repeated Node nodes = 1;
 	string error = 2;
 }
+
+message VersionRequest {
+}
+
+message VersionReply {
+	string version = 1;
+}
+  

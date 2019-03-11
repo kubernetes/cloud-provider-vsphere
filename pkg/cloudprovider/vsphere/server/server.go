@@ -21,13 +21,22 @@ package server
 import (
 	"log"
 	"net"
+	"time"
 
-	"k8s.io/klog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"k8s.io/klog"
 
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
+)
+
+const (
+	// API_VERSION gives the API version :)
+	API_VERSION = "0.0.1"
+
+	// RETRY_ATTEMPTS number of retries
+	RETRY_ATTEMPTS int = 3
 )
 
 type NodeManagerInterface interface {
@@ -42,6 +51,19 @@ type server struct {
 	binding string
 	s       *grpc.Server
 	nodeMgr NodeManagerInterface
+}
+
+// NewServer generates a new gRPC Server
+func NewServer(binding string, nodeMgr NodeManagerInterface) GRPCServer {
+	s := grpc.NewServer()
+	myServer := &server{
+		binding: binding,
+		s:       s,
+		nodeMgr: nodeMgr,
+	}
+	pb.RegisterCloudProviderVsphereServer(s, myServer)
+	reflection.Register(s)
+	return myServer
 }
 
 // ListNodes implements CloudProviderVsphere interface
@@ -60,6 +82,14 @@ func (s *server) ListNodes(ctx context.Context, request *pb.ListNodesRequest) (*
 	return reply, nil
 }
 
+// GetVersion implements obtaining the version of the API server
+func (s *server) GetVersion(ctx context.Context, request *pb.VersionRequest) (*pb.VersionReply, error) {
+	return &pb.VersionReply{
+		Version: API_VERSION,
+	}, nil
+}
+
+// Start the server
 func (s *server) Start() {
 	go func() {
 		lis, err := net.Listen("tcp", s.binding)
@@ -73,17 +103,32 @@ func (s *server) Start() {
 			log.Printf("Server Serve() failed: %s", err)
 		}
 	}()
+
+	//Wait until the server is up and running
+	for i := 0; i < RETRY_ATTEMPTS; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), (5 * time.Second))
+		defer cancel()
+
+		c, err := NewVSphereCloudProviderClient(ctx)
+		if err != nil {
+			klog.Warningf("could not greet: %v", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		r, err := c.GetVersion(ctx, &pb.VersionRequest{})
+		if err != nil {
+			klog.Warningf("could not getversion: %v", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		klog.Infof("API_VERSION: %s", r.GetVersion())
+		break
+	}
 }
 
-// NewServer generates a new gRPC Server
-func NewServer(binding string, nodeMgr NodeManagerInterface) GRPCServer {
-	s := grpc.NewServer()
-	myServer := &server{
-		binding: binding,
-		s:       s,
-		nodeMgr: nodeMgr,
-	}
-	pb.RegisterCloudProviderVsphereServer(s, myServer)
-	reflection.Register(s)
-	return myServer
+// Stop the server
+func (s *server) Stop() {
+	s.s.Stop()
 }
