@@ -60,47 +60,30 @@ LDFLAGS_CSI := -extldflags "-static" -w -s -X "$(MOD_NAME)/pkg/csi/service.versi
 CCM_BIN_NAME := vsphere-cloud-controller-manager
 CCM_BIN := $(CCM_BIN_NAME).$(GOOS)_$(GOARCH)
 build-ccm: $(CCM_BIN)
-$(CCM_BIN): cmd/$(CCM_BIN_NAME)/main.go
-$(CCM_BIN): go.mod go.sum
-$(CCM_BIN): $(addsuffix /*,$(shell go list -f '{{ join .Deps "\n" }}' ./cmd/$(CCM_BIN_NAME) | grep $(MOD_NAME) | sed 's~$(MOD_NAME)~.~'))
-$(CCM_BIN):
+ifndef CCM_BIN_SRCS
+CCM_BIN_SRCS := cmd/$(CCM_BIN_NAME)/main.go go.mod go.sum
+CCM_BIN_SRCS += $(addsuffix /*,$(shell go list -f '{{ join .Deps "\n" }}' ./cmd/$(CCM_BIN_NAME) | grep $(MOD_NAME) | sed 's~$(MOD_NAME)~.~'))
+export CCM_BIN_SRCS
+endif
+$(CCM_BIN): $(CCM_BIN_SRCS)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags '$(LDFLAGS_CCM)' -o $@ $<
 
 # The CSI binary.
 CSI_BIN_NAME := vsphere-csi
 CSI_BIN := $(CSI_BIN_NAME).$(GOOS)_$(GOARCH)
 build-csi: $(CSI_BIN)
-$(CSI_BIN): cmd/$(CSI_BIN_NAME)/main.go
-$(CSI_BIN): go.mod go.sum
-$(CSI_BIN): $(addsuffix /*,$(shell go list -f '{{ join .Deps "\n" }}' ./cmd/$(CSI_BIN_NAME) | grep $(MOD_NAME) | sed 's~$(MOD_NAME)~.~'))
-$(CSI_BIN):
+ifndef CSI_BIN_SRCS
+CSI_BIN_SRCS := cmd/$(CSI_BIN_NAME)/main.go go.mod go.sum
+CSI_BIN_SRCS += $(addsuffix /*,$(shell go list -f '{{ join .Deps "\n" }}' ./cmd/$(CSI_BIN_NAME) | grep $(MOD_NAME) | sed 's~$(MOD_NAME)~.~'))
+export CSI_BIN_SRCS
+endif
+$(CSI_BIN): $(CSI_BIN_SRCS)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags '$(LDFLAGS_CSI)' -o $@ $<
 
 # The default build target.
 build: $(CCM_BIN) $(CSI_BIN)
 build-with-docker:
 	hack/make.sh
-
-################################################################################
-##                                CROSS BUILD                                 ##
-################################################################################
-# Modify this list to add new cross-build and cross-dist targets.
-X_TARGETS ?= darwin_amd64 linux_amd64 linux_386 linux_arm linux_arm64 linux_ppc64le
-
-X_TARGETS := $(filter-out $(GOOS)_$(GOARCH),$(X_TARGETS))
-
-X_CCM_BINS := $(addprefix $(CCM_BIN_NAME).,$(X_TARGETS))
-$(X_CCM_BINS):
-	GOOS=$(word 1,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) $(MAKE) build-ccm
-
-X_CSI_BINS := $(addprefix $(CSI_BIN_NAME).,$(X_TARGETS))
-$(X_CSI_BINS):
-	GOOS=$(word 1,$(subst _, ,$(subst $(CSI_BIN_NAME).,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(CSI_BIN_NAME).,,$@))) $(MAKE) build-csi
-
-x-build-ccm: $(CCM_BIN) $(X_CCM_BINS)
-x-build-csi: $(CSI_BIN) $(X_CSI_BINS)
-
-x-build: x-build-ccm x-build-csi
 
 ################################################################################
 ##                                   DIST                                     ##
@@ -142,8 +125,49 @@ dist-csi: dist-csi-tgz dist-csi-zip
 dist: dist-ccm dist-csi
 
 ################################################################################
+##                                 CLEAN                                      ##
+################################################################################
+.PHONY: clean
+clean:
+	@rm -f $(CCM_BIN) cloud-provider-vsphere-*.tar.gz cloud-provider-vsphere-*.zip \
+		$(CSI_BIN) vsphere-csi-*.tar.gz vsphere-csi-*.zip \
+		image-*-*.tar image-*-latest.tar
+	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME) ./cmd/$(CSI_BIN_NAME)
+
+################################################################################
+##                                CROSS BUILD                                 ##
+################################################################################
+
+# Defining X_BUILD_DISABLED prevents the cross-build and cross-dist targets
+# from being defined. This is to improve performance when invoking x-build
+# or x-dist targets that invoke this Makefile. The nested call does not need
+# to provide cross-build or cross-dist targets since it's the result of one.
+ifndef X_BUILD_DISABLED
+
+export X_BUILD_DISABLED := 1
+
+# Modify this list to add new cross-build and cross-dist targets.
+X_TARGETS ?= darwin_amd64 linux_amd64 linux_386 linux_arm linux_arm64 linux_ppc64le
+
+X_TARGETS := $(filter-out $(GOOS)_$(GOARCH),$(X_TARGETS))
+
+X_CCM_BINS := $(addprefix $(CCM_BIN_NAME).,$(X_TARGETS))
+$(X_CCM_BINS):
+	GOOS=$(word 1,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) $(MAKE) build-ccm
+
+X_CSI_BINS := $(addprefix $(CSI_BIN_NAME).,$(X_TARGETS))
+$(X_CSI_BINS):
+	GOOS=$(word 1,$(subst _, ,$(subst $(CSI_BIN_NAME).,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(CSI_BIN_NAME).,,$@))) $(MAKE) build-csi
+
+x-build-ccm: $(CCM_BIN) $(X_CCM_BINS)
+x-build-csi: $(CSI_BIN) $(X_CSI_BINS)
+
+x-build: x-build-ccm x-build-csi
+
+################################################################################
 ##                                CROSS DIST                                  ##
 ################################################################################
+
 X_DIST_CCM_TARGETS := $(X_TARGETS)
 X_DIST_CCM_TARGETS := $(addprefix $(DIST_CCM_NAME)-,$(X_DIST_CCM_TARGETS))
 X_DIST_CCM_TGZS := $(addsuffix .tar.gz,$(X_DIST_CCM_TARGETS))
@@ -171,6 +195,20 @@ x-dist-csi-zips: $(DIST_CSI_ZIP) $(X_DIST_CSI_ZIPS)
 x-dist-csi: x-dist-csi-tgzs x-dist-csi-zips
 
 x-dist: x-dist-ccm x-dist-csi
+
+################################################################################
+##                               CROSS CLEAN                                  ##
+################################################################################
+
+X_CLEAN_TARGETS := $(addprefix clean-,$(X_TARGETS))
+.PHONY: $(X_CLEAN_TARGETS)
+$(X_CLEAN_TARGETS):
+	GOOS=$(word 1,$(subst _, ,$(subst clean-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst clean-,,$@))) $(MAKE) clean
+
+.PHONY: x-clean
+x-clean: clean $(X_CLEAN_TARGETS)
+
+endif # ifndef X_BUILD_DISABLED
 
 ################################################################################
 ##                                 TESTING                                    ##
@@ -314,24 +352,6 @@ push-images upload-images: upload-ccm-image upload-csi-image
 .PHONY: version
 version:
 	@echo $(VERSION)
-
-################################################################################
-##                                 CLEAN                                      ##
-################################################################################
-.PHONY: clean
-clean:
-	@rm -f $(CCM_BIN) cloud-provider-vsphere-*.tar.gz cloud-provider-vsphere-*.zip \
-		$(CSI_BIN) vsphere-csi-*.tar.gz vsphere-csi-*.zip \
-		image-*-*.tar image-*-latest.tar
-	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME) ./cmd/$(CSI_BIN_NAME)
-
-CLEAN_TARGETS := $(addprefix clean-,$(X_TARGETS))
-.PHONY: $(CLEAN_TARGETS)
-$(CLEAN_TARGETS):
-	GOOS=$(word 1,$(subst _, ,$(subst clean-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst clean-,,$@))) $(MAKE) clean
-
-.PHONY: x-clean
-x-clean: clean $(CLEAN_TARGETS)
 
 ################################################################################
 ##                                TODO(akutz)                                 ##
