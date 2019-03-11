@@ -1,11 +1,11 @@
 # Use the newer Travis-CI build templates based on the
-# Debian Linux distribution "Trusty" release.
+# Debian Linux distribution "Xenial" release.
 os:             linux
-dist:           trusty
+dist:           xenial
 
 # Set the version of Go.
 language:       go
-go:             1.11
+go:             "1.12"
 
 # All jobs require Docker.
 sudo:           required
@@ -34,7 +34,7 @@ jobs:
       before_install:
         - REPO_SLUG_SHA=$(echo $(TRAVIS_REPO_SLUG) | sha1sum | cut -c1-7); export REPO_SLUG_SHA; echo "REPO_SLUG_SHA=${REPO_SLUG_SHA}"
       install:
-        - make vendor
+        - make deps
       script:
         - make build
 
@@ -54,7 +54,7 @@ jobs:
           (fork = true OR sender =~ env(OWNERS))
         )
       install:
-        - make vendor
+        - make deps
       before_script:
         - echo "${GCR_KEY_FILE}" | base64 -d | gzip -d >gcr-key-file.json
       script:
