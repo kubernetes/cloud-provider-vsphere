@@ -215,6 +215,7 @@ endif # ifndef X_BUILD_DISABLED
 ################################################################################
 ##                                 TESTING                                    ##
 ################################################################################
+export ARTIFACTS ?= .
 PKGS_WITH_TESTS := $(sort $(shell find . -name "*_test.go" -type f -exec dirname \{\} \;))
 TEST_FLAGS ?= -v
 .PHONY: unit build-unit-tests
@@ -235,9 +236,12 @@ cover: test
 ################################################################################
 ##                                 LINTING                                    ##
 ################################################################################
+FMT_FLAGS ?= -d -e -s -w
 .PHONY: fmt
 fmt:
-	find . -name "*.go" | grep -v vendor | xargs gofmt -s -w
+	f="$$(mktemp)" && \
+	find . -name "*.go" | grep -v vendor | xargs gofmt $(FMT_FLAGS) | tee "$${f}"; \
+	test -z "$$(head -n 1 "$${f}")"
 
 .PHONY: vet
 vet:
@@ -249,20 +253,12 @@ lint:
 ifndef HAS_LINT
 	cd / && GO111MODULE=off go get -u github.com/golang/lint/golint
 endif
+	{ ! /bin/sh -c 'set -o pipefail' >/dev/null 2>&1 || set -o pipefail; } && \
 	go list ./... | xargs golint -set_exit_status | sed 's~$(PWD)~.~'
 
 .PHONY: check
 check:
-	{ $(MAKE) fmt  || exit_code_1="$${?}"; } && \
-	{ $(MAKE) vet  || exit_code_2="$${?}"; } && \
-	{ $(MAKE) lint || exit_code_3="$${?}"; } && \
-	{ [ -z "$${exit_code_1}" ] || echo "fmt  failed: $${exit_code_1}" 1>&2; } && \
-	{ [ -z "$${exit_code_2}" ] || echo "vet  failed: $${exit_code_2}" 1>&2; } && \
-	{ [ -z "$${exit_code_3}" ] || echo "lint failed: $${exit_code_3}" 1>&2; } && \
-	{ [ -z "$${exit_code_1}" ] || exit "$${exit_code_1}"; } && \
-	{ [ -z "$${exit_code_2}" ] || exit "$${exit_code_2}"; } && \
-	{ [ -z "$${exit_code_3}" ] || exit "$${exit_code_3}"; } && \
-	exit 0
+	JUNIT_REPORT="$(ARTIFACTS)/junit_check.xml" hack/check.sh
 
 .PHONY: check-warn
 check-warn:
