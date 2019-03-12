@@ -27,6 +27,8 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
+// ClientOption is the configuration options used to create a new
+// govmomi.Client.
 type ClientOption struct {
 	insecure   bool
 	credential Credential
@@ -36,6 +38,7 @@ type ClientOption struct {
 	Config config.Config
 }
 
+// NewClient returns a new govmomi.Client.
 func (o *ClientOption) NewClient(ctx context.Context, hostURL string) (*govmomi.Client, error) {
 	if o.Client != nil {
 		return o.Client, nil
@@ -89,6 +92,7 @@ func (o *ClientOption) processCredential(u *url.URL) error {
 	return nil
 }
 
+// GetClient returns the underlying vim25.Client.
 func (o *ClientOption) GetClient() (*vim25.Client, error) {
 	if o.Client.Client != nil {
 		return o.Client.Client, nil
@@ -96,6 +100,7 @@ func (o *ClientOption) GetClient() (*vim25.Client, error) {
 	return nil, nil
 }
 
+// Userinfo returns the user information with which the client was created.
 func (o *ClientOption) Userinfo() *url.Userinfo {
 	return o.url.User
 }
@@ -104,6 +109,7 @@ func (o *ClientOption) getCredential() Credential {
 	return o.credential
 }
 
+// Credential are used when connecting to a vSphere endpoint.
 type Credential struct {
 	username string
 	password string
@@ -112,11 +118,14 @@ type Credential struct {
 	Secret   VCCMSecret
 }
 
+// VCCMSecret represents credential data stored as a Kubernetes secret.
 type VCCMSecret struct {
 	Name string
 	Data map[string]string
 }
 
+// LoadCredential initializes this object's credentials fields with the
+// supplied information.
 func (o *ClientOption) LoadCredential(username, password, cert, role string, insecure bool) {
 	c := Credential{}
 	c.username = username

@@ -69,7 +69,8 @@ type Config struct {
 	}
 }
 
-// Structure that represents Virtual Center configuration
+// VirtualCenterConfig contains information used to access a remote vCenter
+// endpoint.
 type VirtualCenterConfig struct {
 	// vCenter username.
 	User string `gcfg:"user"`

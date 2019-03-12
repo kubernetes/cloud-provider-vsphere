@@ -37,12 +37,12 @@ func (cm *ConnectionManager) ListAllVCandDCPairs(ctx context.Context) ([]*ListDi
 		var datacenterObjs []*vclib.Datacenter
 
 		var err error
-		for i := 0; i < NUM_OF_CONNECTION_ATTEMPTS; i++ {
+		for i := 0; i < NumConnectionAttempts; i++ {
 			err = cm.Connect(ctx, vc)
 			if err == nil {
 				break
 			}
-			time.Sleep(time.Duration(RETRY_ATTEMPT_DELAY_IN_SECONDS) * time.Second)
+			time.Sleep(time.Duration(RetryAttemptDelaySecs) * time.Second)
 		}
 
 		if err != nil {

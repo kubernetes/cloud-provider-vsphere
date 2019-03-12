@@ -22,12 +22,12 @@ import (
 	"regexp"
 	"strings"
 
-	"k8s.io/klog"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
+	"k8s.io/klog"
 )
 
 // IsNotFound return true if err is NotFoundError or DefaultNotFoundError
@@ -208,14 +208,17 @@ func VerifyVolumePathsForVMDevices(vmDevices object.VirtualDeviceList, volPaths 
 	}
 }
 
+// ExistsInList determines whether or not the provided string exists in the
+// provided list with optional case-sensitivity.
 func ExistsInList(needle string, haystack []string, caseSensitive bool) bool {
 	for _, straw := range haystack {
-		if caseSensitive && strings.EqualFold(straw, needle) {
-			return true
-		} else if strings.ToLower(straw) == strings.ToLower(needle) {
+		if caseSensitive {
+			if straw == needle {
+				return true
+			}
+		} else if strings.EqualFold(straw, needle) {
 			return true
 		}
 	}
-
 	return false
 }

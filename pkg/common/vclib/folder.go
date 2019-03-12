@@ -19,8 +19,8 @@ package vclib
 import (
 	"context"
 
-	"k8s.io/klog"
 	"github.com/vmware/govmomi/object"
+	"k8s.io/klog"
 )
 
 // Folder extends the govmomi Folder object

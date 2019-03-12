@@ -22,6 +22,7 @@ import (
 	"os"
 )
 
+// ReadContent reads a file from disk and returns its contents as a string.
 func ReadContent(path string) (string, error) {
 	_, err := os.Stat(path)
 	if err != nil {
@@ -37,6 +38,8 @@ func ReadContent(path string) (string, error) {
 	return string(content), nil
 }
 
+// IsClusterNode returns a flag indicating whether or not the name of a cluster
+// node is valie.
 // TODO (fanz): IsK8sNode validate if the given name refers to a node in kubernetes cluster
 func IsClusterNode(name string) bool {
 	return false

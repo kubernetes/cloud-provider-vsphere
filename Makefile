@@ -217,13 +217,16 @@ endif # ifndef X_BUILD_DISABLED
 ################################################################################
 PKGS_WITH_TESTS := $(sort $(shell find . -name "*_test.go" -type f -exec dirname \{\} \;))
 TEST_FLAGS ?= -v
-.PHONY: unit
+.PHONY: unit build-unit-tests
 unit:
 	env -u VSPHERE_SERVER -u VSPHERE_PASSWORD -u VSPHERE_USER go test $(TEST_FLAGS) -tags=unit $(PKGS_WITH_TESTS)
+build-unit-tests:
+	$(foreach pkg,$(PKGS_WITH_TESTS),go test $(TEST_FLAGS) -c -tags=unit $(pkg); )
 
 # The default test target.
-.PHONY: test
+.PHONY: test build-tests
 test: unit
+build-tests: build-unit-tests
 
 .PHONY: cover
 cover: TEST_FLAGS += -cover

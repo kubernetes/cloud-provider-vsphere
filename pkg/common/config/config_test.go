@@ -73,7 +73,7 @@ func TestEnvOverridesFile(t *testing.T) {
 }
 
 func TestBlankEnvFails(t *testing.T) {
-	err := ConfigFromEnv(&Config{})
+	err := FromEnv(&Config{})
 	if err == nil {
 		t.Fatalf("Env only config should fail if env not set")
 	}

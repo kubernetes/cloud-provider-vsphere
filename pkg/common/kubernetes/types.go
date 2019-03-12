@@ -23,6 +23,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// InformerManager is a service that notifies subscribers about changes
+// to well-defined information in the Kubernetes API server.
 type InformerManager struct {
 	// k8s client
 	client *clientset.Interface

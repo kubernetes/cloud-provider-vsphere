@@ -50,6 +50,7 @@ var cmd = &cobra.Command{
 	Run: RunMain,
 }
 
+// RunMain is the "Run" function callback for a cobra command object.
 func RunMain(cmd *cobra.Command, args []string) {
 	cmd.Help()
 }

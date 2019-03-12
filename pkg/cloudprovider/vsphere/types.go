@@ -29,7 +29,7 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
-// GRPCServer interface
+// GRPCServer describes an object that can start a gRPC server.
 type GRPCServer interface {
 	Start()
 }
@@ -45,7 +45,7 @@ type VSphere struct {
 	server            GRPCServer
 }
 
-// Stores info about the kubernetes node
+// NodeInfo is information about a Kubernetes node.
 type NodeInfo struct {
 	dataCenter    *vclib.Datacenter
 	vm            *vclib.VirtualMachine
@@ -55,16 +55,19 @@ type NodeInfo struct {
 	NodeAddresses []v1.NodeAddress
 }
 
+// DatacenterInfo is information about a vCenter datascenter.
 type DatacenterInfo struct {
 	name   string
 	vmList map[string]*NodeInfo
 }
 
+// VCenterInfo is information about a vCenter.
 type VCenterInfo struct {
 	address string
 	dcList  map[string]*DatacenterInfo
 }
 
+// NodeManager is used to manage Kubernetes nodes.
 type NodeManager struct {
 	// Maps node name to node info
 	nodeNameMap map[string]*NodeInfo

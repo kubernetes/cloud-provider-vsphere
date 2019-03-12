@@ -20,8 +20,8 @@ import (
 	"context"
 	"os"
 
-	"k8s.io/klog"
 	"github.com/vmware/govmomi/vim25/mo"
+	"k8s.io/klog"
 
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/cloudprovider"

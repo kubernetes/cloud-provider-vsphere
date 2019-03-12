@@ -37,6 +37,7 @@ import (
 	vimType "github.com/vmware/govmomi/vim25/types"
 )
 
+// User contains information about a person added to the system as a user.
 type User struct {
 	id string
 	types.AdminPersonDetails
@@ -49,6 +50,7 @@ type User struct {
 // CreateUserFunc is function to create person user or solution user
 type CreateUserFunc func(c *ssoadmin.Client) error
 
+// Run executes the supplied CreateUserFunc.
 func (u *User) Run(ctx context.Context, c *ClientOption, fn CreateUserFunc) error {
 
 	u.id = "k8s-vcp"
@@ -94,6 +96,7 @@ func (u *User) Run(ctx context.Context, c *ClientOption, fn CreateUserFunc) erro
 	return fn(ssoClient)
 }
 
+// RolePermission represents the permissions to assign to a role.
 type RolePermission struct {
 	Roles       object.AuthorizationRoleList `json:",omitempty"`
 	Permissions []vimType.Permission         `json:",omitempty"`
@@ -113,6 +116,7 @@ func GetRolePermission(ctx context.Context, c *ClientOption) (*RolePermission, e
 	return &r, err
 }
 
+// Role represents a role and its privileges.
 type Role struct {
 	RoleName   string
 	Privileges []string

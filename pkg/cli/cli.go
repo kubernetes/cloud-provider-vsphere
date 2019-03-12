@@ -33,6 +33,8 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/common/config"
 )
 
+// ParseConfig returns a config.Config object initialized with the values
+// from the supplied configuration file.
 func ParseConfig(configFile string) (*config.Config, error) {
 	if len(configFile) == 0 {
 		return nil, fmt.Errorf("Please specify vsphere cloud config file, e.g. --config vsphere.conf")
@@ -113,14 +115,14 @@ func CreateSolutionUser(ctx context.Context, o *ClientOption) error {
 
 		_, err := os.Stat(u.cert)
 		if err == nil {
-			fmt.Errorf("cert file already exists (%s). Please delete the cert and key files", u.cert)
+			return fmt.Errorf("cert file already exists (%s). Please delete the cert and key files", u.cert)
 		} else if os.IsNotExist(err) {
 			err = u.createCert()
 			if err != nil {
-				fmt.Errorf("Create solution user certificate (%s) error: %s", u.cert, err)
+				return fmt.Errorf("Create solution user certificate (%s) error: %s", u.cert, err)
 			}
 		} else {
-			fmt.Errorf("Invalid cert file or directory (%s), create solution user error : %s", u.cert, err)
+			return fmt.Errorf("Invalid cert file or directory (%s), create solution user error : %s", u.cert, err)
 		}
 
 		if cert, err := ReadContent(u.cert); err == nil {

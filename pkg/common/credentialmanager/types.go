@@ -23,6 +23,7 @@ import (
 	clientv1 "k8s.io/client-go/listers/core/v1"
 )
 
+// SecretCache is used to cache information about Kubernetes secrets data.
 type SecretCache struct {
 	cacheLock     sync.Mutex
 	VirtualCenter map[string]*Credential
@@ -30,11 +31,15 @@ type SecretCache struct {
 	SecretFile    map[string][]byte
 }
 
+// Credential is a vCenter credential that is retrieved or stored in a
+// Kubernetes secret.
 type Credential struct {
 	User     string `gcfg:"user"`
 	Password string `gcfg:"password"`
 }
 
+// SecretCredentialManager is used to manage vCenter credentials stored as
+// Kubernetes secrets.
 type SecretCredentialManager struct {
 	SecretName            string
 	SecretNamespace       string

@@ -98,7 +98,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
 
-	err = nm.DiscoverNode(name, FindVMByName)
+	err = nm.DiscoverNode(name, cm.FindVMByName)
 	if err != nil {
 		t.Errorf("Failed DiscoverNode: %s", err)
 	}

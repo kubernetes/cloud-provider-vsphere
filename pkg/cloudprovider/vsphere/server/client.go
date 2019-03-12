@@ -16,7 +16,7 @@ import (
 func NewVSphereCloudProviderClient(ctx context.Context) (pb.CloudProviderVsphereClient, error) {
 	var conn *grpc.ClientConn
 	var err error
-	for i := 0; i < RETRY_ATTEMPTS; i++ {
+	for i := 0; i < RetryAttempts; i++ {
 		conn, err = grpc.Dial(vcfg.DefaultAPIBinding, grpc.WithInsecure())
 		if err == nil {
 			break

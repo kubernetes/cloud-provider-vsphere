@@ -24,17 +24,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-)
 
-const (
-	//CredentialManagerErrMsg = "The Credential Manager is not initialized"
-	NodeNotFoundErrMsg = "Node not found"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
 // Error constants
 var (
-	//ErrCredentialManager = errors.New(CredentialManagerErrMsg)
-	ErrNodeNotFound = errors.New(NodeNotFoundErrMsg)
+	// ErrNotFound is returned by NodeAddresses, NodeAddressesByProviderID,
+	// and InstanceID when a node cannot be found.
+	ErrNodeNotFound = errors.New("Node not found")
 )
 
 func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
@@ -55,7 +53,7 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 		return node.NodeAddresses, nil
 	}
 
-	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err == nil {
+	if err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName); err == nil {
 		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
 			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
 			return []v1.NodeAddress{}, ErrNodeNotFound
@@ -81,7 +79,7 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 		return node.NodeAddresses, nil
 	}
 
-	if err := i.nodeManager.DiscoverNode(uid, FindVMByUUID); err == nil {
+	if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err == nil {
 		klog.V(2).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
 		return i.nodeManager.nodeUUIDMap[uid].NodeAddresses, nil
 	}
@@ -111,7 +109,7 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 		return node.UUID, nil
 	}
 
-	if err := i.nodeManager.DiscoverNode(string(nodeName), FindVMByName); err == nil {
+	if err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName); err == nil {
 		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
 			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
 			return "", ErrNodeNotFound
@@ -160,7 +158,7 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 		return true, nil
 	}
 
-	if err := i.nodeManager.DiscoverNode(uid, FindVMByUUID); err == nil {
+	if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err == nil {
 		klog.V(2).Info("instances.InstanceExistsByProviderID() EXISTS with ", uid)
 		return true, err
 	}

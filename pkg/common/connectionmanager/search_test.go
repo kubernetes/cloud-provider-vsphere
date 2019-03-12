@@ -42,12 +42,12 @@ func TestWhichVCandDCByNodeIdByUUID(t *testing.T) {
 	// context
 	ctx := context.Background()
 
-	info, err := connMgr.WhichVCandDCByNodeId(ctx, UUID, FindVMByUUID)
+	info, err := connMgr.WhichVCandDCByNodeID(ctx, UUID, FindVMByUUID)
 	if err != nil {
-		t.Fatalf("WhichVCandDCByNodeId err=%v", err)
+		t.Fatalf("WhichVCandDCByNodeID err=%v", err)
 	}
 	if info == nil {
-		t.Fatalf("WhichVCandDCByNodeId info=nil")
+		t.Fatalf("WhichVCandDCByNodeID info=nil")
 	}
 
 	if !strings.EqualFold(name, info.NodeName) {
@@ -74,12 +74,12 @@ func TestWhichVCandDCByNodeIdByName(t *testing.T) {
 	// context
 	ctx := context.Background()
 
-	info, err := connMgr.WhichVCandDCByNodeId(ctx, name, FindVMByName)
+	info, err := connMgr.WhichVCandDCByNodeID(ctx, name, FindVMByName)
 	if err != nil {
-		t.Fatalf("WhichVCandDCByNodeId err=%v", err)
+		t.Fatalf("WhichVCandDCByNodeID err=%v", err)
 	}
 	if info == nil {
-		t.Fatalf("WhichVCandDCByNodeId info=nil")
+		t.Fatalf("WhichVCandDCByNodeID info=nil")
 	}
 
 	if !strings.EqualFold(name, info.NodeName) {

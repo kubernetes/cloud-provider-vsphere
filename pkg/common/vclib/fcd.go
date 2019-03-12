@@ -20,10 +20,14 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
+// ParentDatastoreType represents the possible parent types of a datastore.
 type ParentDatastoreType string
 
 const (
-	TypeDatastore        ParentDatastoreType = "Datastore"
+	// TypeDatastore is a datastore parent that's another datastore.
+	TypeDatastore ParentDatastoreType = "Datastore"
+
+	// TypeDatastoreCluster is a datastore parent that's a cluster.
 	TypeDatastoreCluster ParentDatastoreType = "DatastoreCluster"
 )
 
