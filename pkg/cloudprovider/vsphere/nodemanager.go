@@ -21,7 +21,7 @@ import (
 	"errors"
 	"net"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	clientv1 "k8s.io/client-go/listers/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	"k8s.io/klog"
@@ -145,6 +145,10 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	addrs := []v1.NodeAddress{}
 	for _, v := range oVM.Guest.Net {
+		if v.DeviceConfigId == -1 {
+			klog.V(4).Info("Skipping device because not a vNIC")
+			continue
+		}
 		for _, ip := range v.IpAddress {
 			if net.ParseIP(ip).To4() != nil {
 				v1helper.AddToNodeAddresses(&addrs,
