@@ -27,7 +27,7 @@ import (
 // to well-defined information in the Kubernetes API server.
 type InformerManager struct {
 	// k8s client
-	client *clientset.Interface
+	client clientset.Interface
 	// main shared informer factory
 	informerFactory informers.SharedInformerFactory
 	// main signal

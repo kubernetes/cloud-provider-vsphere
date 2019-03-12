@@ -31,11 +31,11 @@ func noResyncPeriodFunc() time.Duration {
 }
 
 // NewInformer creates a newk8s client based on a service account
-func NewInformer(client *clientset.Interface) *InformerManager {
+func NewInformer(client clientset.Interface) *InformerManager {
 	return &InformerManager{
 		client:          client,
 		stopCh:          signals.SetupSignalHandler(),
-		informerFactory: informers.NewSharedInformerFactory(*client, noResyncPeriodFunc()),
+		informerFactory: informers.NewSharedInformerFactory(client, noResyncPeriodFunc()),
 	}
 }
 

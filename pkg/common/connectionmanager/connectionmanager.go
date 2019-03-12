@@ -57,36 +57,7 @@ const (
 
 // NewConnectionManager returns a new ConnectionManager object.
 func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *ConnectionManager {
-	if secretLister != nil {
-		klog.V(2).Info("NewConnectionManager with SecretLister")
-		return &ConnectionManager{
-			VsphereInstanceMap: generateInstanceMap(config),
-			credentialManager: &cm.SecretCredentialManager{
-				SecretName:      config.Global.SecretName,
-				SecretNamespace: config.Global.SecretNamespace,
-				SecretLister:    secretLister,
-				Cache: &cm.SecretCache{
-					VirtualCenter: make(map[string]*cm.Credential),
-				},
-			},
-		}
-	}
-	if config.Global.SecretsDirectory != "" {
-		klog.V(2).Info("NewConnectionManager generic CO")
-		return &ConnectionManager{
-			VsphereInstanceMap: generateInstanceMap(config),
-			credentialManager: &cm.SecretCredentialManager{
-				SecretsDirectory:      config.Global.SecretsDirectory,
-				SecretsDirectoryParse: false,
-				Cache: &cm.SecretCache{
-					VirtualCenter: make(map[string]*cm.Credential),
-				},
-			},
-		}
-	}
-
-	klog.V(2).Info("NewConnectionManager creds from config")
-	return &ConnectionManager{
+	connM := &ConnectionManager{
 		VsphereInstanceMap: generateInstanceMap(config),
 		credentialManager: &cm.SecretCredentialManager{
 			Cache: &cm.SecretCache{
@@ -94,6 +65,24 @@ func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *Co
 			},
 		},
 	}
+
+	if secretLister != nil {
+		klog.V(2).Info("NewConnectionManager with K8s SecretLister")
+		connM.credentialManager.SecretName = config.Global.SecretName
+		connM.credentialManager.SecretNamespace = config.Global.SecretNamespace
+		connM.credentialManager.SecretLister = secretLister
+		return connM
+	}
+
+	if config.Global.SecretsDirectory != "" {
+		klog.V(2).Info("NewConnectionManager generic CO with secrets")
+		connM.credentialManager.SecretsDirectory = config.Global.SecretsDirectory
+		connM.credentialManager.SecretsDirectoryParse = false
+		return connM
+	}
+
+	klog.V(2).Info("NewConnectionManager generic CO")
+	return connM
 }
 
 //GenerateInstanceMap creates a map of vCenter connection objects that can be
