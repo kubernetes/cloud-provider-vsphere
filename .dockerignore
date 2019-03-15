@@ -1,3 +1,9 @@
+/cluster
+/docs
+/hack
+/manifests
+/test
+
 /Dockerfile*
 /image-*.d
 /image-*.tar

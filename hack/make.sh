@@ -43,8 +43,14 @@ GO_VERSION="$(grep '^go:' <".travis.yml" | sed 's/^\(go:[[:space:]]\{0,\}\"\{0,1
 TERM_FLAGS="-i"
 echo "${-}" | grep -q i && TERM_FLAGS="${TERM_FLAGS}t"
 
+IMAGE="gcr.io/cloud-provider-vsphere/golang-${GO_VERSION}:latest"
+if ! docker pull "${IMAGE}"; then
+  IMAGE="golang:${GO_VERSION}"
+  docker pull "${IMAGE}"
+fi
+
 # shellcheck disable=2086
 docker run --rm ${TERM_FLAGS} ${DOCKER_OPTS} \
   -v "$(pwd)":/build:z \
   -w /build \
-  golang:"${GO_VERSION}" make "${@}"
+  "${IMAGE}" make "${@}"
