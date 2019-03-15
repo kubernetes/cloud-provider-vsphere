@@ -284,6 +284,9 @@ $(IMAGE_CCM_D): $(CCM_BIN)
 	docker tag $(IMAGE_CCM):$(VERSION) $(IMAGE_CCM):latest
 	@rm -f cluster/images/controller-manager/vsphere-cloud-controller-manager && touch $@
 endif
+.PHONY: print-ccm-image
+print-ccm-image:
+	@echo $(IMAGE_CCM):$(VERSION)
 
 IMAGE_CSI := $(REGISTRY)/vsphere-csi
 IMAGE_CSI_D := image-csi-$(VERSION).d
@@ -299,6 +302,9 @@ $(IMAGE_CSI_D): $(CSI_BIN)
 	docker tag $(IMAGE_CSI):$(VERSION) $(IMAGE_CSI):latest
 	@rm -f cluster/images/csi/vsphere-csi && touch $@
 endif
+.PHONY: print-csi-image
+print-csi-image:
+	@echo $(IMAGE_CSI):$(VERSION)
 
 build-images images: build-ccm-image build-csi-image
 
