@@ -1,3 +1,6 @@
+# Ignore marker files.
+**/*.d
+
 /cluster
 /docs
 /hack
@@ -5,7 +8,6 @@
 /test
 
 /Dockerfile*
-/image-*.d
 /image-*.tar
 
 /vsphere-csi.*

@@ -1,5 +1,7 @@
+# Ignore marker files.
+**/*.d
+
 /Dockerfile*
-/image-*.d
 /image-*.tar
 
 /vsphere-csi.*

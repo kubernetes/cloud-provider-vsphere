@@ -271,33 +271,33 @@ check-warn:
 include hack/make/login-to-image-registry.mk
 
 IMAGE_CCM := $(REGISTRY)/vsphere-cloud-controller-manager
-IMAGE_CCM_TAR := image-ccm-$(VERSION).tar
-build-ccm-image ccm-image: $(IMAGE_CCM_TAR)
+IMAGE_CCM_D := image-ccm-$(VERSION).d
+build-ccm-image ccm-image: $(IMAGE_CCM_D)
+$(IMAGE_CCM): $(IMAGE_CCM_D)
 ifneq ($(GOOS),linux)
-$(IMAGE_CCM) $(IMAGE_CCM_TAR):
+$(IMAGE_CCM_D):
 	$(error Please set GOOS=linux for building $@)
 else
-$(IMAGE_CCM) $(IMAGE_CCM_TAR): $(CCM_BIN)
+$(IMAGE_CCM_D): $(CCM_BIN)
 	cp -f $< cluster/images/controller-manager/vsphere-cloud-controller-manager
 	docker build -t $(IMAGE_CCM):$(VERSION) cluster/images/controller-manager
 	docker tag $(IMAGE_CCM):$(VERSION) $(IMAGE_CCM):latest
-	docker save $(IMAGE_CCM):$(VERSION) -o $@
-	docker save $(IMAGE_CCM):$(VERSION) -o image-ccm-latest.tar
+	@rm -f cluster/images/controller-manager/vsphere-cloud-controller-manager && touch $@
 endif
 
 IMAGE_CSI := $(REGISTRY)/vsphere-csi
-IMAGE_CSI_TAR := image-csi-$(VERSION).tar
-build-csi-image csi-image: $(IMAGE_CSI_TAR)
+IMAGE_CSI_D := image-csi-$(VERSION).d
+build-csi-image csi-image: $(IMAGE_CSI_D)
+$(IMAGE_CSI): $(IMAGE_CSI_D)
 ifneq ($(GOOS),linux)
-$(IMAGE_CSI) $(IMAGE_CSI_TAR):
+$(IMAGE_CSI_D):
 	$(error Please set GOOS=linux for building $@)
 else
-$(IMAGE_CSI) $(IMAGE_CSI_TAR): $(CSI_BIN)
+$(IMAGE_CSI_D): $(CSI_BIN)
 	cp -f $< cluster/images/csi/vsphere-csi
 	docker build -t $(IMAGE_CSI):$(VERSION) cluster/images/csi
 	docker tag $(IMAGE_CSI):$(VERSION) $(IMAGE_CSI):latest
-	docker save $(IMAGE_CSI):$(VERSION) -o $@
-	docker save $(IMAGE_CSI):$(VERSION) -o image-csi-latest.tar
+	@rm -f cluster/images/csi/vsphere-csi && touch $@
 endif
 
 build-images images: build-ccm-image build-csi-image
@@ -307,13 +307,13 @@ build-images images: build-ccm-image build-csi-image
 ################################################################################
 .PHONY: push-$(IMAGE_CCM) upload-$(IMAGE_CCM)
 push-ccm-image upload-ccm-image: upload-$(IMAGE_CCM)
-push-$(IMAGE_CCM) upload-$(IMAGE_CCM): $(IMAGE_CCM_TAR) login-to-image-registry
+push-$(IMAGE_CCM) upload-$(IMAGE_CCM): $(IMAGE_CCM_D) login-to-image-registry
 	docker push $(IMAGE_CCM):$(VERSION)
 	docker push $(IMAGE_CCM):latest
 
 .PHONY: push-$(IMAGE_CSI) upload-$(IMAGE_CSI)
 push-csi-image upload-csi-image: upload-$(IMAGE_CSI)
-push-$(IMAGE_CSI) upload-$(IMAGE_CSI): $(IMAGE_CSI_TAR) login-to-image-registry
+push-$(IMAGE_CSI) upload-$(IMAGE_CSI): $(IMAGE_CSI_D) login-to-image-registry
 	docker push $(IMAGE_CSI):$(VERSION)
 	docker push $(IMAGE_CSI):latest
 
