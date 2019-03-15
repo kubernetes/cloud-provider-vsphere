@@ -1,20 +1,18 @@
 # Ignore marker files.
 **/*.d
 
-/cluster
-/docs
-/hack
-/manifests
-/test
+# Ignore the binaries copied into the staging areas.
+/cluster/images/controller-manager/vsphere-cloud-controller-manager*
+/cluster/images/csi/vsphere-csi*
 
 /Dockerfile*
 /image-*.tar
 
-/vsphere-csi.*
+/vsphere-csi*
 /vsphere-csi-*.tar.gz
 /vsphere-csi-*.zip
 
-/vsphere-cloud-controller-manager.*
+/vsphere-cloud-controller-manager*
 /cloud-provider-vsphere-*.tar.gz
 /cloud-provider-vsphere-*.zip
 
