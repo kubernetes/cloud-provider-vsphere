@@ -52,7 +52,9 @@ GOOS ?= linux
 GOARCH ?= amd64
 
 # Ensure the version is injected into the binaries via a linker flag.
-VERSION := $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+ifndef VERSION
+export VERSION := $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+endif
 LDFLAGS_CCM := -extldflags "-static" -w -s -X "main.version=$(VERSION)"
 LDFLAGS_CSI := -extldflags "-static" -w -s -X "$(MOD_NAME)/pkg/csi/service.version=$(VERSION)"
 
@@ -217,7 +219,9 @@ endif # ifndef X_BUILD_DISABLED
 ##                                 TESTING                                    ##
 ################################################################################
 export ARTIFACTS ?= .
-PKGS_WITH_TESTS := $(sort $(shell find . -name "*_test.go" -type f -exec dirname \{\} \;))
+ifndef PKGS_WITH_TESTS
+export PKGS_WITH_TESTS := $(sort $(shell find . -name "*_test.go" -type f -exec dirname \{\} \;))
+endif
 TEST_FLAGS ?= -v
 .PHONY: unit build-unit-tests
 unit:
