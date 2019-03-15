@@ -268,7 +268,7 @@ check-warn:
 ################################################################################
 ##                                 BUILD IMAGES                               ##
 ################################################################################
-REGISTRY ?= gcr.io/cloud-provider-vsphere
+include hack/make/login-to-image-registry.mk
 
 IMAGE_CCM := $(REGISTRY)/vsphere-cloud-controller-manager
 IMAGE_CCM_TAR := image-ccm-$(VERSION).tar
@@ -305,8 +305,6 @@ build-images images: build-ccm-image build-csi-image
 ################################################################################
 ##                                  PUSH IMAGES                               ##
 ################################################################################
-include hack/make/login-to-image-registry.mk
-
 .PHONY: push-$(IMAGE_CCM) upload-$(IMAGE_CCM)
 push-ccm-image upload-ccm-image: upload-$(IMAGE_CCM)
 push-$(IMAGE_CCM) upload-$(IMAGE_CCM): $(IMAGE_CCM_TAR) login-to-image-registry
