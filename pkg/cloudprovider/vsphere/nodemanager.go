@@ -19,6 +19,7 @@ package vsphere
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 
 	v1 "k8s.io/api/core/v1"
@@ -136,7 +137,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	}
 
 	var oVM mo.VirtualMachine
-	err = vmDI.VM.Properties(ctx, vmDI.VM.Reference(), []string{"guest"}, &oVM)
+	err = vmDI.VM.Properties(ctx, vmDI.VM.Reference(), []string{"guest", "summary"}, &oVM)
 	if err != nil {
 		klog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
 			vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name(), err)
@@ -171,8 +172,20 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		nodeID, vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name())
 	klog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
 
+	os := "unknown"
+	if g, ok := GuestOSLookup[oVM.Summary.Config.GuestId]; ok {
+		os = g
+	}
+
+	// store instance type in nodeinfo map
+	instanceType := fmt.Sprintf("vsphere-vm.cpu-%d.mem-%dgb.os-%s",
+		oVM.Summary.Config.NumCpu,
+		(oVM.Summary.Config.MemorySizeMB / 1024),
+		os,
+	)
+
 	nodeInfo := &NodeInfo{dataCenter: vmDI.DataCenter, vm: vmDI.VM, vcServer: vmDI.VcServer,
-		UUID: vmDI.UUID, NodeName: vmDI.NodeName, NodeAddresses: addrs}
+		UUID: vmDI.UUID, NodeName: vmDI.NodeName, NodeType: instanceType, NodeAddresses: addrs}
 	nm.addNodeInfo(nodeInfo)
 
 	return nil
