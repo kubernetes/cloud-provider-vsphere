@@ -1,10 +1,5 @@
 #!/bin/sh
 
-CLUSTER_NAME="${1}"
-
-KUBECONFIG="$(kind get kubeconfig-path --name "${CLUSTER_NAME}")"
-export KUBECONFIG
-
 printf "waiting for vcsim..."
 while ! kubectl -n kube-system get pods | \
         grep -q 'vcsim-0[[:space:]]\{0,\}1/1[[:space:]]\{0,\}Running'; do

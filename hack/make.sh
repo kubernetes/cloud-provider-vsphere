@@ -34,23 +34,15 @@ fi
 [ -n "${HACK_DIR}" ] || { echo "unable to find project root" 1>&2; exit 1; }
 cd "${HACK_DIR}/.." || { echo "unable to cd to project root" 1>&2; exit 1; }
 
-# Get the version of Go to use.
-GO_VERSION="$(grep '^go:' <".travis.yml" | sed 's/^\(go:[[:space:]]\{0,\}\"\{0,1\}\)\([^[:space:]\"]\{1,\}\)\(\"\{0,1\}\)$/\2/')"
-
 # When in an interactive terminal add the -t flag so Docker inherits
 # a pseudo TTY. Otherwords SIGINT does not work to kill the container
 # when running this script interactively.
 TERM_FLAGS="-i"
 echo "${-}" | grep -q i && TERM_FLAGS="${TERM_FLAGS}t"
 
-IMAGE="gcr.io/cloud-provider-vsphere/golang-${GO_VERSION}:latest"
-if ! docker pull "${IMAGE}"; then
-  IMAGE="golang:${GO_VERSION}"
-  docker pull "${IMAGE}"
-fi
-
 # shellcheck disable=2086
 docker run --rm ${TERM_FLAGS} ${DOCKER_OPTS} \
   -v "$(pwd)":/build:z \
   -w /build \
-  "${IMAGE}" make "${@}"
+  "${CI_IMAGE:-gcr.io/cloud-provider-vsphere/ci:latest}" \
+  make "${@}"

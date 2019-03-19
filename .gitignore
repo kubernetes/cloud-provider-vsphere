@@ -1,14 +1,28 @@
+# Ignore the generated kind-config yaml.
+/test/integration/kind-config.yaml
+
+# Ignore the build output.
+/.build
+
+# Ignore the environment variable and Prow configuration files at
+# the root of the project.
+/config.env
+/prow-config-env.yaml
+
+# Ignore marker files.
+**/*.d
+
+# Ignore any Dockerfiles at the root of the project.
 /Dockerfile*
-/image-*.d
-/image-*.tar
 
-/vsphere-csi.*
-/vsphere-csi-*.tar.gz
-/vsphere-csi-*.zip
+# Ignore the binaries copied into the staging areas.
+/cluster/images/controller-manager/vsphere-cloud-controller-manager*
+/cluster/images/csi/vsphere-csi*
 
-/vsphere-cloud-controller-manager.*
-/cloud-provider-vsphere-*.tar.gz
-/cloud-provider-vsphere-*.zip
+# Ignore vendor at the root of the project. Please note that
+# /vendor/bitbucket.org/ww/goautoneg is versioned forcefully in order to
+# bypass a build issue.
+/vendor
 
 *.json
 *.sublime-project
@@ -16,7 +30,6 @@
 *.swp
 .idea
 .DS_Store
-vendor
 
 # OSX leaves these everywhere on SMB shares
 ._*

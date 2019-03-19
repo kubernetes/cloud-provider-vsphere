@@ -39,16 +39,17 @@ TEST_DIR="${TEST_DIR:-$(mktemp -d)}"
 run_test() {
   _test_name="$(eval echo "${@}")"
   _test_log="$(mktemp)"
+  _test_exit_code="$(mktemp)"
   _test_xml="$(mktemp)"
   _start=$(date +%s)
   echo "${_test_name}"
-  eval "${@}" 2>&1 | tee "${_test_log}"
-  _exit_code="${?}"
+  { eval "${@}" 2>&1; echo "${?}" >"${_test_exit_code}"; } | tee "${_test_log}"
+  _test_exit_code="$(cat "${_test_exit_code}")"
   _stopd=$(date +%s)
   _tsecs=$((_stopd-_start))
   printf '<testcase classname="go_test" name="%s" time="%d"' \
          "${_test_name}" "${_tsecs}" >>"${_test_xml}"
-  if [ "${_exit_code}" -eq "0" ]; then
+  if [ "${_test_exit_code}" -eq "0" ]; then
     printf ' />\n' >>"${_test_xml}"
   else
     { printf '>\n<failure><![CDATA[' && \
@@ -56,7 +57,7 @@ run_test() {
       printf ']]></failure>\n</testcase>\n'; } >>"${_test_xml}"
   fi
   cp "${_test_xml}" "${TEST_DIR}"
-  return "${_exit_code}"
+  return "${_test_exit_code}"
 }
 
 run_test_suite() {
@@ -71,7 +72,7 @@ run_test_suite() {
   total_secs=$((end_time-start_time))
   test_result_files="$(/bin/ls "${TEST_DIR}")"
   { printf '<?xml version="1.0" encoding="UTF-8"?>\n'; \
-    printf '<testsuite time="%d">' "${total_secs}"; } >"${xml_file}"
+    printf '<testsuite time="%d">\n' "${total_secs}"; } >"${xml_file}"
   for f in ${test_result_files}; do
     cat "${TEST_DIR}/${f}" >>"${xml_file}"
     rm -f "${TEST_DIR}/${f}"
