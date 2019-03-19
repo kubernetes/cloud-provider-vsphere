@@ -1,20 +1,19 @@
+# Ignore the generated kind-config yaml.
+/test/integration/kind-config.yaml
+
+# Ignore the build output.
+/.build
+
+# Ignore the environment variable and Prow configuration files at
+# the root of the project.
+/config.env
+/prow-config-env.yaml
+
 # Ignore marker files.
 **/*.d
 
-# Ignore the binaries copied into the staging areas.
-/cluster/images/controller-manager/vsphere-cloud-controller-manager*
-/cluster/images/csi/vsphere-csi*
-
+# Ignore any Dockerfiles at the root of the project.
 /Dockerfile*
-/image-*.tar
-
-/vsphere-csi*
-/vsphere-csi-*.tar.gz
-/vsphere-csi-*.zip
-
-/vsphere-cloud-controller-manager*
-/cloud-provider-vsphere-*.tar.gz
-/cloud-provider-vsphere-*.zip
 
 *.json
 *.sublime-project
@@ -22,7 +21,6 @@
 *.swp
 .idea
 .DS_Store
-vendor
 
 # OSX leaves these everywhere on SMB shares
 ._*

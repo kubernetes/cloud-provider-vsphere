@@ -6,18 +6,14 @@ nodes:
   - containerPath: /sys/class/dmi/id/product_serial
     hostPath: {{PROJECT_ROOT}}/test/kind/c01-product-serial.txt
     readOnly: true
-    type: File
   - containerPath: /sys/class/dmi/id/product_uuid
     hostPath: {{PROJECT_ROOT}}/test/kind/c01-product-uuid.txt
     readOnly: true
-    type: File
 - role: worker
   extraMounts:
   - containerPath: /sys/class/dmi/id/product_serial
     hostPath: {{PROJECT_ROOT}}/test/kind/w01-product-serial.txt
     readOnly: true
-    type: File
   - containerPath: /sys/class/dmi/id/product_uuid
     hostPath: {{PROJECT_ROOT}}/test/kind/w01-product-uuid.txt
     readOnly: true
-    type: File
