@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/cloudprovider"
@@ -125,13 +125,14 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 // InstanceType returns the type of the instance identified by name.
 func (i *instances) InstanceType(ctx context.Context, name types.NodeName) (string, error) {
 	klog.V(4).Info("instances.InstanceType() called")
-	return "vsphere-vm", nil
+	return i.nodeManager.nodeNameMap[string(name)].NodeType, nil
 }
 
 // InstanceTypeByProviderID returns the type of the instance identified by providerID.
 func (i *instances) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
 	klog.V(4).Info("instances.InstanceTypeByProviderID() called")
-	return "vsphere-vm", nil
+	uid := GetUUIDFromProviderID(providerID)
+	return i.nodeManager.nodeUUIDMap[uid].NodeType, nil
 }
 
 // AddSSHKeyToAllInstances is not implemented; it always returns an error.

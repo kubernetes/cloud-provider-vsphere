@@ -32,6 +32,10 @@ spec:
         requests:
           cpu: 200m
   hostNetwork: true
+  tolerations:
+    - key: node.cloudprovider.kubernetes.io/uninitialized
+      value: "true"
+      effect: NoSchedule
   securityContext:
     runAsUser: 1001
   serviceAccountName: cloud-controller-manager
