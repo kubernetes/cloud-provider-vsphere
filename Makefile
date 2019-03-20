@@ -305,7 +305,7 @@ endif
 .PHONY: quick-conformance-test
 quick-conformance-test: export NUM_CONTROLLERS=1
 quick-conformance-test: export NUM_WORKERS=1
-quick-conformance-test: export E2E_FOCUS='should provide DNS for the cluster[[:space:]]{0,}\\[Conformance\\]'
+quick-conformance-test: export E2E_FOCUS=should provide DNS for the cluster[[:space:]]{0,}\\[Conformance\\]
 quick-conformance-test: conformance-test
 
 ################################################################################
