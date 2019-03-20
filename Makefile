@@ -123,7 +123,7 @@ $(CSI_BIN): $(CSI_BIN_SRCS)
 	@touch $@
 
 # The default build target.
-build: $(CCM_BIN) $(CSI_BIN)
+build build-bins: $(CCM_BIN) $(CSI_BIN)
 build-with-docker:
 	hack/make.sh
 
@@ -165,6 +165,19 @@ $(DIST_CSI_ZIP): $(CSI_BIN)
 dist-csi: dist-csi-tgz dist-csi-zip 
 
 dist: dist-ccm dist-csi
+
+################################################################################
+##                                DEPLOY                                      ##
+################################################################################
+# The deploy target is for use by Prow.
+.PHONY: deploy
+deploy:
+	$(MAKE) check
+	$(MAKE) build-bins
+	$(MAKE) unit-test
+	$(MAKE) build-images
+	$(MAKE) integration-test
+	$(MAKE) push-images
 
 ################################################################################
 ##                                 CLEAN                                      ##
