@@ -419,6 +419,9 @@ build-ci-image:
 push-ci-image:
 	$(MAKE) -C hack/images/ci push
 
+print-ci-image:
+	@$(MAKE) --no-print-directory -C hack/images/ci print
+
 ################################################################################
 ##                               PRINT VERISON                                ##
 ################################################################################
