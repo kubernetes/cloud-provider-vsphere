@@ -18,20 +18,30 @@ WORKDIR /build
 COPY go.mod go.sum ./
 COPY pkg ./pkg/
 COPY cmd ./cmd/
+ARG GOOS
+ARG GOARCH
+ENV GOOS=${GOOS:-linux} GOARCH=${GOARCH:-amd64}
 RUN go mod download && go mod verify
 
 ################################################################################
 ##                           GO BUILD CACHE STAGE                             ##
 ################################################################################
-# Create a Go build cache.
+# Create a Go build cache. Please note the reason the Makefile is not used and
+# "go build" is invoked directly is to avoid having to rebuild this stage as a
+# result of the Makefile changing.
 FROM ${GOLANG_IMAGE} as build-cache
-ENV VERSION=null
 WORKDIR /build
 COPY --from=mod-cache /go/pkg/mod /go/pkg/mod/
-COPY Makefile go.mod go.sum ./
+COPY go.mod go.sum hack/make/ldflags.txt ./
 COPY pkg ./pkg/
 COPY cmd ./cmd/
-RUN make build-ccm build-csi
+ARG GOOS
+ARG GOARCH
+ENV CGO_ENABLED=0 GOOS=${GOOS:-linux} GOARCH=${GOARCH:-amd64}
+RUN LDFLAGS=$(cat ldflags.txt) && \
+    go build -ldflags "${LDFLAGS}" ./cmd/vsphere-cloud-controller-manager && \
+    go build -ldflags "${LDFLAGS}" ./cmd/vsphere-csi && \
+    go build -ldflags "${LDFLAGS}" ./cmd/vcpctl
 
 ################################################################################
 ##                              SK8E2E STAGE                                  ##

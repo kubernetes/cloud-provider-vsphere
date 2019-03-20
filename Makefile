@@ -93,8 +93,9 @@ print-csi-image:
 GOOS ?= linux
 GOARCH ?= amd64
 
-LDFLAGS_CCM := -extldflags "-static" -w -s -X "main.version=$(VERSION)"
-LDFLAGS_CSI := -extldflags "-static" -w -s -X "$(MOD_NAME)/pkg/csi/service.version=$(VERSION)"
+LDFLAGS := $(shell cat hack/make/ldflags.txt)
+LDFLAGS_CCM := $(LDFLAGS) -X "main.version=$(VERSION)"
+LDFLAGS_CSI := $(LDFLAGS) -X "$(MOD_NAME)/pkg/csi/service.version=$(VERSION)"
 
 # The cloud controller binary.
 CCM_BIN_NAME := vsphere-cloud-controller-manager
