@@ -5,6 +5,10 @@
 # and is also the image on which this image is based.
 ARG GOLANG_IMAGE=golang:1.12
 
+# The image from which the Terraform project used to turn up a K8s cluster is
+# copied, as well as several programs.
+ARG SK8E2E_IMAGE=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de
+
 ################################################################################
 ##                            GO MOD CACHE STAGE                              ##
 ################################################################################
@@ -28,6 +32,12 @@ COPY Makefile go.mod go.sum ./
 COPY pkg ./pkg/
 COPY cmd ./cmd/
 RUN make build-ccm build-csi
+
+################################################################################
+##                              SK8E2E STAGE                                  ##
+################################################################################
+FROM ${SK8E2E_IMAGE} as sk8e2e
+RUN /google-cloud-sdk/bin/gcloud components update
 
 ################################################################################
 ##                               KIND STAGE                                   ##
@@ -131,15 +141,13 @@ ENV DOCKER_IN_DOCKER_ENABLED=true
 ################################################################################
 ##                          COPY FROM SK8E2E                                  ##
 ################################################################################
-# TODO(akutz) File a patch with Docker so NAME in "COPY --from=NAME" can
-#             accept an ARG value.
-COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /tf                       /tf/
-COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /google-cloud-sdk         /google-cloud-sdk/
-COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /usr/local/bin/govc       /usr/local/bin/
-COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /usr/local/bin/keepalive  /usr/local/bin/
-COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /usr/local/bin/kubectl    /usr/local/bin/
-COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /usr/local/bin/sonobuoy   /usr/local/bin/
-COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /usr/local/bin/terraform  /usr/local/bin/
+COPY --from=sk8e2e /tf                       /tf/
+COPY --from=sk8e2e /google-cloud-sdk         /google-cloud-sdk/
+COPY --from=sk8e2e /usr/local/bin/govc       /usr/local/bin/
+COPY --from=sk8e2e /usr/local/bin/keepalive  /usr/local/bin/
+COPY --from=sk8e2e /usr/local/bin/kubectl    /usr/local/bin/
+COPY --from=sk8e2e /usr/local/bin/sonobuoy   /usr/local/bin/
+COPY --from=sk8e2e /usr/local/bin/terraform  /usr/local/bin/
 
 ################################################################################
 ##                       CONFIGURE GOOGLE CLOUD SDK                           ##
@@ -147,7 +155,6 @@ COPY --from=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de /usr/
 # Update the PATH to include the Google Cloud SDK and disable its prompts and
 # update the gcloud components.
 ENV PATH="/google-cloud-sdk/bin:${PATH}" CLOUDSDK_CORE_DISABLE_PROMPTS=1
-RUN /google-cloud-sdk/bin/gcloud components update
 
 ################################################################################
 ##                             INSTALL KIND                                   ##
