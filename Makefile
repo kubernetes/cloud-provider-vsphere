@@ -64,9 +64,7 @@ deps:
 ##                                VERSIONS                                    ##
 ################################################################################
 # Ensure the version is injected into the binaries via a linker flag.
-ifndef VERSION
-export VERSION := $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
-endif
+export VERSION ?= $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 
 # Load the image registry include.
 LOGIN_TO_IMAGE_REGISTRY_MK := hack/make/login-to-image-registry.mk
