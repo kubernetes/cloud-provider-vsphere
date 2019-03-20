@@ -190,6 +190,10 @@ clean:
 		image-*.tar image-*.d
 	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME) ./cmd/$(CSI_BIN_NAME)
 
+.PHONY: clean-d
+clean-d:
+	@find . -name "*.d" -type f -delete
+
 ################################################################################
 ##                                CROSS BUILD                                 ##
 ################################################################################
