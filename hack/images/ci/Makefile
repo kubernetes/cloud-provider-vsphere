@@ -38,3 +38,6 @@ clobber: clean
 	rm -f *.d
 	docker rmi $$(docker images -qf reference=$(IMAGE):*) 2>/dev/null || true
 
+.PHONY: print
+print:
+	@echo $(IMAGE):$(VERSION)

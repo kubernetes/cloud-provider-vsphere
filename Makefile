@@ -64,15 +64,10 @@ deps:
 ##                                VERSIONS                                    ##
 ################################################################################
 # Ensure the version is injected into the binaries via a linker flag.
-ifndef VERSION
-export VERSION := $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
-endif
+export VERSION ?= $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 
 # Load the image registry include.
-LOGIN_TO_IMAGE_REGISTRY_MK := hack/make/login-to-image-registry.mk
-ifneq (,$(strip $(wildcard $(LOGIN_TO_IMAGE_REGISTRY_MK))))
-include $(LOGIN_TO_IMAGE_REGISTRY_MK)
-endif
+include hack/make/login-to-image-registry.mk
 
 # Define the images.
 IMAGE_CCM := $(REGISTRY)/vsphere-cloud-controller-manager
@@ -93,8 +88,9 @@ print-csi-image:
 GOOS ?= linux
 GOARCH ?= amd64
 
-LDFLAGS_CCM := -extldflags "-static" -w -s -X "main.version=$(VERSION)"
-LDFLAGS_CSI := -extldflags "-static" -w -s -X "$(MOD_NAME)/pkg/csi/service.version=$(VERSION)"
+LDFLAGS := $(shell cat hack/make/ldflags.txt)
+LDFLAGS_CCM := $(LDFLAGS) -X "main.version=$(VERSION)"
+LDFLAGS_CSI := $(LDFLAGS) -X "$(MOD_NAME)/pkg/csi/service.version=$(VERSION)"
 
 # The cloud controller binary.
 CCM_BIN_NAME := vsphere-cloud-controller-manager
@@ -123,7 +119,7 @@ $(CSI_BIN): $(CSI_BIN_SRCS)
 	@touch $@
 
 # The default build target.
-build: $(CCM_BIN) $(CSI_BIN)
+build build-bins: $(CCM_BIN) $(CSI_BIN)
 build-with-docker:
 	hack/make.sh
 
@@ -167,6 +163,19 @@ dist-csi: dist-csi-tgz dist-csi-zip
 dist: dist-ccm dist-csi
 
 ################################################################################
+##                                DEPLOY                                      ##
+################################################################################
+# The deploy target is for use by Prow.
+.PHONY: deploy
+deploy:
+	$(MAKE) check
+	$(MAKE) build-bins
+	$(MAKE) unit-test
+	$(MAKE) build-images
+	$(MAKE) integration-test
+	$(MAKE) push-images
+
+################################################################################
 ##                                 CLEAN                                      ##
 ################################################################################
 .PHONY: clean
@@ -176,6 +185,10 @@ clean:
 		$(CSI_BIN) vsphere-csi-*.tar.gz vsphere-csi-*.zip \
 		image-*.tar image-*.d
 	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME) ./cmd/$(CSI_BIN_NAME)
+
+.PHONY: clean-d
+clean-d:
+	@find . -name "*.d" -type f -delete
 
 ################################################################################
 ##                                CROSS BUILD                                 ##
@@ -305,7 +318,7 @@ endif
 .PHONY: quick-conformance-test
 quick-conformance-test: export NUM_CONTROLLERS=1
 quick-conformance-test: export NUM_WORKERS=1
-quick-conformance-test: export E2E_FOCUS='should provide DNS for the cluster[[:space:]]{0,}\\[Conformance\\]'
+quick-conformance-test: export E2E_FOCUS=should provide DNS for the cluster[[:space:]]{0,}\\[Conformance\\]
 quick-conformance-test: conformance-test
 
 ################################################################################
@@ -400,6 +413,9 @@ build-ci-image:
 
 push-ci-image:
 	$(MAKE) -C hack/images/ci push
+
+print-ci-image:
+	@$(MAKE) --no-print-directory -C hack/images/ci print
 
 ################################################################################
 ##                               PRINT VERISON                                ##
