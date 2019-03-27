@@ -7,7 +7,7 @@ ARG GOLANG_IMAGE=golang:1.12
 
 # The image from which the Terraform project used to turn up a K8s cluster is
 # copied, as well as several programs.
-ARG SK8E2E_IMAGE=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-8-g2f2a8de
+ARG SK8E2E_IMAGE=gcr.io/kubernetes-conformance-testing/sk8e2e:v0.2.1-9-geb10f99
 
 ################################################################################
 ##                            GO MOD CACHE STAGE                              ##
