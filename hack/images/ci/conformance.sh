@@ -81,6 +81,9 @@ export TF_VAR_ctl_count="${NUM_CONTROLLERS:-2}" \
 # Mark both controller nodes as workers as well.
 export TF_VAR_bth_count="${NUM_BOTH:-${TF_VAR_ctl_count}}"
 
+# Use the new network ID.
+export TF_VAR_vsphere_network="sddc-cgw-network-3"
+
 # The cluster name is a combination of the build ID and the first seven
 # characters of a hash of the job ID.
 CLUSTER_NAME="prow-$(echo "${BUILD_ID:-1}-${PROW_JOB_ID:-$(date +%s)}" | { md5sum 2>/dev/null || md5; } | awk '{print $1}' | cut -c-7)"
@@ -93,6 +96,7 @@ cat <<EOF >"${ARTIFACTS-}/build-info.json"
   "num-both": "${TF_VAR_bth_count}",
   "num-controllers": "${TF_VAR_ctl_count}",
   "num-workers": "${TF_VAR_wrk_count}",
+  "network": "${TF_VAR_vsphere_network}",
   "cloud-provider": "${TF_VAR_cloud_provider}",
   "e2e-focus": "${E2E_FOCUS}",
   "e2e-skip": "${E2E_SKIP}",
