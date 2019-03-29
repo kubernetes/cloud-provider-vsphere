@@ -69,11 +69,6 @@ export TF_VAR_cloud_provider="${CLOUD_PROVIDER:-external}"
 # Configure the version of Kubernetes used to turn up the cluster.
 export TF_VAR_k8s_version="${K8S_VERSION:-ci/latest}"
 
-# Configure the e2e image and tests that are run and/or skipped.
-export  KUBE_CONFORMANCE_IMAGE="${KUBE_CONFORMANCE_IMAGE:-gcr.io/heptio-images/kube-conformance:latest}" \
-        E2E_FOCUS="${E2E_FOCUS:-\\\[Conformance\\\]}" \
-        E2E_SKIP="${E2E_SKIP:-Alpha|\\\[(Disruptive|Feature:[^\\\]]+|Flaky)\\\]}"
-
 # Configure the shape of the cluster.
 export TF_VAR_ctl_count="${NUM_CONTROLLERS:-2}" \
        TF_VAR_wrk_count="${NUM_WORKERS:-3}"
@@ -92,15 +87,11 @@ CLUSTER_NAME="prow-$(echo "${BUILD_ID:-1}-${PROW_JOB_ID:-$(date +%s)}" | { md5su
 cat <<EOF >"${ARTIFACTS-}/build-info.json"
 {
   "cluster-name": "${CLUSTER_NAME}",
-  "k8s-version": "${TF_VAR_k8s_version}",
   "num-both": "${TF_VAR_bth_count}",
   "num-controllers": "${TF_VAR_ctl_count}",
   "num-workers": "${TF_VAR_wrk_count}",
   "network": "${TF_VAR_vsphere_network}",
   "cloud-provider": "${TF_VAR_cloud_provider}",
-  "e2e-focus": "${E2E_FOCUS}",
-  "e2e-skip": "${E2E_SKIP}",
-  "kube-conformance-image": "${KUBE_CONFORMANCE_IMAGE}",
   "config-env": "${CONFIG_ENV}"
 }
 EOF
