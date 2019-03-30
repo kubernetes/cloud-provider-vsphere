@@ -181,6 +181,7 @@ COPY --from=lint /go/bin/golint /usr/local/bin/
 ################################################################################
 COPY --from=mod-cache   /go/pkg/mod           /go/pkg/mod/
 COPY --from=build-cache /root/.cache/go-build /root/.cache/go-build/
+RUN  mkdir -p /home/prow/go/pkg && ln -s /go/pkg/mod /home/prow/go/pkg/mod
 
 ################################################################################
 ##                           ADD LOCAL SOURCES                                ##
