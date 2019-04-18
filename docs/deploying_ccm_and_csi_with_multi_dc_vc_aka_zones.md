@@ -7,7 +7,7 @@ This document is designed to quickly get you up and running in a vSphere configu
 This document assumes that you have read and understood the setup documentation for both the vSphere Cloud Controller Manager (CCM) and  vSphere Container Storage Interface (CSI) driver. This guide will go over the additional zone-based configuration needed to support a multi-vCenter or multi-Datacenter environment by using the previous documentation as a base. If you need to revisit the base CCM and CSI documentation, you can find the documentation links below:
 
 [vSphere CCM Documentation](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/deploying_cloud_provider_vsphere_with_rbac.md)
-[vSphere CSI Documentation](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/deploying_csi_vsphere_with_rbac.md)
+[vSphere CSI Documentation](https://github.com/kubernetes-sigs/vsphere-csi-driver/blob/master/docs/deploying_csi_vsphere_with_rbac.md)
 
 ## Why Do We Need to Use Zones in a Multi-vCenter or Multi-Datacenter Environment
 

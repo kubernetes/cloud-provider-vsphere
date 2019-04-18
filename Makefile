@@ -71,15 +71,11 @@ include hack/make/login-to-image-registry.mk
 
 # Define the images.
 IMAGE_CCM := $(REGISTRY)/vsphere-cloud-controller-manager
-IMAGE_CSI := $(REGISTRY)/vsphere-csi
-.PHONY: print-ccm-image print-csi-image
+.PHONY: print-ccm-image
 
 # Printing the image versions are defined early so Go modules aren't forced.
 print-ccm-image:
 	@echo $(IMAGE_CCM):$(VERSION)
-
-print-csi-image:
-	@echo $(IMAGE_CSI):$(VERSION)
 
 ################################################################################
 ##                              BUILD BINARIES                                ##
@@ -90,7 +86,6 @@ GOARCH ?= amd64
 
 LDFLAGS := $(shell cat hack/make/ldflags.txt)
 LDFLAGS_CCM := $(LDFLAGS) -X "main.version=$(VERSION)"
-LDFLAGS_CSI := $(LDFLAGS) -X "$(MOD_NAME)/pkg/csi/service.version=$(VERSION)"
 
 # The cloud controller binary.
 CCM_BIN_NAME := vsphere-cloud-controller-manager
@@ -105,21 +100,8 @@ $(CCM_BIN): $(CCM_BIN_SRCS)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags '$(LDFLAGS_CCM)' -o $(abspath $@) $<
 	@touch $@
 
-# The CSI binary.
-CSI_BIN_NAME := vsphere-csi
-CSI_BIN := $(BIN_OUT)/$(CSI_BIN_NAME).$(GOOS)_$(GOARCH)
-build-csi: $(CSI_BIN)
-ifndef CSI_BIN_SRCS
-CSI_BIN_SRCS := cmd/$(CSI_BIN_NAME)/main.go go.mod go.sum
-CSI_BIN_SRCS += $(addsuffix /*.go,$(shell go list -f '{{ join .Deps "\n" }}' ./cmd/$(CSI_BIN_NAME) | grep $(MOD_NAME) | sed 's~$(MOD_NAME)~.~'))
-export CSI_BIN_SRCS
-endif
-$(CSI_BIN): $(CSI_BIN_SRCS)
-	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags '$(LDFLAGS_CSI)' -o $(abspath $@) $<
-	@touch $@
-
 # The default build target.
-build build-bins: $(CCM_BIN) $(CSI_BIN)
+build build-bins: $(CCM_BIN)
 build-with-docker:
 	hack/make.sh
 
@@ -141,26 +123,9 @@ $(DIST_CCM_ZIP): $(CCM_BIN)
 	zip -j $(abspath $@) README.md LICENSE "$${_temp_dir}/$(CCM_BIN_NAME)" && \
 	rm -fr "$${_temp_dir}"
 
-dist-ccm: dist-ccm-tgz dist-ccm-zip 
+dist-ccm: dist-ccm-tgz dist-ccm-zip
 
-DIST_CSI_NAME := vsphere-csi-$(VERSION)
-DIST_CSI_TGZ := $(BUILD_OUT)/dist/$(DIST_CSI_NAME)-$(GOOS)_$(GOARCH).tar.gz
-dist-csi-tgz: $(DIST_CSI_TGZ)
-$(DIST_CSI_TGZ): $(CSI_BIN)
-	_temp_dir=$$(mktemp -d) && cp $< "$${_temp_dir}/$(CSI_BIN_NAME)" && \
-	tar czf $(abspath $@) README.md LICENSE -C "$${_temp_dir}" "$(CSI_BIN_NAME)" && \
-	rm -fr "$${_temp_dir}"
-
-DIST_CSI_ZIP := $(BUILD_OUT)/dist/$(DIST_CSI_NAME)-$(GOOS)_$(GOARCH).zip
-dist-csi-zip: $(DIST_CSI_ZIP)
-$(DIST_CSI_ZIP): $(CSI_BIN)
-	_temp_dir=$$(mktemp -d) && cp $< "$${_temp_dir}/$(CSI_BIN_NAME)" && \
-	zip -j $(abspath $@) README.md LICENSE "$${_temp_dir}/$(CSI_BIN_NAME)" && \
-	rm -fr "$${_temp_dir}"
-
-dist-csi: dist-csi-tgz dist-csi-zip 
-
-dist: dist-ccm dist-csi
+dist: dist-ccm
 
 ################################################################################
 ##                                DEPLOY                                      ##
@@ -182,9 +147,8 @@ deploy:
 clean:
 	@rm -f Dockerfile*
 	@rm -f $(CCM_BIN) cloud-provider-vsphere-*.tar.gz cloud-provider-vsphere-*.zip \
-		$(CSI_BIN) vsphere-csi-*.tar.gz vsphere-csi-*.zip \
 		image-*.tar image-*.d
-	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME) ./cmd/$(CSI_BIN_NAME)
+	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME)
 
 .PHONY: clean-d
 clean-d:
@@ -211,14 +175,9 @@ X_CCM_BINS := $(addprefix $(CCM_BIN_NAME).,$(X_TARGETS))
 $(X_CCM_BINS):
 	GOOS=$(word 1,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(CCM_BIN_NAME).,,$@))) $(MAKE) build-ccm
 
-X_CSI_BINS := $(addprefix $(CSI_BIN_NAME).,$(X_TARGETS))
-$(X_CSI_BINS):
-	GOOS=$(word 1,$(subst _, ,$(subst $(CSI_BIN_NAME).,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(CSI_BIN_NAME).,,$@))) $(MAKE) build-csi
-
 x-build-ccm: $(CCM_BIN) $(X_CCM_BINS)
-x-build-csi: $(CSI_BIN) $(X_CSI_BINS)
 
-x-build: x-build-ccm x-build-csi
+x-build: x-build-ccm
 
 ################################################################################
 ##                                CROSS DIST                                  ##
@@ -233,24 +192,11 @@ $(X_DIST_CCM_TGZS):
 $(X_DIST_CCM_ZIPS):
 	GOOS=$(word 1,$(subst _, ,$(subst $(DIST_CCM_NAME)-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(DIST_CCM_NAME)-,,$(subst .zip,,$@)))) $(MAKE) dist-ccm-zip
 
-X_DIST_CSI_TARGETS := $(X_TARGETS)
-X_DIST_CSI_TARGETS := $(addprefix $(DIST_CSI_NAME)-,$(X_DIST_CSI_TARGETS))
-X_DIST_CSI_TGZS := $(addsuffix .tar.gz,$(X_DIST_CSI_TARGETS))
-X_DIST_CSI_ZIPS := $(addsuffix .zip,$(X_DIST_CSI_TARGETS))
-$(X_DIST_CSI_TGZS):
-	GOOS=$(word 1,$(subst _, ,$(subst $(DIST_CSI_NAME)-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(DIST_CSI_NAME)-,,$(subst .tar.gz,,$@)))) $(MAKE) dist-csi-tgz
-$(X_DIST_CSI_ZIPS):
-	GOOS=$(word 1,$(subst _, ,$(subst $(DIST_CSI_NAME)-,,$@))) GOARCH=$(word 2,$(subst _, ,$(subst $(DIST_CSI_NAME)-,,$(subst .zip,,$@)))) $(MAKE) dist-csi-zip
-
 x-dist-ccm-tgzs: $(DIST_CCM_TGZ) $(X_DIST_CCM_TGZS)
 x-dist-ccm-zips: $(DIST_CCM_ZIP) $(X_DIST_CCM_ZIPS)
 x-dist-ccm: x-dist-ccm-tgzs x-dist-ccm-zips
 
-x-dist-csi-tgzs: $(DIST_CSI_TGZ) $(X_DIST_CSI_TGZS)
-x-dist-csi-zips: $(DIST_CSI_ZIP) $(X_DIST_CSI_ZIPS)
-x-dist-csi: x-dist-csi-tgzs x-dist-csi-zips
-
-x-dist: x-dist-ccm x-dist-csi
+x-dist: x-dist-ccm
 
 ################################################################################
 ##                               CROSS CLEAN                                  ##
@@ -371,21 +317,7 @@ $(IMAGE_CCM_D): $(CCM_BIN) | $(DOCKER_SOCK)
 	@rm -f cluster/images/controller-manager/vsphere-cloud-controller-manager && touch $@
 endif
 
-IMAGE_CSI_D := image-csi-$(VERSION).d
-build-csi-image csi-image: $(IMAGE_CSI_D)
-$(IMAGE_CSI): $(IMAGE_CSI_D)
-ifneq ($(GOOS),linux)
-$(IMAGE_CSI_D):
-	$(error Please set GOOS=linux for building $@)
-else
-$(IMAGE_CSI_D): $(CSI_BIN) | $(DOCKER_SOCK)
-	cp -f $< cluster/images/csi/vsphere-csi
-	docker build -t $(IMAGE_CSI):$(VERSION) cluster/images/csi
-	docker tag $(IMAGE_CSI):$(VERSION) $(IMAGE_CSI):latest
-	@rm -f cluster/images/csi/vsphere-csi && touch $@
-endif
-
-build-images images: build-ccm-image build-csi-image
+build-images images: build-ccm-image
 
 ################################################################################
 ##                                  PUSH IMAGES                               ##
@@ -396,14 +328,8 @@ push-$(IMAGE_CCM) upload-$(IMAGE_CCM): $(IMAGE_CCM_D) login-to-image-registry | 
 	docker push $(IMAGE_CCM):$(VERSION)
 	docker push $(IMAGE_CCM):latest
 
-.PHONY: push-$(IMAGE_CSI) upload-$(IMAGE_CSI)
-push-csi-image upload-csi-image: upload-$(IMAGE_CSI)
-push-$(IMAGE_CSI) upload-$(IMAGE_CSI): $(IMAGE_CSI_D) login-to-image-registry | $(DOCKER_SOCK)
-	docker push $(IMAGE_CSI):$(VERSION)
-	docker push $(IMAGE_CSI):latest
-
 .PHONY: push-images upload-images
-push-images upload-images: upload-ccm-image upload-csi-image
+push-images upload-images: upload-ccm-image
 
 ################################################################################
 ##                                  CI IMAGE                                  ##

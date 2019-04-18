@@ -5,11 +5,7 @@ require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.0 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
-	github.com/akutz/gofsutil v0.1.2
-	github.com/akutz/gosync v0.1.0 // indirect
-	github.com/akutz/memconn v0.1.0
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
-	github.com/container-storage-interface/spec v1.0.0
 	github.com/coreos/bbolt v1.3.2 // indirect
 	github.com/coreos/etcd v3.3.9+incompatible // indirect
 	github.com/coreos/go-semver v0.2.0 // indirect
@@ -45,8 +41,8 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
-	github.com/onsi/ginkgo v1.8.0
-	github.com/onsi/gomega v1.4.3
+	github.com/onsi/ginkgo v1.8.0 // indirect
+	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
@@ -54,15 +50,12 @@ require (
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect
 	github.com/prometheus/procfs v0.0.0-20180725123919-05ee40e3a273 // indirect
-	github.com/rexray/gocsi v0.4.1-0.20181205192803-207653674028
-	github.com/sirupsen/logrus v1.3.0
+	github.com/sirupsen/logrus v1.3.0 // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/afero v1.2.1 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.2
 	github.com/stretchr/testify v1.3.0 // indirect
-	github.com/thecodeteam/gofsutil v0.1.2 // indirect
-	github.com/thecodeteam/gosync v0.1.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/ugorji/go v1.1.1 // indirect
 	github.com/vmware/govmomi v0.20.0
@@ -86,5 +79,4 @@ require (
 	k8s.io/kube-openapi v0.0.0-20180731170545-e3762e86a74c // indirect
 	k8s.io/kubernetes v1.11.2
 	k8s.io/sample-controller v0.0.0-20180822125000-be98dc6210ab
-	k8s.io/utils v0.0.0-20190308190857-21c4ce38f2a7 // indirect
 )
