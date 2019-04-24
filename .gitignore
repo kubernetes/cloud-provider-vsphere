@@ -17,7 +17,6 @@
 
 # Ignore the binaries copied into the staging areas.
 /cluster/images/controller-manager/vsphere-cloud-controller-manager*
-/cluster/images/csi/vsphere-csi*
 
 # Ignore vendor at the root of the project. Please note that
 # /vendor/bitbucket.org/ww/goautoneg is versioned forcefully in order to
@@ -162,4 +161,3 @@ zz_generated.openapi.go
 
 # binaries
 /vsphere-cloud-controller-manager
-/vsphere-csi
