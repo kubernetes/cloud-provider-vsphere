@@ -1,6 +1,6 @@
 # Continuous integration
 
-The image `gcr.io/cloud-provider-vsphere/ci` is used by Prow jobs to build, test, and deploy the CCM and CSI providers.
+The image `gcr.io/cloud-provider-vsphere/ci` is used by Prow jobs to build, test, and deploy the CCM provider.
 
 ## The CI workflow
 
@@ -22,7 +22,7 @@ When running on Prow the jobs map the current sources into the CI container. Tha
 
 Several of the jobs require Docker-in-Docker. To mimic that locally there are two options:
 
-1. [Provide the host's Docker to the container](#provide-the-hosts-docker-to-the-container) 
+1. [Provide the host's Docker to the container](#provide-the-hosts-docker-to-the-container)
 2. [Run the Docker server inside the container](#run-the-docker-server-inside-the-container)
 
 ### Provide the host's Docker to the container
@@ -64,9 +64,9 @@ The above command will create the following files in the working directory:
 
 * `junit_check.xml`
 
-## Build the CCM and CSI binaries
+## Build the CCM binary
 
-The CI image is built with Go module and build caches from a recent build of the project's `master` branch. Therefore the CI image can be used to build the CCM and CSI binaries in a matter of seconds:
+The CI image is built with Go module and build caches from a recent build of the project's `master` branch. Therefore the CI image can be used to build the CCM binary in a matter of seconds:
 
 ```shell
 $ docker run -it --rm \
@@ -78,7 +78,6 @@ $ docker run -it --rm \
 The above command will create the following files in the working directory:
 
 * `vsphere-cloud-controller-manager.linux_amd64`
-* `vsphere-csi.linux_amd64`
 
 ## Execute the unit tests
 
@@ -88,9 +87,9 @@ $ docker run -it --rm \
   make unit-test
 ```
 
-## Build the CCM and CSI images
+## Build the CCM image
 
-Building the CCM and CSI images inside another image requires Docker-in-Docker (DinD):
+Building the CCM image inside another image requires Docker-in-Docker (DinD):
 
 ```shell
 $ docker run -it --rm --privileged \
@@ -118,7 +117,7 @@ $ docker run -it --rm \
   make integration-test
 ```
 
-## Deploy the CCM and CSI images
+## Deploy the CCM image
 Pushing the images requires bind mounting a GCR key file into the container and setting the environment variable `GCR_KEY_FILE` to inform the deployment process the location of the key file:
 
 ```shell

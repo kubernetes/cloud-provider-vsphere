@@ -40,7 +40,6 @@ ARG GOARCH
 ENV CGO_ENABLED=0 GOOS=${GOOS:-linux} GOARCH=${GOARCH:-amd64}
 RUN LDFLAGS=$(cat ldflags.txt) && \
     go build -ldflags "${LDFLAGS}" ./cmd/vsphere-cloud-controller-manager && \
-    go build -ldflags "${LDFLAGS}" ./cmd/vsphere-csi && \
     go build -ldflags "${LDFLAGS}" ./cmd/vcpctl
 
 ################################################################################
