@@ -38,9 +38,6 @@ $ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
 
-### NOTE
-Currently this repository is used for building and testing cloud-controller-manager for vSphere, it references vSphere cloud provider implementation code as vendor dir. After handoff, the vSphere cloud provider implementation will be moved here.
-
 ### vSphere storage support
 Out of tree cloud providers no longer provide native storage support. Instead, a
 Container Storage Interface (CSI) driver is required. The vSphere CSI driver is
