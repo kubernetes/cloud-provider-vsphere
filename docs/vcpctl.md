@@ -1,10 +1,10 @@
 # vSphere Cloud Provider CLI
 
-This document is about vSphere Cloud Provifer CLI (aka **vcpctl**), a command line interface tool for facilitating cloud controller manager (aka **CCM** ) provisioining, running command against CCM, and controling CCM.
+This document is about vSphere Cloud Provider CLI (aka **vcpctl**), a command line interface tool for facilitating cloud controller manager (aka **CCM** ) provisioining, running command against CCM, and controling CCM.
 
 ## Provision Overview
 
-Currently, at the first stage, `vcpctl` only support vpshere provisioning for kuebrnetes at Day 0. This provisioning requires a running vSphere. `vcpctl provision` command will perform a series of prerequisites. Including:
+Currently, at the first stage, `vcpctl` only support vpshere provisioning for kubernetes at Day 0. This provisioning requires a running vSphere. `vcpctl provision` command will perform a series of prerequisites, including:
 
 1. Create a vSphere solution user, to be used with CCM
 2. Create vSphere role with a minimal set of permissions.
@@ -27,19 +27,19 @@ Use the following syntax to run `vcpctl` commands from your terminal
 vcpctl provision [flags]
 ```
 
-`flags`: Specifies optional flags. For example, you can use the `--interfactive=false` flags to enable an automation mode without interfaction input from command line. (TODO)
+`flags`: Specifies optional flags. For example, you can use the `--interactive=false` flags to enable an automation mode without interfaction input from command line. (TODO)
 
 List of flags:
 
 - `host` : Specify vCenter IP, for example: `https://<username>:<password>@<Host IP>/sdk`. Required. `<username>:<password>@` is optional
-- `port` : Specify vCenter prot
+- `port` : Specify vCenter port
 - `user` : Specify vCenter user. Required if host does not contain `<username>:<password>@`
 - `password` : Specify vCenter password. Required if host does not contain `<username>:<password>@`
 - `insecure` : Don't verify the server's certificate chain. Default is `false`. If you want to enable insecure mode, use `--insecure=true`
 - `cert` : Certification for solution user. If you want to provide a certification, pass the file path of the certifcation to cert, like `--cert /path/to/cert.crt`. If no certification is provided, `vcpctl` will create a new one and store in default directory. (TODO)
 - `role` : `vcpctl` can create roles during the provision. Role can be either `RegularUser` or `Administrator`. 
 
-Note: vSphere SSO is required to be enabled by default. So SAML tolen has to be provided as `SSO_LOGIN_TOKEN`.
+Note: vSphere SSO is required to be enabled by default. So SAML token has to be provided as `SSO_LOGIN_TOKEN`.
 
 ### Workflow
 
