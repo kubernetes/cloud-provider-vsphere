@@ -52,6 +52,9 @@ func init() {
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
+	goflag.Set("logtostderr", "true")
+	goflag.Set("stderrthreshold", "INFO")
+	goflag.Set("alsologtostderr", "true")
 	goflag.CommandLine.Parse([]string{})
 	s, err := options.NewCloudControllerManagerOptions()
 	if err != nil {
