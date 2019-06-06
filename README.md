@@ -4,9 +4,9 @@
 
 This repository provides tools and scripts for building and testing `Kubernetes cloud-controller-manager` for vSphere. The project is under development and should not be used in production.
 
-The in-tree vSphere cloud provider code is located within the [Kubernetes repository](https://github.com/kubernetes/kubernetes/tree/master/pkg/cloudprovider/providers/vsphere). If you want to create issues or pull requests for the in-tree cloud provider, please go to the Kubernetes repository](https://github.com/kubernetes/kubernetes).
+The in-tree vSphere cloud provider code is located within the [Kubernetes repository](https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/legacy-cloud-providers/vsphere). If you want to create issues or pull requests for the in-tree cloud provider, please go to the [Kubernetes repository](https://github.com/kubernetes/kubernetes).
 
-There is ongoing work for refactoring cloud providers out of the upstream repository. For more details, please check [this KEP](https://github.com/kubernetes/enhancements/blob/master/keps/sig-cloud-provider/0002-cloud-controller-manager.md).
+There is ongoing work for refactoring cloud providers out of the upstream repository. For more details, please check [this KEP](https://github.com/kubernetes/enhancements/blob/master/keps/sig-cloud-provider/20180530-cloud-controller-manager.md).
 
 ## Building the cloud provider
 
