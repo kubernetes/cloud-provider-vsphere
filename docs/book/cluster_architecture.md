@@ -9,7 +9,7 @@ file and credentials. What the config file should look like and how the credenti
 [Installing and Operating the vSphere Cloud Provider](#installing-operating-the-vsphere-cloud-provider). For now, assume that
 every component has access to a config file and credentials which allow access to vCenter.
 
-![vSphere In-Tree Cloud Provider Architecture](/images/vsphere-in-tree-architecture.png "vSphere In-Tree Cloud Provider Architecture")
+![vSphere In-Tree Cloud Provider Architecture](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/vsphere-in-tree-architecture.png "vSphere In-Tree Cloud Provider Architecture")
 
 **Note**: this diagram only illustrates which components in your cluster should be connecting to vCenter.
 
@@ -21,6 +21,6 @@ the cloud-controller-manager. Therefore, only the cloud-controller-manager is re
 in order to connnect to vCenter. Similar to the in-tree case, how to configure these will be covered in [Installing and Operating the vSphere Cloud Provider](#installing-operating-the-vsphere-cloud-provider). For now, assume that the cloud-controller-manager has access
 to a confile file and credentials which allow access to vCenter.
 
-![vSphere Out-of-Tree Cloud Provider Architecture](/images/vsphere-out-of-tree-architecture.png "vSphere Out-of-Tree Cloud Provider Architecture")
+![vSphere Out-of-Tree Cloud Provider Architecture](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/vsphere-out-of-tree-architecture.png "vSphere Out-of-Tree Cloud Provider Architecture")
 
 **Note**: this diagram only illustrates which components in your cluster should be connecting to vCenter.
