@@ -6,19 +6,19 @@
 # Netlify redirects
 [[redirects]]
     from = "https://kubernetes-sigs-cloud-provider-vsphere.netlify.com/*"
-    to = "https://vsphere.sigs.k8s.io/:splat"
+    to = "https://cloud-provider-vsphere.sigs.k8s.io/:splat"
     status = 301
     force = true
 
 # HTTP -> HTTPS
 [[redirects]]
-    from = "http://vsphere.sigs.k8s.io/*"
-    to = "https://vsphere.sigs.k8s.io/:splat"
+    from = "http://cloud-provider-vsphere.sigs.k8s.io/*"
+    to = "https://cloud-provider-vsphere.sigs.k8s.io/:splat"
     status = 301
     force = true
 
 [[redirects]]
     from = "http://kubernetes-sigs-cloud-provider-vsphere.netlify.com/*"
-    to = "http://vsphere.sigs.k8s.io/:splat"
+    to = "http://cloud-provider-vsphere.sigs.k8s.io/:splat"
     status = 301
     force = true
