@@ -17,7 +17,7 @@ As of writing this, there are two modes of cloud provider integrations: in-tree 
 In-tree cloud providers refers to cloud provider integrations that are directly compiled and built into the core Kubernetes components.
 This also means that the integration is also developed within the same source code repository as Kubernetes core. As a result, updates to the cloud
 
-![In-Tree Cloud Provider Architecture](/images/in-tree-arch.png "Kubernetes In-Tree Cloud Provider Architecture - from k8s.io/website")
+![In-Tree Cloud Provider Architecture](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/in-tree-arch.png "Kubernetes In-Tree Cloud Provider Architecture - from k8s.io/website")
 
 ### Out-of-Tree Cloud Providers
 
@@ -25,7 +25,7 @@ Out-of-tree cloud provider refers to integrations that can be developed, built a
 adding a new component to the cluster called the cloud-controller-manager. The cloud-controller-manager is responsible for running all the
 cloud-specific control loops that were previously run in core components like the kube-controller-manager and the kubelet.
 
-![Out-of-Tree Cloud Provider Architecture](/images/out-of-tree-arch.png "Kubernetes Out-of-Tree Cloud Provider Architecture - from k8s.io/website")
+![Out-of-Tree Cloud Provider Architecture](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/out-of-tree-arch.png "Kubernetes Out-of-Tree Cloud Provider Architecture - from k8s.io/website")
 
 ### In-Tree vs Out-of-Tree
 
