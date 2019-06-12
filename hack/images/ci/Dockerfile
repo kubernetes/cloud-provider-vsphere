@@ -52,7 +52,7 @@ RUN /google-cloud-sdk/bin/gcloud components update
 ##                               KIND STAGE                                   ##
 ################################################################################
 FROM ${GOLANG_IMAGE} as kind
-RUN go get -u sigs.k8s.io/kind
+RUN cd / && GO111MODULE="on" go get -u sigs.k8s.io/kind@v0.3.0
 
 ################################################################################
 ##                               LINT STAGE                                   ##
