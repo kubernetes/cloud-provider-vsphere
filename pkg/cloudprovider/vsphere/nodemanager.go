@@ -101,7 +101,20 @@ func (nm *NodeManager) removeNode(uuid string, node *v1.Node) {
 func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, searchBy cm.FindVM) (*cm.VMDiscoveryInfo, error) {
 	// Search by NodeName
 	if searchBy == cm.FindVMByName {
-		return nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
+		vmDI, err := nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
+		if err == nil {
+			klog.Infof("Discovered VM using FQDN or short-hand name")
+			return vmDI, err
+		}
+
+		vmDI, err = nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVMByIP)
+		if err == nil {
+			klog.Infof("Discovered VM using IP address")
+			return vmDI, err
+		}
+
+		klog.Errorf("WhichVCandDCByNodeID failed using VM name. Err: %v", err)
+		return nil, err
 	}
 
 	// Search by UUID
@@ -121,7 +134,7 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 		return vmDI, err
 	}
 
-	klog.Errorf("WhichVCandDCByNodeID failed using reverse formatted UUID. Err: %v", err)
+	klog.Errorf("WhichVCandDCByNodeID failed using UUID. Err: %v", err)
 	return nil, err
 }
 

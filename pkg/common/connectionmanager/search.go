@@ -35,6 +35,8 @@ func (f FindVM) String() string {
 		return "byUUID"
 	case FindVMByName:
 		return "byName"
+	case FindVMByIP:
+		return "byIP"
 	default:
 		return "byUnknown"
 	}
@@ -60,10 +62,13 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 	queueChannel = make(chan *vmSearch, QueueSize)
 
 	myNodeID := nodeID
-	if searchBy == FindVMByUUID {
+	switch searchBy {
+	case FindVMByUUID:
 		klog.V(3).Info("WhichVCandDCByNodeID by UUID")
 		myNodeID = strings.ToLower(nodeID)
-	} else {
+	case FindVMByIP:
+		klog.V(3).Info("WhichVCandDCByNodeID by IP")
+	default:
 		klog.V(3).Info("WhichVCandDCByNodeID by Name")
 	}
 	klog.V(2).Info("WhichVCandDCByNodeID nodeID: ", myNodeID)
@@ -161,9 +166,13 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 			for res := range queueChannel {
 				var vm *vclib.VirtualMachine
 				var err error
-				if searchBy == FindVMByUUID {
+
+				switch searchBy {
+				case FindVMByUUID:
 					vm, err = res.datacenter.GetVMByUUID(ctx, myNodeID)
-				} else {
+				case FindVMByIP:
+					vm, err = res.datacenter.GetVMByIP(ctx, myNodeID)
+				default:
 					vm, err = res.datacenter.GetVMByDNSName(ctx, myNodeID)
 				}
 
@@ -187,12 +196,18 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 					continue
 				}
 
+				hostName := oVM.Guest.HostName
+				if searchBy == FindVMByIP {
+					klog.V(2).Infof("WhichVCandDCByNodeID by IP. Overriding VMName from=%s to to=%s", oVM.Guest.HostName, myNodeID)
+					hostName = myNodeID
+				}
+
 				klog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
 					nodeID, vm, res.vc, res.datacenter.Name())
-				klog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
+				klog.V(2).Info("Hostname: ", hostName, " UUID: ", oVM.Summary.Config.Uuid)
 
 				vmInfo = &VMDiscoveryInfo{DataCenter: res.datacenter, VM: vm, VcServer: res.vc,
-					UUID: oVM.Summary.Config.Uuid, NodeName: oVM.Guest.HostName}
+					UUID: oVM.Summary.Config.Uuid, NodeName: hostName}
 				setVMFound(true)
 				break
 			}
