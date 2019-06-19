@@ -19,12 +19,17 @@ package vsphere
 import (
 	"fmt"
 	"strings"
+
+	"k8s.io/klog"
 )
 
 const (
 	// ProviderPrefix is the Kubernetes cloud provider prefix for this
 	// cloud provider.
 	ProviderPrefix = "vsphere://"
+
+	// MinUUIDLen is the min length for a valid UUID
+	MinUUIDLen int = 36
 )
 
 // GetUUIDFromProviderID returns a UUID from the supplied cloud provider ID.
@@ -40,6 +45,10 @@ func GetUUIDFromProviderID(providerID string) string {
 // K8s:    56492e42-22ad-3911-6d72-59cc8f26bc90
 // VMware: 422e4956-ad22-1139-6d72-59cc8f26bc90
 func ConvertK8sUUIDtoNormal(k8sUUID string) string {
+	if len(k8sUUID) < MinUUIDLen {
+		klog.Errorf("The UUID length is invalid. Returning UUID=%s as is.", k8sUUID)
+		return k8sUUID
+	}
 	uuid := fmt.Sprintf("%s%s%s%s-%s%s-%s%s-%s-%s",
 		k8sUUID[6:8], k8sUUID[4:6], k8sUUID[2:4], k8sUUID[0:2],
 		k8sUUID[11:13], k8sUUID[9:11],

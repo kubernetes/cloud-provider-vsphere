@@ -20,7 +20,7 @@ import (
 	"context"
 	"sync"
 
-	"k8s.io/client-go/listers/core/v1"
+	v1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -35,9 +35,10 @@ type FindVM int
 const (
 	// FindVMByUUID finds VMs with the provided UUID.
 	FindVMByUUID FindVM = iota // 0
-
 	// FindVMByName finds VMs with the provided name.
 	FindVMByName // 1
+	// FindVMByIP finds VMs with the provided IP adress.
+	FindVMByIP // 2
 
 	// PoolSize is the number of goroutines used in parallel to find a VM.
 	PoolSize int = 8

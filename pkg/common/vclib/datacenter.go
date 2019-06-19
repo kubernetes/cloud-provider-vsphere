@@ -77,6 +77,23 @@ func GetNumberOfDatacenters(ctx context.Context, connection *VSphereConnection) 
 	return len(datacenters), nil
 }
 
+// GetVMByIP gets the VM object from the given IP address
+func (dc *Datacenter) GetVMByIP(ctx context.Context, ipAddy string) (*VirtualMachine, error) {
+	s := object.NewSearchIndex(dc.Client())
+	ipAddy = strings.ToLower(strings.TrimSpace(ipAddy))
+	svm, err := s.FindByIp(ctx, dc.Datacenter, ipAddy, true)
+	if err != nil {
+		klog.Errorf("Failed to find VM by IP. VM IP: %s, err: %+v", ipAddy, err)
+		return nil, err
+	}
+	if svm == nil {
+		klog.Errorf("Unable to find VM by IP. VM IP: %s", ipAddy)
+		return nil, ErrNoVMFound
+	}
+	virtualMachine := VirtualMachine{svm.(*object.VirtualMachine), dc}
+	return &virtualMachine, nil
+}
+
 // GetVMByDNSName gets the VM object from the given dns name
 func (dc *Datacenter) GetVMByDNSName(ctx context.Context, dnsName string) (*VirtualMachine, error) {
 	s := object.NewSearchIndex(dc.Client())
@@ -90,7 +107,7 @@ func (dc *Datacenter) GetVMByDNSName(ctx context.Context, dnsName string) (*Virt
 		klog.Errorf("Unable to find VM by DNS Name. VM DNS Name: %s", dnsName)
 		return nil, ErrNoVMFound
 	}
-	virtualMachine := VirtualMachine{object.NewVirtualMachine(dc.Client(), svm.Reference()), dc}
+	virtualMachine := VirtualMachine{svm.(*object.VirtualMachine), dc}
 	return &virtualMachine, nil
 }
 
@@ -107,7 +124,7 @@ func (dc *Datacenter) GetVMByUUID(ctx context.Context, vmUUID string) (*VirtualM
 		klog.Errorf("Unable to find VM by UUID. VM UUID: %s", vmUUID)
 		return nil, ErrNoVMFound
 	}
-	virtualMachine := VirtualMachine{object.NewVirtualMachine(dc.Client(), svm.Reference()), dc}
+	virtualMachine := VirtualMachine{svm.(*object.VirtualMachine), dc}
 	return &virtualMachine, nil
 }
 
