@@ -17,8 +17,30 @@ limitations under the License.
 package vsphere
 
 import (
+	"strings"
 	"testing"
 )
+
+func TestInvalidProviderID(t *testing.T) {
+	providerID := ""
+
+	UUID := GetUUIDFromProviderID(providerID)
+
+	if UUID != "" {
+		t.Errorf("Should return an empty string")
+	}
+}
+
+func TestUpperUUIDFromProviderID(t *testing.T) {
+	tmpUUID := strings.ToUpper("423740e7-c66e-05e3-9d0b-9e1205b24d43")
+	providerID := ProviderPrefix + tmpUUID
+
+	UUID := GetUUIDFromProviderID(providerID)
+
+	if UUID != "423740e7-c66e-05e3-9d0b-9e1205b24d43" {
+		t.Errorf("Failed to extract UUID")
+	}
+}
 
 func TestUUIDFromProviderID(t *testing.T) {
 	providerID := "vsphere://423740e7-c66e-05e3-9d0b-9e1205b24d43"
@@ -40,7 +62,17 @@ func TestUUIDFromUUID(t *testing.T) {
 	}
 }
 
-func TestUUIDConvert1(t *testing.T) {
+func TestUUIDConvertInvalid(t *testing.T) {
+	k8sUUID := ""
+
+	biosUUID := ConvertK8sUUIDtoNormal(k8sUUID)
+
+	if biosUUID != "" {
+		t.Errorf("Should return empty string")
+	}
+}
+
+func TestUUIDConvert(t *testing.T) {
 	k8sUUID := "56492e42-22ad-3911-6d72-59cc8f26bc90"
 
 	biosUUID := ConvertK8sUUIDtoNormal(k8sUUID)
@@ -50,8 +82,8 @@ func TestUUIDConvert1(t *testing.T) {
 	}
 }
 
-func TestUUIDConvert2(t *testing.T) {
-	k8sUUID := "422e4956-ad22-1139-6d72-59cc8f26bc90"
+func TestUpperUUIDConvert(t *testing.T) {
+	k8sUUID := strings.ToUpper("422e4956-ad22-1139-6d72-59cc8f26bc90")
 
 	biosUUID := ConvertK8sUUIDtoNormal(k8sUUID)
 

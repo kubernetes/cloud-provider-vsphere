@@ -34,7 +34,8 @@ const (
 
 // GetUUIDFromProviderID returns a UUID from the supplied cloud provider ID.
 func GetUUIDFromProviderID(providerID string) string {
-	return strings.TrimPrefix(providerID, ProviderPrefix)
+	withoutPrefix := strings.TrimPrefix(providerID, ProviderPrefix)
+	return strings.ToLower(strings.TrimSpace(withoutPrefix))
 }
 
 // ConvertK8sUUIDtoNormal reformats UUID to match VMware's format:
@@ -55,5 +56,5 @@ func ConvertK8sUUIDtoNormal(k8sUUID string) string {
 		k8sUUID[16:18], k8sUUID[14:16],
 		k8sUUID[19:23],
 		k8sUUID[24:36])
-	return strings.ToLower(uuid)
+	return strings.ToLower(strings.TrimSpace(uuid))
 }
