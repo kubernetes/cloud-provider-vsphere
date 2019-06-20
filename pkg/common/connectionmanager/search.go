@@ -65,7 +65,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 	switch searchBy {
 	case FindVMByUUID:
 		klog.V(3).Info("WhichVCandDCByNodeID by UUID")
-		myNodeID = strings.ToLower(nodeID)
+		myNodeID = strings.TrimSpace(strings.ToLower(nodeID))
 	case FindVMByIP:
 		klog.V(3).Info("WhichVCandDCByNodeID by IP")
 	default:
@@ -202,12 +202,14 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 					hostName = myNodeID
 				}
 
+				UUID := strings.ToLower(strings.TrimSpace(oVM.Summary.Config.Uuid))
+
 				klog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
 					nodeID, vm, res.vc, res.datacenter.Name())
-				klog.V(2).Info("Hostname: ", hostName, " UUID: ", oVM.Summary.Config.Uuid)
+				klog.V(2).Infof("Hostname: %s, UUID: %s", hostName, UUID)
 
 				vmInfo = &VMDiscoveryInfo{DataCenter: res.datacenter, VM: vm, VcServer: res.vc,
-					UUID: oVM.Summary.Config.Uuid, NodeName: hostName}
+					UUID: UUID, NodeName: hostName}
 				setVMFound(true)
 				break
 			}
