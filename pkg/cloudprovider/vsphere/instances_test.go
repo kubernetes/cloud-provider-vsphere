@@ -132,6 +132,15 @@ func TestInstance(t *testing.T) {
 	if !exists {
 		t.Error("InstanceExistsByProviderID not found")
 	}
+
+	ishut, err := instances.InstanceShutdownByProviderID(ctx, providerID)
+	if err != nil {
+		t.Errorf("InstanceShutdownByProviderID failed err=%v", err)
+	}
+	if ishut {
+		t.Error("InstanceShutdownByProviderID is shutdown")
+	}
+
 }
 
 func TestInvalidInstance(t *testing.T) {

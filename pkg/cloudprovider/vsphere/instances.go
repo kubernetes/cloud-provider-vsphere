@@ -171,5 +171,22 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 // InstanceShutdownByProviderID returns true if the instance is in safe state to detach volumes
 func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID string) (bool, error) {
 	klog.V(4).Info("instances.InstanceShutdownByProviderID() called")
-	return false, cloudprovider.NotImplemented
+
+	// Check if node has been discovered already
+	uid := GetUUIDFromProviderID(providerID)
+	if _, ok := i.nodeManager.nodeUUIDMap[uid]; !ok {
+		// IF the uuid is not cached, we end up here
+		klog.V(2).Info("instances.InstanceShutdownByProviderID() NOT CACHED")
+		if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err != nil {
+			klog.V(4).Info("instances.InstanceShutdownByProviderID() NOT FOUND with ", uid)
+			// if we can't discover, return false with an error in tow
+			return false, err
+		}
+		klog.V(2).Infof("instances.InstanceShutdownByProviderID() EXISTS with %q", uid)
+	}
+
+	active, err := i.nodeManager.nodeUUIDMap[uid].vm.IsActive(ctx)
+	klog.V(2).Infof("VM=%s IsActive=%t", uid, active)
+	// invert the return value
+	return !active, err
 }
