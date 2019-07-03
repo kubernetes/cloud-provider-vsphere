@@ -123,11 +123,9 @@ kind: Secret
 metadata:
   name: vccm
   namespace: kube-system
-data:
-  1.2.3.4.username: "Replace with output from `echo -n YOUR_VCENTER_USERNAME | base64`"
-  1.2.3.4.password: "Replace with output from `echo -n YOUR_VCENTER_PASSWORD | base64`"
-  10.0.0.1.username: "Replace with output from `echo -n YOUR_VCENTER_USERNAME | base64`"
-  10.0.0.1.password: "Replace with output from `echo -n YOUR_VCENTER_PASSWORD | base64`"
+stringData:
+  1.2.3.4.username: "<YOUR_VCENTER_USERNAME>"
+  1.2.3.4.password: "<YOUR_VCENTER_PASSWORD>"
 ```
 
 Create the secret by running the following command:
