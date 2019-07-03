@@ -65,6 +65,27 @@ func main() {
 		Use: "cloud-controller-manager",
 		Long: `The Cloud controller manager is a daemon that embeds
 the cloud specific control loops shipped with Kubernetes.`,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Glog requires this otherwise it complains.
+			goflag.CommandLine.Parse(nil)
+
+			// TODO: We need to revisit this when we vendor newer components of k8s
+			// TODO: such as but not limited to k/k, client, apimachinery, etc
+			//
+			// This is a temporary hack to enable proper logging until upstream dependencies
+			// are migrated to fully utilize klog instead of glog.
+			klogFlags := goflag.NewFlagSet("klog", goflag.ExitOnError)
+			klog.InitFlags(klogFlags)
+
+			// Sync the glog and klog flags.
+			cmd.Flags().VisitAll(func(f1 *pflag.Flag) {
+				f2 := klogFlags.Lookup(f1.Name)
+				if f2 != nil {
+					value := f1.Value.String()
+					f2.Value.Set(value)
+				}
+			})
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			verflag.PrintAndExitIfRequested()
 			utilflag.PrintFlags(cmd.Flags())
