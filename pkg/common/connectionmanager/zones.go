@@ -28,7 +28,6 @@ import (
 
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
-	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -135,200 +134,6 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 		return nil, err
 	}
 
-	// To optimize this search, we are going to check higher level objects first: DC, Clusters/ResourcePools
-	// and their Ancestors (ie Folders) first by Datacenter
-	zoneDI, err := cm.getDIFromMultiVCorDCNonVM(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
-	if err == nil {
-		return zoneDI, nil
-	}
-
-	// Mutli VC/DC configurations really shouldn't be using individual zone/region labels on Hosts
-	// Searching for labels per host is expensive in this configuration
-	// Consider using zone/region on Datacenters, Clusters, or ResourcePools
-	klog.Warning("Mutli VC/DC configurations really shouldn't be using individual zone/region labels on Hosts")
-	klog.Warning("Searching for labels per host is expensive in this configuration")
-	klog.Warning("Consider using zone/region on Datacenters, Clusters, or ResourcePools")
-	return cm.getDIFromMultiVCorDCVM(ctx, zoneLabel, regionLabel, zoneLooking, regionLooking)
-}
-
-func (cm *ConnectionManager) getDIFromMultiVCorDCNonVM(ctx context.Context,
-	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	klog.Infof("getDIFromMultiVCorDCNonVM called with zone: %s and region: %s", zoneLooking, regionLooking)
-
-	if len(zoneLabel) == 0 || len(regionLabel) == 0 || len(zoneLooking) == 0 || len(regionLooking) == 0 {
-		err := ErrMultiVCRequiresZones
-		klog.Errorf("%v", err)
-		return nil, err
-	}
-
-	type zoneSearch struct {
-		vc         string
-		datacenter *vclib.Datacenter
-		cluster    *object.ClusterComputeResource
-	}
-
-	var mutex = &sync.Mutex{}
-	var globalErrMutex = &sync.Mutex{}
-	var queueChannel chan *zoneSearch
-	var wg sync.WaitGroup
-	var globalErr *error
-
-	queueChannel = make(chan *zoneSearch, QueueSize)
-
-	zoneFound := false
-	globalErr = nil
-
-	setGlobalErr := func(err error) {
-		globalErrMutex.Lock()
-		globalErr = &err
-		globalErrMutex.Unlock()
-	}
-
-	setZoneFound := func(found bool) {
-		mutex.Lock()
-		zoneFound = found
-		mutex.Unlock()
-	}
-
-	getZoneFound := func() bool {
-		mutex.Lock()
-		found := zoneFound
-		mutex.Unlock()
-		return found
-	}
-
-	go func() {
-		for vc, vsi := range cm.VsphereInstanceMap {
-			var datacenterObjs []*vclib.Datacenter
-
-			found := getZoneFound()
-			if found == true {
-				break
-			}
-
-			var err error
-			for i := 0; i < NumConnectionAttempts; i++ {
-				err = cm.Connect(ctx, vc)
-				if err == nil {
-					break
-				}
-				time.Sleep(time.Duration(RetryAttemptDelaySecs) * time.Second)
-			}
-
-			if err != nil {
-				klog.Error("getDIFromMultiVCorDCNonVM error vc:", err)
-				setGlobalErr(err)
-				continue
-			}
-
-			if vsi.Cfg.Datacenters == "" {
-				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
-				if err != nil {
-					klog.Error("getDIFromMultiVCorDCNonVM error dc:", err)
-					setGlobalErr(err)
-					continue
-				}
-			} else {
-				datacenters := strings.Split(vsi.Cfg.Datacenters, ",")
-				for _, dc := range datacenters {
-					dc = strings.TrimSpace(dc)
-					if dc == "" {
-						continue
-					}
-					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
-					if err != nil {
-						klog.Error("getDIFromMultiVCorDCNonVM error dc:", err)
-						setGlobalErr(err)
-						continue
-					}
-					datacenterObjs = append(datacenterObjs, datacenterObj)
-				}
-			}
-
-			for _, datacenterObj := range datacenterObjs {
-				found := getZoneFound()
-				if found == true {
-					break
-				}
-
-				finder := find.NewFinder(datacenterObj.Client(), false)
-				finder.SetDatacenter(datacenterObj.Datacenter)
-
-				clusterList, err := finder.ClusterComputeResourceList(ctx, "*")
-				if err != nil {
-					klog.Errorf("ClusterComputeResourceList failed in vc=%s and datacenter=%s: %v",
-						vc, datacenterObj.Name(), err)
-					setGlobalErr(err)
-					continue
-				}
-
-				for _, cluster := range clusterList {
-					klog.V(3).Infof("Finding zone in vc=%s and datacenter=%s and cluster=%s",
-						vc, datacenterObj.Name(), cluster.Name())
-					queueChannel <- &zoneSearch{
-						vc:         vc,
-						datacenter: datacenterObj,
-						cluster:    cluster,
-					}
-				}
-			}
-		}
-		close(queueChannel)
-	}()
-
-	var zoneInfo *ZoneDiscoveryInfo
-	for i := 0; i < PoolSize; i++ {
-		wg.Add(1)
-		go func() {
-			for res := range queueChannel {
-
-				klog.V(3).Infof("Checking zones for cluster: %s", res.cluster.Name())
-				result, err := cm.LookupZoneByMoref(ctx, res.datacenter, res.cluster.Reference(), zoneLabel, regionLabel, true)
-				if err != nil {
-					klog.Errorf("Failed to find zone: %s and region: %s for cluster %s", zoneLabel, regionLabel, res.cluster.Name())
-					continue
-				}
-
-				if !strings.EqualFold(result[ZoneLabel], zoneLooking) ||
-					!strings.EqualFold(result[RegionLabel], regionLooking) {
-					klog.V(4).Infof("Does not match region: %s and zone: %s", result[RegionLabel], result[ZoneLabel])
-					continue
-				}
-
-				klog.Infof("Found zone: %s and region: %s for cluster %s", zoneLooking, regionLooking, res.cluster.Name())
-				zoneInfo = &ZoneDiscoveryInfo{
-					VcServer:   res.vc,
-					DataCenter: res.datacenter,
-				}
-
-				setZoneFound(true)
-				break
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-	if zoneFound {
-		return zoneInfo, nil
-	}
-	if globalErr != nil {
-		return nil, *globalErr
-	}
-
-	klog.V(4).Infof("getDIFromMultiVCorDCNonVM: zone: %s and region: %s not found", zoneLabel, regionLabel)
-	return nil, vclib.ErrNoZoneRegionFound
-}
-
-func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
-	zoneLabel string, regionLabel string, zoneLooking string, regionLooking string) (*ZoneDiscoveryInfo, error) {
-	klog.V(4).Infof("getDIFromMultiVCorDCVM called with zone: %s and region: %s", zoneLooking, regionLooking)
-
-	if len(zoneLabel) == 0 || len(regionLabel) == 0 || len(zoneLooking) == 0 || len(regionLooking) == 0 {
-		err := ErrMultiVCRequiresZones
-		klog.Errorf("%v", err)
-		return nil, err
-	}
-
 	type zoneSearch struct {
 		vc         string
 		datacenter *vclib.Datacenter
@@ -384,7 +189,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 			}
 
 			if err != nil {
-				klog.Error("getDIFromMultiVCorDCVM error vc:", err)
+				klog.Error("getDIFromMultiVCorDC error vc:", err)
 				setGlobalErr(err)
 				continue
 			}
@@ -392,7 +197,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 			if vsi.Cfg.Datacenters == "" {
 				datacenterObjs, err = vclib.GetAllDatacenter(ctx, vsi.Conn)
 				if err != nil {
-					klog.Error("getDIFromMultiVCorDCVM error dc:", err)
+					klog.Error("getDIFromMultiVCorDC error dc:", err)
 					setGlobalErr(err)
 					continue
 				}
@@ -405,7 +210,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 					}
 					datacenterObj, err := vclib.GetDatacenter(ctx, vsi.Conn, dc)
 					if err != nil {
-						klog.Error("getDIFromMultiVCorDCVM error dc:", err)
+						klog.Error("getDIFromMultiVCorDC error dc:", err)
 						setGlobalErr(err)
 						continue
 					}
@@ -448,8 +253,8 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 			for res := range queueChannel {
 
 				klog.V(3).Infof("Checking zones for host: %s", res.host.Name())
-				result, err := cm.LookupZoneByMoref(ctx, res.datacenter, res.host.Reference(), zoneLabel, regionLabel, false)
-				if err == nil {
+				result, err := cm.LookupZoneByMoref(ctx, res.datacenter, res.host.Reference(), zoneLabel, regionLabel)
+				if err != nil {
 					klog.Errorf("Failed to find zone: %s and region: %s for host %s", zoneLabel, regionLabel, res.host.Name())
 					continue
 				}
@@ -480,7 +285,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDCVM(ctx context.Context,
 		return nil, *globalErr
 	}
 
-	klog.V(4).Infof("getDIFromMultiVCorDCVM: zone: %s and region: %s not found", zoneLabel, regionLabel)
+	klog.V(4).Infof("getDIFromMultiVCorDC: zone: %s and region: %s not found", zoneLabel, regionLabel)
 	return nil, vclib.ErrNoZoneRegionFound
 }
 
@@ -505,7 +310,7 @@ func removePortFromHost(host string) string {
 
 // LookupZoneByMoref searches for a zone using the provided managed object reference.
 func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *vclib.Datacenter,
-	moRef types.ManagedObjectReference, zoneLabel string, regionLabel string, checkAncestors bool) (map[string]string, error) {
+	moRef types.ManagedObjectReference, zoneLabel string, regionLabel string) (map[string]string, error) {
 
 	vcServer := removePortFromHost(dataCenter.Client().URL().Host)
 	result := make(map[string]string, 0)
@@ -520,26 +325,12 @@ func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *
 	err := withTagsClient(ctx, vsi.Conn, func(c *rest.Client) error {
 		client := tags.NewManager(c)
 
-		var err error
-		var objects []mo.ManagedEntity
-		if checkAncestors {
-			pc := dataCenter.Client().ServiceContent.PropertyCollector
-			// example result: ["Folder", "Datacenter", "Cluster", "Host"]
-			objects, err = mo.Ancestors(ctx, dataCenter.Client(), pc, moRef)
-			if err != nil {
-				klog.Errorf("Ancestors failed for %s with err %v", moRef, err)
-				return err
-			}
-		} else {
-			var moHost mo.HostSystem
-			pc := property.DefaultCollector(dataCenter.Client())
-			err = pc.RetrieveOne(ctx, moRef, []string{"summary"}, &moHost)
-			if err != nil {
-				klog.Errorf("RetrieveOne failed for %s with err %v", moRef, err)
-				return err
-			}
-			objects = make([]mo.ManagedEntity, 0)
-			objects = append(objects, moHost.ManagedEntity)
+		pc := dataCenter.Client().ServiceContent.PropertyCollector
+		// example result: ["Folder", "Datacenter", "Cluster", "Host"]
+		objects, err := mo.Ancestors(ctx, dataCenter.Client(), pc, moRef)
+		if err != nil {
+			klog.Errorf("Ancestors failed for %s with err %v", moRef, err)
+			return err
 		}
 
 		// search the hierarchy, example order: ["Host", "Cluster", "Datacenter", "Folder"]
