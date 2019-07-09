@@ -206,9 +206,6 @@ func TestLookupZoneByMoref(t *testing.T) {
 	// Get a simulator Host
 	myHost := simulator.Map.Any("HostSystem").(*simulator.HostSystem)
 
-	// Get a simulator Cluster
-	myCluster := simulator.Map.Any("ClusterComputeResource").(*simulator.ClusterComputeResource)
-
 	// Create a region category
 	regionID, err := m.CreateCategory(ctx, &tags.Category{Name: config.Labels.Region})
 	if err != nil {
@@ -237,7 +234,7 @@ func TestLookupZoneByMoref(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Setup a multi-DC environment with zones!
+	// Setup a single-DC environment with zones!
 	// Setup DC0
 	dc0, err := vclib.GetDatacenter(ctx, vsi.Conn, "DC0")
 	if err != nil {
@@ -263,44 +260,14 @@ func TestLookupZoneByMoref(t *testing.T) {
 	 * END SETUP
 	 */
 
-	// Get cluster zone found on the Datacenter object. Uses ancessor code path.
-	kv, err := connMgr.LookupZoneByMoref(ctx, dc0, myCluster.Reference(), config.Labels.Zone, config.Labels.Region, true)
-	if err != nil {
-		t.Fatalf("[CLUSTER] LookupZoneByMoref failed err=%v", err)
-	}
-
-	region := kv[RegionLabel]
-	zone := kv[ZoneLabel]
-	if !strings.EqualFold("k8s-region-US", region) {
-		t.Errorf("Region value mismatch k8s-region-US != %s", region)
-	}
-	if !strings.EqualFold("k8s-zone-US-west", zone) {
-		t.Errorf("Region value mismatch k8s-zone-US-west != %s", zone)
-	}
-
 	// Get Host zone found directly on the Host object. Overrides Datacenter. Ancessor enabled but won't use.
-	kv, err = connMgr.LookupZoneByMoref(ctx, dc0, myHost.Reference(), config.Labels.Zone, config.Labels.Region, true)
+	kv, err := connMgr.LookupZoneByMoref(ctx, dc0, myHost.Reference(), config.Labels.Zone, config.Labels.Region)
 	if err != nil {
 		t.Fatalf("[HOST] LookupZoneByMoref failed err=%v", err)
 	}
 
-	region = kv[RegionLabel]
-	zone = kv[ZoneLabel]
-	if !strings.EqualFold("k8s-region-US", region) {
-		t.Errorf("Region value mismatch k8s-region-US != %s", region)
-	}
-	if !strings.EqualFold("k8s-zone-US-east", zone) {
-		t.Errorf("Region value mismatch k8s-zone-US-east != %s", zone)
-	}
-
-	// Get Host zone direct from the Host object. Ancessor is false.
-	kv, err = connMgr.LookupZoneByMoref(ctx, dc0, myHost.Reference(), config.Labels.Zone, config.Labels.Region, false)
-	if err != nil {
-		t.Fatalf("[DIRECT HOST] LookupZoneByMoref failed err=%v", err)
-	}
-
-	region = kv[RegionLabel]
-	zone = kv[ZoneLabel]
+	region := kv[RegionLabel]
+	zone := kv[ZoneLabel]
 	if !strings.EqualFold("k8s-region-US", region) {
 		t.Errorf("Region value mismatch k8s-region-US != %s", region)
 	}
