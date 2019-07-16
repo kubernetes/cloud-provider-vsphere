@@ -1,0 +1,17 @@
+# See the OWNERS docs: https://git.k8s.io/community/docs/devel/owners.md
+
+aliases:
+  sig-cloud-provider-leads:
+    - andrewsykim
+    - hogepodge
+    - jagosan
+  cloud-provider-vsphere-maintainers:
+    - abrarshivani
+    - andrewsykim
+    - baludontu
+    - divyenpatel
+    - dougm
+    - frapposelli
+    - imkin
+    - sandeeppissay
+    - dvonthenen
