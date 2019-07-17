@@ -138,6 +138,7 @@ deploy: | $(DOCKER_SOCK)
 	$(MAKE) unit-test
 	$(MAKE) build-images
 	$(MAKE) integration-test
+	$(MAKE) push-bins
 	$(MAKE) push-images
 
 ################################################################################
@@ -330,6 +331,13 @@ push-$(IMAGE_CCM) upload-$(IMAGE_CCM): $(IMAGE_CCM_D) login-to-image-registry | 
 
 .PHONY: push-images upload-images
 push-images upload-images: upload-ccm-image
+
+################################################################################
+##                                  PUSH BINS                                 ##
+################################################################################
+.PHONY: push-bins
+push-bins: build-bins
+	gsutil cp $(CCM_BIN) gs://artifacts.cloud-provider-vsphere.appspot.com/binaries/$(VERSION)/
 
 ################################################################################
 ##                                  CI IMAGE                                  ##
