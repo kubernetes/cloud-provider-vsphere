@@ -64,15 +64,19 @@ deps:
 ##                                VERSIONS                                    ##
 ################################################################################
 # Ensure the version is injected into the binaries via a linker flag.
-export VERSION ?= $(shell git describe --exact-match 2>/dev/null || git describe --match=$$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+export VERSION ?= $(shell git describe --always --dirty)
 
 # Load the image registry include.
 include hack/make/login-to-image-registry.mk
 
 # Define the images.
 IMAGE_CCM := $(REGISTRY)/vsphere-cloud-controller-manager
-.PHONY: print-ccm-image
 
+.PHONY: version print-ccm-image
+
+version:
+	@echo $(VERSION)
+	
 # Printing the image versions are defined early so Go modules aren't forced.
 print-ccm-image:
 	@echo $(IMAGE_CCM):$(VERSION)
@@ -350,13 +354,6 @@ push-ci-image:
 
 print-ci-image:
 	@$(MAKE) --no-print-directory -C hack/images/ci print
-
-################################################################################
-##                               PRINT VERISON                                ##
-################################################################################
-.PHONY: version
-version:
-	@echo $(VERSION)
 
 ################################################################################
 ##                                TODO(akutz)                                 ##
