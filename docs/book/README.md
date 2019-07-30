@@ -9,7 +9,7 @@ features, known issues, installation requirements and steps for Kubernetes clust
 document, it's worth noting that a Kubernetes cluster can run on vSphere without the cloud provider integration enabled, however,
 your Kubernetes clusters will not have features that require integration with the underlying infrastructure/cloud provider.
 
-# Summary
+## Summary
 
 * [Kubernetes Concepts](kubernetes_concepts.md)
 * [Components and Tools](components_and_tools.md)

@@ -1,8 +1,8 @@
-## Running a Kubernetes Cluster on vSphere with kubeadm
+# Running a Kubernetes Cluster on vSphere with kubeadm
 
-### Prerequisites
+## Prerequisites
 
-#### OS and VMs
+### OS and VMs
 
 It is assumed that you have Ubuntu 18.04 LTS VMs set up as a template and cloned from to act as base images for your K8s cluster, if you would like guidance on how to do this, please [see here](https://blah.cloud/kubernetes/creating-an-ubuntu-18-04-lts-cloud-image-for-cloning-on-vmware/)
 
@@ -10,7 +10,7 @@ In the setup guide below we set up a single master and multiple worker nodes.
 
 It is also assumed you have SSH access to all nodes in order to run the commands on in the following guide.
 
-#### Tools
+### Tools
 
 We are using macOS here, so the `brew` package manager is used to install and manage the tools, if you are using Linux or Windows, use the appropriate install guide for each tool, according to your OS.
 
@@ -25,9 +25,9 @@ For each tool listed below is the `brew` install command and the link to the ins
 * tmux (optional) - `brew install tmux`
   * [https://github.com/tmux/tmux](https://github.com/tmux/tmux)
 
-### Setting up VMs with K8s components
+## Setting up VMs with K8s components
 
-#### On all nodes
+### On all nodes
 
 Install the container runtime (in our case Docker)
 
@@ -91,11 +91,11 @@ We will be using [`flannel`](https://github.com/coreos/flannel) for pod networki
 sudo sysctl net.bridge.bridge-nf-call-iptables=1
 ```
 
-### Enabling the VMware vSphere Cloud Provider
+## Enabling the VMware vSphere Cloud Provider
 
-#### On the master(s)
+### On the master(s)
 
-##### Create your `vsphere.conf` file with vCenter details
+#### Create your `vsphere.conf` file with vCenter details
 
 For reference, the vCenter configuration looks like below (you can correlate the values in the UI to the values in the `vsphere.conf` file below):
 
@@ -190,9 +190,10 @@ sudo systemctl daemon-reload
 sudo systemctl restart kubelet
 ```
 
-### Initialising the cluster with kubeadm
+## Initialising the cluster with kubeadm
 
-#### On all nodes
+<!-- markdownlint-disable MD024 -->
+### On all nodes
 
 Firstly, verify that connectivity to the required `gcr.io` registries is working by pulling the containers required by `kubeadm`
 
@@ -207,7 +208,7 @@ $ sudo kubeadm config images pull
 [config/images] Pulled k8s.gcr.io/coredns:1.3.1
 ```
 
-#### On the master node(s)
+### On the master node(s)
 
 Initialise `kubeadm` with the config file from above which includes our vSphere Cloud Provider and Flannel CIDR configurations.
 
