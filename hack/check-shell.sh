@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Copyright 2019 The Kubernetes Authors.
 #
@@ -22,9 +22,37 @@ set -o pipefail
 # script is located.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-pushd docs/book/
-npm install gitbook-cli -g
-npm install phantomjs-prebuilt
-gitbook install
-gitbook build
-popd
+usage() {
+  cat <<EOF
+usage: ${0} [FLAGS]
+  Lints the project's shell scripts.
+
+FLAGS
+  -d    use the docker image
+  -h    prints this help screen
+EOF
+}
+
+while getopts ':dh' opt; do
+  case "${opt}" in
+  d)
+    DO_DOCKER=1
+    ;;
+  h)
+    usage 1>&2; exit 1
+    ;;
+  \?)
+    { echo "invalid option: -${OPTARG}"; usage; } 1>&2; exit 1
+    ;;
+  :)
+    echo "option -${OPTARG} requires an argument" 1>&2; exit 1
+    ;;
+  esac
+done
+shift $((OPTIND-1))
+
+if [ ! "${DO_DOCKER-}" ] && command -v shellcheck >/dev/null 2>&1; then
+  find . -path ./vendor -prune -o -name "*.*sh" -type f -print0 | xargs -0 shellcheck
+else
+  docker run --rm -t -v "$(pwd)":/build:ro gcr.io/cluster-api-provider-vsphere/extra/shellcheck
+fi
