@@ -12,7 +12,7 @@ Currently, at the first stage, `vcpctl` only support vpshere provisioning for ku
 
 ### Install
 
-`vcpctl` binary can be built directly from cloud-provider-vsphere repo. 
+`vcpctl` binary can be built directly from cloud-provider-vsphere repo.
 
 ```bash
 go build -o vcpctl ./cmd/vcpctl/main.go
@@ -37,7 +37,7 @@ List of flags:
 - `password` : Specify vCenter password. Required if host does not contain `<username>:<password>@`
 - `insecure` : Don't verify the server's certificate chain. Default is `false`. If you want to enable insecure mode, use `--insecure=true`
 - `cert` : Certification for solution user. If you want to provide a certification, pass the file path of the certifcation to cert, like `--cert /path/to/cert.crt`. If no certification is provided, `vcpctl` will create a new one and store in default directory. (TODO)
-- `role` : `vcpctl` can create roles during the provision. Role can be either `RegularUser` or `Administrator`. 
+- `role` : `vcpctl` can create roles during the provision. Role can be either `RegularUser` or `Administrator`.
 
 Note: vSphere SSO is required to be enabled by default. So SAML token has to be provided as `SSO_LOGIN_TOKEN`.
 

@@ -5,6 +5,7 @@ Kubernetes components that enable the vSphere cloud provider. It is passed off t
 `--cloud-config` flag. The `--cloud-config` flag indicates the path to the cloud config file on the host's filesystem.
 
 At a high level, the cloud config file holds the following information:
+
 * The server URL and credentials to connect to vCenter
 * The Virtual Data Center your cluster should be running on
 * The Default Datastore used for dynamic volume provisioning
@@ -18,7 +19,7 @@ The rest of this page will dive into each section and field of the cloud config 
 
 Here's the entire cloud config spec using example values:
 
-```
+```bash
 [Global]
   datacenters = "SDDC-Datacenter"
   insecure-flag = "1" # set to 1 if the vCenter uses a self-signed cert
@@ -69,7 +70,7 @@ The `Global` section of the cloud config holds general information about your cl
 You'll notice that many fields in `Global` overlap with fields from other sections. In most cases,
 fields in `Global` become the default if they are not specified in other sections.
 
-```
+```bash
 [Global]
   # The name of the Virtual Data Center your cluster is in
   datacenters = "SDDC-Datacenter"
@@ -130,7 +131,7 @@ fields in `Global` become the default if they are not specified in other section
 The `VirtualCenter` section holds connection information to a vCenter server. Note that the name of the
 section should be the server IP of the vCenter server.
 
-```
+```bash
 [VirtualCenter "10.0.0.1"] # the server IP is 10.0.0.1
   # The user to connect to this vCenter server
   user = "viadmin@vmare.local"
@@ -159,7 +160,7 @@ section should be the server IP of the vCenter server.
 The `Workspace` section only applies to parameters that should be used only when creating Persistent Volumes.
 **NOTE**: this section is only available in the in-tree vSphere cloud provider.
 
-```
+```bash
 [Workspace]
   # The vCenter server IP to connet to
   server = "10.0.0.1"
@@ -178,7 +179,7 @@ The `Workspace` section only applies to parameters that should be used only when
 
 The `Disk` section exists to define the SCSI controller type, which almost always should be set to `pvscsi`.
 
-```
+```bash
 [Disk]
   # Defines the SCSI disk controller type, should almost always be set to pvscsi.
   scsicontrollertype = pvscsi
@@ -189,7 +190,7 @@ The `Disk` section exists to define the SCSI controller type, which almost alway
 The Network section specifies the VM network that your cluster is running on. In the event that the kubelet
 cannot discover it's own node addresses, it will query for IPs defined in the VM network.
 
-```
+```bash
 [Network]
   # The network the VMs in your cluster are joined to
   # Worth noting that the "public" prefix in this field does not mean that the VM network
@@ -203,7 +204,7 @@ The Labels section defines the topology tags applied on VMs in order to apply Ku
 If set, Kubernetes will apply the labels `failure-domain.beta.kubernetes.io/zone` and `failure-domain.beta.kubernetes.io/region`
 on your Nodes and PersistentVolumes based on the value of the tags specified here.
 
-```
+```bash
 [Labels]
   # If set, the vSphere cloud provider will check if a VM has the tag with the corresponding value here.
   # If the tag exists, the region topology label `failure-domain.beta.kubernetes.io/region` with the associated value
@@ -218,9 +219,8 @@ on your Nodes and PersistentVolumes based on the value of the tags specified her
 
 ### Storing vCenter Credentials in a Kubernetes Secret
 
-## FAQ:
+## FAQ
 
 ### Do all VMs in a cluster require vCenter credentials?
 
 ### What's the preferred way of storing vCenter credentials?
-

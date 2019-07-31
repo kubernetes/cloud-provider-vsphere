@@ -1,6 +1,6 @@
-## Cluster Architecture
+# Cluster Architecture
 
-### Kubernetes using the in-tree vSphere Provider
+## Kubernetes using the in-tree vSphere Provider
 
 The in-tree vSphere cloud provider integration is capable of connecting to vCenter in order to map information
 about your infrastructure (VMs, disks, etc) back to the Kubernetes API. For the in-tree case, the kubelet,
@@ -13,7 +13,7 @@ every component has access to a config file and credentials which allow access t
 
 **Note**: this diagram only illustrates which components in your cluster should be connecting to vCenter.
 
-### Kubernetes using the out-of-tree-tree vSphere Provider (recommended)
+## Kubernetes using the out-of-tree-tree vSphere Provider (recommended)
 
 The out-of-tree vSphere cloud provider integration also connects to vCenter and maps information about your infrastructure (VMs,
 disks, etc) back to the Kubernetes API. For the out-of-tree case however, the only component that will ever talk to vCenter is

@@ -22,6 +22,7 @@ $ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
 ```
 
 The project uses [Go modules](https://github.com/golang/go/wiki/Modules) and:
+
 * Requires Go 1.11+
 * Should not be cloned into the `$GOPATH`
 
@@ -39,6 +40,7 @@ $ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
 
 ### vSphere storage support
+
 Out of tree cloud providers no longer provide native storage support. Instead, a
 Container Storage Interface (CSI) driver is required. The vSphere CSI driver is
 located [here](https://github.com/kubernetes-sigs/vsphere-csi-driver).

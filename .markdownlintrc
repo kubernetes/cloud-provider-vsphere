@@ -1,0 +1,6 @@
+{
+  "default": true,
+  "line_length": false,
+  // Allow '?' in headings for FAQ
+  "MD026": { "punctuation": ".,;:!"}
+}

@@ -36,6 +36,7 @@ While Prow jobs [run the Docker server inside the container](#run-the-docker-ser
 Please note that this option is only available when using a local copy of the sources. This is because all of the paths known to Docker will be of the local host system, not from the container. That's also why it's necessary to provide the `PROJECT_ROOT` environment variable -- it indicates to certain recipes the location of specific files or directories relative to the local sources on the host system.
 
 ### Run the Docker server inside the container
+
 This is option that Prow jobs utilize and is also the method illustrated by the examples below. Please keep in mind that using this option locally requires a large amount of memory and disk space available to Docker:
 
 | Type | Minimum Requirement |
@@ -98,6 +99,7 @@ $ docker run -it --rm --privileged \
 ```
 
 ## Execute the integration tests
+
 The project's integration tests leverage Kind, a solution for turning up a Kubernetes cluster using Docker:
 
 ```shell
@@ -118,6 +120,7 @@ $ docker run -it --rm \
 ```
 
 ## Deploy the CCM image
+
 Pushing the images requires bind mounting a GCR key file into the container and setting the environment variable `GCR_KEY_FILE` to inform the deployment process the location of the key file:
 
 ```shell
@@ -128,6 +131,7 @@ $ docker run -it --rm --privileged \
 ```
 
 ## Execute the conformance tests
+
 Running the e2e conformance suite not only requires DinD but also an environment variable file that provides the information required to turn up a Kubernetes cluster against which the e2e tests are executed. For example:
 
 ```shell

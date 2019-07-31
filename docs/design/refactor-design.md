@@ -1,6 +1,6 @@
 # vSphere Cloud Provider refactor design
 
-As outlined in [KEP0002](https://github.com/kubernetes/community/blob/master/keps/sig-cloud-provider/0002-cloud-controller-manager.md), 
+As outlined in [KEP0002](https://github.com/kubernetes/community/blob/master/keps/sig-cloud-provider/0002-cloud-controller-manager.md),
 we want to remove any cloud provider specific logic from the kubernetes/kubernetes repo. We want to restructure the code to make it easy for any cloud provider to extend the kubernetes core in a consistent manner for their cloud.
 
 ## Current Status
