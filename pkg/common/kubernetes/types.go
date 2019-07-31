@@ -18,7 +18,7 @@ package kubernetes
 
 import (
 	"k8s.io/client-go/informers"
-	"k8s.io/client-go/informers/core/v1"
+	v1 "k8s.io/client-go/informers/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
