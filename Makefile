@@ -76,7 +76,7 @@ IMAGE_CCM := $(REGISTRY)/vsphere-cloud-controller-manager
 
 version:
 	@echo $(VERSION)
-	
+
 # Printing the image versions are defined early so Go modules aren't forced.
 print-ccm-image:
 	@echo $(IMAGE_CCM):$(VERSION)
@@ -308,6 +308,10 @@ check-warn:
 .PHONY: mdlint
 mdlint:
 	hack/check-mdlint.sh
+
+.PHONY: shellcheck
+shellcheck:
+	hack/check-shell.sh
 
 ################################################################################
 ##                                 BUILD IMAGES                               ##
