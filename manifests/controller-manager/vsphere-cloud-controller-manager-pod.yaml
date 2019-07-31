@@ -18,9 +18,8 @@ metadata:
 spec:
   containers:
     - name: vsphere-cloud-controller-manager
-      image: gcr.io/cloud-provider-vsphere/vsphere-cloud-controller-manager:latest
+      image: gcr.io/cloud-provider-vsphere/cpi/release/manager:latest
       args:
-        - /bin/vsphere-cloud-controller-manager
         - --v=2
         - --cloud-config=/etc/cloud/vsphere.conf
         - --cloud-provider=vsphere

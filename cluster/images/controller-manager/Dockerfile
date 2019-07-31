@@ -10,8 +10,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM photon:2.0
+################################################################################
+##                               BUILD ARGS                                   ##
+################################################################################
+# This build arg allows the specification of a custom Golang image.
+ARG GOLANG_IMAGE=golang:1.12.6
 
-ADD vsphere-cloud-controller-manager /bin/
+# The distroless image on which the CPI manager image is built.
+#
+# Please do not use "latest". Explicit tags should be used to provide
+# deterministic builds. This image doesn't have semantic version tags, but
+# the fully-qualified image can be obtained by entering
+# "gcr.io/distroless/static:latest" in a browser and then copying the
+# fully-qualified image from the web page.
+ARG DISTROLESS_IMAGE=gcr.io/distroless/static@sha256:9b60270ec0991bc4f14bda475e8cae75594d8197d0ae58576ace84694aa75d7a
 
-CMD ["/bin/vsphere-cloud-controller-manager"]
+################################################################################
+##                              BUILD STAGE                                   ##
+################################################################################
+# Build the manager as a statically compiled binary so it has no dependencies
+# libc, muscl, etc.
+FROM ${GOLANG_IMAGE} as builder
+
+# This build arg is the version to embed in the CPI binary
+ARG VERSION=unknown
+
+# This build arg controls the GOPROXY setting
+ARG GOPROXY
+
+WORKDIR /build
+COPY go.mod go.sum ./
+COPY pkg/    pkg/
+COPY cmd/    cmd/
+ENV CGO_ENABLED=0
+ENV GOPROXY ${GOPROXY:-}
+RUN go build -a -ldflags='-w -s -extldflags=static -X main.version=${VERSION}' -o vsphere-cloud-controller-manager ./cmd/vsphere-cloud-controller-manager
+
+################################################################################
+##                               MAIN STAGE                                   ##
+################################################################################
+# Copy the manager into the distroless image.
+FROM ${DISTROLESS_IMAGE}
+LABEL maintainer="Travis Rhoden <trhoden@vmware.com>"
+COPY --from=builder /build/vsphere-cloud-controller-manager /bin/vsphere-cloud-controller-manager
+ENTRYPOINT [ "/bin/vsphere-cloud-controller-manager" ]
