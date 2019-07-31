@@ -275,7 +275,7 @@ quick-conformance-test: conformance-test
 ################################################################################
 ##                                 LINTING                                    ##
 ################################################################################
-.PHONY: fmt vet lint
+.PHONY: fmt vet lint mdlint shellcheck check
 fmt:
 	hack/check-format.sh
 
@@ -285,15 +285,11 @@ vet:
 lint:
 	hack/check-lint.sh
 
-.PHONY: check
-check:
-	JUNIT_REPORT="$(abspath $(ARTIFACTS)/junit_check.xml)" hack/check.sh
+check: fmt vet lint mdlint shellcheck
 
-.PHONY: mdlint
 mdlint:
 	hack/check-mdlint.sh
 
-.PHONY: shellcheck
 shellcheck:
 	hack/check-shell.sh
 
