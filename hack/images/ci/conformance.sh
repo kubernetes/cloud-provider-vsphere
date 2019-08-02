@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2018 The Kubernetes Authors.
 #
@@ -19,7 +19,7 @@
 
 set -o nounset
 set -o errexit
-! /bin/sh -c 'set -o pipefail' >/dev/null 2>&1 || set -o pipefail
+set -o pipefail
 
 # Ensure the Docker socket is bind mounted into the container.
 DOCKER_SOCK="${DOCKER_SOCK:-/var/run/docker.sock}"
