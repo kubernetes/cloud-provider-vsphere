@@ -24,7 +24,7 @@ import (
 	"k8s.io/klog"
 
 	k8stypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/cloudprovider"
+	cloudprovider "k8s.io/cloud-provider"
 
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )

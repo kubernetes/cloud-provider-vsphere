@@ -23,8 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
-	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/controller"
+	cloudprovider "k8s.io/cloud-provider"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -62,7 +61,7 @@ func newVSphere(cfg *vcfg.Config, finalize ...bool) (*VSphere, error) {
 }
 
 // Initialize initializes the cloud provider.
-func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) {
+func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
 	client, err := clientBuilder.Client(vs.cfg.Global.ServiceAccount)
 	if err == nil {
 		klog.V(1).Info("Kubernetes Client Init Succeeded")
@@ -86,6 +85,7 @@ func (vs *VSphere) Initialize(clientBuilder controller.ControllerClientBuilder) 
 	} else {
 		klog.Errorf("Kubernetes Client Init Failed: %v", err)
 	}
+
 }
 
 // LoadBalancer returns a balancer interface. Also returns true if the

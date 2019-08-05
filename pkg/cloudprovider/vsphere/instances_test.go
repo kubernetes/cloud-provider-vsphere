@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientv1 "k8s.io/client-go/listers/core/v1"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
-	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
+	v1helper "k8s.io/cloud-provider/node/helpers"
 )
 
 type MyNodeManager struct {
