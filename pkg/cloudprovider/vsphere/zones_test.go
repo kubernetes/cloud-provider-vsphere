@@ -39,6 +39,10 @@ func TestZones(t *testing.T) {
 	cfg, close := configFromEnvOrSim(false)
 	defer close()
 
+	// Configure for SAML token auth
+	cfg.Global.User = localhostCert
+	cfg.Global.Password = localhostKey
+
 	// Create configuration object
 	connMgr := cm.NewConnectionManager(cfg, nil)
 	defer connMgr.Logout()
