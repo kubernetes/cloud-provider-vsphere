@@ -26,15 +26,11 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/apiserver/pkg/server/healthz"
-	"k8s.io/apiserver/pkg/util/flag"
-	"k8s.io/apiserver/pkg/util/logs"
+	"k8s.io/component-base/cli/flag"
+	"k8s.io/component-base/logs"
 	"k8s.io/kubernetes/cmd/cloud-controller-manager/app"
-	"k8s.io/kubernetes/cmd/cloud-controller-manager/app/options"
-	_ "k8s.io/kubernetes/pkg/client/metrics/prometheus" // for client metric registration
-	utilflag "k8s.io/kubernetes/pkg/util/flag"
-	_ "k8s.io/kubernetes/pkg/version/prometheus" // for version metric registration
-	"k8s.io/kubernetes/pkg/version/verflag"
+	_ "k8s.io/kubernetes/pkg/util/prometheusclientgo" // for client metric registration
+	_ "k8s.io/kubernetes/pkg/version/prometheus"      // for version metric registration
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 
@@ -43,67 +39,15 @@ import (
 	"k8s.io/klog"
 )
 
-var version string
+// AppName is the full name of this CCM
+const AppName string = "vsphere-cloud-controller-manager"
 
-func init() {
-	healthz.DefaultHealthz()
-}
+var version string
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	goflag.Set("logtostderr", "true")
-	goflag.Set("stderrthreshold", "INFO")
-	goflag.Set("alsologtostderr", "true")
-	goflag.CommandLine.Parse([]string{})
-	s, err := options.NewCloudControllerManagerOptions()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-	command := &cobra.Command{
-		Use: "cloud-controller-manager",
-		Long: `The Cloud controller manager is a daemon that embeds
-the cloud specific control loops shipped with Kubernetes.`,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// Glog requires this otherwise it complains.
-			goflag.CommandLine.Parse(nil)
-
-			// TODO: We need to revisit this when we vendor newer components of k8s
-			// TODO: such as but not limited to k/k, client, apimachinery, etc
-			//
-			// This is a temporary hack to enable proper logging until upstream dependencies
-			// are migrated to fully utilize klog instead of glog.
-			klogFlags := goflag.NewFlagSet("klog", goflag.ExitOnError)
-			klog.InitFlags(klogFlags)
-
-			// Sync the glog and klog flags.
-			cmd.Flags().VisitAll(func(f1 *pflag.Flag) {
-				f2 := klogFlags.Lookup(f1.Name)
-				if f2 != nil {
-					value := f1.Value.String()
-					f2.Value.Set(value)
-				}
-			})
-		},
-		Run: func(cmd *cobra.Command, args []string) {
-			verflag.PrintAndExitIfRequested()
-			utilflag.PrintFlags(cmd.Flags())
-
-			c, err := s.Config()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-				os.Exit(1)
-			}
-
-			if err := app.Run(c.Complete()); err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-				os.Exit(1)
-			}
-
-		},
-	}
-	s.AddFlags(command.Flags())
+	command := app.NewCloudControllerManagerCommand()
 
 	// TODO: once we switch everything over to Cobra commands, we can go back to calling
 	// utilflag.InitFlags() (by removing its pflag.Parse() call). For now, we have to set the
@@ -116,7 +60,33 @@ the cloud specific control loops shipped with Kubernetes.`,
 
 	klog.V(1).Infof("vsphere-cloud-controller-manager version: %s", version)
 
-	s.CloudProvider.Name = vsphere.ProviderName
+	// Set cloud-provider flag to vsphere
+	command.Flags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Name == "cloud-provider" {
+			flag.Value.Set(vsphere.ProviderName)
+			flag.DefValue = vsphere.ProviderName
+			return
+		}
+	})
+
+	//
+	var versionFlag *pflag.Value
+	pflag.CommandLine.VisitAll(func(flag *pflag.Flag) {
+		if flag.Name == "version" {
+			versionFlag = &flag.Value
+		}
+	})
+
+	command.Use = AppName
+	innerRun := command.Run
+	command.Run = func(cmd *cobra.Command, args []string) {
+		if versionFlag != nil && (*versionFlag).String() != "false" {
+			fmt.Printf("%s %s\n", AppName, version)
+			os.Exit(0)
+		}
+		innerRun(cmd, args)
+	}
+
 	if err := command.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

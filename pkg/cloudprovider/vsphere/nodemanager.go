@@ -25,8 +25,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	clientv1 "k8s.io/client-go/listers/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
+	v1helper "k8s.io/cloud-provider/node/helpers"
 	"k8s.io/klog"
-	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
 	"github.com/vmware/govmomi/vim25/mo"
 

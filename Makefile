@@ -46,15 +46,6 @@ endif
 ################################################################################
 ##                                DEPENDENCIES                                ##
 ################################################################################
-# Ensure Mercurial is installed.
-HAS_MERCURIAL := $(shell command -v hg 2>/dev/null)
-ifndef HAS_MERCURIAL
-.PHONY: install-hg
-install-hg:
-	pip install --user Mercurial
-deps: install-hg
-endif
-
 # Verify the dependencies are in place.
 .PHONY: deps
 deps:
