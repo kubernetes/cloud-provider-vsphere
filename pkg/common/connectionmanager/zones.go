@@ -291,11 +291,25 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 
 func withTagsClient(ctx context.Context, connection *vclib.VSphereConnection, f func(c *rest.Client) error) error {
 	c := rest.NewClient(connection.Client)
-	user := url.UserPassword(connection.Username, connection.Password)
-	if err := c.Login(ctx, user); err != nil {
+	signer, err := connection.Signer(ctx, connection.Client)
+	if err != nil {
 		return err
 	}
-	defer c.Logout(ctx)
+	if signer == nil {
+		user := url.UserPassword(connection.Username, connection.Password)
+		err = c.Login(ctx, user)
+	} else {
+		err = c.LoginByToken(c.WithSigner(ctx, signer))
+	}
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := c.Logout(ctx); err != nil {
+			klog.Errorf("failed to logout: %v", err)
+		}
+	}()
 	return f(c)
 }
 
