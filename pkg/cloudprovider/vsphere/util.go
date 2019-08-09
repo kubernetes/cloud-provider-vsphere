@@ -18,8 +18,10 @@ package vsphere
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
+	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
 
@@ -57,4 +59,26 @@ func ConvertK8sUUIDtoNormal(k8sUUID string) string {
 		k8sUUID[19:23],
 		k8sUUID[24:36])
 	return strings.ToLower(strings.TrimSpace(uuid))
+}
+
+// ErrOnLocalOnlyIPAddr returns an error if the provided IP address is
+// accessible only on the VM's guest OS.
+func ErrOnLocalOnlyIPAddr(addr string) error {
+	var reason string
+	a := net.ParseIP(addr)
+	if a == nil {
+		reason = "invalid"
+	} else if a.IsUnspecified() {
+		reason = "unspecified"
+	} else if a.IsLinkLocalMulticast() {
+		reason = "link-local-mutlicast"
+	} else if a.IsLinkLocalUnicast() {
+		reason = "link-local-unicast"
+	} else if a.IsLoopback() {
+		reason = "loopback"
+	}
+	if reason != "" {
+		return errors.Errorf("failed to validate ip addr=%v: %s", addr, reason)
+	}
+	return nil
 }

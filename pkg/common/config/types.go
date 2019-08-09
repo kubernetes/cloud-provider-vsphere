@@ -57,6 +57,11 @@ type Config struct {
 		// Configurable vSphere CCM API port
 		// Default: 43001
 		APIBinding string `gcfg:"api-binding"`
+		// IP Family enables the ability to support IPv4 or IPv6
+		// Supported values are:
+		// ipv4 - IPv4 addresses only (Default)
+		// ipv6 - IPv6 addresses only
+		IPFamily string `gcfg:"ip-family"`
 	}
 
 	// Virtual Center configurations
@@ -89,4 +94,11 @@ type VirtualCenterConfig struct {
 	CAFile string `gcfg:"ca-file"`
 	// Thumbprint of the VCenter's certificate thumbprint
 	Thumbprint string `gcfg:"thumbprint"`
+	// IP Family enables the ability to support IPv4 or IPv6
+	// Supported values are:
+	// ipv4 - IPv4 addresses only (Default)
+	// ipv6 - IPv6 addresses only
+	IPFamily string `gcfg:"ip-family"`
+	// IPFamilyPriority the list/priority of IP versions
+	IPFamilyPriority []string
 }

@@ -78,3 +78,57 @@ func TestBlankEnvFails(t *testing.T) {
 		t.Fatalf("Env only config should fail if env not set")
 	}
 }
+
+func TestIPFamilies(t *testing.T) {
+	input := "ipv6"
+	ipFamilies, err := validateIPFamily(input)
+	if err != nil {
+		t.Errorf("Valid ipv6 but yielded err: %s", err)
+	}
+	size := len(ipFamilies)
+	if size != 1 {
+		t.Errorf("Invalid family list expected: 1, actual: %d", size)
+	}
+
+	input = "ipv4"
+	ipFamilies, err = validateIPFamily(input)
+	if err != nil {
+		t.Errorf("Valid ipv4 but yielded err: %s", err)
+	}
+	size = len(ipFamilies)
+	if size != 1 {
+		t.Errorf("Invalid family list expected: 1, actual: %d", size)
+	}
+
+	input = "ipv4, "
+	ipFamilies, err = validateIPFamily(input)
+	if err != nil {
+		t.Errorf("Valid ipv4, but yielded err: %s", err)
+	}
+	size = len(ipFamilies)
+	if size != 1 {
+		t.Errorf("Invalid family list expected: 1, actual: %d", size)
+	}
+
+	input = "ipv6,ipv4"
+	ipFamilies, err = validateIPFamily(input)
+	if err != nil {
+		t.Errorf("Valid ipv6/ipv4 but yielded err: %s", err)
+	}
+	size = len(ipFamilies)
+	if size != 2 {
+		t.Errorf("Invalid family list expected: 2, actual: %d", size)
+	}
+
+	input = "ipv7"
+	_, err = validateIPFamily(input)
+	if err == nil {
+		t.Errorf("Invalid ipv7 but successful")
+	}
+
+	input = "ipv4,ipv7"
+	_, err = validateIPFamily(input)
+	if err == nil {
+		t.Errorf("Invalid ipv4,ipv7 but successful")
+	}
+}
