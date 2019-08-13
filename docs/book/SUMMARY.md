@@ -1,11 +1,14 @@
 # Summary
 
-* [Kubernetes vSphere Cloud Provider](README.md)
-* [Kubernetes Concepts](kubernetes_concepts.md)
-* [Components and Tools](components_and_tools.md)
-* [Cluster Architecture](cluster_architecture.md)
-* [vSphere Integrations](vsphere_integrations.md)
-* [Installation / Operations](installation_and_operations.md)
+* [Concepts](concepts.md)
+  * [VMware vSphere Storage Concepts](concepts/vmware_vsphere_storage.md)
+  * [In-tree vs Out-of-Tree](concepts/in_tree_vs_out_of_tree.md)
+  * [Overview of the VCP](concepts/vcp_overview.md)
+  * [Overview of the CPI](concepts/cpi_overview.md)
+  * [Overview of the CSI](concepts/csi_overview.md)
+* [Glossary](glossary.md)
+* [Cloud Provider Interface (CPI)](cloud_provider_interface.md)
+* [Container Storage Interface (CSI)](cloud_provider_interface.md)
 * [Cloud Config Spec](cloud_config.md)
 
 ## Tutorials
