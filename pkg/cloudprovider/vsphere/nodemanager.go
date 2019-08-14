@@ -21,16 +21,17 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	clientv1 "k8s.io/client-go/listers/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	v1helper "k8s.io/cloud-provider/node/helpers"
 	"k8s.io/klog"
 
 	"github.com/vmware/govmomi/vim25/mo"
-
-	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
 // Errors
@@ -138,6 +139,25 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 	return nil, err
 }
 
+func returnIPsFromSpecificFamily(family string, ips []string) []string {
+	var matching []string
+
+	for _, ip := range ips {
+		if err := ErrOnLocalOnlyIPAddr(ip); err != nil {
+			klog.V(4).Infof("IP is local only or there was an error. ip=%q err=%v", ip, err)
+			continue
+		}
+
+		if strings.EqualFold(family, vcfg.IPv6Family) && net.ParseIP(ip).To4() == nil {
+			matching = append(matching, ip)
+		} else if strings.EqualFold(family, vcfg.IPv4Family) && net.ParseIP(ip).To4() != nil {
+			matching = append(matching, ip)
+		}
+	}
+
+	return matching
+}
+
 // DiscoverNode finds a node's VM using the specified search value and search
 // type.
 func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
@@ -157,14 +177,31 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return err
 	}
 
+	vcInstance := nm.connectionManager.VsphereInstanceMap[vmDI.VcServer]
+
+	ipFamily := []string{vcfg.DefaultIPFamily}
+	if vcInstance != nil {
+		ipFamily = vcInstance.Cfg.IPFamilyPriority
+	} else {
+		klog.Warningf("Unable to find vcInstance for %s. Defaulting to ipv4.", vmDI.VcServer)
+	}
+
+	found := false
 	addrs := []v1.NodeAddress{}
 	for _, v := range oVM.Guest.Net {
 		if v.DeviceConfigId == -1 {
 			klog.V(4).Info("Skipping device because not a vNIC")
 			continue
 		}
-		for _, ip := range v.IpAddress {
-			if net.ParseIP(ip).To4() != nil {
+
+		// Only return a single IP address based on the preference of IPFamily
+		// Must break out of loop in the event of ipv6,ipv4 where the NIC does
+		// contain a valid IPv6 and IPV4 address
+		for _, family := range ipFamily {
+			ips := returnIPsFromSpecificFamily(family, v.IpAddress)
+
+			for _, ip := range ips {
+				klog.V(2).Infof("Adding IP: %s", ip)
 				v1helper.AddToNodeAddresses(&addrs,
 					v1.NodeAddress{
 						Type:    v1.NodeExternalIP,
@@ -177,8 +214,19 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 						Address: oVM.Guest.HostName,
 					},
 				)
+
+				found = true
+				break
+			}
+
+			if found {
+				break
 			}
 		}
+	}
+
+	if !found {
+		klog.Warningf("Unable to find a suitable IP address. ipFamily: %s", ipFamily)
 	}
 
 	klog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",

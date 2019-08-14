@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
+	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
@@ -153,4 +154,28 @@ func TestExport(t *testing.T) {
 	}
 
 	nm.UnregisterNode(node)
+}
+
+func TestReturnIPsFromSpecificFamily(t *testing.T) {
+	ipFamilies := []string{
+		"10.161.34.192",
+		"fd01:0:101:2609:bdd2:ee20:7bd7:5836",
+		"fe80::98b5:4834:27a8:c58d",
+	}
+
+	ips := returnIPsFromSpecificFamily(vcfg.IPv6Family, ipFamilies)
+	size := len(ips)
+	if size != 1 {
+		t.Errorf("Should only return single IPv6 address. expected: 1, actual: %d", size)
+	} else if !strings.EqualFold(ips[0], "fd01:0:101:2609:bdd2:ee20:7bd7:5836") {
+		t.Errorf("IPv6 does not match. expected: fd01:0:101:2609:bdd2:ee20:7bd7:5836, actual: %s", ips[0])
+	}
+
+	ips = returnIPsFromSpecificFamily(vcfg.IPv4Family, ipFamilies)
+	size = len(ips)
+	if size != 1 {
+		t.Errorf("Should only return single IPv4 address. expected: 1, actual: %d", size)
+	} else if !strings.EqualFold(ips[0], "10.161.34.192") {
+		t.Errorf("IPv6 does not match. expected: 10.161.34.192, actual: %s", ips[0])
+	}
 }

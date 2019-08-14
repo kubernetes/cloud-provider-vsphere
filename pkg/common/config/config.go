@@ -47,6 +47,14 @@ const (
 
 	// DefaultSecretDirectory is the default path to the secrets directory.
 	DefaultSecretDirectory string = "/etc/cloud/secrets"
+
+	// IPv6Family string representation for IPv6
+	IPv6Family = "ipv6"
+	// IPv4Family string representation for IPv4
+	IPv4Family = "ipv4"
+
+	// DefaultIPFamily is the default IP addressing to use for networking
+	DefaultIPFamily = IPv4Family
 )
 
 // Errors
@@ -64,6 +72,9 @@ var (
 	// ErrMissingVCenter is returned when the provided configuration does not
 	// define any vCenters.
 	ErrMissingVCenter = errors.New("No Virtual Center hosts defined")
+
+	// ErrInvalidIPFamilyType is returned when an invalid IPFamily type is encountered
+	ErrInvalidIPFamilyType = errors.New("Invalid IP Family type")
 )
 
 func getEnvKeyValue(match string, partial bool) (string, string, error) {
@@ -188,6 +199,13 @@ func FromEnv(cfg *Config) error {
 		cfg.Labels.Zone = v
 	}
 
+	if v := os.Getenv("VSPHERE_IP_FAMILY"); v != "" {
+		cfg.Global.IPFamily = v
+	}
+	if cfg.Global.IPFamily == "" {
+		cfg.Global.IPFamily = DefaultIPFamily
+	}
+
 	//Build VirtualCenter from ENVs
 	for _, e := range os.Environ() {
 		pair := strings.Split(e, "=")
@@ -244,6 +262,11 @@ func FromEnv(cfg *Config) error {
 				thumbprint = cfg.Global.Thumbprint
 			}
 
+			_, ipFamily, errIPFamily := getEnvKeyValue("VCENTER_"+id+"_IP_FAMILY", false)
+			if errIPFamily != nil {
+				ipFamily = cfg.Global.IPFamily
+			}
+
 			cfg.VirtualCenter[vcenter] = &VirtualCenterConfig{
 				User:              username,
 				Password:          password,
@@ -253,6 +276,7 @@ func FromEnv(cfg *Config) error {
 				RoundTripperCount: roundtrip,
 				CAFile:            caFile,
 				Thumbprint:        thumbprint,
+				IPFamily:          ipFamily,
 			}
 		}
 	}
@@ -267,6 +291,7 @@ func FromEnv(cfg *Config) error {
 			RoundTripperCount: cfg.Global.RoundTripperCount,
 			CAFile:            cfg.Global.CAFile,
 			Thumbprint:        cfg.Global.Thumbprint,
+			IPFamily:          cfg.Global.IPFamily,
 		}
 	}
 
@@ -276,6 +301,28 @@ func FromEnv(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func validateIPFamily(value string) ([]string, error) {
+	if len(value) == 0 {
+		return []string{DefaultIPFamily}, nil
+	}
+
+	ipFamilies := strings.Split(value, ",")
+	for i, ipFamily := range ipFamilies {
+		ipFamily = strings.TrimSpace(ipFamily)
+		if len(ipFamily) == 0 {
+			copy(ipFamilies[i:], ipFamilies[i+1:])      // Shift a[i+1:] left one index.
+			ipFamilies[len(ipFamilies)-1] = ""          // Erase last element (write zero value).
+			ipFamilies = ipFamilies[:len(ipFamilies)-1] // Truncate slice.
+			continue
+		}
+		if !strings.EqualFold(ipFamily, IPv4Family) && !strings.EqualFold(ipFamily, IPv6Family) {
+			return nil, ErrInvalidIPFamilyType
+		}
+	}
+
+	return ipFamilies, nil
 }
 
 func validateConfig(cfg *Config) error {
@@ -291,6 +338,15 @@ func validateConfig(cfg *Config) error {
 	}
 	if cfg.Global.APIBinding == "" {
 		cfg.Global.APIBinding = DefaultAPIBinding
+	}
+	if cfg.Global.IPFamily == "" {
+		cfg.Global.IPFamily = DefaultIPFamily
+	}
+
+	ipFamilyPriority, err := validateIPFamily(cfg.Global.IPFamily)
+	if err != nil {
+		klog.Errorf("Invalid Global IPFamily: %s, err=%s", cfg.Global.IPFamily, err)
+		return err
 	}
 
 	isSecretInfoProvided := true
@@ -310,6 +366,8 @@ func validateConfig(cfg *Config) error {
 			RoundTripperCount: cfg.Global.RoundTripperCount,
 			CAFile:            cfg.Global.CAFile,
 			Thumbprint:        cfg.Global.Thumbprint,
+			IPFamily:          cfg.Global.IPFamily,
+			IPFamilyPriority:  ipFamilyPriority,
 		}
 		cfg.VirtualCenter[cfg.Global.VCenterIP] = vcConfig
 	}
@@ -363,6 +421,17 @@ func validateConfig(cfg *Config) error {
 		if vcConfig.Thumbprint == "" {
 			vcConfig.Thumbprint = cfg.Global.Thumbprint
 		}
+
+		if vcConfig.IPFamily == "" {
+			vcConfig.IPFamily = cfg.Global.IPFamily
+		}
+
+		ipFamilyPriority, err := validateIPFamily(vcConfig.IPFamily)
+		if err != nil {
+			klog.Errorf("Invalid vcConfig IPFamily: %s, err=%s", vcConfig.IPFamily, err)
+			return err
+		}
+		vcConfig.IPFamilyPriority = ipFamilyPriority
 
 		insecure := vcConfig.InsecureFlag
 		if !insecure {

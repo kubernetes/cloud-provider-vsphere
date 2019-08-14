@@ -11,6 +11,7 @@ require (
 	github.com/google/btree v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
+	github.com/pkg/errors v0.8.0
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
