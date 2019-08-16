@@ -1,7 +1,4 @@
-# Components and Tools
-
-Before diving into Kubernetes on vSphere, it's important to cover some key components and tools.The following section introduces key components
-and tools that are part of any Kubernetes cluster running on vSphere. If you are familiar with Kubernetes and vSphere, you can skip this section.
+# Glossary
 
 ## VM
 
