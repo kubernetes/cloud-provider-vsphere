@@ -8,7 +8,7 @@
   * [Overview of the CSI](concepts/csi_overview.md)
 * [Glossary](glossary.md)
 * [Cloud Provider Interface (CPI)](cloud_provider_interface.md)
-* [Container Storage Interface (CSI)](cloud_provider_interface.md)
+* [Container Storage Interface (CSI)](container_storage_interface.md)
 * [Cloud Config Spec](cloud_config.md)
 
 ## Tutorials
