@@ -39,6 +39,16 @@ $ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
   make -C cloud-provider-vsphere build-with-docker
 ```
 
+## Container images
+
+Official releases of the vSphere Cloud Controller Manager container image can be found at:
+
+<https://gcr.io/cloud-provider-vsphere/cpi/release/manager>
+
+The very latest builds from the tip of master, which may not be stable, can be found at:
+
+<https://gcr.io/cloud-provider-vsphere/cpi/ci/manager>
+
 ## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
