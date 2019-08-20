@@ -57,20 +57,10 @@ deps:
 # Ensure the version is injected into the binaries via a linker flag.
 export VERSION ?= $(shell git describe --always --dirty)
 
-# Load the image registry include.
-include hack/make/login-to-image-registry.mk
-
-# Define the images.
-IMAGE_CCM := $(REGISTRY)/vsphere-cloud-controller-manager
-
 .PHONY: version print-ccm-image
 
 version:
 	@echo $(VERSION)
-
-# Printing the image versions are defined early so Go modules aren't forced.
-print-ccm-image:
-	@echo $(IMAGE_CCM):$(VERSION)
 
 ################################################################################
 ##                              BUILD BINARIES                                ##
@@ -131,10 +121,8 @@ deploy: | $(DOCKER_SOCK)
 	$(MAKE) check
 	$(MAKE) build-bins
 	$(MAKE) unit-test
-	$(MAKE) build-images
 	$(MAKE) integration-test
-	$(MAKE) push-bins
-	$(MAKE) push-images
+	$(MAKE) release-push
 
 ################################################################################
 ##                                 CLEAN                                      ##
@@ -142,7 +130,8 @@ deploy: | $(DOCKER_SOCK)
 .PHONY: clean
 clean:
 	@rm -f Dockerfile*
-	@rm -f $(CCM_BIN) cloud-provider-vsphere-*.tar.gz cloud-provider-vsphere-*.zip \
+	@rm -f $(CCM_BIN) $(CCM_BIN).sha256 \
+	  cloud-provider-vsphere-*.tar.gz cloud-provider-vsphere-*.zip \
 		image-*.tar image-*.d
 	GO111MODULE=off go clean -i -x . ./cmd/$(CCM_BIN_NAME)
 
@@ -285,42 +274,18 @@ shellcheck:
 	hack/check-shell.sh
 
 ################################################################################
-##                                 BUILD IMAGES                               ##
+##                                 BUILD IMAGES AND BINARIES                  ##
 ################################################################################
-IMAGE_CCM_D := image-ccm-$(VERSION).d
-build-ccm-image ccm-image: $(IMAGE_CCM_D)
-$(IMAGE_CCM): $(IMAGE_CCM_D)
-ifneq ($(GOOS),linux)
-$(IMAGE_CCM_D):
-	$(error Please set GOOS=linux for building $@)
-else
-$(IMAGE_CCM_D): $(CCM_BIN) | $(DOCKER_SOCK)
-	cp -f $< cluster/images/controller-manager/vsphere-cloud-controller-manager
-	docker build -t $(IMAGE_CCM):$(VERSION) cluster/images/controller-manager
-	docker tag $(IMAGE_CCM):$(VERSION) $(IMAGE_CCM):latest
-	@rm -f cluster/images/controller-manager/vsphere-cloud-controller-manager && touch $@
-endif
-
-build-images images: build-ccm-image
+.PHONY: release
+release: | $(DOCKER_SOCK)
+	hack/release.sh
 
 ################################################################################
-##                                  PUSH IMAGES                               ##
+##                                  PUSH IMAGES AND BINARIES                  ##
 ################################################################################
-.PHONY: push-$(IMAGE_CCM) upload-$(IMAGE_CCM)
-push-ccm-image upload-ccm-image: upload-$(IMAGE_CCM)
-push-$(IMAGE_CCM) upload-$(IMAGE_CCM): $(IMAGE_CCM_D) login-to-image-registry | $(DOCKER_SOCK)
-	docker push $(IMAGE_CCM):$(VERSION)
-	docker push $(IMAGE_CCM):latest
-
-.PHONY: push-images upload-images
-push-images upload-images: upload-ccm-image
-
-################################################################################
-##                                  PUSH BINS                                 ##
-################################################################################
-.PHONY: push-bins
-push-bins: build-bins
-	gsutil cp $(CCM_BIN) gs://artifacts.cloud-provider-vsphere.appspot.com/binaries/$(VERSION)/
+.PHONY: release-push
+release-push: | $(DOCKER_SOCK)
+	hack/release.sh -p -l
 
 ################################################################################
 ##                                  CI IMAGE                                  ##
@@ -333,11 +298,3 @@ push-ci-image:
 
 print-ci-image:
 	@$(MAKE) --no-print-directory -C hack/images/ci print
-
-################################################################################
-##                                TODO(akutz)                                 ##
-################################################################################
-TODO := docs godoc releasenotes translation
-.PHONY: $(TODO)
-$(TODO):
-	@echo "$@ not yet implemented"

@@ -7,7 +7,7 @@ PROJECT_ROOT ?= $(abspath ../..)
 
 CLUSTER_NAME := ccm-integration-test
 VERSION ?= $(shell git describe --always --dirty)
-CCM_IMAGE := gcr.io/cloud-provider-vsphere/vsphere-cloud-controller-manager:$(VERSION)
+CCM_IMAGE := gcr.io/cloud-provider-vsphere/cpi/pr/manager:$(VERSION)
 
 KIND_CONFIG := kind-config.yaml
 .PHONY: $(KIND_CONFIG)
@@ -53,7 +53,7 @@ deploy-ccm:
 	kubectl -n kube-system create -f secrets.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-roles.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-role-bindings.yaml && \
-	sed 's~gcr.io/cloud-provider-vsphere/vsphere-cloud-controller-manager:latest~$(CCM_IMAGE)~g' <../../manifests/controller-manager/vsphere-cloud-controller-manager-pod.yaml | kubectl -n kube-system apply -f -
+	sed 's~gcr.io/cloud-provider-vsphere/cpi/release/manager:latest~$(CCM_IMAGE)~g' <../../manifests/controller-manager/vsphere-cloud-controller-manager-pod.yaml | kubectl -n kube-system apply -f -
 
 delete-ccm:
 	kubectl -n kube-system delete configmaps cloud-config && \
@@ -70,7 +70,7 @@ log-ccm:
 	kubectl -n kube-system logs vsphere-cloud-controller-manager
 
 build-ccm-image:
-	GOOS=linux $(MAKE) -C ../.. build-ccm-image
+	../../hack/release.sh -t pr
 
 load-ccm-image: | $(DOCKER_SOCK)
 	kind load docker-image --name "$(CLUSTER_NAME)" $(CCM_IMAGE)
