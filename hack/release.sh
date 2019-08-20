@@ -113,7 +113,7 @@ function build_images() {
     .
   if [ "${LATEST}" ]; then
     echo "tagging image ${CPI_IMAGE_NAME}:${VERSION} as latest"
-    docker tag "${CPI_IMAGE_NAME}:${VERSION} ${CPI_IMAGE_NAME}:latest"
+    docker tag "${CPI_IMAGE_NAME}:${VERSION}" "${CPI_IMAGE_NAME}:latest"
   fi
 }
 
