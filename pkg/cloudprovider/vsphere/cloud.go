@@ -68,13 +68,16 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 
 		vs.informMgr = k8s.NewInformer(client)
 
-		connMgr := cm.NewConnectionManager(vs.cfg, vs.informMgr.GetSecretListener())
+		connMgr := cm.NewConnectionManager(vs.cfg, vs.informMgr, client)
 		vs.connectionManager = connMgr
 		vs.nodeManager.connectionManager = connMgr
 
 		vs.informMgr.AddNodeListener(vs.nodeAdded, vs.nodeDeleted, nil)
 
 		vs.informMgr.Listen()
+
+		//if running secrets, init them
+		connMgr.InitializeSecretLister()
 
 		if !vs.cfg.Global.APIDisable {
 			klog.V(1).Info("Starting the API Server")
@@ -85,7 +88,6 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 	} else {
 		klog.Errorf("Kubernetes Client Init Failed: %v", err)
 	}
-
 }
 
 // LoadBalancer returns a balancer interface. Also returns true if the

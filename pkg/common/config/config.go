@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,54 +26,6 @@ import (
 	"k8s.io/klog"
 
 	"gopkg.in/gcfg.v1"
-)
-
-const (
-	// DefaultRoundTripperCount is the number of allowed round trips
-	// before an error is returned.
-	DefaultRoundTripperCount uint = 3
-
-	// DefaultAPIBinding is the default ADDRESS:PORT binding used for
-	// exposing the API service.
-	DefaultAPIBinding string = ":43001"
-
-	// DefaultK8sServiceAccount is the default name of the Kubernetes
-	// service account.
-	DefaultK8sServiceAccount string = "cloud-controller-manager"
-
-	// DefaultVCenterPort is the default port used to access vCenter.
-	DefaultVCenterPort string = "443"
-
-	// DefaultSecretDirectory is the default path to the secrets directory.
-	DefaultSecretDirectory string = "/etc/cloud/secrets"
-
-	// IPv6Family string representation for IPv6
-	IPv6Family = "ipv6"
-	// IPv4Family string representation for IPv4
-	IPv4Family = "ipv4"
-
-	// DefaultIPFamily is the default IP addressing to use for networking
-	DefaultIPFamily = IPv4Family
-)
-
-// Errors
-var (
-	// ErrUsernameMissing is returned when the provided username is empty.
-	ErrUsernameMissing = errors.New("Username is missing")
-
-	// ErrPasswordMissing is returned when the provided password is empty.
-	ErrPasswordMissing = errors.New("Password is missing")
-
-	// ErrInvalidVCenterIP is returned when the provided vCenter IP address is
-	// missing from the provided configuration.
-	ErrInvalidVCenterIP = errors.New("vsphere.conf does not have the VirtualCenter IP address specified")
-
-	// ErrMissingVCenter is returned when the provided configuration does not
-	// define any vCenters.
-	ErrMissingVCenter = errors.New("No Virtual Center hosts defined")
-
-	// ErrInvalidIPFamilyType is returned when an invalid IPFamily type is encountered
-	ErrInvalidIPFamilyType = errors.New("Invalid IP Family type")
 )
 
 func getEnvKeyValue(match string, partial bool) (string, string, error) {
@@ -108,11 +59,7 @@ func getEnvKeyValue(match string, partial bool) (string, string, error) {
 // obtained from environment variables. If an environment variable is set
 // for a property that's already initialized, the environment variable's value
 // takes precedence.
-func FromEnv(cfg *Config) error {
-
-	if cfg == nil {
-		return fmt.Errorf("Config object cannot be nil")
-	}
+func (cfg *Config) FromEnv() error {
 
 	//Init
 	if cfg.VirtualCenter == nil {
@@ -229,6 +176,10 @@ func FromEnv(cfg *Config) error {
 			if errPassword != nil {
 				password = cfg.Global.Password
 			}
+			_, server, errServer := getEnvKeyValue("VCENTER_"+id+"_SERVER", false)
+			if errServer != nil {
+				server = ""
+			}
 			_, port, errPort := getEnvKeyValue("VCENTER_"+id+"_PORT", false)
 			if errPort != nil {
 				port = cfg.Global.VCenterPort
@@ -262,20 +213,45 @@ func FromEnv(cfg *Config) error {
 				thumbprint = cfg.Global.Thumbprint
 			}
 
+			_, secretName, secretNameErr := getEnvKeyValue("VCENTER_"+id+"_SECRET_NAME", false)
+			_, secretNamespace, secretNamespaceErr := getEnvKeyValue("VCENTER_"+id+"_SECRET_NAMESPACE", false)
+
+			if secretNameErr != nil || secretNamespaceErr != nil {
+				secretName = ""
+				secretNamespace = ""
+			}
+			secretRef := DefaultCredentialManager
+			if secretName != "" && secretNamespace != "" {
+				secretRef = vcenter
+			}
+
 			_, ipFamily, errIPFamily := getEnvKeyValue("VCENTER_"+id+"_IP_FAMILY", false)
 			if errIPFamily != nil {
 				ipFamily = cfg.Global.IPFamily
 			}
 
-			cfg.VirtualCenter[vcenter] = &VirtualCenterConfig{
+			// If server is explicitly set, that means the vcenter value above is the TenantRef
+			vcenterIP := vcenter
+			tenantRef := vcenter
+			if server != "" {
+				vcenterIP = server
+				tenantRef = vcenter
+			}
+
+			cfg.VirtualCenter[tenantRef] = &VirtualCenterConfig{
 				User:              username,
 				Password:          password,
+				TenantRef:         tenantRef,
+				VCenterIP:         vcenterIP,
 				VCenterPort:       port,
 				InsecureFlag:      insecureFlag,
 				Datacenters:       datacenters,
 				RoundTripperCount: roundtrip,
 				CAFile:            caFile,
 				Thumbprint:        thumbprint,
+				SecretRef:         secretRef,
+				SecretName:        secretName,
+				SecretNamespace:   secretNamespace,
 				IPFamily:          ipFamily,
 			}
 		}
@@ -285,22 +261,34 @@ func FromEnv(cfg *Config) error {
 		cfg.VirtualCenter[cfg.Global.VCenterIP] = &VirtualCenterConfig{
 			User:              cfg.Global.User,
 			Password:          cfg.Global.Password,
+			TenantRef:         cfg.Global.VCenterIP,
+			VCenterIP:         cfg.Global.VCenterIP,
 			VCenterPort:       cfg.Global.VCenterPort,
 			InsecureFlag:      cfg.Global.InsecureFlag,
 			Datacenters:       cfg.Global.Datacenters,
 			RoundTripperCount: cfg.Global.RoundTripperCount,
 			CAFile:            cfg.Global.CAFile,
 			Thumbprint:        cfg.Global.Thumbprint,
+			SecretRef:         DefaultCredentialManager,
+			SecretName:        cfg.Global.SecretName,
+			SecretNamespace:   cfg.Global.SecretNamespace,
 			IPFamily:          cfg.Global.IPFamily,
 		}
 	}
 
-	err := validateConfig(cfg)
+	err := cfg.validateConfig()
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// IsSecretInfoProvided returns true if k8s secret is set or using generic CO secret method.
+// If both k8s secret and generic CO both are true, we don't know which to use, so return false.
+func (cfg *Config) IsSecretInfoProvided() bool {
+	return (cfg.Global.SecretName != "" && cfg.Global.SecretNamespace != "" && cfg.Global.SecretsDirectory == "") ||
+		(cfg.Global.SecretName == "" && cfg.Global.SecretNamespace == "" && cfg.Global.SecretsDirectory != "")
 }
 
 func validateIPFamily(value string) ([]string, error) {
@@ -325,7 +313,7 @@ func validateIPFamily(value string) ([]string, error) {
 	return ipFamilies, nil
 }
 
-func validateConfig(cfg *Config) error {
+func (cfg *Config) validateConfig() error {
 	//Fix default global values
 	if cfg.Global.RoundTripperCount == 0 {
 		cfg.Global.RoundTripperCount = DefaultRoundTripperCount
@@ -349,23 +337,23 @@ func validateConfig(cfg *Config) error {
 		return err
 	}
 
-	isSecretInfoProvided := true
-	if (cfg.Global.SecretName == "" || cfg.Global.SecretNamespace == "") && cfg.Global.SecretsDirectory == "" {
-		isSecretInfoProvided = false
-	}
-
 	// Create a single instance of VSphereInstance for the Global VCenterIP if the
 	// VirtualCenter does not already exist in the map
-	if !isSecretInfoProvided && cfg.Global.VCenterIP != "" && cfg.VirtualCenter[cfg.Global.VCenterIP] == nil {
+	if cfg.Global.VCenterIP != "" && cfg.VirtualCenter[cfg.Global.VCenterIP] == nil {
 		vcConfig := &VirtualCenterConfig{
 			User:              cfg.Global.User,
 			Password:          cfg.Global.Password,
+			TenantRef:         cfg.Global.VCenterIP,
+			VCenterIP:         cfg.Global.VCenterIP,
 			VCenterPort:       cfg.Global.VCenterPort,
 			InsecureFlag:      cfg.Global.InsecureFlag,
 			Datacenters:       cfg.Global.Datacenters,
 			RoundTripperCount: cfg.Global.RoundTripperCount,
 			CAFile:            cfg.Global.CAFile,
 			Thumbprint:        cfg.Global.Thumbprint,
+			SecretRef:         DefaultCredentialManager,
+			SecretName:        cfg.Global.SecretName,
+			SecretNamespace:   cfg.Global.SecretNamespace,
 			IPFamily:          cfg.Global.IPFamily,
 			IPFamilyPriority:  ipFamilyPriority,
 		}
@@ -386,7 +374,17 @@ func validateConfig(cfg *Config) error {
 			return ErrInvalidVCenterIP
 		}
 
-		if !isSecretInfoProvided {
+		// If vcConfig.VCenterIP is explicitly set, that means the vcServer
+		// above is the TenantRef
+		if vcConfig.VCenterIP != "" {
+			//vcConfig.VCenterIP is already set
+			vcConfig.TenantRef = vcServer
+		} else {
+			vcConfig.VCenterIP = vcServer
+			vcConfig.TenantRef = vcServer
+		}
+
+		if !cfg.IsSecretInfoProvided() && !vcConfig.IsSecretInfoProvided() {
 			if vcConfig.User == "" {
 				vcConfig.User = cfg.Global.User
 				if vcConfig.User == "" {
@@ -401,6 +399,10 @@ func validateConfig(cfg *Config) error {
 					return ErrPasswordMissing
 				}
 			}
+		} else if cfg.IsSecretInfoProvided() && !vcConfig.IsSecretInfoProvided() {
+			vcConfig.SecretRef = DefaultCredentialManager
+		} else if vcConfig.IsSecretInfoProvided() {
+			vcConfig.SecretRef = vcConfig.SecretNamespace + "/" + vcConfig.SecretName
 		}
 
 		if vcConfig.VCenterPort == "" {
@@ -457,7 +459,7 @@ func ReadConfig(config io.Reader) (*Config, error) {
 	}
 
 	// Env Vars should override config file entries if present
-	if err := FromEnv(cfg); err != nil {
+	if err := cfg.FromEnv(); err != nil {
 		return nil, err
 	}
 

@@ -17,17 +17,30 @@ limitations under the License.
 package connectionmanager
 
 import (
+	"sync"
+
+	clientset "k8s.io/client-go/kubernetes"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
+	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // ConnectionManager encapsulates vCenter connections
 type ConnectionManager struct {
+	sync.Mutex
+
+	// The k8s client init from the cloud provider service account
+	client clientset.Interface
+
 	// Maps the VC server to VSphereInstance
 	VsphereInstanceMap map[string]*VSphereInstance
-	// CredentialsManager
-	credentialManager *cm.SecretCredentialManager
+	// CredentialManager per VC
+	// The global CredentialManager will have an entry in this map with the key of "Global"
+	credentialManagers map[string]*cm.CredentialManager
+	// InformerManagers per VC
+	// The global InformerManager will have an entry in this map with the key of "Global"
+	informerManagers map[string]*k8s.InformerManager
 }
 
 // VSphereInstance represents a vSphere instance where one or more kubernetes nodes are running.
@@ -38,6 +51,7 @@ type VSphereInstance struct {
 
 // VMDiscoveryInfo contains VM info about a discovered VM
 type VMDiscoveryInfo struct {
+	TenantRef  string
 	DataCenter *vclib.Datacenter
 	VM         *vclib.VirtualMachine
 	VcServer   string
@@ -47,6 +61,7 @@ type VMDiscoveryInfo struct {
 
 // FcdDiscoveryInfo contains FCD info about a discovered FCD
 type FcdDiscoveryInfo struct {
+	TenantRef  string
 	DataCenter *vclib.Datacenter
 	FCDInfo    *vclib.FirstClassDiskInfo
 	VcServer   string
@@ -54,12 +69,14 @@ type FcdDiscoveryInfo struct {
 
 // ListDiscoveryInfo represents a VC/DC pair
 type ListDiscoveryInfo struct {
+	TenantRef  string
 	VcServer   string
 	DataCenter *vclib.Datacenter
 }
 
 // ZoneDiscoveryInfo contains VC+DC info based on a given zone
 type ZoneDiscoveryInfo struct {
+	TenantRef  string
 	DataCenter *vclib.Datacenter
 	VcServer   string
 }

@@ -17,79 +17,92 @@ limitations under the License.
 package credentialmanager
 
 import (
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog"
 )
 
-// Errors
-var (
-	// ErrCredentialsNotFound is returned when no credentials are configured.
-	ErrCredentialsNotFound = errors.New("Credentials not found")
+// NewCredentialManager returns a new CredentialManager object.
+func NewCredentialManager(secretName string, secretNamespace string, secretsDirectory string,
+	secretLister v1.SecretLister) *CredentialManager {
 
-	// ErrCredentialMissing is returned when the credentials do not contain a username and/or password.
-	ErrCredentialMissing = errors.New("Username/Password is missing")
-
-	// ErrUnknownSecretKey is returned when the supplied key does not return a secret.
-	ErrUnknownSecretKey = errors.New("Unknown secret key")
-)
+	return &CredentialManager{
+		SecretName:             secretName,
+		SecretNamespace:        secretNamespace,
+		SecretsDirectory:       secretsDirectory,
+		SecretLister:           secretLister,
+		secretsDirectoryParsed: false,
+		Cache: &SecretCache{
+			VirtualCenter: make(map[string]*Credential),
+		},
+	}
+}
 
 // GetCredential returns credentials for the given vCenter Server.
 // GetCredential returns error if Secret is not added or SecretDirectory is not set (ie No Creds).
-func (secretCredentialManager *SecretCredentialManager) GetCredential(server string) (*Credential, error) {
+func (credentialManager *CredentialManager) GetCredential(server string) (*Credential, error) {
 	//get the creds using the K8s listener if it exists
-	if secretCredentialManager.SecretLister != nil {
-		err := secretCredentialManager.updateCredentialsMapK8s()
+	if credentialManager.SecretLister != nil {
+		klog.V(4).Info("SecretLister is valid. Retrieving secrets.")
+		err := credentialManager.updateCredentialsMapK8s()
 		if err != nil {
+			klog.Errorf("updateCredentialsMapK8s failed. err=%s", err)
 			statusErr, ok := err.(*apierrors.StatusError)
 			if (ok && statusErr.ErrStatus.Code != http.StatusNotFound) || !ok {
 				return nil, err
 			}
 			// Handle secrets deletion by finding credentials from cache
-			klog.Warningf("secret %q not found in namespace %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace)
+			klog.Warningf("secret %q not found in namespace %q", credentialManager.SecretName, credentialManager.SecretNamespace)
 		}
 	}
 
 	//get the creds using the Secrets File if it exists
-	if secretCredentialManager.SecretsDirectory != "" {
-		err := secretCredentialManager.updateCredentialsMapFile()
+	if credentialManager.SecretsDirectory != "" {
+		klog.V(4).Infof("SecretsDirectory is not empty. SecretsDirectory=%s", credentialManager.SecretsDirectory)
+		err := credentialManager.updateCredentialsMapFile()
 		if err != nil {
-			klog.Warningf("Failed parsing SecretsDirectory %q: %q", secretCredentialManager.SecretsDirectory, err)
+			klog.Warningf("Failed parsing SecretsDirectory %q: %q", credentialManager.SecretsDirectory, err)
 		}
 	}
 
-	credential, found := secretCredentialManager.Cache.GetCredential(server)
+	credential, found := credentialManager.Cache.GetCredential(server)
 	if !found {
-		klog.Errorf("credentials not found for server %q", server)
+		klog.Errorf("credentials not found for server %s", server)
 		return nil, ErrCredentialsNotFound
 	}
 	return &credential, nil
 }
 
-func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapK8s() error {
-	secret, err := secretCredentialManager.SecretLister.Secrets(secretCredentialManager.SecretNamespace).Get(secretCredentialManager.SecretName)
+func (credentialManager *CredentialManager) updateCredentialsMapK8s() error {
+	klog.V(4).Info("updateCredentialsMapK8s called")
+	secret, err := credentialManager.SecretLister.Secrets(credentialManager.SecretNamespace).Get(credentialManager.SecretName)
 	if err != nil {
-		klog.Warningf("Cannot get secret %s in namespace %s. error: %q", secretCredentialManager.SecretName, secretCredentialManager.SecretNamespace, err)
+		klog.Warningf("Cannot get secret %s in namespace %s. error: %q", credentialManager.SecretName, credentialManager.SecretNamespace, err)
 		return err
 	}
-	cacheSecret := secretCredentialManager.Cache.GetSecret()
+	cacheSecret := credentialManager.Cache.GetSecret()
 	if cacheSecret != nil &&
 		cacheSecret.GetResourceVersion() == secret.GetResourceVersion() {
-		klog.V(2).Infof("VCP SecretCredentialManager: Secret %q will not be updated in cache. Since, secrets have same resource version %q", secretCredentialManager.SecretName, cacheSecret.GetResourceVersion())
+		klog.V(2).Infof("Secret %q will not be updated in cache. Since, secrets have same resource version %q", credentialManager.SecretName, cacheSecret.GetResourceVersion())
 		return nil
 	}
-	secretCredentialManager.Cache.UpdateSecret(secret)
-	return secretCredentialManager.Cache.parseSecret()
+	credentialManager.Cache.UpdateSecret(secret)
+	err = credentialManager.Cache.parseSecret()
+	if err != nil {
+		klog.Errorf("parseSecret failed with err=%q", err)
+	}
+
+	return err
 }
 
-func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapFile() error {
+func (credentialManager *CredentialManager) updateCredentialsMapFile() error {
 	//Secretsdirectory was parsed before, no need to do it again
-	if secretCredentialManager.SecretsDirectoryParse {
+	if credentialManager.secretsDirectoryParsed {
 		return nil
 	}
 
@@ -97,10 +110,10 @@ func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapFile
 	//parsed it from a k8s secret so we can reuse the SecretCache.parseSecret() func
 	data := make(map[string][]byte)
 
-	files, err := ioutil.ReadDir(secretCredentialManager.SecretsDirectory)
+	files, err := ioutil.ReadDir(credentialManager.SecretsDirectory)
 	if err != nil {
-		secretCredentialManager.SecretsDirectoryParse = true
-		klog.Warningf("Failed to find secrets directory %s. error: %q", secretCredentialManager.SecretsDirectory, err)
+		credentialManager.secretsDirectoryParsed = true
+		klog.Warningf("Failed to find secrets directory %s. error: %q", credentialManager.SecretsDirectory, err)
 		return err
 	}
 
@@ -110,7 +123,7 @@ func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapFile
 			continue
 		}
 
-		fullFilePath := secretCredentialManager.SecretsDirectory + "/" + f.Name()
+		fullFilePath := credentialManager.SecretsDirectory + "/" + f.Name()
 		contents, err := ioutil.ReadFile(fullFilePath)
 		if err != nil {
 			klog.Warningf("Cannot read  file %s. error: %q", fullFilePath, err)
@@ -120,9 +133,9 @@ func (secretCredentialManager *SecretCredentialManager) updateCredentialsMapFile
 		data[f.Name()] = contents
 	}
 
-	secretCredentialManager.SecretsDirectoryParse = true
-	secretCredentialManager.Cache.UpdateSecretFile(data)
-	return secretCredentialManager.Cache.parseSecret()
+	credentialManager.secretsDirectoryParsed = true
+	credentialManager.Cache.UpdateSecretFile(data)
+	return credentialManager.Cache.parseSecret()
 }
 
 // GetSecret returns a Kubernetes secret.

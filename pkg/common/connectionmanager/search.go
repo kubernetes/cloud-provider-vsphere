@@ -49,6 +49,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 		return nil, vclib.ErrNoVMFound
 	}
 	type vmSearch struct {
+		tenantRef  string
 		vc         string
 		datacenter *vclib.Datacenter
 	}
@@ -96,7 +97,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 	}
 
 	go func() {
-		for vc, vsi := range cm.VsphereInstanceMap {
+		for _, vsi := range cm.VsphereInstanceMap {
 			var datacenterObjs []*vclib.Datacenter
 
 			found := getVMFound()
@@ -106,7 +107,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 
 			var err error
 			for i := 0; i < NumConnectionAttempts; i++ {
-				err = cm.Connect(ctx, vc)
+				err = cm.Connect(ctx, vsi)
 				if err == nil {
 					break
 				}
@@ -149,9 +150,10 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 					break
 				}
 
-				klog.V(4).Infof("Finding node %s in vc=%s and datacenter=%s", myNodeID, vc, datacenterObj.Name())
+				klog.V(4).Infof("Finding node %s in vc=%s and datacenter=%s", myNodeID, vsi.Cfg.VCenterIP, datacenterObj.Name())
 				queueChannel <- &vmSearch{
-					vc:         vc,
+					tenantRef:  vsi.Cfg.TenantRef,
+					vc:         vsi.Cfg.VCenterIP,
 					datacenter: datacenterObj,
 				}
 			}
@@ -208,7 +210,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 					nodeID, vm, res.vc, res.datacenter.Name())
 				klog.V(2).Infof("Hostname: %s, UUID: %s", hostName, UUID)
 
-				vmInfo = &VMDiscoveryInfo{DataCenter: res.datacenter, VM: vm, VcServer: res.vc,
+				vmInfo = &VMDiscoveryInfo{TenantRef: res.tenantRef, DataCenter: res.datacenter, VM: vm, VcServer: res.vc,
 					UUID: UUID, NodeName: hostName}
 				setVMFound(true)
 				break
@@ -237,6 +239,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 	klog.V(2).Info("WhichVCandDCByFCDId fcdID: ", fcdID)
 
 	type fcdSearch struct {
+		tenantRef  string
 		vc         string
 		datacenter *vclib.Datacenter
 	}
@@ -272,7 +275,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 	}
 
 	go func() {
-		for vc, vsi := range cm.VsphereInstanceMap {
+		for _, vsi := range cm.VsphereInstanceMap {
 			var datacenterObjs []*vclib.Datacenter
 
 			found := getFCDFound()
@@ -282,7 +285,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 
 			var err error
 			for i := 0; i < NumConnectionAttempts; i++ {
-				err = cm.Connect(ctx, vc)
+				err = cm.Connect(ctx, vsi)
 				if err == nil {
 					break
 				}
@@ -325,9 +328,10 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 					break
 				}
 
-				klog.V(4).Infof("Finding FCD %s in vc=%s and datacenter=%s", fcdID, vc, datacenterObj.Name())
+				klog.V(4).Infof("Finding FCD %s in vc=%s and datacenter=%s", fcdID, vsi.Cfg.VCenterIP, datacenterObj.Name())
 				queueChannel <- &fcdSearch{
-					vc:         vc,
+					tenantRef:  vsi.Cfg.TenantRef,
+					vc:         vsi.Cfg.VCenterIP,
 					datacenter: datacenterObj,
 				}
 			}
@@ -357,7 +361,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 				klog.V(2).Infof("Found FCD %s as vm=%+v in vc=%s and datacenter=%s",
 					fcdID, fcd, res.vc, res.datacenter.Name())
 
-				fcdInfo = &FcdDiscoveryInfo{DataCenter: res.datacenter, FCDInfo: fcd, VcServer: res.vc}
+				fcdInfo = &FcdDiscoveryInfo{TenantRef: res.tenantRef, DataCenter: res.datacenter, FCDInfo: fcd, VcServer: res.vc}
 				setFCDFound(true)
 				break
 			}

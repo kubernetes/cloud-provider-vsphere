@@ -30,7 +30,7 @@ func TestWhichVCandDCByNodeIdByUUID(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil)
+	connMgr := NewConnectionManager(config, nil, nil)
 	defer connMgr.Logout()
 
 	// setup
@@ -62,7 +62,7 @@ func TestWhichVCandDCByNodeIdByName(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil)
+	connMgr := NewConnectionManager(config, nil, nil)
 	defer connMgr.Logout()
 
 	// setup
@@ -94,7 +94,7 @@ func TestWhichVCandDCByFCDId(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil)
+	connMgr := NewConnectionManager(config, nil, nil)
 	defer connMgr.Logout()
 
 	// context

@@ -33,12 +33,12 @@ func (cm *ConnectionManager) ListAllVCandDCPairs(ctx context.Context) ([]*ListDi
 
 	listOfVCAndDCPairs := make([]*ListDiscoveryInfo, 0)
 
-	for vc, vsi := range cm.VsphereInstanceMap {
+	for _, vsi := range cm.VsphereInstanceMap {
 		var datacenterObjs []*vclib.Datacenter
 
 		var err error
 		for i := 0; i < NumConnectionAttempts; i++ {
-			err = cm.Connect(ctx, vc)
+			err = cm.Connect(ctx, vsi)
 			if err == nil {
 				break
 			}
@@ -74,7 +74,8 @@ func (cm *ConnectionManager) ListAllVCandDCPairs(ctx context.Context) ([]*ListDi
 
 		for _, datacenterObj := range datacenterObjs {
 			listOfVCAndDCPairs = append(listOfVCAndDCPairs, &ListDiscoveryInfo{
-				VcServer:   vc,
+				TenantRef:  vsi.Cfg.TenantRef,
+				VcServer:   vsi.Cfg.VCenterIP,
 				DataCenter: datacenterObj,
 			})
 		}

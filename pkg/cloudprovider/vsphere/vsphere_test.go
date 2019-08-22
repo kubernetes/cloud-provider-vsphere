@@ -104,7 +104,7 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	cfg.Global.VCenterPort = s.URL.Port()
 	cfg.Global.User = s.URL.User.Username()
 	cfg.Global.Password, _ = s.URL.User.Password()
-	// Configure region and zone categories
+
 	if multiDc {
 		cfg.Global.Datacenters = "DC0,DC1"
 	} else {
@@ -114,6 +114,8 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	cfg.VirtualCenter[s.URL.Hostname()] = &vcfg.VirtualCenterConfig{
 		User:         cfg.Global.User,
 		Password:     cfg.Global.Password,
+		TenantRef:    cfg.Global.VCenterIP,
+		VCenterIP:    cfg.Global.VCenterIP,
 		VCenterPort:  cfg.Global.VCenterPort,
 		InsecureFlag: cfg.Global.InsecureFlag,
 		Datacenters:  cfg.Global.Datacenters,
@@ -132,7 +134,7 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 // configFromEnvOrSim returns config from configFromEnv if set, otherwise returns configFromSim.
 func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
 	cfg := &vcfg.Config{}
-	if err := vcfg.FromEnv(cfg); err != nil {
+	if err := cfg.FromEnv(); err != nil {
 		return configFromSim(multiDc)
 	}
 	return cfg, func() {}
@@ -140,7 +142,7 @@ func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
 
 func TestNewVSphere(t *testing.T) {
 	cfg := &vcfg.Config{}
-	if err := vcfg.FromEnv(cfg); err != nil {
+	if err := cfg.FromEnv(); err != nil {
 		t.Skipf("No config found in environment")
 	}
 
@@ -159,7 +161,7 @@ func TestVSphereLogin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vs.connectionManager = cm.NewConnectionManager(cfg, nil)
+	vs.connectionManager = cm.NewConnectionManager(cfg, nil, nil)
 	defer vs.connectionManager.Logout()
 
 	// Create context
@@ -192,7 +194,7 @@ func TestVSphereLoginByToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vs.connectionManager = cm.NewConnectionManager(cfg, nil)
+	vs.connectionManager = cm.NewConnectionManager(cfg, nil, nil)
 
 	ctx := context.Background()
 
@@ -492,7 +494,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 		if err != nil { // testcase.expectedError {
 			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 		}
-		vs.connectionManager = cm.NewConnectionManager(cfg, nil)
+		vs.connectionManager = cm.NewConnectionManager(cfg, nil, nil)
 
 		if testcase.expectedIsSecretProvided && (vs.cfg.Global.SecretNamespace == "" || vs.cfg.Global.SecretName == "") {
 			t.Fatalf("SecretName and SecretNamespace was expected in config %s. error: %s",

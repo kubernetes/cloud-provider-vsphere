@@ -30,17 +30,22 @@ func noResyncPeriodFunc() time.Duration {
 	return 0
 }
 
+var signalHandler <-chan struct{}
+
 // NewInformer creates a newk8s client based on a service account
 func NewInformer(client clientset.Interface) *InformerManager {
+	if signalHandler == nil {
+		signalHandler = signals.SetupSignalHandler()
+	}
 	return &InformerManager{
 		client:          client,
-		stopCh:          signals.SetupSignalHandler(),
+		stopCh:          signalHandler,
 		informerFactory: informers.NewSharedInformerFactory(client, noResyncPeriodFunc()),
 	}
 }
 
-// GetSecretListener creates a lister to use
-func (im *InformerManager) GetSecretListener() listerv1.SecretLister {
+// GetSecretLister creates a lister to use
+func (im *InformerManager) GetSecretLister() listerv1.SecretLister {
 	if im.secretInformer == nil {
 		im.secretInformer = im.informerFactory.Core().V1().Secrets()
 	}

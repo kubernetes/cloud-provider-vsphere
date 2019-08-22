@@ -186,7 +186,7 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 
 	informerFactory := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
 	secretInformer := informerFactory.Core().V1().Secrets()
-	secretCredentialManager := &SecretCredentialManager{
+	secretCredentialManager := &CredentialManager{
 		SecretName:      secretName,
 		SecretNamespace: secretNamespace,
 		SecretLister:    secretInformer.Lister(),

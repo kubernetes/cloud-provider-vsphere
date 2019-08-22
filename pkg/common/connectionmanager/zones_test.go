@@ -25,29 +25,15 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vapi/tags"
+
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
-
-func TestRemovePortFromHost(t *testing.T) {
-	str1 := removePortFromHost("127.0.0.1")
-	if !strings.EqualFold("127.0.0.1", str1) {
-		t.Errorf("removePortFromHost(127.0.0.1) failed str=%s", str1)
-	}
-	str2 := removePortFromHost("127.0.0.1:")
-	if !strings.EqualFold("127.0.0.1", str2) {
-		t.Errorf("removePortFromHost(127.0.0.1) failed str=%s", str2)
-	}
-	str3 := removePortFromHost("127.0.0.1:443")
-	if !strings.EqualFold("127.0.0.1", str3) {
-		t.Errorf("removePortFromHost(127.0.0.1) failed str=%s", str3)
-	}
-}
 
 func TestWhichVCandDCByZoneSingleDC(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil)
+	connMgr := NewConnectionManager(config, nil, nil)
 	defer connMgr.Logout()
 
 	// context
@@ -70,19 +56,19 @@ func TestWhichVCandDCByZoneMultiDC(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil)
+	connMgr := NewConnectionManager(config, nil, nil)
 	defer connMgr.Logout()
 
 	// context
 	ctx := context.Background()
 
-	err := connMgr.Connect(ctx, config.Global.VCenterIP)
+	// Get the vSphere Instance
+	vsi := connMgr.VsphereInstanceMap[config.Global.VCenterIP]
+
+	err := connMgr.Connect(ctx, vsi)
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
-
-	// Get the vSphere Instance
-	vsi := connMgr.VsphereInstanceMap[config.Global.VCenterIP]
 
 	// Tag manager instance
 	restClient := rest.NewClient(vsi.Conn.Client)
@@ -177,19 +163,19 @@ func TestLookupZoneByMoref(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil)
+	connMgr := NewConnectionManager(config, nil, nil)
 	defer connMgr.Logout()
 
 	// context
 	ctx := context.Background()
 
-	err := connMgr.Connect(ctx, config.Global.VCenterIP)
+	// Get the vSphere Instance
+	vsi := connMgr.VsphereInstanceMap[config.Global.VCenterIP]
+
+	err := connMgr.Connect(ctx, vsi)
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
-
-	// Get the vSphere Instance
-	vsi := connMgr.VsphereInstanceMap[config.Global.VCenterIP]
 
 	// Tag manager instance
 	restClient := rest.NewClient(vsi.Conn.Client)
@@ -261,7 +247,7 @@ func TestLookupZoneByMoref(t *testing.T) {
 	 */
 
 	// Get Host zone found directly on the Host object. Overrides Datacenter. Ancessor enabled but won't use.
-	kv, err := connMgr.LookupZoneByMoref(ctx, dc0, myHost.Reference(), config.Labels.Zone, config.Labels.Region)
+	kv, err := connMgr.LookupZoneByMoref(ctx, config.Global.VCenterIP, myHost.Reference(), config.Labels.Zone, config.Labels.Region)
 	if err != nil {
 		t.Fatalf("[HOST] LookupZoneByMoref failed err=%v", err)
 	}

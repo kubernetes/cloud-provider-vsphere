@@ -35,7 +35,7 @@ func TestRegUnregNode(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)
@@ -85,7 +85,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)
@@ -94,7 +94,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
 	name := vm.Name
 
-	err := connMgr.Connect(context.Background(), cfg.Global.VCenterIP)
+	err := connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
@@ -116,7 +116,7 @@ func TestExport(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)
