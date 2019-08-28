@@ -16,12 +16,15 @@ require (
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
 	github.com/vmware/govmomi v0.21.0
+	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
+	golang.org/x/tools v0.0.0-20190827205025-b29f5f60c37a // indirect
 	google.golang.org/grpc v1.22.1
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/square/go-jose.v2 v2.3.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	honnef.co/go/tools v0.0.1-2019.2.2 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0

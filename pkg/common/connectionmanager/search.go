@@ -100,8 +100,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 		for _, vsi := range cm.VsphereInstanceMap {
 			var datacenterObjs []*vclib.Datacenter
 
-			found := getVMFound()
-			if found == true {
+			if getVMFound() {
 				break
 			}
 
@@ -145,8 +144,7 @@ func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID st
 			}
 
 			for _, datacenterObj := range datacenterObjs {
-				found := getVMFound()
-				if found == true {
+				if getVMFound() {
 					break
 				}
 
@@ -278,8 +276,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 		for _, vsi := range cm.VsphereInstanceMap {
 			var datacenterObjs []*vclib.Datacenter
 
-			found := getFCDFound()
-			if found == true {
+			if getFCDFound() {
 				break
 			}
 
@@ -323,8 +320,7 @@ func (cm *ConnectionManager) WhichVCandDCByFCDId(ctx context.Context, fcdID stri
 			}
 
 			for _, datacenterObj := range datacenterObjs {
-				found := getFCDFound()
-				if found == true {
+				if getFCDFound() {
 					break
 				}
 

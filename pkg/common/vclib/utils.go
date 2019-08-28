@@ -38,11 +38,7 @@ func IsNotFound(err error) bool {
 	}
 
 	_, ok = err.(*find.DefaultNotFoundError)
-	if ok {
-		return true
-	}
-
-	return false
+	return ok
 }
 
 func getFinder(dc *Datacenter) *find.Finder {
@@ -127,7 +123,7 @@ func getSCSIControllers(vmDevices object.VirtualDeviceList) []*types.VirtualCont
 // for vDiskPath [DatastoreCluster/sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk, return value is [sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk
 // for vDiskPath [sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk, return value remains same [sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk
 func RemoveStorageClusterORFolderNameFromVDiskPath(vDiskPath string) string {
-	datastore := regexp.MustCompile("\\[(.*?)\\]").FindStringSubmatch(vDiskPath)[1]
+	datastore := regexp.MustCompile(`\[(.*?)\]`).FindStringSubmatch(vDiskPath)[1]
 	if filepath.Base(datastore) != datastore {
 		vDiskPath = strings.Replace(vDiskPath, datastore, filepath.Base(datastore), 1)
 	}

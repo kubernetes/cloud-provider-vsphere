@@ -22,8 +22,9 @@ set -o pipefail
 # script is located.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-go get golang.org/x/lint/golint
+go get honnef.co/go/tools/cmd/staticcheck
+CMD=$(go list -f \{\{\.Target\}\} honnef.co/go/tools/cmd/staticcheck)
 
-CMD=$(go list -f \{\{\.Target\}\} golang.org/x/lint/golint)
+CHECKS="all,-ST1*"
 
-"${CMD}" -set_exit_status ./pkg/... ./cmd/...
+"${CMD}" -checks "${CHECKS}" ./...

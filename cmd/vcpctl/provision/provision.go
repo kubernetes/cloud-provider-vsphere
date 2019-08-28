@@ -36,12 +36,6 @@ var (
 	vcport string
 	// True if vCenter uses self-signed cert.
 	insecure bool
-	// Datacenter in which VMs are located.
-	datacenter string
-	// Name of the secret were vCenter credentials are present.
-	secretName string
-	// Secret Namespace where secret will be present that has vCenter credentials.
-	secretNamespace string
 	// vCenter username.
 	vcUser string
 	// vCenter password in clear text.
