@@ -255,17 +255,14 @@ quick-conformance-test: conformance-test
 ################################################################################
 ##                                 LINTING                                    ##
 ################################################################################
-.PHONY: fmt vet lint mdlint shellcheck check
+.PHONY: fmt vet lint mdlint shellcheck staticcheck check
+check: fmt lint mdlint shellcheck staticcheck vet
+
 fmt:
 	hack/check-format.sh
 
-vet:
-	hack/check-vet.sh
-
 lint:
 	hack/check-lint.sh
-
-check: fmt vet lint mdlint shellcheck
 
 mdlint:
 	hack/check-mdlint.sh
@@ -273,6 +270,11 @@ mdlint:
 shellcheck:
 	hack/check-shell.sh
 
+staticcheck:
+	hack/check-staticcheck.sh
+
+vet:
+	hack/check-vet.sh
 ################################################################################
 ##                                 BUILD IMAGES AND BINARIES                  ##
 ################################################################################

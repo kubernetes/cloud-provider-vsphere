@@ -175,8 +175,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 		for _, vsi := range cm.VsphereInstanceMap {
 			var datacenterObjs []*vclib.Datacenter
 
-			found := getZoneFound()
-			if found == true {
+			if getZoneFound() {
 				break
 			}
 
@@ -220,8 +219,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 			}
 
 			for _, datacenterObj := range datacenterObjs {
-				found := getZoneFound()
-				if found == true {
+				if getZoneFound() {
 					break
 				}
 
@@ -320,7 +318,7 @@ func withTagsClient(ctx context.Context, connection *vclib.VSphereConnection, f 
 func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, tenantRef string,
 	moRef types.ManagedObjectReference, zoneLabel string, regionLabel string) (map[string]string, error) {
 
-	result := make(map[string]string, 0)
+	result := make(map[string]string)
 
 	vsi := cm.VsphereInstanceMap[tenantRef]
 	if vsi == nil {

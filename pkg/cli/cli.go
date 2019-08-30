@@ -86,7 +86,7 @@ func CheckVSphereConfig(ctx context.Context, o *ClientOption) error {
 			spec := vimType.VirtualMachineConfigSpec{
 				ExtraConfig: config,
 			}
-			task, err := vm.Reconfigure(ctx, spec)
+			task, _ := vm.Reconfigure(ctx, spec)
 			err = task.Wait(ctx)
 			if err != nil {
 				return err

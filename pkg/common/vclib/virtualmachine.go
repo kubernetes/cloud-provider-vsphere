@@ -217,9 +217,7 @@ func (vm *VirtualMachine) GetAllAccessibleDatastores(ctx context.Context) ([]*Da
 		return nil, err
 	}
 	var dsRefList []types.ManagedObjectReference
-	for _, dsRef := range hostSystemMo.Datastore {
-		dsRefList = append(dsRefList, dsRef)
-	}
+	dsRefList = append(dsRefList, hostSystemMo.Datastore...)
 
 	var dsMoList []mo.Datastore
 	pc := property.DefaultCollector(vm.Client())
@@ -289,8 +287,7 @@ func (vm *VirtualMachine) CreateDiskSpec(ctx context.Context, diskPath string, d
 		disk.CapacityInKB = int64(volumeOptions.CapacityKB)
 	}
 	if volumeOptions.DiskFormat != "" {
-		var diskFormat string
-		diskFormat = DiskFormatValidType[volumeOptions.DiskFormat]
+		diskFormat := DiskFormatValidType[volumeOptions.DiskFormat]
 		switch diskFormat {
 		case ThinDiskType:
 			backing.ThinProvisioned = types.NewBool(true)

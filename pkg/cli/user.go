@@ -41,7 +41,6 @@ import (
 type User struct {
 	id string
 	types.AdminPersonDetails
-	password string
 	solution types.AdminSolutionDetails
 	role     string
 	cert     string
