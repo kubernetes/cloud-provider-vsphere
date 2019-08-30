@@ -81,6 +81,14 @@ type VirtualCenterConfig struct {
 	User string `gcfg:"user"`
 	// vCenter password in clear text.
 	Password string `gcfg:"password"`
+	// TenantRef (intentionally not exposed via the config) is a unique tenant ref to
+	// be used in place of the vcServer as the primary connection key. If one label is set,
+	// all virtual center configs must have a unique label.
+	TenantRef string
+	// vCenterIP - If this field in the config is set, it is assumed then that value in [VirtualCenter "<value>"]
+	// is now the TenantRef above and this field is the actual VCenterIP. Otherwise for backward
+	// compatibility, the value by default is the IP or FQDN of the vCenter Server.
+	VCenterIP string `gcfg:"server"`
 	// vCenter port.
 	VCenterPort string `gcfg:"port"`
 	// True if vCenter uses self-signed cert.
@@ -94,11 +102,18 @@ type VirtualCenterConfig struct {
 	CAFile string `gcfg:"ca-file"`
 	// Thumbprint of the VCenter's certificate thumbprint
 	Thumbprint string `gcfg:"thumbprint"`
+	// SecretRef (intentionally not exposed via the config) is a key to identify which
+	// InformerManager holds the secret
+	SecretRef string
+	// Name of the secret where vCenter credentials are present.
+	SecretName string `gcfg:"secret-name"`
+	// Namespace where the secret will be present containing vCenter credentials.
+	SecretNamespace string `gcfg:"secret-namespace"`
 	// IP Family enables the ability to support IPv4 or IPv6
 	// Supported values are:
 	// ipv4 - IPv4 addresses only (Default)
 	// ipv6 - IPv6 addresses only
 	IPFamily string `gcfg:"ip-family"`
-	// IPFamilyPriority the list/priority of IP versions
+	// IPFamilyPriority (intentionally not exposed via the config) the list/priority of IP versions
 	IPFamilyPriority []string
 }

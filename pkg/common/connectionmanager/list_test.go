@@ -20,10 +20,8 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
-	"math/rand"
 	"strings"
 	"testing"
-	"time"
 
 	lookup "github.com/vmware/govmomi/lookup/simulator"
 	"github.com/vmware/govmomi/simulator"
@@ -34,10 +32,6 @@ import (
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano() / int64(time.Millisecond))
-}
 
 // configFromSim starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with an empty tls.Config.
@@ -84,7 +78,7 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	cfg.Global.VCenterPort = s.URL.Port()
 	cfg.Global.User = s.URL.User.Username()
 	cfg.Global.Password, _ = s.URL.User.Password()
-	// Configure region and zone categories
+
 	if multiDc {
 		cfg.Global.Datacenters = "DC0,DC1"
 	} else {
@@ -94,6 +88,8 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	cfg.VirtualCenter[s.URL.Hostname()] = &vcfg.VirtualCenterConfig{
 		User:         cfg.Global.User,
 		Password:     cfg.Global.Password,
+		TenantRef:    cfg.Global.VCenterIP,
+		VCenterIP:    cfg.Global.VCenterIP,
 		VCenterPort:  cfg.Global.VCenterPort,
 		InsecureFlag: cfg.Global.InsecureFlag,
 		Datacenters:  cfg.Global.Datacenters,
@@ -111,7 +107,7 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 
 func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
 	cfg := &vcfg.Config{}
-	if err := vcfg.FromEnv(cfg); err != nil {
+	if err := cfg.FromEnv(); err != nil {
 		return configFromSim(multiDc)
 	}
 	return cfg, func() {}
@@ -121,7 +117,7 @@ func TestListAllVcPairs(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil)
+	connMgr := NewConnectionManager(config, nil, nil)
 	defer connMgr.Logout()
 
 	// context

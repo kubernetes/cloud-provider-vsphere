@@ -47,6 +47,7 @@ type VSphere struct {
 
 // NodeInfo is information about a Kubernetes node.
 type NodeInfo struct {
+	tenantRef     string
 	dataCenter    *vclib.Datacenter
 	vm            *vclib.VirtualMachine
 	vcServer      string

@@ -38,13 +38,13 @@ type Credential struct {
 	Password string `gcfg:"password"`
 }
 
-// SecretCredentialManager is used to manage vCenter credentials stored as
+// CredentialManager is used to manage vCenter credentials stored as
 // Kubernetes secrets.
-type SecretCredentialManager struct {
-	SecretName            string
-	SecretNamespace       string
-	SecretLister          clientv1.SecretLister
-	SecretsDirectory      string
-	SecretsDirectoryParse bool
-	Cache                 *SecretCache
+type CredentialManager struct {
+	SecretName             string
+	SecretNamespace        string
+	SecretLister           clientv1.SecretLister
+	SecretsDirectory       string
+	secretsDirectoryParsed bool // internal placeholder to identify we parsed the SecretsDirectory
+	Cache                  *SecretCache
 }

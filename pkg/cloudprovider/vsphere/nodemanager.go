@@ -177,13 +177,17 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return err
 	}
 
-	vcInstance := nm.connectionManager.VsphereInstanceMap[vmDI.VcServer]
+	tenantRef := vmDI.VcServer
+	if vmDI.TenantRef != "" {
+		tenantRef = vmDI.TenantRef
+	}
+	vcInstance := nm.connectionManager.VsphereInstanceMap[tenantRef]
 
 	ipFamily := []string{vcfg.DefaultIPFamily}
 	if vcInstance != nil {
 		ipFamily = vcInstance.Cfg.IPFamilyPriority
 	} else {
-		klog.Warningf("Unable to find vcInstance for %s. Defaulting to ipv4.", vmDI.VcServer)
+		klog.Warningf("Unable to find vcInstance for %s. Defaulting to ipv4.", tenantRef)
 	}
 
 	found := false
@@ -245,7 +249,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		os,
 	)
 
-	nodeInfo := &NodeInfo{dataCenter: vmDI.DataCenter, vm: vmDI.VM, vcServer: vmDI.VcServer,
+	nodeInfo := &NodeInfo{tenantRef: tenantRef, dataCenter: vmDI.DataCenter, vm: vmDI.VM, vcServer: vmDI.VcServer,
 		UUID: vmDI.UUID, NodeName: vmDI.NodeName, NodeType: instanceType, NodeAddresses: addrs}
 	nm.addNodeInfo(nodeInfo)
 

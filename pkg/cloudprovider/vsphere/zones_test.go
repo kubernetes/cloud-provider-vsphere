@@ -44,14 +44,14 @@ func TestZones(t *testing.T) {
 	cfg.Global.Password = localhostKey
 
 	// Create configuration object
-	connMgr := cm.NewConnectionManager(cfg, nil)
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(connMgr, nil)
 	zones := newZones(nm, cfg.Labels.Zone, cfg.Labels.Region)
 
 	// Create vSphere client
-	err := connMgr.Connect(ctx, cfg.Global.VCenterIP)
+	err := connMgr.Connect(ctx, connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
 	if err != nil {
 		t.Errorf("Failed to connect to vSphere: %s", err)
 	}

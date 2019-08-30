@@ -82,13 +82,13 @@ func (cm *ConnectionManager) getDIFromSingleVC(ctx context.Context,
 
 	// Get first vSphere Instance
 	var tmpVsi *VSphereInstance
-	for vc, tmpVsi = range cm.VsphereInstanceMap {
+	for _, tmpVsi = range cm.VsphereInstanceMap {
 		break //Grab the first one because there is only one
 	}
 
 	var err error
 	for i := 0; i < NumConnectionAttempts; i++ {
-		err = cm.Connect(ctx, vc)
+		err = cm.Connect(ctx, tmpVsi)
 		if err == nil {
 			break
 		}
@@ -135,6 +135,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 	}
 
 	type zoneSearch struct {
+		tenantRef  string
 		vc         string
 		datacenter *vclib.Datacenter
 		host       *object.HostSystem
@@ -171,7 +172,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 	}
 
 	go func() {
-		for vc, vsi := range cm.VsphereInstanceMap {
+		for _, vsi := range cm.VsphereInstanceMap {
 			var datacenterObjs []*vclib.Datacenter
 
 			found := getZoneFound()
@@ -181,7 +182,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 
 			var err error
 			for i := 0; i < NumConnectionAttempts; i++ {
-				err = cm.Connect(ctx, vc)
+				err = cm.Connect(ctx, vsi)
 				if err == nil {
 					break
 				}
@@ -234,9 +235,10 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 				}
 
 				for _, host := range hostList {
-					klog.V(3).Infof("Finding zone in vc=%s and datacenter=%s for host: %s", vc, datacenterObj.Name(), host.Name())
+					klog.V(3).Infof("Finding zone in vc=%s and datacenter=%s for host: %s", vsi.Cfg.VCenterIP, datacenterObj.Name(), host.Name())
 					queueChannel <- &zoneSearch{
-						vc:         vc,
+						tenantRef:  vsi.Cfg.TenantRef,
+						vc:         vsi.Cfg.VCenterIP,
 						datacenter: datacenterObj,
 						host:       host,
 					}
@@ -253,7 +255,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 			for res := range queueChannel {
 
 				klog.V(3).Infof("Checking zones for host: %s", res.host.Name())
-				result, err := cm.LookupZoneByMoref(ctx, res.datacenter, res.host.Reference(), zoneLabel, regionLabel)
+				result, err := cm.LookupZoneByMoref(ctx, res.tenantRef, res.host.Reference(), zoneLabel, regionLabel)
 				if err != nil {
 					klog.Errorf("Failed to find zone: %s and region: %s for host %s", zoneLabel, regionLabel, res.host.Name())
 					continue
@@ -267,6 +269,7 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 
 				klog.Infof("Found zone: %s and region: %s for host %s", zoneLooking, regionLooking, res.host.Name())
 				zoneInfo = &ZoneDiscoveryInfo{
+					TenantRef:  res.tenantRef,
 					VcServer:   res.vc,
 					DataCenter: res.datacenter,
 				}
@@ -313,35 +316,25 @@ func withTagsClient(ctx context.Context, connection *vclib.VSphereConnection, f 
 	return f(c)
 }
 
-func removePortFromHost(host string) string {
-	result := host
-	index := strings.IndexAny(host, ":")
-	if index != -1 {
-		result = host[:index]
-	}
-	return result
-}
-
 // LookupZoneByMoref searches for a zone using the provided managed object reference.
-func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, dataCenter *vclib.Datacenter,
+func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, tenantRef string,
 	moRef types.ManagedObjectReference, zoneLabel string, regionLabel string) (map[string]string, error) {
 
-	vcServer := removePortFromHost(dataCenter.Client().URL().Host)
 	result := make(map[string]string, 0)
 
-	vsi := cm.VsphereInstanceMap[vcServer]
+	vsi := cm.VsphereInstanceMap[tenantRef]
 	if vsi == nil {
 		err := ErrConnectionNotFound
-		klog.Errorf("Unable to find Connection for %s", vcServer)
+		klog.Errorf("Unable to find Connection for tenantRef=%s", tenantRef)
 		return nil, err
 	}
 
 	err := withTagsClient(ctx, vsi.Conn, func(c *rest.Client) error {
 		client := tags.NewManager(c)
 
-		pc := dataCenter.Client().ServiceContent.PropertyCollector
+		pc := vsi.Conn.Client.ServiceContent.PropertyCollector
 		// example result: ["Folder", "Datacenter", "Cluster", "Host"]
-		objects, err := mo.Ancestors(ctx, dataCenter.Client(), pc, moRef)
+		objects, err := mo.Ancestors(ctx, vsi.Conn.Client, pc, moRef)
 		if err != nil {
 			klog.Errorf("Ancestors failed for %s with err %v", moRef, err)
 			return err

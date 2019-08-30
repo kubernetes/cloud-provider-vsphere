@@ -18,84 +18,64 @@ package connectionmanager
 
 import (
 	"context"
-	"sync"
+	"strings"
 
-	v1 "k8s.io/client-go/listers/core/v1"
+	clientset "k8s.io/client-go/kubernetes"
+	listerv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
+	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
-// FindVM is the type that represents the types of searches used to
-// discover VMs.
-type FindVM int
-
-const (
-	// FindVMByUUID finds VMs with the provided UUID.
-	FindVMByUUID FindVM = iota // 0
-	// FindVMByName finds VMs with the provided name.
-	FindVMByName // 1
-	// FindVMByIP finds VMs with the provided IP adress.
-	FindVMByIP // 2
-
-	// PoolSize is the number of goroutines used in parallel to find a VM.
-	PoolSize int = 8
-
-	// QueueSize is the size of the channel buffer used to find objects.
-	// Only QueueSize objects may be placed into the queue before blocking.
-	QueueSize int = PoolSize * 10
-
-	// NumConnectionAttempts is the number of allowed connection attempts
-	// before an error is returned.
-	NumConnectionAttempts int = 3
-
-	// RetryAttemptDelaySecs is the number of seconds to wait between
-	// connection attempts.
-	RetryAttemptDelaySecs int = 1
-)
-
-// NewConnectionManager returns a new ConnectionManager object.
-func NewConnectionManager(config *vcfg.Config, secretLister v1.SecretLister) *ConnectionManager {
-	connM := &ConnectionManager{
-		VsphereInstanceMap: generateInstanceMap(config),
-		credentialManager: &cm.SecretCredentialManager{
-			Cache: &cm.SecretCache{
-				VirtualCenter: make(map[string]*cm.Credential),
-			},
-		},
+// NewConnectionManager returns a new ConnectionManager object
+// This function also initializes the Default/Global lister for secrets. In other words,
+// If a single global secret is used for all VCs, the informMgr param will be used to
+// obtain those secrets
+func NewConnectionManager(cfg *vcfg.Config, informMgr *k8s.InformerManager, client clientset.Interface) *ConnectionManager {
+	connMgr := &ConnectionManager{
+		client:             client,
+		VsphereInstanceMap: generateInstanceMap(cfg),
+		credentialManagers: make(map[string]*cm.CredentialManager),
+		informerManagers:   make(map[string]*k8s.InformerManager),
 	}
 
-	if secretLister != nil {
-		klog.V(2).Info("NewConnectionManager with K8s SecretLister")
-		connM.credentialManager.SecretName = config.Global.SecretName
-		connM.credentialManager.SecretNamespace = config.Global.SecretNamespace
-		connM.credentialManager.SecretLister = secretLister
-		return connM
+	if informMgr != nil {
+		klog.V(2).Info("Initializing with K8s SecretLister")
+		credMgr := cm.NewCredentialManager(cfg.Global.SecretName, cfg.Global.SecretNamespace, "", informMgr.GetSecretLister())
+		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
+		connMgr.informerManagers[vcfg.DefaultCredentialManager] = informMgr
+
+		return connMgr
 	}
 
-	if config.Global.SecretsDirectory != "" {
-		klog.V(2).Info("NewConnectionManager generic CO with secrets")
-		connM.credentialManager.SecretsDirectory = config.Global.SecretsDirectory
-		connM.credentialManager.SecretsDirectoryParse = false
-		return connM
+	if cfg.Global.SecretsDirectory != "" {
+		klog.V(2).Info("Initializing for generic CO with secrets")
+		credMgr, _ := connMgr.createManagersPerTenant("", "", cfg.Global.SecretsDirectory, nil)
+		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
+
+		return connMgr
 	}
 
-	klog.V(2).Info("NewConnectionManager generic CO")
-	return connM
+	klog.V(2).Info("Initializing generic CO")
+	credMgr := cm.NewCredentialManager("", "", "", nil)
+	connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
+
+	return connMgr
 }
 
-//GenerateInstanceMap creates a map of vCenter connection objects that can be
-//use to create a connection to a vCenter using vclib package
+// generateInstanceMap creates a map of vCenter connection objects that can be
+// use to create a connection to a vCenter using vclib package
 func generateInstanceMap(cfg *vcfg.Config) map[string]*VSphereInstance {
 	vsphereInstanceMap := make(map[string]*VSphereInstance)
 
-	for vcServer, vcConfig := range cfg.VirtualCenter {
+	for _, vcConfig := range cfg.VirtualCenter {
 		vSphereConn := vclib.VSphereConnection{
 			Username:          vcConfig.User,
 			Password:          vcConfig.Password,
-			Hostname:          vcServer,
+			Hostname:          vcConfig.VCenterIP,
 			Insecure:          vcConfig.InsecureFlag,
 			RoundTripperCount: vcConfig.RoundTripperCount,
 			Port:              vcConfig.VCenterPort,
@@ -106,64 +86,92 @@ func generateInstanceMap(cfg *vcfg.Config) map[string]*VSphereInstance {
 			Conn: &vSphereConn,
 			Cfg:  vcConfig,
 		}
-		vsphereInstanceMap[vcServer] = &vsphereIns
+		vsphereInstanceMap[vcConfig.TenantRef] = &vsphereIns
 	}
 
 	return vsphereInstanceMap
 }
 
-var (
-	clientLock sync.Mutex
-)
+// InitializeSecretLister initializes the individual secret listers that are NOT
+// handled through the Default/Global lister tied to the default service account.
+func (connMgr *ConnectionManager) InitializeSecretLister() {
+	// For each vsi that has a Secret set createManagersPerTenant
+	for _, vInstance := range connMgr.VsphereInstanceMap {
+		klog.V(3).Infof("Checking vcServer=%s SecretRef=%s", vInstance.Cfg.VCenterIP, vInstance.Cfg.SecretRef)
+		if strings.EqualFold(vInstance.Cfg.SecretRef, vcfg.DefaultCredentialManager) {
+			klog.V(3).Infof("Skipping. vCenter %s is configured using global service account/secret.", vInstance.Cfg.VCenterIP)
+			continue
+		}
 
-// Connect establishes a connection to the supplied vCenter.
-func (cm *ConnectionManager) Connect(ctx context.Context, vcenter string) error {
-	clientLock.Lock()
-	defer clientLock.Unlock()
-
-	vc := cm.VsphereInstanceMap[vcenter]
-	if vc == nil {
-		return ErrConnectionNotFound
+		klog.V(3).Infof("Adding credMgr/informMgr for vcServer=%s", vInstance.Cfg.VCenterIP)
+		credsMgr, informMgr := connMgr.createManagersPerTenant(vInstance.Cfg.SecretName,
+			vInstance.Cfg.SecretNamespace, "", connMgr.client)
+		connMgr.credentialManagers[vInstance.Cfg.SecretRef] = credsMgr
+		connMgr.informerManagers[vInstance.Cfg.SecretRef] = informMgr
 	}
-
-	return cm.ConnectByInstance(ctx, vc)
 }
 
-// ConnectByInstance connects to vCenter with existing credentials
+func (connMgr *ConnectionManager) createManagersPerTenant(secretName string, secretNamespace string,
+	secretsDirectory string, client clientset.Interface) (*cm.CredentialManager, *k8s.InformerManager) {
+
+	var informMgr *k8s.InformerManager
+	var lister listerv1.SecretLister
+	if client != nil && secretsDirectory == "" {
+		informMgr = k8s.NewInformer(client)
+		lister = informMgr.GetSecretLister()
+	}
+
+	credMgr := cm.NewCredentialManager(secretName, secretNamespace, secretsDirectory, lister)
+
+	if lister != nil {
+		informMgr.Listen()
+	}
+
+	return credMgr, informMgr
+}
+
+// Connect connects to vCenter with existing credentials
 // If credentials are invalid:
 // 		1. It will fetch credentials from credentialManager
 //      2. Update the credentials
 //		3. Connects again to vCenter with fetched credentials
-func (cm *ConnectionManager) ConnectByInstance(ctx context.Context, vsphereInstance *VSphereInstance) error {
-	err := vsphereInstance.Conn.Connect(ctx)
+func (connMgr *ConnectionManager) Connect(ctx context.Context, vcInstance *VSphereInstance) error {
+	connMgr.Lock()
+	defer connMgr.Unlock()
+
+	err := vcInstance.Conn.Connect(ctx)
 	if err == nil {
 		return nil
 	}
 
-	if !vclib.IsInvalidCredentialsError(err) || cm.credentialManager == nil {
+	if !vclib.IsInvalidCredentialsError(err) || connMgr.credentialManagers == nil {
 		klog.Errorf("Cannot connect to vCenter with err: %v", err)
 		return err
 	}
 
-	klog.V(2).Infof("Invalid credentials. Cannot connect to server %q. "+
-		"Fetching credentials from secrets.", vsphereInstance.Conn.Hostname)
+	klog.V(2).Infof("Invalid credentials. Fetching credentials from secrets. vcServer=%s credentialHolder=%s",
+		vcInstance.Cfg.VCenterIP, vcInstance.Cfg.SecretRef)
 
-	// Get latest credentials from SecretCredentialManager
-	credentials, err := cm.credentialManager.GetCredential(vsphereInstance.Conn.Hostname)
+	credMgr := connMgr.credentialManagers[vcInstance.Cfg.SecretRef]
+	if credMgr == nil {
+		klog.Errorf("Unable to find credential manager for vcServer=%s credentialHolder=%s", vcInstance.Cfg.VCenterIP, vcInstance.Cfg.SecretRef)
+		return ErrUnableToFindCredentialManager
+	}
+	credentials, err := credMgr.GetCredential(vcInstance.Cfg.VCenterIP)
 	if err != nil {
 		klog.Error("Failed to get credentials from Secret Credential Manager with err:", err)
 		return err
 	}
-	vsphereInstance.Conn.UpdateCredentials(credentials.User, credentials.Password)
-	return vsphereInstance.Conn.Connect(ctx)
+	vcInstance.Conn.UpdateCredentials(credentials.User, credentials.Password)
+	return vcInstance.Conn.Connect(ctx)
 }
 
 // Logout closes existing connections to remote vCenter endpoints.
-func (cm *ConnectionManager) Logout() {
-	for _, vsphereIns := range cm.VsphereInstanceMap {
-		clientLock.Lock()
+func (connMgr *ConnectionManager) Logout() {
+	for _, vsphereIns := range connMgr.VsphereInstanceMap {
+		connMgr.Lock()
 		c := vsphereIns.Conn.Client
-		clientLock.Unlock()
+		connMgr.Unlock()
 		if c != nil {
 			vsphereIns.Conn.Logout(context.TODO())
 		}
@@ -172,13 +180,13 @@ func (cm *ConnectionManager) Logout() {
 
 // Verify validates the configuration by attempting to connect to the
 // configured, remote vCenter endpoints.
-func (cm *ConnectionManager) Verify() error {
-	for vcServer := range cm.VsphereInstanceMap {
-		err := cm.Connect(context.Background(), vcServer)
+func (connMgr *ConnectionManager) Verify() error {
+	for _, vcInstance := range connMgr.VsphereInstanceMap {
+		err := connMgr.Connect(context.Background(), vcInstance)
 		if err == nil {
-			klog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
+			klog.V(3).Infof("vCenter connect %s succeeded.", vcInstance.Cfg.VCenterIP)
 		} else {
-			klog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
+			klog.Errorf("vCenter %s failed. Err: %q", vcInstance.Cfg.VCenterIP, err)
 			return err
 		}
 	}
@@ -187,13 +195,13 @@ func (cm *ConnectionManager) Verify() error {
 
 // VerifyWithContext is the same as Verify but allows a Go Context
 // to control the lifecycle of the connection event.
-func (cm *ConnectionManager) VerifyWithContext(ctx context.Context) error {
-	for vcServer := range cm.VsphereInstanceMap {
-		err := cm.Connect(ctx, vcServer)
+func (connMgr *ConnectionManager) VerifyWithContext(ctx context.Context) error {
+	for _, vcInstance := range connMgr.VsphereInstanceMap {
+		err := connMgr.Connect(ctx, vcInstance)
 		if err == nil {
-			klog.V(3).Infof("vCenter connect %s succeeded.", vcServer)
+			klog.V(3).Infof("vCenter connect %s succeeded.", vcInstance.Cfg.VCenterIP)
 		} else {
-			klog.Errorf("vCenter %s failed. Err: %q", vcServer, err)
+			klog.Errorf("vCenter %s failed. Err: %q", vcInstance.Cfg.VCenterIP, err)
 			return err
 		}
 	}
@@ -201,15 +209,10 @@ func (cm *ConnectionManager) VerifyWithContext(ctx context.Context) error {
 }
 
 // APIVersion returns the version of the vCenter API
-func (cm *ConnectionManager) APIVersion(vcenter string) (string, error) {
-	if err := cm.Connect(context.Background(), vcenter); err != nil {
+func (connMgr *ConnectionManager) APIVersion(vcInstance *VSphereInstance) (string, error) {
+	if err := connMgr.Connect(context.Background(), vcInstance); err != nil {
 		return "", err
 	}
 
-	instance := cm.VsphereInstanceMap[vcenter]
-	if instance == nil || instance.Conn.Client == nil {
-		return "", ErrConnectionNotFound
-	}
-
-	return instance.Conn.Client.ServiceContent.About.ApiVersion, nil
+	return vcInstance.Conn.Client.ServiceContent.About.ApiVersion, nil
 }
