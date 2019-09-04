@@ -30,17 +30,30 @@ func noResyncPeriodFunc() time.Duration {
 	return 0
 }
 
-var signalHandler <-chan struct{}
+var (
+	signalHandler   <-chan struct{}
+	informerFactory informers.SharedInformerFactory
+)
 
 // NewInformer creates a newk8s client based on a service account
-func NewInformer(client clientset.Interface) *InformerManager {
+func NewInformer(client clientset.Interface, singleWatcher bool) *InformerManager {
 	if signalHandler == nil {
 		signalHandler = signals.SetupSignalHandler()
+	}
+
+	var myInformerFactory informers.SharedInformerFactory
+	if singleWatcher {
+		if informerFactory == nil {
+			informerFactory = informers.NewSharedInformerFactory(client, noResyncPeriodFunc())
+		}
+		myInformerFactory = informerFactory
+	} else {
+		myInformerFactory = informers.NewSharedInformerFactory(client, noResyncPeriodFunc())
 	}
 	return &InformerManager{
 		client:          client,
 		stopCh:          signalHandler,
-		informerFactory: informers.NewSharedInformerFactory(client, noResyncPeriodFunc()),
+		informerFactory: myInformerFactory,
 	}
 }
 
@@ -66,7 +79,8 @@ func (im *InformerManager) AddNodeListener(add, remove func(obj interface{}), up
 	})
 }
 
-// Listen starts the Informers
+// Listen starts the Informers. Based on client-go informer package, if the Lister has
+// already been initialized, it will not re-init them. Only new non-init Listers will be initialized.
 func (im *InformerManager) Listen() {
 	go im.informerFactory.Start(im.stopCh)
 }

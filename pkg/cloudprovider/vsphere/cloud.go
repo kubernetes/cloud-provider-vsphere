@@ -66,7 +66,7 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 	if err == nil {
 		klog.V(1).Info("Kubernetes Client Init Succeeded")
 
-		vs.informMgr = k8s.NewInformer(client)
+		vs.informMgr = k8s.NewInformer(client, true)
 
 		connMgr := cm.NewConnectionManager(vs.cfg, vs.informMgr, client)
 		vs.connectionManager = connMgr
