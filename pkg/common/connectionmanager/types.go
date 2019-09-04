@@ -22,7 +22,6 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
-	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
@@ -38,9 +37,6 @@ type ConnectionManager struct {
 	// CredentialManager per VC
 	// The global CredentialManager will have an entry in this map with the key of "Global"
 	credentialManagers map[string]*cm.CredentialManager
-	// InformerManagers per VC
-	// The global InformerManager will have an entry in this map with the key of "Global"
-	informerManagers map[string]*k8s.InformerManager
 }
 
 // VSphereInstance represents a vSphere instance where one or more kubernetes nodes are running.

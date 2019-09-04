@@ -25,10 +25,11 @@ import (
 
 	cloudprovider "k8s.io/cloud-provider"
 
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
-	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
 
 const (
@@ -66,18 +67,25 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 	if err == nil {
 		klog.V(1).Info("Kubernetes Client Init Succeeded")
 
-		vs.informMgr = k8s.NewInformer(client, true)
+		informerFactory := informers.NewSharedInformerFactory(client, 0)
+		secretLister := informerFactory.Core().V1().Secrets().Lister()
+		nodeInformer := informerFactory.Core().V1().Nodes().Informer()
 
-		connMgr := cm.NewConnectionManager(vs.cfg, vs.informMgr, client)
+		connMgr := cm.NewConnectionManager(vs.cfg, secretLister, client)
 		vs.connectionManager = connMgr
 		vs.nodeManager.connectionManager = connMgr
 
-		vs.informMgr.AddNodeListener(vs.nodeAdded, vs.nodeDeleted, nil)
+		nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    vs.nodeAdded,
+			UpdateFunc: nil,
+			DeleteFunc: vs.nodeDeleted,
+		})
 
-		vs.informMgr.Listen()
+		informerFactory.WaitForCacheSync(stop)
+		informerFactory.Start(stop)
 
-		//if running secrets, init them
-		connMgr.InitializeSecretLister()
+		//if running muiltiple VCs, init the credential managers for each of them
+		connMgr.InitializeCredentialManagers(secretLister)
 
 		if !vs.cfg.Global.APIDisable {
 			klog.V(1).Info("Starting the API Server")

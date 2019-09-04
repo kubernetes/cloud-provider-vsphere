@@ -25,7 +25,6 @@ import (
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
-	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
@@ -39,7 +38,6 @@ type VSphere struct {
 	cfg               *vcfg.Config
 	connectionManager *cm.ConnectionManager
 	nodeManager       *NodeManager
-	informMgr         *k8s.InformerManager
 	instances         cloudprovider.Instances
 	zones             cloudprovider.Zones
 	server            GRPCServer

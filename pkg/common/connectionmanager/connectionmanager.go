@@ -26,7 +26,6 @@ import (
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager"
-	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
@@ -34,26 +33,24 @@ import (
 // This function also initializes the Default/Global lister for secrets. In other words,
 // If a single global secret is used for all VCs, the informMgr param will be used to
 // obtain those secrets
-func NewConnectionManager(cfg *vcfg.Config, informMgr *k8s.InformerManager, client clientset.Interface) *ConnectionManager {
+func NewConnectionManager(cfg *vcfg.Config, secretLister listerv1.SecretLister, client clientset.Interface) *ConnectionManager {
 	connMgr := &ConnectionManager{
 		client:             client,
 		VsphereInstanceMap: generateInstanceMap(cfg),
 		credentialManagers: make(map[string]*cm.CredentialManager),
-		informerManagers:   make(map[string]*k8s.InformerManager),
 	}
 
-	if informMgr != nil {
+	if secretLister != nil {
 		klog.V(2).Info("Initializing with K8s SecretLister")
-		credMgr := cm.NewCredentialManager(cfg.Global.SecretName, cfg.Global.SecretNamespace, "", informMgr.GetSecretLister())
+		credMgr := cm.NewCredentialManager(cfg.Global.SecretName, cfg.Global.SecretNamespace, "", secretLister)
 		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
-		connMgr.informerManagers[vcfg.DefaultCredentialManager] = informMgr
 
 		return connMgr
 	}
 
 	if cfg.Global.SecretsDirectory != "" {
 		klog.V(2).Info("Initializing for generic CO with secrets")
-		credMgr, _ := connMgr.createManagersPerTenant("", "", cfg.Global.SecretsDirectory, nil)
+		credMgr := cm.NewCredentialManager("", "", cfg.Global.SecretsDirectory, secretLister)
 		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
 
 		return connMgr
@@ -92,9 +89,9 @@ func generateInstanceMap(cfg *vcfg.Config) map[string]*VSphereInstance {
 	return vsphereInstanceMap
 }
 
-// InitializeSecretLister initializes the individual secret listers that are NOT
+// InitializeCredentialManagers initializes the individual secret listers that are NOT
 // handled through the Default/Global lister tied to the default service account.
-func (connMgr *ConnectionManager) InitializeSecretLister() {
+func (connMgr *ConnectionManager) InitializeCredentialManagers(secretLister listerv1.SecretLister) {
 	// For each vsi that has a Secret set createManagersPerTenant
 	for _, vInstance := range connMgr.VsphereInstanceMap {
 		klog.V(3).Infof("Checking vcServer=%s SecretRef=%s", vInstance.Cfg.VCenterIP, vInstance.Cfg.SecretRef)
@@ -104,30 +101,9 @@ func (connMgr *ConnectionManager) InitializeSecretLister() {
 		}
 
 		klog.V(3).Infof("Adding credMgr/informMgr for vcServer=%s", vInstance.Cfg.VCenterIP)
-		credsMgr, informMgr := connMgr.createManagersPerTenant(vInstance.Cfg.SecretName,
-			vInstance.Cfg.SecretNamespace, "", connMgr.client)
+		credsMgr := cm.NewCredentialManager(vInstance.Cfg.SecretName, vInstance.Cfg.SecretNamespace, "", secretLister)
 		connMgr.credentialManagers[vInstance.Cfg.SecretRef] = credsMgr
-		connMgr.informerManagers[vInstance.Cfg.SecretRef] = informMgr
 	}
-}
-
-func (connMgr *ConnectionManager) createManagersPerTenant(secretName string, secretNamespace string,
-	secretsDirectory string, client clientset.Interface) (*cm.CredentialManager, *k8s.InformerManager) {
-
-	var informMgr *k8s.InformerManager
-	var lister listerv1.SecretLister
-	if client != nil && secretsDirectory == "" {
-		informMgr = k8s.NewInformer(client, true)
-		lister = informMgr.GetSecretLister()
-	}
-
-	credMgr := cm.NewCredentialManager(secretName, secretNamespace, secretsDirectory, lister)
-
-	if lister != nil {
-		informMgr.Listen()
-	}
-
-	return credMgr, informMgr
 }
 
 // Connect connects to vCenter with existing credentials
