@@ -117,7 +117,7 @@ func (connMgr *ConnectionManager) createManagersPerTenant(secretName string, sec
 	var informMgr *k8s.InformerManager
 	var lister listerv1.SecretLister
 	if client != nil && secretsDirectory == "" {
-		informMgr = k8s.NewInformer(client)
+		informMgr = k8s.NewInformer(client, true)
 		lister = informMgr.GetSecretLister()
 	}
 
