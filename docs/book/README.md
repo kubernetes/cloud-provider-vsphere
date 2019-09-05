@@ -23,12 +23,18 @@ This document will cover both the in-tree and out-of-tree vSphere integrations f
   * [Overview of the CPI](concepts/cpi_overview.md)
   * [Overview of the CSI](concepts/csi_overview.md)
 * [Glossary](glossary.md)
-* [Cloud Provider Interface (CPI)](cloud_provider_interface.md)
-* [Container Storage Interface (CSI)](container_storage_interface.md)
-* [Cloud Config Spec](cloud_config.md)
+  * [Cloud Provider Interface (CPI)](cloud_provider_interface.md)
+  * [Container Storage Interface (CSI)](container_storage_interface.md)
+  * [Cloud Config Spec](cloud_config.md)
 
 ## Tutorials
 
-* [Running a Kubernetes cluster on vSphere with kubeadm](./tutorials/kubernetes-on-vsphere-with-kubeadm.md)
-* [Deploying the out-of-tree vSphere Cloud Provider](./tutorials/deploying_cloud_provider_vsphere_with_rbac.md)
-* [Deploying CCM and CSI with Zones Topology](./tutorials/deploying_ccm_and_csi_with_multi_dc_vc_aka_zones.md)
+### vSphere 6.7U3 specific tutorials
+
+* [Deploying a new K8s cluster with CSI/CPI on vSphere 6.7U3 with kubeadm](./tutorials/kubernetes-on-vsphere-with-kubeadm.md)
+* [Deploying CPI and CSI with Zones Topology](./tutorials/deploying_ccm_and_csi_with_multi_dc_vc_aka_zones.md)
+
+### Earlier tutorials
+
+* [Deploying the CSI and CCM on pre-6.7U3](./tutorials/deploying_cloud_provider_vsphere_with_rbac.md)
+* [Deploying K8s with vSphere Cloud Provider using kubeadm (deprecated)](./tutorials/k8s-vcp-on-vsphere-with-kubeadm.md)
