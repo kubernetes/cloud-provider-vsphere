@@ -32,7 +32,7 @@ vmware/volume-metadata-syncer:v1.0.0
 http://gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.0.0
 ```
 
-In addition, you can use the following images or any of the open source or commercially available container images appropriate for the CSI deployment:
+In addition, you can use the following images or any of the open source or commercially available container images appropriate for the CSI deployment. Note that the tags reference the version of various components. This will change with future versions:
 
 ```bash
 quay.io/k8scsi/csi-provisioner:v1.2.0
