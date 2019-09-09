@@ -1147,7 +1147,7 @@ If you have multiple vCenter Server instances in your environment, create the VM
 * On the Storage compatibility page, review the list of vSAN datastores that match this policy and click Next.
 * On the Review and finish page, review the policy settings, and click Finish.
 
-![Space-Efficient Storage Policy Review](../../images/space-efficient.png)
+![Space-Efficient Storage Policy Review](https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/images/space-efficient.png)
 
 You can now inform the Kubernetes user of the storage policy name. The VM storage policy you created will be used as a part of storage class definition for dynamic volume provisioning.
 
@@ -1360,6 +1360,6 @@ This makes mongodb-0 the primary node and other two nodes are secondary.
 After your application gets deployed, its state is backed by the VMDK file associated with the specified storage policy. As a vSphere administrator, you can review the VMDK that is created for your container volume.
 In this step, we will verify that the Cloud Native Storage feature released with vSphere 6.7U3 is working. To go to the CNS UI, login to the vSphere client, then navigate to Datacenter → Monitor → Cloud Native Storage → Container Volumes and observe that the newly created volumes are present. You can also monitor their storage policy compliance status.
 
-![Cloud Native Storage view of the MongoDB Persistent Volumes](../../images/cns-mongo-pvs-labels.png)
+![Cloud Native Storage view of the MongoDB Persistent Volumes](https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/images/cns-mongo-pvs-labels.png)
 
 That completes the testing. CSI, CPI and CNS are all now working.
