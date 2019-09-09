@@ -381,7 +381,7 @@ nodeRegistration:
 EOF
 ```
 
-You can copy the `discovery.yaml` to your local machine with `scp`.  
+You can copy the `discovery.yaml` to your local machine with `scp`.
 
 First, as superuser, copy `/etc/kubernetes/discovery.yaml` to `/home/ubuntu/discovery.yaml` on the master.
 
@@ -415,13 +415,13 @@ This cloud-config configmap file, passed to the CPI on initialization, contains 
 # tee /etc/kubernetes/vsphere.conf >/dev/null <<EOF
 [Global]
 insecure-flag = "true"
-  
+
 [VirtualCenter "1.1.1.1"]
 user = "Administrator@vsphere.local"
 password = "Admin!23"
 port = "443"
 datacenters = "datacenter"
-  
+
 [Network]
 public-network = "VM Network"
 EOF
@@ -557,7 +557,7 @@ For information about using a certificate and private key instead of a username 
 ```bash
 # tee /etc/kubernetes/csi-vsphere.conf >/dev/null <<EOF
 [Global]
-cluster-id = "demo-cluster-id"  
+cluster-id = "demo-cluster-id"
 [VirtualCenter "1.1.1.1"]
 insecure-flag = "true"
 user = "Administrator@vsphere.local"
