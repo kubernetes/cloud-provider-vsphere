@@ -109,6 +109,7 @@ To use govc to enable Disk UUID, use the following command:
 # govc vm.change -vm '/datacenter/vm/k8s-node4' -e="disk.enableUUID=1"
 # govc vm.change -vm '/datacenter/vm/k8s-master' -e="disk.enableUUID=1"
 ```
+
 Further information on disk.enableUUID can be found in [VMware Knowledgebase Article 52815](https://kb.vmware.com/s/article/52815).
 
 ### Upgrade Virtual Machine Hardware
@@ -422,7 +423,7 @@ You can copy the `discovery.yaml` to your local machine with `scp`.
 
 First, as superuser, use `scp` to copy `/etc/kubernetes/discovery.yaml` on the master to `/home/ubuntu/discovery.yaml` on all the nodes.
 
-You will now need to login to each of the nodes and copy the `discovery.yaml` file from `/home/ubuntu` to `/etc/kubernetes`. The `discovery.yaml` file must exist in `/etc/kubernetes` on the nodes. 
+You will now need to login to each of the nodes and copy the `discovery.yaml` file from `/home/ubuntu` to `/etc/kubernetes`. The `discovery.yaml` file must exist in `/etc/kubernetes` on the nodes.
 
 Once that step is completed, run the following command on each worker node to have it join the master (and other worker nodes that are already joined) in the cluster:
 
