@@ -397,7 +397,7 @@ The `discovery.yaml` file will need to be copied to `/etc/kubernetes/discovery.y
 
 ## Installing the Kubernetes worker node(s)
 
-Perform this task on the worker nodes. Verify that you have installed Docker CE, kubeadm, etc, on the worker nodes before attempting to ad them to the master.
+Perform this task on the worker nodes. Verify that you have installed Docker CE, kubeadm, etc, on the worker nodes before attempting to add them to the master.
 
 To have the worker node(s) join to the master, a worker node kubeadm config yaml file must be created. Notice it is using `/etc/kubernetes/discovery.yaml` as the input for master discovery. We will show how to copy the file from the workers to the master in the next step. Also, notice that the token used in the worker node config is the same as we put in the master `kubeadminitmaster.yaml` configuration above. Finally, we once more specify that the cloud-provider is external for the workers, as we are going to use the new CPI.
 
