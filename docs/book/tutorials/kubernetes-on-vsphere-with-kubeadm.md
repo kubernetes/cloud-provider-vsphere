@@ -78,7 +78,9 @@ The following govc commands will set the disk.EnableUUID=1 on all nodes.
 
 ```bash
 # export GOVC_INSECURE=1
-# export GOVC_URL='https://<VC_Admin_User>:<VC_Admin_Passwd>@<VC_IP>'
+# export GOVC_URL='https://<VC_IP>'
+# export GOVC_USERNAME=VC_Admin_User
+# export GOVC_PASSWORD=VC_Admin_Passwd
 
 # govc ls
 /datacenter/vm
@@ -108,6 +110,8 @@ To use govc to enable Disk UUID, use the following command:
 # govc vm.change -vm '/datacenter/vm/k8s-master' -e="disk.enableUUID=1"
 ```
 
+Further information on disk.enableUUID can be found in [VMware Knowledgebase Article 52815](https://kb.vmware.com/s/article/52815).
+
 ### Upgrade Virtual Machine Hardware
 
 VM Hardware should be at version 15 or higher.
@@ -118,6 +122,13 @@ VM Hardware should be at version 15 or higher.
 # govc vm.upgrade -version=15 -vm '/datacenter/vm/k8s-node3'
 # govc vm.upgrade -version=15 -vm '/datacenter/vm/k8s-node4'
 # govc vm.upgrade -version=15 -vm '/datacenter/vm/k8s-master'
+```
+
+Check the VM Hardware version after running the above command:
+
+```bash
+# govc vm.option.info '/datacenter/vm/k8s-node1' | grep HwVersion
+HwVersion:           15
 ```
 
 ### Disable Swap
@@ -195,7 +206,18 @@ And to complete, restart docker to pickup the new parameters.
 # systemctl restart docker
 ```
 
-Docker is now installed.
+Docker is now installed. Verify the status of docker via the following command:
+
+```bash
+#systemctl status docker
+ docker.service - Docker Application Container Engine
+   Loaded: loaded (/lib/systemd/system/docker.service; enabled; vendor preset: enabled)
+   Active: active (running) since Fri 2019-09-06 12:37:27 UTC; 4min 15s ago
+
+#docker info | egrep "Server Version|Cgroup Driver"
+Server Version: 18.06.0-ce
+Cgroup Driver: systemd
+```
 
 ### Install Kubelet, Kubectl, Kubeadm
 
@@ -349,6 +371,21 @@ The command to install flannel on the master is as follows:
 
 Please follow [these alternative instructions to install a pod overlay network other than flannel](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#pod-network).
 
+At this point, you can check if the overlay network is deployed.
+
+```bash
+# kubectl get pods --namespace=kube-system
+NAME                               READY   STATUS    RESTARTS   AGE
+coredns-6557d7f7d6-9s7sm           0/1     Pending   0          107s
+coredns-6557d7f7d6-wgxtq           0/1     Pending   0          107s
+etcd-k8s-mstr                      1/1     Running   0          70s
+kube-apiserver-k8s-mstr            1/1     Running   0          54s
+kube-controller-manager-k8s-mstr   1/1     Running   0          53s
+kube-flannel-ds-amd64-pm9m9        1/1     Running   0          11s
+kube-proxy-8dfm9                   1/1     Running   0          107s
+kube-scheduler-k8s-mstr            1/1     Running   0          49s
+```
+
 ### Export the master node configuration
 
 Finally, the master node configuration needs to be exported as it is used by the worker nodes wishing to join to the master.
@@ -361,7 +398,8 @@ The `discovery.yaml` file will need to be copied to `/etc/kubernetes/discovery.y
 
 ## Installing the Kubernetes worker node(s)
 
-Perform this task on the worker nodes.
+Perform this task on the worker nodes. Verify that you have installed Docker CE, kubeadm, etc, on the worker nodes before attempting to add them to the master.
+
 To have the worker node(s) join to the master, a worker node kubeadm config yaml file must be created. Notice it is using `/etc/kubernetes/discovery.yaml` as the input for master discovery. We will show how to copy the file from the workers to the master in the next step. Also, notice that the token used in the worker node config is the same as we put in the master `kubeadminitmaster.yaml` configuration above. Finally, we once more specify that the cloud-provider is external for the workers, as we are going to use the new CPI.
 
 ```bash
@@ -383,25 +421,17 @@ EOF
 
 You can copy the `discovery.yaml` to your local machine with `scp`.
 
-First, as superuser, copy `/etc/kubernetes/discovery.yaml` to `/home/ubuntu/discovery.yaml` on the master.
+First, as superuser, use `scp` to copy `/etc/kubernetes/discovery.yaml` on the master to `/home/ubuntu/discovery.yaml` on all the nodes.
 
-In the example below, we are then copying `discovery.yaml` locally to a central desktop, and then copying it out to all the nodes.
+You will now need to login to each of the nodes and copy the `discovery.yaml` file from `/home/ubuntu` to `/etc/kubernetes`. The `discovery.yaml` file must exist in `/etc/kubernetes` on the nodes.
 
-```bash
-# scp ubuntu@10.192.116.47:~/discovery.yaml discovery.yaml
-
-# scp discovery.yaml ubuntu@10.192.116.46:~/discovery.yaml
-# scp discovery.yaml ubuntu@10.192.116.48:~/discovery.yaml
-# scp discovery.yaml ubuntu@10.192.116.49:~/discovery.yaml
-# scp discovery.yaml ubuntu@10.192.116.50:~/discovery.yaml
-```
-
-You will now need to login to each of the nodes and copy the `discovery.yaml` file from `/home/ubuntu` to `/etc/kubernetes`. The `discovery.yaml` file must exist in `/etc/kubernetes`. Alternatively, you could login into the master, become superuser, and copy the `discovery.yaml` to each of the nodes, ensuring it is placed in `/etc/kubernetes`.
 Once that step is completed, run the following command on each worker node to have it join the master (and other worker nodes that are already joined) in the cluster:
 
 ```bash
 # kubeadm join --config /etc/kubernetes/kubeadminitworker.yaml
 ```
+
+You can check if the node has joined by running `# kubectl get nodes` on the master.
 
 ## Install the vSphere Cloud Provider Interface
 
@@ -455,7 +485,7 @@ NAME              DATA     AGE
 cloud-config      1        82s
 ```
 
-Note: vCenter Server credentials for Cloud Controller Manager can be stored in the Kubernetes secret. There are guidelines on how to do that here.
+Note: vCenter Server credentials for Cloud Controller Manager can be stored in the Kubernetes secret. Click here for [guidelines on how to use secrets](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets).
 
 ### Check that all nodes are tainted
 
@@ -538,11 +568,24 @@ Taints:             <none>
 
 Note: If you happen to make an error with the `vsphere.conf`, simply delete the CPI components and the configMap, make any necessary edits to the configMap `vSphere.conf` file, and reapply the steps above.
 
+You may now remove the `vsphere.conf` file created at `/etc/kubernetes/`.
+
 ## Install vSphere Container Storage Interface Driver
 
 Now that the CPI is installed, we can focus on the CSI. Perform the following steps on the Master Node(s) only.
-Taint the master nodes to prevent scheduling
-The `node-role.kubernetes.io/master=:NoSchedule` taint is required to be present on the master nodes to prevent scheduling of the node plugin pods for `vsphere-csi-node` daemonset on the master nodes.
+The master node(s) should be tainted to prevent scheduling. This should already be the case. You can check as follows:
+
+```bash
+# kubectl describe nodes | egrep "Taints:|Name:"
+Name:               k8s-mstr
+Taints:             node-role.kubernetes.io/master:NoSchedule
+Name:               k8s-worker-01
+Taints:             <none>
+Name:               k8s-worker-02
+Taints:             <none>
+```
+
+The `node-role.kubernetes.io/master=:NoSchedule` taint is required to be present on the master nodes to prevent scheduling of the node plugin pods for `vsphere-csi-node` daemonset on the master nodes. Should you need to readd the taint, you can use the following command:
 
 ```bash
 # kubectl taint nodes k8s-master node-role.kubernetes.io/master=:NoSchedule
@@ -603,7 +646,7 @@ You may now remove the `csi-vsphere.conf` file created at `/etc/kubernetes/`.
 
 ### Create Roles, ServiceAccount and ClusterRoleBinding
 
-In these steps, the ClusterRole, ServiceAccounts and ClusterRoleBinding needed for installation of vSphere CSI Driver are created. All of these are in the following manifest. Copy and paste it into your environment. No modifications are required.
+In these steps, the ClusterRole, ServiceAccounts and ClusterRoleBinding needed for installation of vSphere CSI Driver are created. All of these are in the following manifest. Copy and paste it into your environment. No modifications are required. Take care when copying/pasting as the manifest files are rather large.
 
 ```bash
 # tee csi-driver-rbac.yaml >/dev/null <<EOF
@@ -923,11 +966,15 @@ NAME                          READY   AGE
 vsphere-csi-controller        1/1     2m58s
  ```
 
+ If there are any issues, run a `kubectl describe` on the statefulset and see if there are any complaints in the events.
+
  ```bash
 # kubectl get daemonsets vsphere-csi-node --namespace=kube-system
 NAME               DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
 vsphere-csi-node   4         4         4       4            4           <none>          3m51s
  ```
+
+The number of csi-nodes depends on the size of the cluster. There is one per Kubernetes worker node.
 
  ```bash
 # kubectl get pods --namespace=kube-system
@@ -1228,7 +1275,7 @@ secret/shared-bootstrap-data created
 
 Next we need to define specifications for the containerized application in the StatefulSet YAML file . The following sample specification requests one instance of the MongoDB application, specifies the external image to be used, and references the mongodb-sc storage class that you created earlier. This storage class maps to the Space-Efficient VM storage policy that you defined previously on the vSphere Client side.
 
-Note that this manifest expects that the Kubernetes node can reach the image called `mongo:3.4`. If your Kubernetes nodes are not able to reach external repositories, then this YAML file needs to be modified to reach your local internal repo. Of course, this repo also needs to contain the Mongo image.
+Note that this manifest expects that the Kubernetes node can reach the image called `mongo:3.4`. If your Kubernetes nodes are not able to reach external repositories, then this YAML file needs to be modified to reach your local internal repo. Of course, this repo also needs to contain the Mongo image. We have set the number of replicas to 3, indicating that there will be 3 Pods, 3 PVCs and 3 PVs instantiated as part of this StatefulSet.
 
 ```bash
 # cat mongodb-statefulset.yaml
@@ -1358,7 +1405,7 @@ This makes mongodb-0 the primary node and other two nodes are secondary.
 ### Verify Cloud Native Storage functionality is working in vSphere
 
 After your application gets deployed, its state is backed by the VMDK file associated with the specified storage policy. As a vSphere administrator, you can review the VMDK that is created for your container volume.
-In this step, we will verify that the Cloud Native Storage feature released with vSphere 6.7U3 is working. To go to the CNS UI, login to the vSphere client, then navigate to Datacenter → Monitor → Cloud Native Storage → Container Volumes and observe that the newly created volumes are present. You can also monitor their storage policy compliance status.
+In this step, we will verify that the Cloud Native Storage feature released with vSphere 6.7U3 is working. To go to the CNS UI, login to the vSphere client, then navigate to Datacenter → Monitor → Cloud Native Storage → Container Volumes and observe that the newly created persistent volumes are present. These should match the `kubectl get pvc` output from earlier. You can also monitor their storage policy compliance status.
 
 ![Cloud Native Storage view of the MongoDB Persistent Volumes](https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/images/cns-mongo-pvs-labels.png)
 
