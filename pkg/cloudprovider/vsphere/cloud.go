@@ -93,35 +93,35 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 // LoadBalancer returns a balancer interface. Also returns true if the
 // interface is supported, false otherwise.
 func (vs *VSphere) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
-	klog.V(1).Info("The vSphere cloud provider does not support load balancers")
+	klog.Warning("The vSphere cloud provider does not support load balancers")
 	return nil, false
 }
 
 // Instances returns an instances interface. Also returns true if the
 // interface is supported, false otherwise.
 func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
-	klog.V(1).Info("Enabling Instances interface on vSphere cloud provider")
+	klog.V(6).Info("Calling the Instances interface on vSphere cloud provider")
 	return vs.instances, true
 }
 
 // Zones returns a zones interface. Also returns true if the interface
 // is supported, false otherwise.
 func (vs *VSphere) Zones() (cloudprovider.Zones, bool) {
-	klog.V(1).Info("Enabling Zones interface on vSphere cloud provider")
+	klog.V(6).Info("Calling the Zones interface on vSphere cloud provider")
 	return vs.zones, true
 }
 
 // Clusters returns a clusters interface.  Also returns true if the interface
 // is supported, false otherwise.
 func (vs *VSphere) Clusters() (cloudprovider.Clusters, bool) {
-	klog.V(1).Info("The vSphere cloud provider does not support clusters")
+	klog.Warning("The vSphere cloud provider does not support clusters")
 	return nil, false
 }
 
 // Routes returns a routes interface along with whether the interface
 // is supported.
 func (vs *VSphere) Routes() (cloudprovider.Routes, bool) {
-	klog.V(1).Info("The vSphere cloud provider does not support routes")
+	klog.Warning("The vSphere cloud provider does not support routes")
 	return nil, false
 }
 
