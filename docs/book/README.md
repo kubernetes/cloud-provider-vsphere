@@ -32,7 +32,7 @@ This document will cover both the in-tree and out-of-tree vSphere integrations f
 ### vSphere 6.7U3 specific tutorials
 
 * [Deploying a new K8s cluster with CPI and CSI on vSphere 6.7U3 with kubeadm](./tutorials/kubernetes-on-vsphere-with-kubeadm.md)
-* [Deploying CPI and CSI with Zones Topology](./tutorials/deploying_ccm_and_csi_with_multi_dc_vc_aka_zones.md)
+* [Deploying CPI and CSI with Zones Topology](./tutorials/deploying_cpi_and_csi_with_multi_dc_vc_aka_zones.md)
 
 ### Earlier tutorials
 
