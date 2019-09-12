@@ -66,7 +66,7 @@ Steps that will be covered in order to setup zones for the vSphere CCM, vSphere 
 
 ### 1. Enabling Zones the `vsphere.conf` file
 
-Note that the CSI and CPI drivers have their own vsphere.conf files. The following modifications need to be made in both configuration.
+> ***Note:*** The CSI and CPI drivers have their own vsphere.conf files. The following modifications need to be made in both configurations.
 
 The zones implementation depends on 2 sets of vSphere tags to be used on objects, such as datacenters or clusters. The first is a `region` tag and the second is a `zone` tag. vSphere tags are very simply put key/value pairs that can be assigned to objects and instead of using fixed keys to denote a `region` or a `zone`, we give the end-user the ability to come up with their own keys for a `region` and `zone` in the form of vSphere Tag Catagory. It just allows for a level of indirection in case you already have regions and zones setup in your configuration. Once a key/label or vSphere Tag Category is selected for each, create a `[Labels]` section in the `vsphere.conf` then assign tag names for both `region` and `zone`.
 
