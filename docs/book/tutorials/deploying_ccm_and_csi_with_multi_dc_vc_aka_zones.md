@@ -10,7 +10,6 @@ This document assumes that you have read and understood the setup documentation 
 
 [Deploying Kubernetes Cluster on vSphere with CPI and CSI](./kubernetes-on-vsphere-with-kubeadm.md)
 
-
 ## Why Do We Need to Use Zones in a Multi-vCenter or Multi-Datacenter Environment
 
 There exist 2 significant issues when deploying Kubernetes workloads or pods in a mutli-vCenter or single vCenter with multiple Datacenters. They are:
