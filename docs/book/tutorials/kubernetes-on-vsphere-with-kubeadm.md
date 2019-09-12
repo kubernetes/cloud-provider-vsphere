@@ -487,6 +487,12 @@ cloud-config      1        82s
 
 Note: vCenter Server credentials for Cloud Controller Manager can be stored in the Kubernetes secret. Click here for [guidelines on how to use secrets](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets).
 
+### Zones and Regions for Pod and Volume Placement - CPI
+
+Kubernetes allows you to place Pods and Persisent Volumes on specific parts of the underlying infrastructure, e.g. different DataCenters or different vCenters, using the concept of Zones and Regions. However, to use placement controls, the required configuration steps needs to be put in place at Kubernetes deployment time, and require additional settings in the vSphere.conf of both the CPI and CSI. For more information on how to implement zones/regions support, [there is a zones/regions tutorial on how to do it here](./deploying_ccm_and_csi_with_multi_dc_vc_aka_zones.md)
+
+If you are not interested in K8s object placement, this section can be ignored, and you can proceed with the remaining CPI setup steps.
+
 ### Check that all nodes are tainted
 
 Before installing vSphere Cloud Controller Manager, make sure all nodes are tainted with `node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule`. When the kubelet is started with “external” cloud provider, this taint is set on a node to mark it as unusable. After a controller from the cloud provider initializes this node, the kubelet removes this taint.
@@ -643,6 +649,12 @@ You may now remove the `csi-vsphere.conf` file created at `/etc/kubernetes/`.
 ```bash
 # rm /etc/kubernetes/csi-vsphere.conf
 ```
+
+### Zones and Regions for Pod and Volume Placement - CSI
+
+Kubernetes allows you to place Pods and Persisent Volumes on specific parts of the underlying infrastructure, e.g. different DataCenters or different vCenters, using the concept of Zones and Regions. However, to use placement controls, the required configuration steps needs to be put in place at Kubernetes deployment time, and require additional settings in the vSphere.conf of both the CPI and CSI. For more information on how to implement zones/regions support, [there is a zones/regions tutorial on how to do it here](./deploying_ccm_and_csi_with_multi_dc_vc_aka_zones.md)
+
+If you are not interested in K8s object placement, this section can be ignored and you can proceed with the remaining CSI setup steps.
 
 ### Create Roles, ServiceAccount and ClusterRoleBinding
 

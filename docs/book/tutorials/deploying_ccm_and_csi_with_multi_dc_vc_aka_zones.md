@@ -2,12 +2,14 @@
 
 This document is designed to quickly get you up and running in a vSphere configuration that consists of multiple vCenter or a multiple Datacenter environment via using zones.
 
+Note: These steps need to be done at initial Kubernetes cluster deployment. It is not possible to add zone support after the Kubernetes cluster has been deployed.
+
 ## Prerequisites
 
-This document assumes that you have read and understood the setup documentation for both the vSphere Cloud Controller Manager (CCM) and  vSphere Container Storage Interface (CSI) driver. This guide will go over the additional zone-based configuration needed to support a multi-vCenter or multi-Datacenter environment by using the previous documentation as a base. If you need to revisit the base CCM and CSI documentation, you can find the documentation links below:
+This document assumes that you have read and understood the setup documentation for both the vSphere Cloud Provider Interface (also known as the vSphere Cloud Controller Manager - CCM) and  vSphere Container Storage Interface (CSI) driver. This guide will go over the additional zone-based configuration needed to support a multi-vCenter or multi-Datacenter environment by using the previous documentation as a base. If you need to revisit the base CPI and CSI documentation, you can find the documentation links below:
 
-[vSphere CCM Documentation](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/deploying_cloud_provider_vsphere_with_rbac.md)
-[vSphere CSI Documentation](https://github.com/kubernetes-sigs/vsphere-csi-driver/blob/master/docs/deploying_csi_vsphere_with_rbac.md)
+[Deploying Kubernetes Cluster on vSphere with CPI and CSI](./kubernetes-on-vsphere-with-kubeadm.md)
+
 
 ## Why Do We Need to Use Zones in a Multi-vCenter or Multi-Datacenter Environment
 
@@ -22,7 +24,7 @@ There needs to be a mechanism in place to allow end-users to continue to use the
 
 ## Understanding Optimal Zone Configurations
 
-This section outlines some optimal configurations for Kubernetes zones in your vSphere environment/configuration. The implementation for zone support in the CCM and CSI driver are quite flexible but there are some configurations that can take advantage of features in vSphere and thus providing certain benefits. Here are a couple of common deployment scenarios for zones. If you cannot roll out or deploy zones in some of these suggested configurations, it might be worth consulting someone with familiarity with how zones are implemented.
+This section outlines some optimal configurations for Kubernetes zones in your vSphere environment/configuration. The implementation for zone support in the CPI/CCM and CSI driver are quite flexible but there are some configurations that can take advantage of features in vSphere and thus providing certain benefits. Here are a couple of common deployment scenarios for zones. If you cannot roll out or deploy zones in some of these suggested configurations, it might be worth consulting someone with familiarity with how zones are implemented.
 
 ### Zones Per Cluster
 
@@ -48,7 +50,7 @@ We have two clusters in `Datacenter 1`. If we deploy a pod to `Zone Engineering`
 
 Some important takeaways for implementing zones:
 
-1. Zones allow you to target Kubernetes workloads to a specific group of vSphere infrastructure. This is handled by the CCM.
+1. Zones allow you to target Kubernetes workloads to a specific group of vSphere infrastructure. This is handled by the CPI/CCM.
 2. Zones also define persistent storage boundaries. In other words, all compute nodes within a given zone must have access to shared storage if persistent storage (aka an FCD) is to be provisioned for stateful applications/pods/workloads.
 
 ## Deployment Overview
@@ -60,9 +62,11 @@ Steps that will be covered in order to setup zones for the vSphere CCM, vSphere 
 3. Updating your `StorageClass` when using Persistent Storage
 4. Example: Deploying a Kubernetes pod to a Specific Zone using Persistent Storage
 
-## Deploying Zones using the CCM and CSI driver
+## Deploying Zones using the CPI and CSI driver
 
 ### 1. Enabling Zones the `vsphere.conf` file
+
+Note that the CSI and CPI drivers have their own vsphere.conf files. The following modifications need to be made in both configuration.
 
 The zones implementation depends on 2 sets of vSphere tags to be used on objects, such as datacenters or clusters. The first is a `region` tag and the second is a `zone` tag. vSphere tags are very simply put key/value pairs that can be assigned to objects and instead of using fixed keys to denote a `region` or a `zone`, we give the end-user the ability to come up with their own keys for a `region` and `zone` in the form of vSphere Tag Catagory. It just allows for a level of indirection in case you already have regions and zones setup in your configuration. Once a key/label or vSphere Tag Category is selected for each, create a `[Labels]` section in the `vsphere.conf` then assign tag names for both `region` and `zone`.
 
@@ -145,7 +149,7 @@ Now let's assign the region and zone tags to each of the datacenters in the vSph
 
 And there you go! All setup with the correct tags.
 
-> **NOTE**: Since the CCM and CSI driver support multiple vCenter Servers, the datacenters in the US and EU could be distinctly different. In that case, the `govc` commands would be identical with the exception of replacing the proper vCenter username, password, and IP address for each command.
+> **NOTE**: Since the CPI and CSI driver support multiple vCenter Servers, the datacenters in the US and EU could be distinctly different. In that case, the `govc` commands would be identical with the exception of replacing the proper vCenter username, password, and IP address for each command.
 
 ### 3. Updating your `StorageClass` when using Persistent Storage
 
