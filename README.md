@@ -1,8 +1,8 @@
-# Cloud provider for vSphere
+# Kubernetes vSphere Cloud Provider
 
-## Cloud controller manager for vSphere
+## vSphere Cloud Controller Manager
 
-This repository provides tools and scripts for building and testing `Kubernetes cloud-controller-manager` for vSphere. The project is under development and should not be used in production.
+This repository contains the [Kubernetes cloud-controller-manager](https://kubernetes.io/docs/concepts/architecture/cloud-controller/) for vSphere.
 
 The in-tree vSphere cloud provider code is located within the [Kubernetes repository](https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/legacy-cloud-providers/vsphere). If you want to create issues or pull requests for the in-tree cloud provider, please go to the [Kubernetes repository](https://github.com/kubernetes/kubernetes).
 
