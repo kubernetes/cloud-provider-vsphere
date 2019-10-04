@@ -20,7 +20,9 @@ COPY pkg ./pkg/
 COPY cmd ./cmd/
 ARG GOOS
 ARG GOARCH
+ARG GOPROXY
 ENV GOOS=${GOOS:-linux} GOARCH=${GOARCH:-amd64}
+ENV GOPROXY ${GOPROXY:-https://proxy.golang.org}
 RUN go mod download && go mod verify
 
 ################################################################################

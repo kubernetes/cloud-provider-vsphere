@@ -43,7 +43,7 @@ COPY go.mod go.sum ./
 COPY pkg/    pkg/
 COPY cmd/    cmd/
 ENV CGO_ENABLED=0
-ENV GOPROXY ${GOPROXY:-}
+ENV GOPROXY ${GOPROXY:-https://proxy.golang.org}
 RUN go build -a -ldflags='-w -s -extldflags=static -X main.version=${VERSION}' -o vsphere-cloud-controller-manager ./cmd/vsphere-cloud-controller-manager
 
 ################################################################################
