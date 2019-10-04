@@ -84,13 +84,14 @@ RUN apt-get update && \
       locales \
       mercurial \
       python3 \
+      python3-pip \
       ruby \
       tar \
       unzip \
       zip && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
-    curl -sSL https://bootstrap.pypa.io/get-pip.py | python3 - && \
-    pip3 install setuptools wheel awscli --upgrade && \
+    pip3 install setuptools wheel --upgrade && \
+    pip3 install awscli --upgrade && \
     gem install gist
 
 ################################################################################
