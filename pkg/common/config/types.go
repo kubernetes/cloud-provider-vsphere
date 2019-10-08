@@ -43,9 +43,6 @@ type Config struct {
 		SecretName string `gcfg:"secret-name"`
 		// Secret Namespace where secret will be present that has vCenter credentials.
 		SecretNamespace string `gcfg:"secret-namespace"`
-		// The kubernetes service account used to launch the cloud controller manager.
-		// Default: cloud-controller-manager
-		ServiceAccount string `gcfg:"service-account"`
 		// Secret directory in the event that:
 		// 1) we don't want to use the k8s API to listen for changes to secrets
 		// 2) we are not in a k8s env, namely DC/OS, since CSI is CO agnostic

@@ -29,10 +29,6 @@ const (
 	// exposing the API service.
 	DefaultAPIBinding string = ":43001"
 
-	// DefaultK8sServiceAccount is the default name of the Kubernetes
-	// service account.
-	DefaultK8sServiceAccount string = "cloud-controller-manager"
-
 	// DefaultVCenterPort is the default port used to access vCenter.
 	DefaultVCenterPort string = "443"
 
