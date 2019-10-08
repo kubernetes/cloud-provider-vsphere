@@ -35,6 +35,8 @@ const (
 	// ProviderName is the name of the cloud provider registered with
 	// Kubernetes.
 	ProviderName string = "vsphere"
+	// ClientName is the user agent passed into the controller client builder.
+	ClientName string = "vsphere-cloud-controller-manager"
 )
 
 func init() {
@@ -62,7 +64,7 @@ func newVSphere(cfg *vcfg.Config, finalize ...bool) (*VSphere, error) {
 
 // Initialize initializes the cloud provider.
 func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
-	client, err := clientBuilder.Client(vs.cfg.Global.ServiceAccount)
+	client, err := clientBuilder.Client(ClientName)
 	if err == nil {
 		klog.V(1).Info("Kubernetes Client Init Succeeded")
 

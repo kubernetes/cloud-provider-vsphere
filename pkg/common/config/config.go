@@ -88,9 +88,6 @@ func (cfg *Config) FromEnv() error {
 	if v := os.Getenv("VSPHERE_SECRET_NAMESPACE"); v != "" {
 		cfg.Global.SecretNamespace = v
 	}
-	if v := os.Getenv("VSPHERE_SERVICE_ACCOUNT"); v != "" {
-		cfg.Global.ServiceAccount = v
-	}
 
 	if v := os.Getenv("VSPHERE_ROUNDTRIP_COUNT"); v != "" {
 		tmp, err := strconv.ParseUint(v, 10, 32)
@@ -317,9 +314,6 @@ func (cfg *Config) validateConfig() error {
 	//Fix default global values
 	if cfg.Global.RoundTripperCount == 0 {
 		cfg.Global.RoundTripperCount = DefaultRoundTripperCount
-	}
-	if cfg.Global.ServiceAccount == "" {
-		cfg.Global.ServiceAccount = DefaultK8sServiceAccount
 	}
 	if cfg.Global.VCenterPort == "" {
 		cfg.Global.VCenterPort = DefaultVCenterPort
