@@ -20,7 +20,9 @@ COPY pkg ./pkg/
 COPY cmd ./cmd/
 ARG GOOS
 ARG GOARCH
+ARG GOPROXY
 ENV GOOS=${GOOS:-linux} GOARCH=${GOARCH:-amd64}
+ENV GOPROXY ${GOPROXY:-https://proxy.golang.org}
 RUN go mod download && go mod verify
 
 ################################################################################
@@ -55,12 +57,6 @@ FROM ${GOLANG_IMAGE} as kind
 RUN cd / && GO111MODULE="on" go get -u sigs.k8s.io/kind@v0.3.0
 
 ################################################################################
-##                               LINT STAGE                                   ##
-################################################################################
-FROM ${GOLANG_IMAGE} as lint
-RUN go get -u golang.org/x/lint/golint
-
-################################################################################
 ##                               MAIN STAGE                                   ##
 ################################################################################
 FROM ${GOLANG_IMAGE}
@@ -88,13 +84,14 @@ RUN apt-get update && \
       locales \
       mercurial \
       python3 \
+      python3-pip \
       ruby \
       tar \
       unzip \
       zip && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
-    curl -sSL https://bootstrap.pypa.io/get-pip.py | python3 - && \
-    pip3 install setuptools wheel awscli --upgrade && \
+    pip3 install setuptools wheel --upgrade && \
+    pip3 install awscli --upgrade && \
     gem install gist
 
 ################################################################################
@@ -169,11 +166,6 @@ ENV PATH="/google-cloud-sdk/bin:${PATH}" CLOUDSDK_CORE_DISABLE_PROMPTS=1
 ##                             INSTALL KIND                                   ##
 ################################################################################
 COPY --from=kind /go/bin/kind /usr/local/bin/
-
-################################################################################
-##                             INSTALL LINT                                   ##
-################################################################################
-COPY --from=lint /go/bin/golint /usr/local/bin/
 
 ################################################################################
 ##                         PRIME GO MOD & BUILD CACHES                        ##
