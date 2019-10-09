@@ -16,3 +16,4 @@
 * [Running a Kubernetes cluster on vSphere with kubeadm](/tutorials/kubernetes-on-vsphere-with-kubeadm.md)
 * [Deploying the out-of-tree vSphere Cloud Provider](/tutorials/deploying_cloud_provider_vsphere_with_rbac.md)
 * [Deploying CCM and CSI with Zones Topology](/tutorials/deploying_ccm_and_csi_with_multi_dc_vc_aka_zones.md)
+* [Deploying the (deprecated) in-tree vSphere Cloud Provider using kubeadm](./tutorials/k8s-vcp-on-vsphere-with-kubeadm.md)
