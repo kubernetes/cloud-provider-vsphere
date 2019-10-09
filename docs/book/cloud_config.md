@@ -29,13 +29,10 @@ Here's the entire cloud config spec using example values:
   port = "443"
   ca-file = "/etc/kubernetes/vcenter-ca.crt"
   thumbprint = "<certificate thumbprint>"
-  datastore = ""
-  working-dir = ""
   soap-roundtrip-count = ""
-  vm-uuid = ""
-  vm-name = ""
   secret-name = ""
   secret-namespace = ""
+  ip-family = "ipv4"
 
 [VirtualCenter "10.0.0.1"]
   user = "viadmin@vmare.local"
@@ -44,25 +41,15 @@ Here's the entire cloud config spec using example values:
   datacenters = "SDDC-Datacenter"
   soap-roundtrip-count = "1"
   thumbprint = ""
-
-[Workspace]
-  server = "10.0.0.1"
-  datacenter = "SDDC-Datacenter"
-  default-datastore = "MyDefaultDatastore"
-  resourcepool-path = "*/Resources/Compute-ResourcePool/kubernetes-clusters"
-
-[Disk]
-  scsicontrollertype = pvscsi
-
-[Network]
-  public-network = "sddc-network-01"
+  secret-name = ""
+  secret-namespace = ""
 
 [Labels]
   region = k8s-region
   zone = k8s-zone
 ```
 
-There are 6 sections in the cloud config file, let's break down the fields in each section:
+There are 3 sections in the cloud config file, let's break down the fields in each section:
 
 ### Global
 
@@ -97,25 +84,8 @@ fields in `Global` become the default if they are not specified in other section
   # The vCenter certificate thumbprint, this ensures the correct certificate is used
   thumbprint = "<certificate thumbprint>"
 
-  # The default datastore where VMDKs are stored
-  # DEPRECATED: see datstore under Workspace instead
-  datastore = ""
-
-  # The vSphere path where VMs can be found.
-  # DEPRECATED: see working-dir in Workspace
-  working-dir = ""
-
   # SOAP round trip counter
   soap-roundtrip-count = ""
-
-  # The VM instance UUID of a virtual machine. This is used so any processes on the same machine
-  # can identify which VM it is running on. If not set, the VM UUID is fetched from the machine's
-  # filesystem which requires root access
-  vm-uuid = ""
-
-  # VMName is the name of the virtual machine
-  # DEPRECATED: since the name of VMs are now automatically discovered
-  vm-name = ""
 
   # You can optionally store vCenter credentials in a Kubernetes secret
   # This field specifies the name of the secret resource
@@ -124,6 +94,12 @@ fields in `Global` become the default if they are not specified in other section
   # You can optionally store vCenter credentials in a Kubernetes secret
   # This field specifies the namespace of the secret resource
   secret-namespace = ""
+
+  # IP Family enables the ability to support IPv4 or IPv6
+  # Supported values are:
+  # ipv4 - IPv4 addresses only (Default)
+  # ipv6 - IPv6 addresses only
+  IPFamily string `gcfg:"ip-family"`
 ```
 
 ### VirtualCenter
@@ -150,52 +126,30 @@ section should be the server IP of the vCenter server.
   # If not set, defaults to what is set in the Global section
   soap-roundtrip-count = "1"
 
+  # The CA file to be trusted when connecting to vCenter.
+  # If not set, defaults to the thumbprint specified in the Global section
+  ca-file = "/etc/kubernetes/vcenter-ca.crt"
+
   # The vCenter certificate thumbprint, this ensures the correct certificate is used
   # If not set, defaults to the thumbprint specified in the Global section
   thumbprint = ""
-```
 
-### Workspace
+  # You can optionally store vCenter credentials in a Kubernetes secret
+  # This field specifies the name of the secret resource
+  # If not set, defaults to the thumbprint specified in the Global section
+  secret-name = ""
 
-The `Workspace` section only applies to parameters that should be used only when creating Persistent Volumes.
-**NOTE**: this section is only available in the in-tree vSphere cloud provider.
+  # You can optionally store vCenter credentials in a Kubernetes secret
+  # This field specifies the namespace of the secret resource
+  # If not set, defaults to the thumbprint specified in the Global section
+  secret-namespace = ""
 
-```bash
-[Workspace]
-  # The vCenter server IP to connet to
-  server = "10.0.0.1"
-
-  # The data center for the volume
-  datacenter = "SDDC-Datacenter"
-
-  # The default data store used for the volume
-  default-datastore = "MyDefaultDatastore"
-
-  # The resource pool path to use for your volumes
-  resourcepool-path = "*/Resources/Compute-ResourcePool/kubernetes-clusters"
-```
-
-### Disk
-
-The `Disk` section exists to define the SCSI controller type, which almost always should be set to `pvscsi`.
-
-```bash
-[Disk]
-  # Defines the SCSI disk controller type, should almost always be set to pvscsi.
-  scsicontrollertype = pvscsi
-```
-
-### Network
-
-The Network section specifies the VM network that your cluster is running on. In the event that the kubelet
-cannot discover it's own node addresses, it will query for IPs defined in the VM network.
-
-```bash
-[Network]
-  # The network the VMs in your cluster are joined to
-  # Worth noting that the "public" prefix in this field does not mean that the VM network
-  # here must be public in any sense.
-  public-network = "sddc-network-01"
+  # IP Family enables the ability to support IPv4 or IPv6
+  # Supported values are:
+  # ipv4 - IPv4 addresses only (Default)
+  # ipv6 - IPv6 addresses only
+  # If not set, defaults to the thumbprint specified in the Global section
+  IPFamily string `gcfg:"ip-family"`
 ```
 
 ### Labels

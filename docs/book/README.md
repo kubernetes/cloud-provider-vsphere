@@ -29,12 +29,11 @@ This document will cover both the in-tree and out-of-tree vSphere integrations f
 
 ## Tutorials
 
-### vSphere 6.7U3 specific tutorials
+### vSphere 6.7U3 tutorials
 
 * [Deploying a new K8s cluster with CPI and CSI on vSphere 6.7U3 with kubeadm](./tutorials/kubernetes-on-vsphere-with-kubeadm.md)
 * [Deploying CPI and CSI with Zones Topology](./tutorials/deploying_cpi_and_csi_with_multi_dc_vc_aka_zones.md)
 
 ### Earlier tutorials
 
-* [Deploying the CSI and CCM on pre-6.7U3](./tutorials/deploying_cloud_provider_vsphere_with_rbac.md)
-* [Deploying K8s with vSphere Cloud Provider using kubeadm (deprecated)](./tutorials/k8s-vcp-on-vsphere-with-kubeadm.md)
+* [Deploying K8s with vSphere Cloud Provider (in-tree) using kubeadm (deprecated)](./tutorials/k8s-vcp-on-vsphere-with-kubeadm.md)

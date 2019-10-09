@@ -8,7 +8,7 @@ This section will cover the prerequisites that need to be in place before attemp
 
 ## vSphere requirements
 
-vSphere 6.7U3 is a prerequisite for using CSI and CPI at the time of writing. This may change going forward, and the documentation will be updated to reflect any changes in this support statement. If you are on a vSphere version that is below 6.7 U3, you can either upgrade vSphere to 6.7U3 or follow one of the tutorials for earlier vSphere versions. Here is the tutorial on deploying Kubernetes with kubeadm, using the VCP - [Deploying Kubernetes using kubeadm with the vSphere Cloud Provider](./k8s-vcp-on-vsphere-with-kubeadm.md).
+vSphere 6.7U3 (or later) is a prerequisite for using CSI and CPI at the time of writing. This may change going forward, and the documentation will be updated to reflect any changes in this support statement. If you are on a vSphere version that is below 6.7 U3, you can either upgrade vSphere to 6.7U3 or follow one of the tutorials for earlier vSphere versions. Here is the tutorial on deploying Kubernetes with kubeadm, using the VCP - [Deploying Kubernetes using kubeadm with the vSphere Cloud Provider (in-tree)](./k8s-vcp-on-vsphere-with-kubeadm.md).
 
 ## Recommended Guest Operating System
 
