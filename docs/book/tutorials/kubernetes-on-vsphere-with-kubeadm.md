@@ -444,16 +444,22 @@ This cloud-config configmap file, passed to the CPI on initialization, contains 
 ```bash
 # tee /etc/kubernetes/vsphere.conf >/dev/null <<EOF
 [Global]
+port = "443"
 insecure-flag = "true"
+secret-name = "cpi-global-secret"
+secret-namespace = "kube-system"
 
 [VirtualCenter "1.1.1.1"]
-user = "Administrator@vsphere.local"
-password = "Admin!23"
-port = "443"
-datacenters = "datacenter"
+datacenters = "finance"
 
-[Network]
-public-network = "VM Network"
+[VirtualCenter "192.168.0.1"]
+datacenters = "hr"
+
+[VirtualCenter "10.0.0.1"]
+datacenters = "engineering"
+secret-name = "cpi-engineering-secret"
+secret-namespace = "kube-system"
+
 EOF
 ```
 
@@ -461,11 +467,10 @@ Here is a description of the fields used in the vsphere.conf configmap.
 
 * `insecure-flag` should be set to true to use self-signed certificate for login
 * `VirtualCenter` section is defined to hold property of vcenter. IP address and FQDN should be specified here.
-* `user` is the vCenter username for vSphere Cloud Provider.
-* `password` is the password for vCenter user specified with user.
+* `secret-name` holds the credential(s) for a single or list of vCenter Servers.
+* `secret-namespace` is set to the namespace where the secret has been created.
 * `port` is the vCenter Server Port. The default is 443 if not specified.
 * `datacenters` should be the list of all comma separated datacenters where kubernetes node VMs are present.
-* `public-network` should be set to the network switch name for publicly accessible network interface on node VMs.
 
 Create the configmap by running the following command:
 
@@ -485,7 +490,58 @@ NAME              DATA     AGE
 cloud-config      1        82s
 ```
 
-Note: vCenter Server credentials for Cloud Controller Manager can be stored in the Kubernetes secret. Click here for [guidelines on how to use secrets](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets).
+### Create a CPI secret
+
+The CPI supports storing vCenter credentials either in:
+
+* a shared global secret containing all vCenter credentials, or
+* a secret dedicated for a particular vCenter configuration which takes precedence over anything that might be configured within the global secret
+
+In the example `vsphere.conf` above, there are two configured [Kubernetes secret](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets). The vCenter at `10.0.0.1` contains credentials in the secret named `cpi-engineering-secret` in the namespace `kube-system` and the vCenter at `1.1.1.1` and `192.168.0.1` contains credentials in the secret named `cpi-global-secret` in the namespace `kube-system` defined in the `[Global]` section.
+
+An example [Secrets YAML](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vccm-secret.yaml) can be used for reference when creating your own `secrets`. If the example secret YAML is used, update the secret name to use a `<unique secret name>`, the vCenter IP address in the keys of `stringData`, and the `username` and `password` for each key.
+
+The secret for the vCenter at `1.1.1.1` might look like the following:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cpi-engineering-secret
+  namespace: kube-system
+stringData:
+  10.0.0.1.username: "administrator@vsphere.local"
+  10.0.0.1.password: "password"
+```
+
+Then to create the secret, run the following command replacing the name of the YAML file with the one you have used:
+
+```bash
+# kubectl create -f cpi-engineering-secret.yaml
+```
+
+Verify that the credential secret is successfully created in the kube-system namespace.
+
+```bash
+# kubectl get secret cpi-engineering-secret --namespace=kube-system
+NAME                    TYPE     DATA   AGE
+cpi-engineering-secret   Opaque   1      43s
+```
+
+If you have multiple vCenters as in the example vsphere.conf above, your Kubernetes Secret YAML could look like the following to storage the vCenter credentials for vCenters at `1.1.1.1` and `192.168.0.1`:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cpi-global-secret
+  namespace: kube-system
+stringData:
+  1.1.1.1.username: "administrator@vsphere.local"
+  1.1.1.1.password: "password"
+  192.168.0.1.username: "administrator@vsphere.local"
+  192.168.0.1.password: "password"
+```
 
 ### Zones and Regions for Pod and Volume Placement - CPI
 
