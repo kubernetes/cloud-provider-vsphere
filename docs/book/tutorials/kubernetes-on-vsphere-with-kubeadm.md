@@ -6,22 +6,28 @@ The purpose of this guide is to provide the reader with step by step instruction
 
 This section will cover the prerequisites that need to be in place before attempting the deployment.
 
-## vSphere requirements
+### vSphere requirements
 
 vSphere 6.7U3 (or later) is a prerequisite for using CSI and CPI at the time of writing. This may change going forward, and the documentation will be updated to reflect any changes in this support statement. If you are on a vSphere version that is below 6.7 U3, you can either upgrade vSphere to 6.7U3 or follow one of the tutorials for earlier vSphere versions. Here is the tutorial on deploying Kubernetes with kubeadm, using the VCP - [Deploying Kubernetes using kubeadm with the vSphere Cloud Provider (in-tree)](./k8s-vcp-on-vsphere-with-kubeadm.md).
 
-## Recommended Guest Operating System
+### Firewall requirements
+
+Providing the K8s master node(s) access to the vCenter management interface will be sufficient, given the CPI and CSI pods are deployed on the master node(s). Should these components be deployed on worker nodes or otherwise - those nodes will also need access to the vCenter management interface.
+
+If you want to use topology-aware volume provisioning and the late binding feature using `zone`/`region`, the node need to discover its topology by connecting to the vCenter, for this every node should be able to communicate to the vCenter. You can disable this optional feature if you want to open only the master node to the vCenter management interface.
+
+### Recommended Guest Operating System
 
 VMware recommends that you create a virtual machine template using Guest OS Ubuntu 18.04.1 LTS (Bionic Beaver) 64-bit PC (AMD64) Server. Check it out on [VMware PartnerWeb](http://partnerweb.vmware.com/GOSIG/Ubuntu_18_04_LTS.html). This template is cloned to act as base images for your Kubernetes cluster. For instructions on how to do this, please refer to the guidance provided in [this blog post by Myles Gray of VMware](https://blah.cloud/kubernetes/creating-an-ubuntu-18-04-lts-cloud-image-for-cloning-on-vmware/). Ensure that SSH access is enabled on all nodes. This must be done in order to run commands on both the Kubernetes master and worker nodes in this guide.
 
-## Virtual Machine Hardware requirements
+### Virtual Machine Hardware requirements
 
 Virtual Machine Hardware must be version 15 or higher. For Virtual Machine CPU and Memory requirements, size adequately based on workload requirements.
 VMware also recommend that virtual machines use the VMware Paravirtual SCSI controller for Primary Disk on the Node VM. This should be the default, but it is always good practice to check.
 Finally, the disk.EnableUUID parameter must be set for each node VMs. This step is necessary so that the VMDK always presents a consistent UUID to the VM, thus allowing the disk to be mounted properly.
 It is recommended to not take snapshots of CNS node VMs to avoid errors and unpredictable behavior.
 
-## Docker Images
+### Docker Images
 
 The following is the list of docker images that are required for the installation of CSI and CPI on Kubernetes. These images are automatically pulled in when CSI and CPI manifests are deployed.
 VMware distributes and recommends the following images:
@@ -48,7 +54,7 @@ k8s.gcr.io/etcd:3.3.10
 k8s.gcr.io/coredns:1.3.1
 ```
 
-## Tools
+### Tools
 
 If you plan to deploy Kubernetes on vSphere  from a MacOS environment, the `brew` package manager may be used to install and manage the necessary tools. If using Linux or Windows environment to initiate the deployment, links to the tools are included. Follow the tool specific instructions for installing the tools on the different operating systems.
 
