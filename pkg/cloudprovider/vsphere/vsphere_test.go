@@ -142,11 +142,12 @@ func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
 
 func TestNewVSphere(t *testing.T) {
 	cfg := &vcfg.Config{}
+	cpiCfg := &CPIConfig{}
 	if err := cfg.FromEnv(); err != nil {
 		t.Skipf("No config found in environment")
 	}
 
-	_, err := newVSphere(cfg)
+	_, err := newVSphere(cfg, cpiCfg)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -155,9 +156,10 @@ func TestNewVSphere(t *testing.T) {
 func TestVSphereLogin(t *testing.T) {
 	cfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
+	cpiCfg := &CPIConfig{}
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg)
+	vs, err := newVSphere(cfg, cpiCfg)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -184,13 +186,14 @@ func TestVSphereLogin(t *testing.T) {
 func TestVSphereLoginByToken(t *testing.T) {
 	cfg, cleanup := configFromSim(false)
 	defer cleanup()
+	cpiCfg := &CPIConfig{}
 
 	// Configure for SAML token auth
 	cfg.Global.User = localhostCert
 	cfg.Global.Password = localhostKey
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg)
+	vs, err := newVSphere(cfg, cpiCfg)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -490,7 +493,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 				t.Fatalf("readConfig: unexpected error returned: %v", err)
 			}
 		}
-		vs, err = buildVSphereFromConfig(cfg)
+		vs, err = buildVSphereFromConfig(cfg, &CPIConfig{})
 		if err != nil { // testcase.expectedError {
 			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 		}
