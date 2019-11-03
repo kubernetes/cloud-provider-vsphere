@@ -95,8 +95,12 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 // LoadBalancer returns a balancer interface. Also returns true if the
 // interface is supported, false otherwise.
 func (vs *VSphere) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
-	klog.Warning("The vSphere cloud provider does not support load balancers")
-	return nil, false
+	if vs.loadbalancer == nil {
+		klog.Warning("The vSphere cloud provider does not support load balancers")
+		return nil, false
+	}
+
+	return vs.loadbalancer, true
 }
 
 // Instances returns an instances interface. Also returns true if the
@@ -152,12 +156,23 @@ func buildVSphereFromConfig(cfg *vcfg.Config) (*VSphere, error) {
 		vcList:         make(map[string]*VCenterInfo),
 	}
 
+	var err error
+	var loadbalancer cloudprovider.LoadBalancer
+	if cfg.LoadbalancerNSXT != nil {
+		// TODO: feature gate this config with an env var?
+		loadbalancer, err = newNSXTLoadBalancer(cfg.Global.ClusterID, cfg.LoadbalancerNSXT)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	vs := VSphere{
-		cfg:         cfg,
-		nodeManager: nm,
-		instances:   newInstances(nm),
-		zones:       newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
-		server:      server.NewServer(cfg.Global.APIBinding, nm),
+		cfg:          cfg,
+		nodeManager:  nm,
+		instances:    newInstances(nm),
+		loadbalancer: loadbalancer,
+		zones:        newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
+		server:       server.NewServer(cfg.Global.APIBinding, nm),
 	}
 	return &vs, nil
 }

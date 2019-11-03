@@ -15,6 +15,7 @@ require (
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
+	github.com/vmware/go-vmware-nsxt v0.0.0-20190201205556-16aa0443042d
 	github.com/vmware/govmomi v0.21.0
 	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80

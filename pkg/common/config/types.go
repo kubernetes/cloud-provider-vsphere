@@ -19,6 +19,9 @@ package config
 // Config is used to read and store information from the cloud configuration file
 type Config struct {
 	Global struct {
+		// ClusterID is the unique identifer used for a cluster
+		// Required if NSX-T load balancer support is enabled
+		ClusterID string `gcfg:"cluster-id"`
 		// vCenter username.
 		User string `gcfg:"user"`
 		// vCenter password in clear text.
@@ -69,6 +72,11 @@ type Config struct {
 		Zone   string `gcfg:"zone"`
 		Region string `gcfg:"region"`
 	}
+
+	// Loadbalancer_NSX_T contains configuration for enabling NSX-T based loadbalancer support for
+	// Services Type=LoadBalancer resources
+	// TODO: mark this as experimental
+	LoadbalancerNSXT *LoadbalancerNSXT
 }
 
 // VirtualCenterConfig contains information used to access a remote vCenter
@@ -113,4 +121,15 @@ type VirtualCenterConfig struct {
 	IPFamily string `gcfg:"ip-family"`
 	// IPFamilyPriority (intentionally not exposed via the config) the list/priority of IP versions
 	IPFamilyPriority []string
+}
+
+// LoadbalancerNSXT contains configuration for enabling NSX-T based loadbalancer support for
+// Services Type=LoadBalancer resources
+type LoadbalancerNSXT struct {
+	Server        string `gcfg:"server"`
+	User          string `gcfg:"user"`
+	Password      string `gcfg:"password"`
+	Insecure      bool   `gcfg:"insecure-flag"`
+	Tier1RouterID string `gcfg:"tier1-router-id"`
+	VIPPoolID     string `gcfg:"vip-pool-id"`
 }
