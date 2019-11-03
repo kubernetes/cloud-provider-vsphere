@@ -18,10 +18,7 @@ package vsphere
 
 import (
 	"context"
-	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -140,6 +137,7 @@ func (n *nsxtLB) GetLoadBalancer(ctx context.Context, clusterName string, servic
 		return nil, false, err
 	}
 
+	// this is wrong, the lb name doesn't actually match the virtual server name, we need to check by port name
 	for _, virtualServer := range virtualServers.Results {
 		if virtualServer.DisplayName != lbName {
 			continue
@@ -167,6 +165,7 @@ func (n *nsxtLB) GetLoadBalancerName(ctx context.Context, clusterName string, se
 func (n *nsxtLB) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
 	lbName := n.GetLoadBalancerName(ctx, clusterName, service)
 
+	// this is wrong, actually need to get VirtualServer per port
 	virtualServer, exists, err := n.getVirtualServerByName(lbName)
 	if err != nil {
 		return nil, err
@@ -271,7 +270,7 @@ func (n *nsxtLB) EnsureLoadBalancer(ctx context.Context, clusterName string, ser
 
 	success = true
 
-	err = n.AddVirtualServersToLoadBalancer(newVirtualServerIDs)
+	err = n.addVirtualServersToLoadBalancer(newVirtualServerIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -405,219 +404,4 @@ func (n *nsxtLB) EnsureLoadBalancerDeleted(ctx context.Context, clusterName stri
 	}
 
 	return nil
-}
-
-func (n *nsxtLB) loadBalancerServiceName() string {
-	return fmt.Sprintf("kubernetes-cpi-vsphere-%s", n.clusterID)
-}
-
-func generatePoolName(lbName string, port int) string {
-	return fmt.Sprintf("%s-port-%d", lbName, port)
-}
-
-func generateVirtualServerName(lbName string, port int) string {
-	return fmt.Sprintf("%s-port-%d", lbName, port)
-}
-
-func (n *nsxtLB) AddVirtualServersToLoadBalancer(virtualServerIDs []string) error {
-	// first read load balancer service
-	lbService, _, err := n.client.ServicesApi.ReadLoadBalancerService(n.client.Context, n.lbServiceID)
-	if err != nil {
-		return err
-	}
-
-	newVirtualServerIDs := append(lbService.VirtualServerIds, virtualServerIDs...)
-	lbService.VirtualServerIds = newVirtualServerIDs
-
-	_, _, err = n.client.ServicesApi.UpdateLoadBalancerService(n.client.Context, lbService.Id, lbService)
-	return err
-}
-
-func (n *nsxtLB) getLBServiceByName(name string) (loadbalancer.LbService, bool, error) {
-	lbs, err := n.listLoadBalancerServices()
-	if err != nil {
-		return loadbalancer.LbService{}, false, err
-	}
-
-	for _, lbSvc := range lbs.Results {
-		if lbSvc.DisplayName != name {
-			continue
-		}
-
-		return lbSvc, true, nil
-	}
-
-	return loadbalancer.LbService{}, false, nil
-}
-
-func (n *nsxtLB) getVirtualServerByName(name string) (loadbalancer.LbVirtualServer, bool, error) {
-	virtualServers, err := n.listLoadBalancerVirtualServers()
-	if err != nil {
-		return loadbalancer.LbVirtualServer{}, false, err
-	}
-
-	for _, virtualServer := range virtualServers.Results {
-		if virtualServer.DisplayName != name {
-			continue
-		}
-
-		return virtualServer, true, nil
-	}
-
-	return loadbalancer.LbVirtualServer{}, false, nil
-}
-
-func (n *nsxtLB) getLBPoolByName(name string) (loadbalancer.LbPool, bool, error) {
-	lbPools, err := n.listLoadBalancerPool()
-	if err != nil {
-		return loadbalancer.LbPool{}, false, err
-	}
-
-	for _, lbPool := range lbPools.Results {
-		if lbPool.DisplayName != name {
-			continue
-		}
-
-		return lbPool, true, nil
-	}
-
-	return loadbalancer.LbPool{}, false, nil
-}
-
-func getInternalIP(node *v1.Node) string {
-	for _, address := range node.Status.Addresses {
-		if address.Type != v1.NodeInternalIP {
-			continue
-		}
-
-		return address.Address
-	}
-
-	return ""
-}
-
-// ListLoadBalancerVirtualServers represents the http response from list load balancer virtual server request
-// TODO: remove when NSX-T client adds ListLoadBalancer* methods
-type ListLoadBalancerVirtualServers struct {
-	ResultCount int                            `json:"result_count"`
-	Results     []loadbalancer.LbVirtualServer `json:"results"`
-}
-
-// listLoadBalancerVirtualServers makes an http request for listing load balancer virtual servers
-// TODO: remove this once the go-vmware-nsxt client supports this call
-func (n *nsxtLB) listLoadBalancerVirtualServers() (ListLoadBalancerVirtualServers, error) {
-	// set default transport to skip verifiy
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	url := "https://" + n.server + "/api/v1/loadbalancer/virtual-servers"
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return ListLoadBalancerVirtualServers{}, err
-	}
-
-	req.SetBasicAuth(n.username, n.password)
-	resp, err := client.Do(req)
-	if err != nil {
-		return ListLoadBalancerVirtualServers{}, err
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return ListLoadBalancerVirtualServers{}, err
-	}
-
-	var results ListLoadBalancerVirtualServers
-	err = json.Unmarshal(body, &results)
-	if err != nil {
-		return ListLoadBalancerVirtualServers{}, err
-	}
-
-	return results, nil
-}
-
-// ListLoadBalancerService represents the http response from list load balancer service request
-// TODO: remove when NSX-T client adds ListLoadBalancer* methods
-type ListLoadBalancerService struct {
-	ResultCount int                      `json:"result_count"`
-	Results     []loadbalancer.LbService `json:"results"`
-}
-
-// listLoadBalancers makes an http request for listing load balancer services
-// TODO: remove this once the go-vmware-nsxt client supports this call
-func (n *nsxtLB) listLoadBalancerServices() (ListLoadBalancerService, error) {
-	// set default transport to skip verifiy
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	url := "https://" + n.server + "/api/v1/loadbalancer/services"
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return ListLoadBalancerService{}, err
-	}
-
-	req.SetBasicAuth(n.username, n.password)
-	resp, err := client.Do(req)
-	if err != nil {
-		return ListLoadBalancerService{}, err
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return ListLoadBalancerService{}, err
-	}
-
-	var results ListLoadBalancerService
-	err = json.Unmarshal(body, &results)
-	if err != nil {
-		return ListLoadBalancerService{}, err
-	}
-
-	return results, nil
-}
-
-// ListLoadBalancerPool represents the http response from list load balancer pools request
-// TODO: remove when NSX-T client adds ListLoadBalancer* methods
-type ListLoadBalancerPool struct {
-	ResultCount int                   `json:"result_count"`
-	Results     []loadbalancer.LbPool `json:"results"`
-}
-
-// listLoadBalancerPool makes an http request for listing load balancer pools
-// TODO: remove this once the go-vmware-nsxt client supports this call
-func (n *nsxtLB) listLoadBalancerPool() (ListLoadBalancerPool, error) {
-	// set default transport to skip verifiy
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	url := "https://" + n.server + "/api/v1/loadbalancer/pools"
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return ListLoadBalancerPool{}, err
-	}
-
-	req.SetBasicAuth(n.username, n.password)
-	resp, err := client.Do(req)
-	if err != nil {
-		return ListLoadBalancerPool{}, err
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return ListLoadBalancerPool{}, err
-	}
-
-	var results ListLoadBalancerPool
-	err = json.Unmarshal(body, &results)
-	if err != nil {
-		return ListLoadBalancerPool{}, err
-	}
-
-	return results, nil
 }
