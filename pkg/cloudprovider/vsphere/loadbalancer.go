@@ -28,7 +28,6 @@ import (
 	"k8s.io/klog"
 
 	nsxt "github.com/vmware/go-vmware-nsxt"
-	"github.com/vmware/go-vmware-nsxt/common"
 	"github.com/vmware/go-vmware-nsxt/loadbalancer"
 	"github.com/vmware/go-vmware-nsxt/manager"
 )
@@ -38,8 +37,6 @@ type nsxtLB struct {
 	client *nsxt.APIClient
 	// clusterID is a unique identifier of the cluster
 	clusterID string
-	// routerID is the ID of the NSX-T tier1 router used for creating LoadBalancers
-	routerID string
 	// lbServiceID is the ID of the NSX-T LoadBalancer Service where virtual servers
 	// for Service Type=LoadBalancer are created
 	lbServiceID string
@@ -72,10 +69,10 @@ func newNSXTLoadBalancer(clusterID string, cfg *vcfg.LoadbalancerNSXT) (cloudpro
 
 	// TODO: validate config values
 	return &nsxtLB{
-		client:    nsxClient,
-		routerID:  cfg.Tier1RouterID,
-		clusterID: clusterID,
-		vipPoolID: cfg.VIPPoolID,
+		client:      nsxClient,
+		clusterID:   clusterID,
+		lbServiceID: cfg.LBServiceID,
+		vipPoolID:   cfg.VIPPoolID,
 
 		// only required for raw http requests
 		server:   cfg.Server,
@@ -86,74 +83,44 @@ func newNSXTLoadBalancer(clusterID string, cfg *vcfg.LoadbalancerNSXT) (cloudpro
 }
 
 func (n *nsxtLB) Initialize() error {
-	// first look for the Tier1 router by ID provided in config
-	router, resp, err := n.client.LogicalRoutingAndServicesApi.ReadLogicalRouter(n.client.Context, n.routerID)
+	_, resp, err := n.client.ServicesApi.ReadLoadBalancerService(n.client.Context, n.lbServiceID)
 	if resp.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("NSX-T logical router with router ID %q not found", n.routerID)
+		return fmt.Errorf("load balancer service with ID %s does not exist", n.lbServiceID)
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error looking for load balancer service with ID %s: %v", n.lbServiceID, err)
 	}
 
-	// then check for LB Service by cluster ID, if it already exists, we're good to go
-	// if it doesn't exist, create one now
-	lbServiceName := n.loadBalancerServiceName()
-	lbService, exists, err := n.getLBServiceByName(lbServiceName)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		n.lbServiceID = lbService.Id
-		return nil
-	}
-
-	lbService = loadbalancer.LbService{
-		DisplayName: lbServiceName,
-		Description: fmt.Sprintf("LoadBalancer Service managed by Kubernetes vSphere Cloud Provider (%s)", n.clusterID),
-		Enabled:     true,
-		Size:        "SMALL", // TODO: this should be configurable in the config?
-		Attachment: &common.ResourceReference{
-			TargetType: router.ResourceType,
-			TargetId:   router.Id,
-		},
-	}
-
-	lbService, _, err = n.client.ServicesApi.CreateLoadBalancerService(n.client.Context, lbService)
-	if err != nil {
-		return err
-	}
-
-	n.lbServiceID = lbService.Id
 	return nil
 }
 
 func (n *nsxtLB) GetLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (status *v1.LoadBalancerStatus, exists bool, err error) {
-	lbName := n.GetLoadBalancerName(ctx, clusterName, service)
-
-	virtualServers, err := n.listLoadBalancerVirtualServers()
+	virtualServers, err := n.getVirtualServers(service)
 	if err != nil {
 		return nil, false, err
 	}
 
-	// this is wrong, the lb name doesn't actually match the virtual server name, we need to check by port name
-	for _, virtualServer := range virtualServers.Results {
-		if virtualServer.DisplayName != lbName {
-			continue
-		}
-
-		return &v1.LoadBalancerStatus{
-			Ingress: []v1.LoadBalancerIngress{
-				{
-					IP: virtualServer.IpAddress,
-				},
-			},
-		}, true, nil
-
+	if len(virtualServers) == 0 {
+		return nil, false, nil
 	}
 
-	return nil, false, nil
+	// get unique IPs
+	ips := n.getUniqueIPsFromVirtualServers(virtualServers)
+	if len(ips) == 0 {
+		return nil, false, fmt.Errorf("error getting unique IPs of virtual servers for service %s", service.Name)
+	}
+	if len(ips) > 1 {
+		return nil, false, fmt.Errorf("more than virtual IP was associated with service %s", service.Name)
+	}
+
+	return &v1.LoadBalancerStatus{
+		Ingress: []v1.LoadBalancerIngress{
+			{
+				IP: ips[0],
+			},
+		},
+	}, true, nil
 }
 
 func (n *nsxtLB) GetLoadBalancerName(ctx context.Context, clusterName string, service *v1.Service) string {
@@ -165,116 +132,97 @@ func (n *nsxtLB) GetLoadBalancerName(ctx context.Context, clusterName string, se
 func (n *nsxtLB) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
 	lbName := n.GetLoadBalancerName(ctx, clusterName, service)
 
-	// this is wrong, actually need to get VirtualServer per port
-	virtualServer, exists, err := n.getVirtualServerByName(lbName)
+	virtualServers, err := n.getVirtualServers(service)
 	if err != nil {
 		return nil, err
 	}
 
-	if exists {
-		return &v1.LoadBalancerStatus{
-			Ingress: []v1.LoadBalancerIngress{
-				{
-					IP: virtualServer.IpAddress,
-				},
-			},
-		}, nil
+	var vip string
+	releaseAllocatedVIP := true
 
-	}
-
-	// TODO: do actual IPAM allocation to get virtual server IP
-	// For now use cluster IP
-
-	// we can re-use the same LB pool members since we can rely on DefaultPoolMemberPort to indicate the node port
-	// as the target port for each VirtualServer
-	var lbMembers []loadbalancer.PoolMember
-	for _, node := range nodes {
-		// TODO: don't always assume InternalIP from node addresses
-		ip := getInternalIP(node)
-		if ip == "" {
-			klog.Warningf("node %s has no addresses assigned", node.Name)
-			continue
-		}
-
-		member := loadbalancer.PoolMember{
-			DisplayName: node.Name,
-			Weight:      1,
-			IpAddress:   ip,
-		}
-
-		lbMembers = append(lbMembers, member)
-	}
-
-	// allocate VIP from pool provided in config
-	allocation, _, err := n.client.PoolManagementApi.AllocateOrReleaseFromIpPool(n.client.Context, n.vipPoolID, manager.AllocationIpAddress{}, "ALLOCATE")
-	if err != nil {
-		return nil, err
-	}
-
-	vip := allocation.AllocationId
-
-	success := false
-	defer func() {
-		if success {
-			return
-		}
-
-		// release VIP from pool if load balancer was not created successfully
-		_, _, err := n.client.PoolManagementApi.AllocateOrReleaseFromIpPool(n.client.Context, n.vipPoolID,
-			manager.AllocationIpAddress{AllocationId: vip}, "RELEASE")
+	ips := n.getUniqueIPsFromVirtualServers(virtualServers)
+	if len(ips) == 0 {
+		allocation, _, err := n.client.PoolManagementApi.AllocateOrReleaseFromIpPool(n.client.Context, n.vipPoolID,
+			manager.AllocationIpAddress{}, "ALLOCATE")
 		if err != nil {
-			klog.Errorf("error releasing VIP %s after load balancer failed to provision", vip)
+			return nil, err
 		}
 
-	}()
+		vip := allocation.AllocationId
+		defer func() {
+			if !releaseAllocatedVIP {
+				return
+			}
+
+			// release VIP from pool if load balancer was not created successfully
+			_, _, err := n.client.PoolManagementApi.AllocateOrReleaseFromIpPool(n.client.Context, n.vipPoolID,
+				manager.AllocationIpAddress{AllocationId: vip}, "RELEASE")
+			if err != nil {
+				klog.Errorf("error releasing VIP %s after load balancer failed to provision", vip)
+			}
+
+		}()
+	} else if len(ips) == 1 {
+		vip = ips[0]
+	} else {
+		return nil, fmt.Errorf("got more than 1 VIP for service %s", service.Name)
+	}
+
+	lbMembers := n.nodesToLBMembers(nodes)
+	lbPool, err := n.createOrUpdateLBPool(lbName, lbMembers)
+	if err != nil {
+		return nil, err
+	}
 
 	var newVirtualServerIDs []string
-
 	// Create a new virtual server per port in the Service since LB pools only support single ports
 	// and each Service Port has a dedicated node port
 	for _, port := range service.Spec.Ports {
-		// create a pool ID using this port's node port
-		lbPool := loadbalancer.LbPool{
-			//  TODO: make this configurable
-			Algorithm:        "ROUND_ROBIN",
-			DisplayName:      fmt.Sprintf("%s-port-%d", lbName, port.Port),
-			Description:      fmt.Sprintf("LoadBalancer Pool managed by Kubernetes vSphere Cloud Provider (%s)", n.clusterID),
-			Members:          lbMembers,
-			MinActiveMembers: 1,
+		virtualServerID := ""
+		virtualServerExists := false
+		for _, virtualServer := range virtualServers {
+			if virtualServer.DisplayName != generateVirtualServerName(lbName, port.Port) {
+				continue
+			}
+
+			virtualServerExists = true
+			virtualServerID = virtualServer.Id
+			break
 		}
 
-		lbPool, _, err := n.client.ServicesApi.CreateLoadBalancerPool(n.client.Context, lbPool)
-		if err != nil {
-			return nil, err
-		}
-
-		// virtual server doesn't exist.. update node pools? or should that only happen on update?
 		virtualServer := loadbalancer.LbVirtualServer{
-			DisplayName:           fmt.Sprintf("%s-port-%d", lbName, port.Port),
-			Description:           fmt.Sprintf("LoadBalancer VirtualServer managed by Kubernetes vSphere Cloud Provider (%s)", n.clusterID),
-			IpProtocol:            string(port.Protocol),
-			DefaultPoolMemberPort: strconv.Itoa(int(port.NodePort)),
-			IpAddress:             vip,
-			Ports:                 []string{strconv.Itoa(int(port.Port))},
-			Enabled:               true,
-			PoolId:                lbPool.Id,
+			DisplayName:            generateVirtualServerName(lbName, port.Port),
+			Description:            fmt.Sprintf("LoadBalancer VirtualServer managed by Kubernetes vSphere Cloud Provider (%s)", n.clusterID),
+			IpProtocol:             string(port.Protocol),
+			DefaultPoolMemberPorts: []string{strconv.Itoa(int(port.NodePort))},
+			IpAddress:              vip,
+			Ports:                  []string{strconv.Itoa(int(port.Port))},
+			Enabled:                true,
+			PoolId:                 lbPool.Id,
 		}
 
-		virtualServer, _, err = n.client.ServicesApi.CreateLoadBalancerVirtualServer(n.client.Context, virtualServer)
-		if err != nil {
-			return nil, err
+		if !virtualServerExists {
+			virtualServer, _, err = n.client.ServicesApi.CreateLoadBalancerVirtualServer(n.client.Context, virtualServer)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			virtualServer, _, err = n.client.ServicesApi.UpdateLoadBalancerVirtualServer(n.client.Context, virtualServerID, virtualServer)
+			if err != nil {
+				return nil, err
+			}
+
 		}
 
 		newVirtualServerIDs = append(newVirtualServerIDs, virtualServer.Id)
 	}
-
-	success = true
 
 	err = n.addVirtualServersToLoadBalancer(newVirtualServerIDs)
 	if err != nil {
 		return nil, err
 	}
 
+	releaseAllocatedVIP = false
 	return &v1.LoadBalancerStatus{
 		Ingress: []v1.LoadBalancerIngress{
 			{
@@ -287,119 +235,101 @@ func (n *nsxtLB) EnsureLoadBalancer(ctx context.Context, clusterName string, ser
 func (n *nsxtLB) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
 	lbName := n.GetLoadBalancerName(ctx, clusterName, service)
 
-	// we can re-use the same LB pool members since we can rely on DefaultPoolMemberPort to indicate the node port
-	// as the target port for each VirtualServer
-	var lbMembers []loadbalancer.PoolMember
-	for _, node := range nodes {
-		// TODO: don't always assume InternalIP from node addresses
-		ip := getInternalIP(node)
-		if ip == "" {
-			klog.Warningf("node %s has no addresses assigned", node.Name)
-			continue
-		}
-
-		member := loadbalancer.PoolMember{
-			DisplayName: node.Name,
-			Weight:      1,
-			IpAddress:   ip,
-		}
-
-		lbMembers = append(lbMembers, member)
+	virtualServers, err := n.getVirtualServers(service)
+	if err != nil {
+		return err
 	}
 
+	ips := n.getUniqueIPsFromVirtualServers(virtualServers)
+	if len(ips) != 1 {
+		return fmt.Errorf("expected exactly 1 VIP for service %s, got %v", service.Name, ips)
+	}
+
+	vip := ips[0]
+
+	lbMembers := n.nodesToLBMembers(nodes)
+	lbPool, err := n.createOrUpdateLBPool(lbName, lbMembers)
+	if err != nil {
+		return err
+	}
+
+	var newVirtualServerIDs []string
 	// Create a new virtual server per port in the Service since LB pools only support single ports
 	// and each Service Port has a dedicated node port
 	for _, port := range service.Spec.Ports {
-		poolName := generatePoolName(lbName, int(port.Port))
-		lbPool, exists, err := n.getLBPoolByName(poolName)
-		if err != nil {
-			return err
+		virtualServerID := ""
+		virtualServerExists := false
+		for _, virtualServer := range virtualServers {
+			if virtualServer.DisplayName != generateVirtualServerName(lbName, port.Port) {
+				continue
+			}
+
+			virtualServerExists = true
+			virtualServerID = virtualServer.Id
+			break
 		}
 
-		if !exists {
-			return fmt.Errorf("error updating LB pool %s because it doesn't exist", poolName)
+		virtualServer := loadbalancer.LbVirtualServer{
+			DisplayName:            generateVirtualServerName(lbName, port.Port),
+			Description:            fmt.Sprintf("LoadBalancer VirtualServer managed by Kubernetes vSphere Cloud Provider (%s)", n.clusterID),
+			IpProtocol:             string(port.Protocol),
+			DefaultPoolMemberPorts: []string{strconv.Itoa(int(port.NodePort))},
+			IpAddress:              vip,
+			Ports:                  []string{strconv.Itoa(int(port.Port))},
+			Enabled:                true,
+			PoolId:                 lbPool.Id,
 		}
 
-		lbPoolID := lbPool.Id
+		if !virtualServerExists {
+			virtualServer, _, err = n.client.ServicesApi.CreateLoadBalancerVirtualServer(n.client.Context, virtualServer)
+			if err != nil {
+				return err
+			}
+		} else {
+			virtualServer, _, err = n.client.ServicesApi.UpdateLoadBalancerVirtualServer(n.client.Context, virtualServerID, virtualServer)
+			if err != nil {
+				return err
+			}
 
-		// create a pool ID using this port's node port
-		lbPool = loadbalancer.LbPool{
-			//  TODO: make this configurable
-			Algorithm:        "ROUND_ROBIN",
-			DisplayName:      fmt.Sprintf("%s-port-%d", lbName, port.Port),
-			Description:      fmt.Sprintf("LoadBalancer Pool managed by Kubernetes vSphere Cloud Provider (%s)", n.clusterID),
-			Members:          lbMembers,
-			MinActiveMembers: 1,
 		}
 
-		lbPool, _, err = n.client.ServicesApi.UpdateLoadBalancerPool(n.client.Context, lbPoolID, lbPool)
-		if err != nil {
-			return err
-		}
-
-		virtualServerName := generateVirtualServerName(lbName, int(port.Port))
-		virtualServer, exists, err := n.getVirtualServerByName(virtualServerName)
-		if err != nil {
-			return err
-		}
-
-		if !exists {
-			return fmt.Errorf("error updating Virtual Server %s because it doesn't exist", virtualServerName)
-		}
-
-		virtualServerID := virtualServer.Id
-
-		// virtual server doesn't exist.. update node pools? or should that only happen on update?
-		virtualServer = loadbalancer.LbVirtualServer{
-			DisplayName:           fmt.Sprintf("%s-port-%d", lbName, port.Port),
-			Description:           fmt.Sprintf("LoadBalancer VirtualServer managed by Kubernetes vSphere Cloud Provider (%s)", n.clusterID),
-			IpProtocol:            string(port.Protocol),
-			DefaultPoolMemberPort: strconv.Itoa(int(port.NodePort)),
-			IpAddress:             virtualServer.IpAddress,
-			Ports:                 []string{strconv.Itoa(int(port.Port))},
-			Enabled:               true,
-			PoolId:                lbPool.Id,
-		}
-
-		virtualServer, _, err = n.client.ServicesApi.UpdateLoadBalancerVirtualServer(n.client.Context, virtualServerID, virtualServer)
-		if err != nil {
-			return err
-		}
+		newVirtualServerIDs = append(newVirtualServerIDs, virtualServer.Id)
 	}
 
-	return nil
+	return n.addVirtualServersToLoadBalancer(newVirtualServerIDs)
 }
 
 func (n *nsxtLB) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
 	lbName := n.GetLoadBalancerName(ctx, clusterName, service)
 
-	// Create a new virtual server per port in the Service since LB pools only support single ports
-	// and each Service Port has a dedicated node port
-	for _, port := range service.Spec.Ports {
-		poolName := generatePoolName(lbName, int(port.Port))
-		lbPool, exists, err := n.getLBPoolByName(poolName)
+	lbPool, exists, err := n.getLBPoolByName(lbName)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		_, err := n.client.ServicesApi.DeleteLoadBalancerPool(n.client.Context, lbPool.Id)
 		if err != nil {
 			return err
 		}
+	}
 
-		if exists {
-			_, err := n.client.ServicesApi.DeleteLoadBalancerPool(n.client.Context, lbPool.Id)
-			if err != nil {
-				return err
-			}
-		}
-
-		virtualServerName := generateVirtualServerName(lbName, int(port.Port))
+	// Create a new virtual server per port in the Service since LB pools only support single ports
+	// and each Service Port has a dedicated node port
+	for _, port := range service.Spec.Ports {
+		virtualServerName := generateVirtualServerName(lbName, port.Port)
 		virtualServer, exists, err := n.getVirtualServerByName(virtualServerName)
 		if err != nil {
 			return err
 		}
 
-		if exists {
-			_, err := n.client.ServicesApi.DeleteLoadBalancerVirtualServer(n.client.Context, virtualServer.Id, nil)
-			if err != nil {
-				return err
-			}
+		if !exists {
+			continue
+		}
+
+		_, err = n.client.ServicesApi.DeleteLoadBalancerVirtualServer(n.client.Context, virtualServer.Id, nil)
+		if err != nil {
+			return err
 		}
 	}
 

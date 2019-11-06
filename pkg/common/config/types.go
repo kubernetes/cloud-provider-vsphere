@@ -126,10 +126,10 @@ type VirtualCenterConfig struct {
 // LoadbalancerNSXT contains configuration for enabling NSX-T based loadbalancer support for
 // Services Type=LoadBalancer resources
 type LoadbalancerNSXT struct {
-	Server        string `gcfg:"server"`
-	User          string `gcfg:"user"`
-	Password      string `gcfg:"password"`
-	Insecure      bool   `gcfg:"insecure-flag"`
-	Tier1RouterID string `gcfg:"tier1-router-id"`
-	VIPPoolID     string `gcfg:"vip-pool-id"`
+	Server      string `gcfg:"server"`
+	User        string `gcfg:"user"`
+	Password    string `gcfg:"password"`
+	Insecure    bool   `gcfg:"insecure-flag"`
+	LBServiceID string `gcfg:"lb-service--id"`
+	VIPPoolID   string `gcfg:"vip-pool-id"`
 }
