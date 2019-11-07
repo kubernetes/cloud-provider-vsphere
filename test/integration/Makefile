@@ -22,7 +22,10 @@ else
 export KUBECONFIG := $(KUBECONFIG_ORIG)
 endif
 
-cluster-up: $(KIND_CONFIG) | $(DOCKER_SOCK)
+kind:
+	./install_kind.sh
+
+cluster-up: $(KIND_CONFIG) kind | $(DOCKER_SOCK)
 	kind create cluster --config "$(KIND_CONFIG)" --name "$(CLUSTER_NAME)"
 ifeq (true,$(DOCKER_SOCK_FROM_HOST))
 	ipv4=$$(docker exec "$(CLUSTER_NAME)-control-plane" ip route get dev eth0 1 | awk '{print $$NF;exit}') && \
