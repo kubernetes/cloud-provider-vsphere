@@ -37,6 +37,7 @@ type GRPCServer interface {
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
 	cfg               *vcfg.Config
+	cpiCfg            *CPIConfig
 	connectionManager *cm.ConnectionManager
 	nodeManager       *NodeManager
 	informMgr         *k8s.InformerManager
@@ -83,6 +84,9 @@ type NodeManager struct {
 	connectionManager *cm.ConnectionManager
 	// NodeLister to track Node properties
 	nodeLister clientv1.NodeLister
+
+	// Reference to CPI-specific configuration
+	cpiCfg *CPIConfig
 
 	// Mutexes
 	nodeInfoLock    sync.RWMutex

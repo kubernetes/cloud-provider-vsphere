@@ -45,13 +45,18 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return newVSphere(cfg, true)
+
+		cpiConfig, err := ReadCPIConfig(config)
+		if err != nil {
+			return nil, err
+		}
+		return newVSphere(cfg, cpiConfig, true)
 	})
 }
 
 // Creates new Controller node interface and returns
-func newVSphere(cfg *vcfg.Config, finalize ...bool) (*VSphere, error) {
-	vs, err := buildVSphereFromConfig(cfg)
+func newVSphere(cfg *vcfg.Config, cpiCfg *CPIConfig, finalize ...bool) (*VSphere, error) {
+	vs, err := buildVSphereFromConfig(cfg, cpiCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +149,7 @@ func (vs *VSphere) HasClusterID() bool {
 }
 
 // Initializes vSphere from vSphere CloudProvider Configuration
-func buildVSphereFromConfig(cfg *vcfg.Config) (*VSphere, error) {
+func buildVSphereFromConfig(cfg *vcfg.Config, cpiCfg *CPIConfig) (*VSphere, error) {
 	nm := &NodeManager{
 		nodeNameMap:    make(map[string]*NodeInfo),
 		nodeUUIDMap:    make(map[string]*NodeInfo),
@@ -154,6 +159,7 @@ func buildVSphereFromConfig(cfg *vcfg.Config) (*VSphere, error) {
 
 	vs := VSphere{
 		cfg:         cfg,
+		cpiCfg:      cpiCfg,
 		nodeManager: nm,
 		instances:   newInstances(nm),
 		zones:       newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),

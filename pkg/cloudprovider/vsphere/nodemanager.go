@@ -190,6 +190,29 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		klog.Warningf("Unable to find vcInstance for %s. Defaulting to ipv4.", tenantRef)
 	}
 
+	var internalNetworkSubnet *net.IPNet
+	var externalNetworkSubnet *net.IPNet
+
+	if nm.cpiCfg != nil {
+		if nm.cpiCfg.Nodes.InternalNetworkSubnetCIDR != "" {
+			_, internalNetworkSubnet, err = net.ParseCIDR(nm.cpiCfg.Nodes.InternalNetworkSubnetCIDR)
+			if err != nil {
+				return err
+			}
+		}
+		if nm.cpiCfg.Nodes.ExternalNetworkSubnetCIDR != "" {
+			_, externalNetworkSubnet, err = net.ParseCIDR(nm.cpiCfg.Nodes.ExternalNetworkSubnetCIDR)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var addressMatchingEnabled bool
+	if internalNetworkSubnet != nil || externalNetworkSubnet != nil {
+		addressMatchingEnabled = true
+	}
+
 	found := false
 	addrs := []v1.NodeAddress{}
 	for _, v := range oVM.Guest.Net {
@@ -204,23 +227,71 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		for _, family := range ipFamily {
 			ips := returnIPsFromSpecificFamily(family, v.IpAddress)
 
-			for _, ip := range ips {
-				klog.V(2).Infof("Adding IP: %s", ip)
+			if addressMatchingEnabled {
+				klog.V(2).Infof("Adding Hostname: %s", oVM.Guest.HostName)
 				v1helper.AddToNodeAddresses(&addrs,
 					v1.NodeAddress{
-						Type:    v1.NodeExternalIP,
-						Address: ip,
-					}, v1.NodeAddress{
-						Type:    v1.NodeInternalIP,
-						Address: ip,
-					}, v1.NodeAddress{
 						Type:    v1.NodeHostName,
 						Address: oVM.Guest.HostName,
 					},
 				)
 
-				found = true
-				break
+				var internalIP string
+				var externalIP string
+				for _, ip := range ips {
+					parsedIP := net.ParseIP(ip)
+					if parsedIP == nil {
+						return fmt.Errorf("can't parse IP: %s", ip)
+					}
+
+					if internalIP == "" && internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
+						internalIP = ip
+					}
+
+					if externalIP == "" && externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
+						externalIP = ip
+					}
+				}
+
+				if internalIP != "" {
+					klog.V(2).Infof("Adding Internal IP: %s", internalIP)
+					v1helper.AddToNodeAddresses(&addrs,
+						v1.NodeAddress{
+							Type:    v1.NodeInternalIP,
+							Address: internalIP,
+						},
+					)
+					found = true
+				}
+				if externalIP != "" {
+					klog.V(2).Infof("Adding External IP: %s", externalIP)
+					v1helper.AddToNodeAddresses(&addrs,
+						v1.NodeAddress{
+							Type:    v1.NodeExternalIP,
+							Address: externalIP,
+						},
+					)
+					found = true
+				}
+
+			} else {
+				for _, ip := range ips {
+					klog.V(2).Infof("Adding IP: %s", ip)
+					v1helper.AddToNodeAddresses(&addrs,
+						v1.NodeAddress{
+							Type:    v1.NodeExternalIP,
+							Address: ip,
+						}, v1.NodeAddress{
+							Type:    v1.NodeInternalIP,
+							Address: ip,
+						}, v1.NodeAddress{
+							Type:    v1.NodeHostName,
+							Address: oVM.Guest.HostName,
+						},
+					)
+					found = true
+					break
+				}
 			}
 
 			if found {
