@@ -64,9 +64,6 @@ func TestRegUnregNode(t *testing.T) {
 	if len(nm.nodeUUIDMap) != 1 {
 		t.Errorf("Failed: nodeUUIDMap should be a length of  1")
 	}
-	if len(nm.nodeRegUUIDMap) != 1 {
-		t.Errorf("Failed: nodeRegUUIDMap should be a length of  1")
-	}
 
 	nm.UnregisterNode(node)
 
@@ -75,9 +72,6 @@ func TestRegUnregNode(t *testing.T) {
 	}
 	if len(nm.nodeUUIDMap) != 1 {
 		t.Errorf("Failed: nodeUUIDMap should be a length of  1")
-	}
-	if len(nm.nodeRegUUIDMap) != 0 {
-		t.Errorf("Failed: nodeRegUUIDMap should be a length of 0")
 	}
 }
 

@@ -52,7 +52,6 @@ func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeM
 	return &NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),
 		nodeUUIDMap:       make(map[string]*NodeInfo),
-		nodeRegUUIDMap:    make(map[string]*v1.Node),
 		vcList:            make(map[string]*VCenterInfo),
 		connectionManager: cm,
 		nodeLister:        lister,

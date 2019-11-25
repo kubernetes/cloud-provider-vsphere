@@ -78,8 +78,6 @@ type NodeManager struct {
 	nodeUUIDMap map[string]*NodeInfo
 	// Maps VC -> DC -> VM
 	vcList map[string]*VCenterInfo
-	// Maps UUID to node info.
-	nodeRegUUIDMap map[string]*v1.Node
 	// ConnectionManager
 	connectionManager *cm.ConnectionManager
 	// NodeLister to track Node properties
@@ -89,8 +87,7 @@ type NodeManager struct {
 	cpiCfg *CPIConfig
 
 	// Mutexes
-	nodeInfoLock    sync.RWMutex
-	nodeRegInfoLock sync.RWMutex
+	nodeInfoLock sync.RWMutex
 }
 
 type instances struct {

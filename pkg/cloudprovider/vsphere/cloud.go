@@ -147,10 +147,9 @@ func (vs *VSphere) HasClusterID() bool {
 // Initializes vSphere from vSphere CloudProvider Configuration
 func buildVSphereFromConfig(cfg *vcfg.Config, cpiCfg *CPIConfig) (*VSphere, error) {
 	nm := &NodeManager{
-		nodeNameMap:    make(map[string]*NodeInfo),
-		nodeUUIDMap:    make(map[string]*NodeInfo),
-		nodeRegUUIDMap: make(map[string]*v1.Node),
-		vcList:         make(map[string]*VCenterInfo),
+		nodeNameMap: make(map[string]*NodeInfo),
+		nodeUUIDMap: make(map[string]*NodeInfo),
+		vcList:      make(map[string]*VCenterInfo),
 	}
 
 	vs := VSphere{

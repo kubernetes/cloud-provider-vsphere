@@ -86,9 +86,6 @@ func TestZones(t *testing.T) {
 	if len(nm.nodeUUIDMap) != 1 {
 		t.Fatalf("Failed: nodeUUIDMap should be a length of  1")
 	}
-	if len(nm.nodeRegUUIDMap) != 1 {
-		t.Fatalf("Failed: nodeRegUUIDMap should be a length of  1")
-	}
 
 	// Get vclib DC
 	dc, err := vclib.GetDatacenter(ctx, vsi.Conn, mydc.Name)
