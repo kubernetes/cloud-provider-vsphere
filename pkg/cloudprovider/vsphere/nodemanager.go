@@ -64,15 +64,12 @@ func (nm *NodeManager) RegisterNode(node *v1.Node) {
 	klog.V(4).Info("RegisterNode ENTER: ", node.Name)
 	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
 	nm.DiscoverNode(uuid, cm.FindVMByUUID)
-	nm.addNode(uuid, node)
 	klog.V(4).Info("RegisterNode LEAVE: ", node.Name)
 }
 
 // UnregisterNode is the handler for when a node is removed from a K8s cluster.
 func (nm *NodeManager) UnregisterNode(node *v1.Node) {
 	klog.V(4).Info("UnregisterNode ENTER: ", node.Name)
-	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
-	nm.removeNode(uuid, node)
 	klog.V(4).Info("UnregisterNode LEAVE: ", node.Name)
 }
 
@@ -83,20 +80,6 @@ func (nm *NodeManager) addNodeInfo(node *NodeInfo) {
 	nm.nodeUUIDMap[node.UUID] = node
 	nm.AddNodeInfoToVCList(node.vcServer, node.dataCenter.Name(), node)
 	nm.nodeInfoLock.Unlock()
-}
-
-func (nm *NodeManager) addNode(uuid string, node *v1.Node) {
-	nm.nodeRegInfoLock.Lock()
-	klog.V(4).Info("addNode NodeName: ", node.GetName(), ", UID: ", uuid)
-	nm.nodeRegUUIDMap[uuid] = node
-	nm.nodeRegInfoLock.Unlock()
-}
-
-func (nm *NodeManager) removeNode(uuid string, node *v1.Node) {
-	nm.nodeRegInfoLock.Lock()
-	klog.V(4).Info("removeNode NodeName: ", node.GetName(), ", UID: ", uuid)
-	delete(nm.nodeRegUUIDMap, uuid)
-	nm.nodeRegInfoLock.Unlock()
 }
 
 func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, searchBy cm.FindVM) (*cm.VMDiscoveryInfo, error) {

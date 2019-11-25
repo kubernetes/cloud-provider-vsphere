@@ -22,7 +22,6 @@ import (
 	"k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	listerv1 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/sample-controller/pkg/signals"
 )
 
@@ -64,19 +63,6 @@ func (im *InformerManager) GetSecretLister() listerv1.SecretLister {
 	}
 
 	return im.secretInformer.Lister()
-}
-
-// AddNodeListener hooks up add, update, delete callbacks
-func (im *InformerManager) AddNodeListener(add, remove func(obj interface{}), update func(oldObj, newObj interface{})) {
-	if im.nodeInformer == nil {
-		im.nodeInformer = im.informerFactory.Core().V1().Nodes().Informer()
-	}
-
-	im.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    add,
-		UpdateFunc: update,
-		DeleteFunc: remove,
-	})
 }
 
 // Listen starts the Informers. Based on client-go informer package, if the Lister has

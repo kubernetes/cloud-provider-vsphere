@@ -20,10 +20,8 @@ import (
 	"io"
 	"runtime"
 
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
-
 	cloudprovider "k8s.io/cloud-provider"
+	"k8s.io/klog"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -78,8 +76,6 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 		connMgr := cm.NewConnectionManager(vs.cfg, vs.informMgr, client)
 		vs.connectionManager = connMgr
 		vs.nodeManager.connectionManager = connMgr
-
-		vs.informMgr.AddNodeListener(vs.nodeAdded, vs.nodeDeleted, nil)
 
 		vs.informMgr.Listen()
 
@@ -170,26 +166,4 @@ func buildVSphereFromConfig(cfg *vcfg.Config, cpiCfg *CPIConfig) (*VSphere, erro
 
 func logout(vs *VSphere) {
 	vs.connectionManager.Logout()
-}
-
-// Notification handler when node is added into k8s cluster.
-func (vs *VSphere) nodeAdded(obj interface{}) {
-	node, ok := obj.(*v1.Node)
-	if node == nil || !ok {
-		klog.Warningf("nodeAdded: unrecognized object %+v", obj)
-		return
-	}
-
-	vs.nodeManager.RegisterNode(node)
-}
-
-// Notification handler when node is removed from k8s cluster.
-func (vs *VSphere) nodeDeleted(obj interface{}) {
-	node, ok := obj.(*v1.Node)
-	if node == nil || !ok {
-		klog.Warningf("nodeDeleted: unrecognized object %+v", obj)
-		return
-	}
-
-	vs.nodeManager.UnregisterNode(node)
 }
