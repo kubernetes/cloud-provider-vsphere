@@ -42,7 +42,8 @@ func newMyNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *MyN
 
 // Used to populate the networking info
 func (nm *MyNodeManager) RegisterNode(node *v1.Node) {
-	nm.NodeManager.RegisterNode(node)
+	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
+	nm.NodeManager.DiscoverNode(uuid, cm.FindVMByUUID)
 
 	myNode1 := nm.nodeNameMap[node.Name]
 	myNode2 := nm.nodeUUIDMap[ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)]

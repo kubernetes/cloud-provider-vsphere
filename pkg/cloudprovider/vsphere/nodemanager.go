@@ -58,20 +58,6 @@ func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeM
 	}
 }
 
-// RegisterNode is the handler for when a node is added to a K8s cluster.
-func (nm *NodeManager) RegisterNode(node *v1.Node) {
-	klog.V(4).Info("RegisterNode ENTER: ", node.Name)
-	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
-	nm.DiscoverNode(uuid, cm.FindVMByUUID)
-	klog.V(4).Info("RegisterNode LEAVE: ", node.Name)
-}
-
-// UnregisterNode is the handler for when a node is removed from a K8s cluster.
-func (nm *NodeManager) UnregisterNode(node *v1.Node) {
-	klog.V(4).Info("UnregisterNode ENTER: ", node.Name)
-	klog.V(4).Info("UnregisterNode LEAVE: ", node.Name)
-}
-
 func (nm *NodeManager) addNodeInfo(node *NodeInfo) {
 	nm.nodeInfoLock.Lock()
 	klog.V(4).Info("addNodeInfo NodeName: ", node.NodeName, ", UUID: ", node.UUID)

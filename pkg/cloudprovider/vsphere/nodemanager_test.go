@@ -23,15 +23,12 @@ import (
 
 	"github.com/vmware/govmomi/simulator"
 
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
-func TestRegUnregNode(t *testing.T) {
+func TestDiscoverNodeByUUID(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
@@ -41,34 +38,13 @@ func TestRegUnregNode(t *testing.T) {
 	nm := newNodeManager(connMgr, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	name := vm.Name
 	UUID := vm.Config.Uuid
+
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
-
-	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Status: v1.NodeStatus{
-			NodeInfo: v1.NodeSystemInfo{
-				SystemUUID: k8sUUID,
-			},
-		},
-	}
-
-	nm.RegisterNode(node)
+	nm.DiscoverNode(k8sUUID, cm.FindVMByUUID)
 
 	if len(nm.nodeNameMap) != 1 {
 		t.Errorf("Failed: nodeNameMap should be a length of 1")
-	}
-	if len(nm.nodeUUIDMap) != 1 {
-		t.Errorf("Failed: nodeUUIDMap should be a length of  1")
-	}
-
-	nm.UnregisterNode(node)
-
-	if len(nm.nodeNameMap) != 1 {
-		t.Errorf("Failed: nodeNameMap should be a length of  1")
 	}
 	if len(nm.nodeUUIDMap) != 1 {
 		t.Errorf("Failed: nodeUUIDMap should be a length of  1")
@@ -116,22 +92,10 @@ func TestExport(t *testing.T) {
 	nm := newNodeManager(connMgr, nil)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	name := vm.Name
 	UUID := vm.Config.Uuid
+
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
-
-	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Status: v1.NodeStatus{
-			NodeInfo: v1.NodeSystemInfo{
-				SystemUUID: k8sUUID,
-			},
-		},
-	}
-
-	nm.RegisterNode(node)
+	nm.DiscoverNode(k8sUUID, cm.FindVMByUUID)
 
 	nodeList := make([]*pb.Node, 0)
 	_ = nm.ExportNodes("", "", &nodeList)
@@ -146,8 +110,6 @@ func TestExport(t *testing.T) {
 	if !found {
 		t.Errorf("Node was not converted to protobuf")
 	}
-
-	nm.UnregisterNode(node)
 }
 
 func TestReturnIPsFromSpecificFamily(t *testing.T) {

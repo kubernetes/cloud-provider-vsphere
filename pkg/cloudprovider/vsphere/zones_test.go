@@ -18,9 +18,6 @@ import (
 	"net/url"
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vapi/rest"
@@ -59,26 +56,13 @@ func TestZones(t *testing.T) {
 
 	// Get a simulator VM
 	myvm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	name := myvm.Name
 	UUID := myvm.Config.Uuid
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
 
 	// Get a simulator DC
 	mydc := simulator.Map.Any("Datacenter").(*simulator.Datacenter)
 
-	// Add the node to the NodeManager
-	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Status: v1.NodeStatus{
-			NodeInfo: v1.NodeSystemInfo{
-				SystemUUID: k8sUUID,
-			},
-		},
-	}
-
-	nm.RegisterNode(node)
+	nm.DiscoverNode(k8sUUID, cm.FindVMByUUID)
 
 	if len(nm.nodeNameMap) != 1 {
 		t.Fatalf("Failed: nodeNameMap should be a length of 1")
