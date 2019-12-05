@@ -12,6 +12,10 @@ There is ongoing work for refactoring cloud providers out of the upstream reposi
 
 Get started with Cloud controller manager for vSphere with Kubeadm with this [quickstart](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html).
 
+## Quickstart using Helm
+
+Get started with Cloud controller manager for vSphere using Helm with this [Helm quickstart](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-helm.html).
+
 ## Documentation
 
 Documentation on how to install and use the Kubernetes vSphere Cloud Provider is located on the [docs site](https://cloud-provider-vsphere.sigs.k8s.io/).
