@@ -43,6 +43,7 @@ const (
 // NodeManagerInterface describes types that can export a list of Kubernetes
 // nodes into the supplied slice address.
 type NodeManagerInterface interface {
+	GetNode(UUID string, node *pb.Node) error
 	ExportNodes(vcenter string, datacenter string, nodeList *[]*pb.Node) error
 }
 
@@ -68,6 +69,18 @@ func NewServer(binding string, nodeMgr NodeManagerInterface) GRPCServer {
 	pb.RegisterCloudProviderVsphereServer(s, myServer)
 	reflection.Register(s)
 	return myServer
+}
+
+// GetNode implements CloudProviderVsphere interface
+func (s *server) GetNode(ctx context.Context, request *pb.GetNodeRequest) (*pb.GetNodeReply, error) {
+	reply := &pb.GetNodeReply{
+		Node: &pb.Node{},
+	}
+	err := s.nodeMgr.GetNode(request.Uuid, reply.Node)
+	if err != nil {
+		reply.Error = err.Error()
+	}
+	return reply, nil
 }
 
 // ListNodes implements CloudProviderVsphere interface

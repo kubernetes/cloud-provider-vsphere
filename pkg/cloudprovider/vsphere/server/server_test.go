@@ -35,6 +35,19 @@ const (
 
 type fakeNodeMgr struct{}
 
+func (nm *fakeNodeMgr) GetNode(uuid string, pbNode *pb.Node) error {
+	pbNode.Vcenter = "127.0.0.1"
+	pbNode.Datacenter = "dc"
+	pbNode.Name = "MyNode"
+	pbNode.Dnsnames = make([]string, 0)
+	pbNode.Addresses = make([]string, 0)
+	pbNode.Uuid = exampleUUIDForGoTest
+	pbNode.Addresses = append(pbNode.Addresses, "10.0.0.1")
+	pbNode.Dnsnames = append(pbNode.Dnsnames, "fqdn")
+
+	return nil
+}
+
 func (nm *fakeNodeMgr) ExportNodes(vcenter string, datacenter string, nodeList *[]*pb.Node) error {
 	pbNode := &pb.Node{
 		Vcenter:    "127.0.0.1",
@@ -50,6 +63,39 @@ func (nm *fakeNodeMgr) ExportNodes(vcenter string, datacenter string, nodeList *
 	*nodeList = append(*nodeList, pbNode)
 
 	return nil
+}
+
+func TestGRPCServerNode(t *testing.T) {
+	//server
+	s := grpc.NewServer()
+	myServer := &server{
+		binding: vcfg.DefaultAPIBinding,
+		s:       s,
+		nodeMgr: &fakeNodeMgr{},
+	}
+	pb.RegisterCloudProviderVsphereServer(s, myServer)
+	reflection.Register(s)
+
+	myServer.Start()
+	defer myServer.Stop()
+
+	//client
+	ctx, cancel := context.WithTimeout(context.Background(), (5 * time.Second))
+	defer cancel()
+
+	c, err := NewVSphereCloudProviderClient(ctx)
+	if err != nil {
+		t.Fatalf("could not greet: %v", err)
+	}
+
+	r, err := c.GetNode(ctx, &pb.GetNodeRequest{Uuid: exampleUUIDForGoTest})
+	if err != nil {
+		t.Fatalf("could not greet: %v", err)
+	}
+
+	if r.Node.Uuid != exampleUUIDForGoTest {
+		t.Errorf("VM was not found!")
+	}
 }
 
 func TestGRPCServerNodes(t *testing.T) {
