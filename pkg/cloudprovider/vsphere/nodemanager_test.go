@@ -38,7 +38,7 @@ func TestRegUnregNode(t *testing.T) {
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
-	nm := newNodeManager(connMgr, nil)
+	nm := newNodeManager(nil, connMgr)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
@@ -88,7 +88,7 @@ func TestDiscoverNodeByName(t *testing.T) {
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
-	nm := newNodeManager(connMgr, nil)
+	nm := newNodeManager(nil, connMgr)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
@@ -119,7 +119,7 @@ func TestExport(t *testing.T) {
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
-	nm := newNodeManager(connMgr, nil)
+	nm := newNodeManager(nil, connMgr)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name

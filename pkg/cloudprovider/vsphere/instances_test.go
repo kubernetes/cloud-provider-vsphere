@@ -26,7 +26,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clientv1 "k8s.io/client-go/listers/core/v1"
 	v1helper "k8s.io/cloud-provider/node/helpers"
 
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
@@ -36,8 +35,8 @@ type MyNodeManager struct {
 	NodeManager
 }
 
-func newMyNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *MyNodeManager {
-	return &MyNodeManager{*newNodeManager(cm, lister)}
+func newMyNodeManager(cm *cm.ConnectionManager) *MyNodeManager {
+	return &MyNodeManager{*newNodeManager(nil, cm)}
 }
 
 // Used to populate the networking info
@@ -76,7 +75,7 @@ func TestInstance(t *testing.T) {
 	 * Setup
 	 */
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
-	nm := newMyNodeManager(connMgr, nil)
+	nm := newMyNodeManager(connMgr)
 	instances := newInstances(&nm.NodeManager)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
@@ -155,7 +154,7 @@ func TestInvalidInstance(t *testing.T) {
 	 * Setup
 	 */
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
-	nm := newMyNodeManager(connMgr, nil)
+	nm := newMyNodeManager(connMgr)
 	instances := newInstances(&nm.NodeManager)
 
 	name := ""       //junk name

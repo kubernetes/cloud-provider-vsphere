@@ -26,7 +26,6 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
-	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
@@ -41,22 +40,17 @@ const (
 
 func init() {
 	cloudprovider.RegisterCloudProvider(ProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
-		cfg, err := vcfg.ReadConfig(config)
-		if err != nil {
-			return nil, err
-		}
-
 		cpiConfig, err := ReadCPIConfig(config)
 		if err != nil {
 			return nil, err
 		}
-		return newVSphere(cfg, cpiConfig, true)
+		return newVSphere(cpiConfig, true)
 	})
 }
 
 // Creates new Controller node interface and returns
-func newVSphere(cfg *vcfg.Config, cpiCfg *CPIConfig, finalize ...bool) (*VSphere, error) {
-	vs, err := buildVSphereFromConfig(cfg, cpiCfg)
+func newVSphere(cfg *CPIConfig, finalize ...bool) (*VSphere, error) {
+	vs, err := buildVSphereFromConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +69,7 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 
 		vs.informMgr = k8s.NewInformer(client, true)
 
-		connMgr := cm.NewConnectionManager(vs.cfg, vs.informMgr, client)
+		connMgr := cm.NewConnectionManager(&vs.cfg.Config, vs.informMgr, client)
 		vs.connectionManager = connMgr
 		vs.nodeManager.connectionManager = connMgr
 
@@ -149,17 +143,11 @@ func (vs *VSphere) HasClusterID() bool {
 }
 
 // Initializes vSphere from vSphere CloudProvider Configuration
-func buildVSphereFromConfig(cfg *vcfg.Config, cpiCfg *CPIConfig) (*VSphere, error) {
-	nm := &NodeManager{
-		nodeNameMap:    make(map[string]*NodeInfo),
-		nodeUUIDMap:    make(map[string]*NodeInfo),
-		nodeRegUUIDMap: make(map[string]*v1.Node),
-		vcList:         make(map[string]*VCenterInfo),
-	}
+func buildVSphereFromConfig(cfg *CPIConfig) (*VSphere, error) {
+	nm := newNodeManager(cfg, nil)
 
 	vs := VSphere{
 		cfg:         cfg,
-		cpiCfg:      cpiCfg,
 		nodeManager: nm,
 		instances:   newInstances(nm),
 		zones:       newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),

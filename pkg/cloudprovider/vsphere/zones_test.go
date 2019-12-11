@@ -47,7 +47,7 @@ func TestZones(t *testing.T) {
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	defer connMgr.Logout()
 
-	nm := newNodeManager(connMgr, nil)
+	nm := newNodeManager(nil, connMgr)
 	zones := newZones(nm, cfg.Labels.Zone, cfg.Labels.Region)
 
 	// Create vSphere client

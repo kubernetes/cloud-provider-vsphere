@@ -141,29 +141,29 @@ func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
 }
 
 func TestNewVSphere(t *testing.T) {
-	cfg := &vcfg.Config{}
-	cpiCfg := &CPIConfig{}
-	if err := cfg.FromEnv(); err != nil {
+	cfg := &CPIConfig{}
+	if err := cfg.FromCPIEnv(); err != nil {
 		t.Skipf("No config found in environment")
 	}
 
-	_, err := newVSphere(cfg, cpiCfg)
+	_, err := newVSphere(cfg)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
 }
 
 func TestVSphereLogin(t *testing.T) {
-	cfg, cleanup := configFromEnvOrSim(false)
+	initCfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
-	cpiCfg := &CPIConfig{}
+	cfg := &CPIConfig{}
+	cfg.Config = *initCfg
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg, cpiCfg)
+	vs, err := newVSphere(cfg)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vs.connectionManager = cm.NewConnectionManager(cfg, nil, nil)
+	vs.connectionManager = cm.NewConnectionManager(&cfg.Config, nil, nil)
 	defer vs.connectionManager.Logout()
 
 	// Create context
@@ -184,20 +184,21 @@ func TestVSphereLogin(t *testing.T) {
 }
 
 func TestVSphereLoginByToken(t *testing.T) {
-	cfg, cleanup := configFromSim(false)
+	initCfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
-	cpiCfg := &CPIConfig{}
+	cfg := &CPIConfig{}
+	cfg.Config = *initCfg
 
 	// Configure for SAML token auth
 	cfg.Global.User = localhostCert
 	cfg.Global.Password = localhostKey
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg, cpiCfg)
+	vs, err := newVSphere(cfg)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
-	vs.connectionManager = cm.NewConnectionManager(cfg, nil, nil)
+	vs.connectionManager = cm.NewConnectionManager(&cfg.Config, nil, nil)
 
 	ctx := context.Background()
 
@@ -481,7 +482,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Logf("Executing Testcase: %s", testcase.testName)
-		cfg, err := vcfg.ReadConfig(strings.NewReader(testcase.conf))
+		cfg, err := ReadCPIConfig(strings.NewReader(testcase.conf))
 		if err != nil {
 			if testcase.expectedError != nil {
 				if err != testcase.expectedError {
@@ -493,11 +494,11 @@ func TestSecretVSphereConfig(t *testing.T) {
 				t.Fatalf("readConfig: unexpected error returned: %v", err)
 			}
 		}
-		vs, err = buildVSphereFromConfig(cfg, &CPIConfig{})
+		vs, err = buildVSphereFromConfig(cfg)
 		if err != nil { // testcase.expectedError {
 			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 		}
-		vs.connectionManager = cm.NewConnectionManager(cfg, nil, nil)
+		vs.connectionManager = cm.NewConnectionManager(&cfg.Config, nil, nil)
 
 		if testcase.expectedIsSecretProvided && (vs.cfg.Global.SecretNamespace == "" || vs.cfg.Global.SecretName == "") {
 			t.Fatalf("SecretName and SecretNamespace was expected in config %s. error: %s",

@@ -24,28 +24,30 @@ import (
 	"gopkg.in/gcfg.v1"
 )
 
-// CPIConfig is used to read and store information (related only to the CPI) from the cloud configuration file
-type CPIConfig struct {
-	Nodes struct {
-		// IP address on VirtualMachine's network interfaces included in the fields' CIDRs
-		// that will be used in respective status.addresses fields.
-		InternalNetworkSubnetCIDR string `gcfg:"internal-network-subnet-cidr"`
-		ExternalNetworkSubnetCIDR string `gcfg:"external-network-subnet-cidr"`
-	}
-}
-
-// FromEnv initializes the provided configuratoin object with values
+// FromCPIEnv initializes the provided configuratoin object with values
 // obtained from environment variables. If an environment variable is set
 // for a property that's already initialized, the environment variable's value
 // takes precedence.
-func (cfg *CPIConfig) FromEnv() {
+func (cfg *CPIConfig) FromCPIEnv() error {
+	if err := cfg.FromEnv(); err != nil {
+		return err
+	}
+
 	if v := os.Getenv("VSPHERE_NODES_INTERNAL_NETWORK_SUBNET_CIDR"); v != "" {
 		cfg.Nodes.InternalNetworkSubnetCIDR = v
 	}
-
 	if v := os.Getenv("VSPHERE_NODES_EXTERNAL_NETWORK_SUBNET_CIDR"); v != "" {
 		cfg.Nodes.ExternalNetworkSubnetCIDR = v
 	}
+
+	if v := os.Getenv("VSPHERE_NODES_INTERNAL_VM_NETWORK_NAME"); v != "" {
+		cfg.Nodes.InternalVMNetworkName = v
+	}
+	if v := os.Getenv("VSPHERE_NODES_EXTERNAL_VM_NETWORK_NAME"); v != "" {
+		cfg.Nodes.ExternalVMNetworkName = v
+	}
+
+	return nil
 }
 
 // ReadCPIConfig parses vSphere cloud config file and stores it into CPIConfig.
@@ -62,7 +64,9 @@ func ReadCPIConfig(config io.Reader) (*CPIConfig, error) {
 	}
 
 	// Env Vars should override config file entries if present
-	cfg.FromEnv()
+	if err := cfg.FromCPIEnv(); err != nil {
+		return nil, err
+	}
 
 	return cfg, nil
 }
