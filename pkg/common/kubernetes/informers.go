@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"sync"
 	"time"
 
 	"k8s.io/client-go/informers"
@@ -33,27 +34,20 @@ func noResyncPeriodFunc() time.Duration {
 var (
 	signalHandler   <-chan struct{}
 	informerFactory informers.SharedInformerFactory
+	onceForInformer sync.Once
 )
 
 // NewInformer creates a newk8s client based on a service account
 func NewInformer(client clientset.Interface, singleWatcher bool) *InformerManager {
-	if signalHandler == nil {
+	onceForInformer.Do(func() {
 		signalHandler = signals.SetupSignalHandler()
-	}
+		informerFactory = informers.NewSharedInformerFactory(client, noResyncPeriodFunc())
+	})
 
-	var myInformerFactory informers.SharedInformerFactory
-	if singleWatcher {
-		if informerFactory == nil {
-			informerFactory = informers.NewSharedInformerFactory(client, noResyncPeriodFunc())
-		}
-		myInformerFactory = informerFactory
-	} else {
-		myInformerFactory = informers.NewSharedInformerFactory(client, noResyncPeriodFunc())
-	}
 	return &InformerManager{
 		client:          client,
 		stopCh:          signalHandler,
-		informerFactory: myInformerFactory,
+		informerFactory: informerFactory,
 	}
 }
 
