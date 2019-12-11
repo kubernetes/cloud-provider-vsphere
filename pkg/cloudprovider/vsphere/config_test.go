@@ -17,48 +17,84 @@ limitations under the License.
 package vsphere
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
 
-const basicConfig = `
+const subnetCidrConfig = `
 [Nodes]
-internal-network-subnet-cidr = 192.0.2.0/24
-external-network-subnet-cidr = 198.51.100.0/24
+internal-network-subnet-cidr = "192.0.2.0/24"
+external-network-subnet-cidr = "198.51.100.0/24"
 `
 
-func TestReadConfigGlobal(t *testing.T) {
+const networkNameConfig = `
+[Nodes]
+internal-vm-network-name = "Internal K8s Traffic"
+external-vm-network-name = "External/Outbound Traffic"
+`
+
+const overrideConfig = `
+[Nodes]
+internal-network-subnet-cidr = "192.0.2.0/24"
+internal-vm-network-name = "Internal K8s Traffic"
+external-vm-network-name = "External/Outbound Traffic"
+`
+
+func TestReadConfigSubnetCidr(t *testing.T) {
 	_, err := ReadCPIConfig(nil)
 	if err == nil {
 		t.Errorf("Should fail when no config is provided: %s", err)
 	}
 
-	cfg, err := ReadCPIConfig(strings.NewReader(basicConfig))
+	cfg, err := ReadCPIConfig(strings.NewReader(subnetCidrConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
 	}
 
 	if cfg.Nodes.InternalNetworkSubnetCIDR != "192.0.2.0/24" {
-		t.Errorf("incorrect vcenter ip: %s", cfg.Nodes.InternalNetworkSubnetCIDR)
+		t.Errorf("incorrect internal network subnet cidr: %s", cfg.Nodes.InternalNetworkSubnetCIDR)
 	}
 
 	if cfg.Nodes.ExternalNetworkSubnetCIDR != "198.51.100.0/24" {
-		t.Errorf("incorrect datacenter: %s", cfg.Nodes.ExternalNetworkSubnetCIDR)
+		t.Errorf("incorrect external network subnet cidr: %s", cfg.Nodes.ExternalNetworkSubnetCIDR)
 	}
 }
 
-func TestEnvOverridesFile(t *testing.T) {
-	subnet := "203.0.113.0/24"
-	os.Setenv("VSPHERE_NODES_INTERNAL_NETWORK_SUBNET_CIDR", subnet)
-	defer os.Unsetenv("VSPHERE_NODES_INTERNAL_NETWORK_SUBNET_CIDR")
+func TestReadConfigNetworkName(t *testing.T) {
+	_, err := ReadCPIConfig(nil)
+	if err == nil {
+		t.Errorf("Should fail when no config is provided: %s", err)
+	}
 
-	cfg, err := ReadCPIConfig(strings.NewReader(basicConfig))
+	cfg, err := ReadCPIConfig(strings.NewReader(networkNameConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
 	}
 
-	if cfg.Nodes.InternalNetworkSubnetCIDR != subnet {
-		t.Errorf("expected subnet: \"%s\", got: \"%s\"", subnet, cfg.Nodes.InternalNetworkSubnetCIDR)
+	if cfg.Nodes.InternalVMNetworkName != "Internal K8s Traffic" {
+		t.Errorf("incorrect internal vm network name: %s", cfg.Nodes.InternalVMNetworkName)
+	}
+
+	if cfg.Nodes.ExternalVMNetworkName != "External/Outbound Traffic" {
+		t.Errorf("incorrect internal vm network name: %s", cfg.Nodes.ExternalVMNetworkName)
+	}
+}
+
+func TestEnvOverridesFile(t *testing.T) {
+	cfg, err := ReadCPIConfig(strings.NewReader(overrideConfig))
+	if err != nil {
+		t.Fatalf("Should succeed when a valid config is provided: %s", err)
+	}
+
+	if cfg.Nodes.InternalNetworkSubnetCIDR != "192.0.2.0/24" {
+		t.Errorf("expected subnet: \"192.0.2.0/24\", got: \"%s\"", cfg.Nodes.InternalNetworkSubnetCIDR)
+	}
+
+	if cfg.Nodes.InternalVMNetworkName != "" {
+		t.Errorf("expected vm network name should be empty, got: \"%s\"", cfg.Nodes.InternalVMNetworkName)
+	}
+
+	if cfg.Nodes.ExternalVMNetworkName != "External/Outbound Traffic" {
+		t.Errorf("expected vm network name should be \"External/Outbound Traffic\", got: \"%s\"", cfg.Nodes.ExternalVMNetworkName)
 	}
 }
