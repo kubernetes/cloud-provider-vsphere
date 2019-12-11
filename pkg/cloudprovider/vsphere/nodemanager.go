@@ -220,7 +220,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 			klog.V(4).Info("Skipping device because not a vNIC")
 			continue
 		}
-		vmNetworkName := v.Network
 
 		// Only return a single IP address based on the preference of IPFamily
 		// Must break out of loop in the event of ipv6,ipv4 where the NIC does
@@ -245,22 +244,12 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 						return fmt.Errorf("can't parse IP: %s", ip)
 					}
 
-					if internalIP == "" {
-						if internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
-							internalIP = ip
-						} else if nm.cpiCfg.Nodes.InternalVMNetworkName != "" &&
-							strings.EqualFold(nm.cpiCfg.Nodes.InternalVMNetworkName, vmNetworkName) {
-							internalIP = ip
-						}
+					if internalIP == "" && internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
+						internalIP = ip
 					}
 
-					if externalIP == "" {
-						if externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
-							externalIP = ip
-						} else if nm.cpiCfg.Nodes.ExternalVMNetworkName != "" &&
-							strings.EqualFold(nm.cpiCfg.Nodes.ExternalVMNetworkName, vmNetworkName) {
-							externalIP = ip
-						}
+					if externalIP == "" && externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
+						externalIP = ip
 					}
 				}
 
