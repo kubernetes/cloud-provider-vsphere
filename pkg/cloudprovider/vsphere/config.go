@@ -31,14 +31,6 @@ type CPIConfig struct {
 		// that will be used in respective status.addresses fields.
 		InternalNetworkSubnetCIDR string `gcfg:"internal-network-subnet-cidr"`
 		ExternalNetworkSubnetCIDR string `gcfg:"external-network-subnet-cidr"`
-		// IP address on VirtualMachine's VM Network names that will be used in respective
-		// status.addresses fields. Note that in this configuration there must only be a
-		// single IP address bound to a given vNIC when associated with these
-		// VM Network names.
-		// NOTE: when InternalNetworkSubnetCIDR and ExternalNetworkSubnetCIDR are set,
-		// these values take presedence over InternalVMNetworkName and ExternalVMNetworkName
-		InternalVMNetworkName string `gcfg:"internal-vm-network-name"`
-		ExternalVMNetworkName string `gcfg:"external-vm-network-name"`
 	}
 }
 
@@ -50,26 +42,9 @@ func (cfg *CPIConfig) FromEnv() {
 	if v := os.Getenv("VSPHERE_NODES_INTERNAL_NETWORK_SUBNET_CIDR"); v != "" {
 		cfg.Nodes.InternalNetworkSubnetCIDR = v
 	}
+
 	if v := os.Getenv("VSPHERE_NODES_EXTERNAL_NETWORK_SUBNET_CIDR"); v != "" {
 		cfg.Nodes.ExternalNetworkSubnetCIDR = v
-	}
-
-	if v := os.Getenv("VSPHERE_NODES_INTERNAL_VM_NETWORK_NAME"); v != "" {
-		cfg.Nodes.InternalVMNetworkName = v
-	}
-	if v := os.Getenv("VSPHERE_NODES_EXTERNAL_VM_NETWORK_NAME"); v != "" {
-		cfg.Nodes.ExternalVMNetworkName = v
-	}
-
-	cfg.validateConfig()
-}
-
-func (cfg *CPIConfig) validateConfig() {
-	if cfg.Nodes.InternalNetworkSubnetCIDR != "" {
-		cfg.Nodes.InternalVMNetworkName = ""
-	}
-	if cfg.Nodes.ExternalNetworkSubnetCIDR != "" {
-		cfg.Nodes.ExternalVMNetworkName = ""
 	}
 }
 
