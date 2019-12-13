@@ -33,15 +33,15 @@ The following is the list of docker images that are required for the installatio
 VMware distributes and recommends the following images:
 
 ```bash
-vmware/vsphere-block-csi-driver:v1.0.0
-vmware/volume-metadata-syncer:v1.0.0
+gcr.io/cloud-provider-vsphere/csi/release/driver:v1.0.1
+gcr.io/cloud-provider-vsphere/csi/release/syncer:v1.0.1
 http://gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.0.0
 ```
 
 In addition, you can use the following images or any of the open source or commercially available container images appropriate for the CSI deployment. Note that the tags reference the version of various components. This will change with future versions:
 
 ```bash
-quay.io/k8scsi/csi-provisioner:v1.2.0
+quay.io/k8scsi/csi-provisioner:v1.2.2
 quay.io/k8scsi/csi-attacher:v1.1.1
 quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
 quay.io/k8scsi/livenessprobe:v1.1.0
