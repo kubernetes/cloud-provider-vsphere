@@ -327,21 +327,49 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	return nil
 }
 
+// GetNode gets the NodeInfo by UUID
+func (nm *NodeManager) GetNode(UUID string, node *pb.Node) error {
+	nodeInfo, err := nm.FindNodeInfo(UUID)
+	if err != nil {
+		klog.Errorf("GetNode failed err=%s", err)
+		return err
+	}
+
+	node.Vcenter = nodeInfo.vcServer
+	node.Datacenter = nodeInfo.dataCenter.Name()
+	node.Name = nodeInfo.NodeName
+	node.Dnsnames = make([]string, 0)
+	node.Addresses = make([]string, 0)
+	node.Uuid = nodeInfo.UUID
+
+	for _, address := range nodeInfo.NodeAddresses {
+		switch address.Type {
+		case v1.NodeExternalIP:
+			node.Addresses = append(node.Addresses, address.Address)
+		case v1.NodeHostName:
+			node.Dnsnames = append(node.Dnsnames, address.Address)
+		default:
+			klog.Warning("Unknown/unsupported address type:", address.Type)
+		}
+	}
+
+	return nil
+}
+
 // ExportNodes transforms the NodeInfoList to []*pb.Node
 func (nm *NodeManager) ExportNodes(vcenter string, datacenter string, nodeList *[]*pb.Node) error {
 	nm.nodeInfoLock.Lock()
+	defer nm.nodeInfoLock.Unlock()
 
 	if vcenter != "" && datacenter != "" {
 		dc, err := nm.FindDatacenterInfoInVCList(vcenter, datacenter)
 		if err != nil {
-			nm.nodeInfoLock.Unlock()
 			return err
 		}
 
 		nm.datacenterToNodeList(dc.vmList, nodeList)
 	} else if vcenter != "" {
 		if nm.vcList[vcenter] == nil {
-			nm.nodeInfoLock.Unlock()
 			return ErrVCenterNotFound
 		}
 
@@ -356,13 +384,19 @@ func (nm *NodeManager) ExportNodes(vcenter string, datacenter string, nodeList *
 		}
 	}
 
-	nm.nodeInfoLock.Unlock()
-
 	return nil
 }
 
 func (nm *NodeManager) datacenterToNodeList(vmList map[string]*NodeInfo, nodeList *[]*pb.Node) {
-	for _, node := range vmList {
+	for UUID, node := range vmList {
+
+		// is VM currently active? if not, skip
+		UUIDlower := strings.ToLower(UUID)
+		if nm.nodeRegUUIDMap[UUIDlower] == nil {
+			klog.V(4).Infof("Node with UUID=%s not active. Skipping.", UUIDlower)
+			continue
+		}
+
 		pbNode := &pb.Node{
 			Vcenter:    node.vcServer,
 			Datacenter: node.dataCenter.Name(),
@@ -421,17 +455,24 @@ func (nm *NodeManager) FindDatacenterInfoInVCList(vcenter string, datacenter str
 	return dc, nil
 }
 
-// FindNodeInfoInVCList retrieves the NodeInfo from the tree
-func (nm *NodeManager) FindNodeInfoInVCList(vcenter string, datacenter string, UUID string) (*NodeInfo, error) {
-	dc, err := nm.FindDatacenterInfoInVCList(vcenter, datacenter)
-	if err != nil {
-		return nil, err
-	}
+// FindNodeInfo retrieves the NodeInfo from the tree
+func (nm *NodeManager) FindNodeInfo(UUID string) (*NodeInfo, error) {
+	nm.nodeRegInfoLock.Lock()
+	defer nm.nodeRegInfoLock.Unlock()
 
-	vm := dc.vmList[UUID]
-	if vm == nil {
+	UUIDlower := strings.ToLower(UUID)
+
+	if nm.nodeRegUUIDMap[UUIDlower] == nil {
+		klog.Errorf("FindNodeInfo( %s ) NOT ACTIVE", UUIDlower)
 		return nil, ErrVMNotFound
 	}
 
-	return vm, nil
+	nodeInfo := nm.nodeUUIDMap[UUIDlower]
+	if nodeInfo == nil {
+		klog.Errorf("FindNodeInfo( %s ) NOT FOUND", UUIDlower)
+		return nil, ErrVMNotFound
+	}
+
+	klog.V(4).Infof("FindNodeInfo( %s ) FOUND", UUIDlower)
+	return nodeInfo, nil
 }
