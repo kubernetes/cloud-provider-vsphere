@@ -158,14 +158,15 @@ Now that we have set the regions and zones within the vSphere environment, we ca
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: vsphere-fcd
+  name: vsphere-csi
   namespace: kube-system
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
-provisioner: vsphere.csi.vmware.com
+provisioner: csi.vsphere.vmware.com
 parameters:
-  parent_type: "ONLY_ACCEPTABLE_VALUES_ARE: DatastoreCluster OR Datastore"
-  parent_name: "REPLACE_WITH_YOUR_DATATORECLUSTER_OR_DATASTORE_NAME"
+  datastoreurl: "URL_OF_DATASTORE" # optional parameter
+  storagepolicyname: "STORAGE_POLICY" # optional parameter
+  fstype: "FILESYSTEM_TYPE" # optional parameter
 allowedTopologies:
 - matchLabelExpressions:
   - key: failure-domain.beta.kubernetes.io/zone
@@ -191,23 +192,10 @@ spec:
       image: busybox
       volumeMounts:
       - mountPath: "/data"
-        name: my-fcd-volume
+        name: my-csi-volume
       command: [ "sleep", "1000000" ]
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: failure-domain.beta.kubernetes.io/zone
-            operator: In
-            values:
-            - IF_USING_ZONES_REPLACE_WITH_TARGETED_ZONE_VALUE
-          - key: failure-domain.beta.kubernetes.io/region
-            operator: In
-            values:
-            - IF_USING_ZONES_REPLACE_WITH_TARGETED_REGION_VALUE
   volumes:
-    - name: my-fcd-volume
+    - name: my-csi-volume
       persistentVolumeClaim:
         claimName: vsphere-csi-pvc
 ```
