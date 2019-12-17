@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
-	clientv1 "k8s.io/client-go/listers/core/v1"
 	cloudprovider "k8s.io/cloud-provider"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -34,10 +33,27 @@ type GRPCServer interface {
 	Start()
 }
 
+// CPIConfig is used to read and store information (related only to the CPI) from the cloud configuration file
+type CPIConfig struct {
+	vcfg.Config
+
+	Nodes struct {
+		// IP address on VirtualMachine's network interfaces included in the fields' CIDRs
+		// that will be used in respective status.addresses fields.
+		InternalNetworkSubnetCIDR string `gcfg:"internal-network-subnet-cidr"`
+		ExternalNetworkSubnetCIDR string `gcfg:"external-network-subnet-cidr"`
+		// IP address on VirtualMachine's VM Network names that will be used to when searching
+		// for status.addresses fields. Note that if InternalNetworkSubnetCIDR and
+		// ExternalNetworkSubnetCIDR are not set, then the vNIC associated to this network must
+		// only have a single IP address assigned to it.
+		InternalVMNetworkName string `gcfg:"internal-vm-network-name"`
+		ExternalVMNetworkName string `gcfg:"external-vm-network-name"`
+	}
+}
+
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
-	cfg               *vcfg.Config
-	cpiCfg            *CPIConfig
+	cfg               *CPIConfig
 	connectionManager *cm.ConnectionManager
 	nodeManager       *NodeManager
 	informMgr         *k8s.InformerManager
@@ -82,8 +98,6 @@ type NodeManager struct {
 	nodeRegUUIDMap map[string]*v1.Node
 	// ConnectionManager
 	connectionManager *cm.ConnectionManager
-	// NodeLister to track Node properties
-	nodeLister clientv1.NodeLister
 
 	// Reference to CPI-specific configuration
 	cpiCfg *CPIConfig

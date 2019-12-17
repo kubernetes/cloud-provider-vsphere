@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
-	clientv1 "k8s.io/client-go/listers/core/v1"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
@@ -48,14 +47,14 @@ var (
 	ErrVMNotFound = errors.New("VM not found")
 )
 
-func newNodeManager(cm *cm.ConnectionManager, lister clientv1.NodeLister) *NodeManager {
+func newNodeManager(cpiCfg *CPIConfig, cm *cm.ConnectionManager) *NodeManager {
 	return &NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),
 		nodeUUIDMap:       make(map[string]*NodeInfo),
 		nodeRegUUIDMap:    make(map[string]*v1.Node),
 		vcList:            make(map[string]*VCenterInfo),
 		connectionManager: cm,
-		nodeLister:        lister,
+		cpiCfg:            cpiCfg,
 	}
 }
 
@@ -192,6 +191,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	var internalNetworkSubnet *net.IPNet
 	var externalNetworkSubnet *net.IPNet
+	var internalVMNetworkName string
+	var externalVMNetworkName string
 
 	if nm.cpiCfg != nil {
 		if nm.cpiCfg.Nodes.InternalNetworkSubnetCIDR != "" {
@@ -206,18 +207,40 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 				return err
 			}
 		}
+		internalVMNetworkName = nm.cpiCfg.Nodes.InternalVMNetworkName
+		externalVMNetworkName = nm.cpiCfg.Nodes.ExternalVMNetworkName
 	}
 
 	var addressMatchingEnabled bool
-	if internalNetworkSubnet != nil || externalNetworkSubnet != nil {
+	if internalNetworkSubnet != nil && externalNetworkSubnet != nil {
 		addressMatchingEnabled = true
 	}
 
 	found := false
 	addrs := []v1.NodeAddress{}
+
+	klog.V(2).Infof("Adding Hostname: %s", oVM.Guest.HostName)
+	v1helper.AddToNodeAddresses(&addrs,
+		v1.NodeAddress{
+			Type:    v1.NodeHostName,
+			Address: oVM.Guest.HostName,
+		},
+	)
+
 	for _, v := range oVM.Guest.Net {
 		if v.DeviceConfigId == -1 {
 			klog.V(4).Info("Skipping device because not a vNIC")
+			continue
+		}
+
+		klog.V(6).Infof("internalVMNetworkName = %s", internalVMNetworkName)
+		klog.V(6).Infof("externalVMNetworkName = %s", externalVMNetworkName)
+		klog.V(6).Infof("v.Network = %s", v.Network)
+
+		if (internalVMNetworkName != "" && !strings.EqualFold(internalVMNetworkName, v.Network)) &&
+			(externalVMNetworkName != "" && !strings.EqualFold(externalVMNetworkName, v.Network)) {
+			klog.V(4).Infof("Skipping device because vNIC Network=%s doesn't match internal=%s or external=%s network names",
+				v.Network, internalVMNetworkName, externalVMNetworkName)
 			continue
 		}
 
@@ -228,52 +251,56 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 			ips := returnIPsFromSpecificFamily(family, v.IpAddress)
 
 			if addressMatchingEnabled {
-				klog.V(2).Infof("Adding Hostname: %s", oVM.Guest.HostName)
-				v1helper.AddToNodeAddresses(&addrs,
-					v1.NodeAddress{
-						Type:    v1.NodeHostName,
-						Address: oVM.Guest.HostName,
-					},
-				)
-
-				var internalIP string
-				var externalIP string
 				for _, ip := range ips {
 					parsedIP := net.ParseIP(ip)
 					if parsedIP == nil {
 						return fmt.Errorf("can't parse IP: %s", ip)
 					}
 
-					if internalIP == "" && internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
-						internalIP = ip
+					if internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
+						klog.V(2).Infof("Adding Internal IP by AddressMatching: %s", ip)
+						v1helper.AddToNodeAddresses(&addrs,
+							v1.NodeAddress{
+								Type:    v1.NodeInternalIP,
+								Address: ip,
+							},
+						)
 					}
 
-					if externalIP == "" && externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
-						externalIP = ip
+					if externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
+						klog.V(2).Infof("Adding External IP by AddressMatching: %s", ip)
+						v1helper.AddToNodeAddresses(&addrs,
+							v1.NodeAddress{
+								Type:    v1.NodeExternalIP,
+								Address: ip,
+							},
+						)
 					}
 				}
-
-				if internalIP != "" {
-					klog.V(2).Infof("Adding Internal IP: %s", internalIP)
+			} else if internalVMNetworkName != "" && strings.EqualFold(internalVMNetworkName, v.Network) {
+				for _, ip := range ips {
+					klog.V(2).Infof("Adding Internal IP by NetworkName: %s", ip)
 					v1helper.AddToNodeAddresses(&addrs,
 						v1.NodeAddress{
 							Type:    v1.NodeInternalIP,
-							Address: internalIP,
+							Address: ip,
 						},
 					)
 					found = true
+					break
 				}
-				if externalIP != "" {
-					klog.V(2).Infof("Adding External IP: %s", externalIP)
+			} else if externalVMNetworkName != "" && strings.EqualFold(externalVMNetworkName, v.Network) {
+				for _, ip := range ips {
+					klog.V(2).Infof("Adding External IP by NetworkName: %s", ip)
 					v1helper.AddToNodeAddresses(&addrs,
 						v1.NodeAddress{
 							Type:    v1.NodeExternalIP,
-							Address: externalIP,
+							Address: ip,
 						},
 					)
 					found = true
+					break
 				}
-
 			} else {
 				for _, ip := range ips {
 					klog.V(2).Infof("Adding IP: %s", ip)
@@ -284,9 +311,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 						}, v1.NodeAddress{
 							Type:    v1.NodeInternalIP,
 							Address: ip,
-						}, v1.NodeAddress{
-							Type:    v1.NodeHostName,
-							Address: oVM.Guest.HostName,
 						},
 					)
 					found = true
