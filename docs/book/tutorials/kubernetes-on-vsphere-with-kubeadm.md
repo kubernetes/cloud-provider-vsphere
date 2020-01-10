@@ -1001,6 +1001,7 @@ metadata:
 provisioner: csi.vsphere.vmware.com
 parameters:
   storagepolicyname: "Space-Efficient"
+  fstype: ext4
 ```
 
 ```bash
