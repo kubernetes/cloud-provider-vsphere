@@ -22,6 +22,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	cloudprovider "k8s.io/cloud-provider"
 
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
+	lbcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer/config"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
@@ -36,6 +38,7 @@ type GRPCServer interface {
 // CPIConfig is used to read and store information (related only to the CPI) from the cloud configuration file
 type CPIConfig struct {
 	vcfg.Config
+	lbcfg.LBConfig
 
 	Nodes struct {
 		// IP address on VirtualMachine's network interfaces included in the fields' CIDRs
@@ -57,6 +60,7 @@ type VSphere struct {
 	connectionManager *cm.ConnectionManager
 	nodeManager       *NodeManager
 	informMgr         *k8s.InformerManager
+	loadbalancer      loadbalancer.LBProvider
 	instances         cloudprovider.Instances
 	zones             cloudprovider.Zones
 	server            GRPCServer

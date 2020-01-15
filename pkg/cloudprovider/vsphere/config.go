@@ -68,5 +68,9 @@ func ReadCPIConfig(config io.Reader) (*CPIConfig, error) {
 		return nil, err
 	}
 
+	if err := cfg.LBConfig.CompleteAndValidate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }

@@ -17,14 +17,18 @@ limitations under the License.
 package vsphere
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"runtime"
 
 	v1 "k8s.io/api/core/v1"
+	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/klog"
 
-	cloudprovider "k8s.io/cloud-provider"
+	"github.com/vmware/vsphere-automation-sdk-go/runtime/log"
 
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
@@ -77,7 +81,7 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 
 		vs.informMgr.Listen()
 
-		//if running secrets, init them
+		// if running secrets, init them
 		connMgr.InitializeSecretLister()
 
 		if !vs.cfg.Global.APIDisable {
@@ -89,11 +93,25 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 	} else {
 		klog.Errorf("Kubernetes Client Init Failed: %v", err)
 	}
+	if vs.isLoadBalancerSupportEnabled() {
+		klog.Info("initializing load balancer support")
+		if loadbalancer.ClusterName == "" {
+			klog.Warning("Missing cluster id, no periodical cleanup possible")
+		}
+		vs.loadbalancer.Initialize(loadbalancer.ClusterName, client, stop)
+	}
+}
+
+func (vs *VSphere) isLoadBalancerSupportEnabled() bool {
+	return vs.loadbalancer != nil
 }
 
 // LoadBalancer returns a balancer interface. Also returns true if the
 // interface is supported, false otherwise.
 func (vs *VSphere) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
+	if vs.isLoadBalancerSupportEnabled() {
+		return vs.loadbalancer, true
+	}
 	klog.Warning("The vSphere cloud provider does not support load balancers")
 	return nil, false
 }
@@ -145,13 +163,34 @@ func (vs *VSphere) HasClusterID() bool {
 // Initializes vSphere from vSphere CloudProvider Configuration
 func buildVSphereFromConfig(cfg *CPIConfig) (*VSphere, error) {
 	nm := newNodeManager(cfg, nil)
-
+	lb, err := loadbalancer.NewLBProvider(&cfg.LBConfig)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := os.LookupEnv("ENABLE_ALPHA_NSXT_LB"); !ok {
+		if lb != nil {
+			klog.Infof("To enable NSX-T load balancer support you need to set the env variable ENABLE_ALPHA_NSXT_LB")
+			lb = nil
+		}
+	} else {
+		if lb == nil {
+			return nil, fmt.Errorf("To enable NSX-T load balancer support you need to configure section LoadBalancer")
+		}
+	}
+	if lb == nil {
+		klog.Infof("NSX-T load balancer support disabled")
+	} else {
+		klog.Infof("NSX-T load balancer support enabled. This feature is alpha, use in production at your own risk.")
+		// redirect vapi logging from the NSX-T GO SDK to klog
+		log.SetLogger(NewKlogBridge())
+	}
 	vs := VSphere{
-		cfg:         cfg,
-		nodeManager: nm,
-		instances:   newInstances(nm),
-		zones:       newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
-		server:      server.NewServer(cfg.Global.APIBinding, nm),
+		cfg:          cfg,
+		nodeManager:  nm,
+		loadbalancer: lb,
+		instances:    newInstances(nm),
+		zones:        newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
+		server:       server.NewServer(cfg.Global.APIBinding, nm),
 	}
 	return &vs, nil
 }
