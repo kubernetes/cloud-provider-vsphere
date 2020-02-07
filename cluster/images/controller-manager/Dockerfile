@@ -52,5 +52,8 @@ RUN go build -a -ldflags='-w -s -extldflags=static -X main.version=${VERSION}' -
 # Copy the manager into the distroless image.
 FROM ${DISTROLESS_IMAGE}
 LABEL maintainer="Travis Rhoden <trhoden@vmware.com>"
+
+USER nobody
+
 COPY --from=builder /build/vsphere-cloud-controller-manager /bin/vsphere-cloud-controller-manager
 ENTRYPOINT [ "/bin/vsphere-cloud-controller-manager" ]
