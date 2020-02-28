@@ -6,7 +6,7 @@ The goal of CSI is to establish a standardized mechanism for Container Orchestra
 
 Historically, Kubernetes volume plugins were “in-tree”, meaning they’re linked, compiled, built, and shipped with the core kubernetes binaries. Adding support for a new storage system to Kubernetes (a volume plugin) required checking code into the core Kubernetes repository. But aligning with the Kubernetes release process was very painful for many plugin developers. CSI, the Container Storage Interface, makes installing new volume plugins as easy as deploying a pod. It also enables third-party storage providers to develop solutions without the need to add to the core Kubernetes codebase.
 
-CSI enables storage plugins to be developed out-of-tree, containerized, deployed via standard Kubernetes primitives, and consumed through the Kubernetes storage primitives users know and love (`PersistentVolumeClaim`s, `PersistentVolume`s, `StorageClass`es).
+CSI enables storage plugins to be developed out-of-tree, containerized, deployed via standard Kubernetes primitives, and consumed through the familiar Kubernetes storage primitives, such as `PersistentVolumeClaim`s, `PersistentVolume`s, and `StorageClass`es.
 
 ## Which versions of Kubernetes/vSphere support it?
 
