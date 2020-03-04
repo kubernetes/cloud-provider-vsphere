@@ -23,16 +23,16 @@ set -o nounset
 set -o pipefail
 
 # BASE_REPO is the root path of the image repository
-readonly BASE_IMAGE_REPO=gcr.io/cloud-provider-vsphere
+readonly BASE_IMAGE_REPO=${BASE_IMAGE_REPO:-gcr.io/cloud-provider-vsphere}
 
 # Release images
-readonly CPI_IMAGE_RELEASE=${BASE_IMAGE_REPO}/cpi/release/manager
+readonly CPI_IMAGE_RELEASE=${CPI_IMAGE_RELEASE:-${BASE_IMAGE_REPO}/cpi/release/manager}
 
 # PR images
-readonly CPI_IMAGE_PR=${BASE_IMAGE_REPO}/cpi/pr/manager
+readonly CPI_IMAGE_PR=${CPI_IMAGE_PR:-${BASE_IMAGE_REPO}/cpi/pr/manager}
 
 # CI images
-readonly CPI_IMAGE_CI=${BASE_IMAGE_REPO}/cpi/ci/manager
+readonly CPI_IMAGE_CI=${CPI_IMAGE_CI:-${BASE_IMAGE_REPO}/cpi/ci/manager}
 
 AUTH=
 PUSH=
