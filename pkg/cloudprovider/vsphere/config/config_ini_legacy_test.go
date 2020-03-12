@@ -11,14 +11,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vsphere
+package config
 
 import (
-	"strings"
 	"testing"
 )
 
-const subnetCidrConfig = `
+/*
+	TODO:
+	When the INI based cloud-config is deprecated. This file should be deleted.
+*/
+
+const subnetCidrINIConfig = `
 [Global]
 server = 0.0.0.0
 port = 443
@@ -33,7 +37,7 @@ internal-network-subnet-cidr = "192.0.2.0/24"
 external-network-subnet-cidr = "198.51.100.0/24"
 `
 
-const networkNameConfig = `
+const networkNameINIConfig = `
 [Global]
 server = 0.0.0.0
 port = 443
@@ -48,33 +52,36 @@ internal-vm-network-name = "Internal K8s Traffic"
 external-vm-network-name = "External/Outbound Traffic"
 `
 
-func TestReadConfigSubnetCidr(t *testing.T) {
-	_, err := ReadCPIConfig(nil)
+func TestReadINIConfigSubnetCidr(t *testing.T) {
+	_, err := ReadCPIConfigINI(nil)
 	if err == nil {
 		t.Errorf("Should fail when no config is provided: %s", err)
 	}
 
-	cfg, err := ReadCPIConfig(strings.NewReader(subnetCidrConfig))
+	cfg, err := ReadCPIConfigINI([]byte(subnetCidrINIConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
+	}
+
+	if cfg.Global.VCenterIP != "0.0.0.0" {
+		t.Errorf("incorrect global vcServerIP: %s", cfg.Global.VCenterIP)
 	}
 
 	if cfg.Nodes.InternalNetworkSubnetCIDR != "192.0.2.0/24" {
 		t.Errorf("incorrect internal network subnet cidr: %s", cfg.Nodes.InternalNetworkSubnetCIDR)
 	}
-
 	if cfg.Nodes.ExternalNetworkSubnetCIDR != "198.51.100.0/24" {
 		t.Errorf("incorrect external network subnet cidr: %s", cfg.Nodes.ExternalNetworkSubnetCIDR)
 	}
 }
 
-func TestReadConfigNetworkName(t *testing.T) {
-	_, err := ReadCPIConfig(nil)
+func TestReadINIConfigNetworkName(t *testing.T) {
+	_, err := ReadCPIConfigINI(nil)
 	if err == nil {
 		t.Errorf("Should fail when no config is provided: %s", err)
 	}
 
-	cfg, err := ReadCPIConfig(strings.NewReader(networkNameConfig))
+	cfg, err := ReadCPIConfigINI([]byte(networkNameINIConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
 	}

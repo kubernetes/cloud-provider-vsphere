@@ -22,9 +22,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	cloudprovider "k8s.io/cloud-provider"
 
+	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
 	lbcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer/config"
-	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
@@ -35,35 +35,30 @@ type GRPCServer interface {
 	Start()
 }
 
-// CPIConfig is used to read and store information (related only to the CPI) from the cloud configuration file
-type CPIConfig struct {
-	vcfg.Config
-	lbcfg.LBConfig
-
-	Nodes struct {
-		// IP address on VirtualMachine's network interfaces included in the fields' CIDRs
-		// that will be used in respective status.addresses fields.
-		InternalNetworkSubnetCIDR string `gcfg:"internal-network-subnet-cidr"`
-		ExternalNetworkSubnetCIDR string `gcfg:"external-network-subnet-cidr"`
-		// IP address on VirtualMachine's VM Network names that will be used to when searching
-		// for status.addresses fields. Note that if InternalNetworkSubnetCIDR and
-		// ExternalNetworkSubnetCIDR are not set, then the vNIC associated to this network must
-		// only have a single IP address assigned to it.
-		InternalVMNetworkName string `gcfg:"internal-vm-network-name"`
-		ExternalVMNetworkName string `gcfg:"external-vm-network-name"`
-	}
-}
-
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
-	cfg               *CPIConfig
+	// input (aka configs) and output (aka interfaces)
+	cfg    *ccfg.CPIConfig
+	server GRPCServer
+
+	/*
+		Interfaces start
+	*/
+	// pluggable interfaces (tbd)
+	cfgLB        *lbcfg.LBConfig
+	loadbalancer loadbalancer.LBProvider
+
+	// cloud provider interfaces
+	instances cloudprovider.Instances
+	zones     cloudprovider.Zones
+	/*
+		Interfaces end
+	*/
+
+	// internal plumbing
 	connectionManager *cm.ConnectionManager
 	nodeManager       *NodeManager
 	informMgr         *k8s.InformerManager
-	loadbalancer      loadbalancer.LBProvider
-	instances         cloudprovider.Instances
-	zones             cloudprovider.Zones
-	server            GRPCServer
 }
 
 // NodeInfo is information about a Kubernetes node.
@@ -104,7 +99,7 @@ type NodeManager struct {
 	connectionManager *cm.ConnectionManager
 
 	// Reference to CPI-specific configuration
-	cpiCfg *CPIConfig
+	cfg *ccfg.CPIConfig
 
 	// Mutexes
 	nodeInfoLock    sync.RWMutex

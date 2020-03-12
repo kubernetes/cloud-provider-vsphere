@@ -13,6 +13,7 @@ metadata:
   labels:
     component: cloud-controller-manager
     tier: control-plane
+    k8s-app: vsphere-cloud-controller-manager
   name: vsphere-cloud-controller-manager
   namespace: kube-system
 spec:
@@ -25,7 +26,7 @@ spec:
         - --cloud-provider=vsphere
       volumeMounts:
         - mountPath: /etc/cloud
-          name: cloud-config-volume
+          name: vsphere-config-volume
           readOnly: true
       resources:
         requests:
@@ -42,7 +43,7 @@ spec:
     runAsUser: 1001
   serviceAccountName: cloud-controller-manager
   volumes:
-    - name: cloud-config-volume
+    - name: vsphere-config-volume
       configMap:
         name: cloud-config
 ---

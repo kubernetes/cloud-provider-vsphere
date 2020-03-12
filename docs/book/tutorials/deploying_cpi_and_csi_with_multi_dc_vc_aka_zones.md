@@ -67,35 +67,42 @@ Steps that will be covered in order to setup zones for the vSphere CPI, vSphere 
 
 > ***Note:*** The CSI and CPI drivers have their own vsphere.conf files. The following modifications need to be made in both configurations.
 
-The zones implementation depends on 2 sets of vSphere tags to be used on objects, such as datacenters or clusters. The first is a `region` tag and the second is a `zone` tag. vSphere tags are very simply put key/value pairs that can be assigned to objects and instead of using fixed keys to denote a `region` or a `zone`, we give the end-user the ability to come up with their own keys for a `region` and `zone` in the form of vSphere Tag Catagory. It just allows for a level of indirection in case you already have regions and zones setup in your configuration. Once a key/label or vSphere Tag Category is selected for each, create a `[Labels]` section in the `vsphere.conf` then assign tag names for both `region` and `zone`.
+The zones implementation depends on 2 sets of vSphere tags to be used on objects, such as datacenters or clusters. The first is a `region` tag and the second is a `zone` tag. vSphere tags are very simply put key/value pairs that can be assigned to objects and instead of using fixed keys to denote a `region` or a `zone`, we give the end-user the ability to come up with their own keys for a `region` and `zone` in the form of vSphere Tag Catagory. It just allows for a level of indirection in case you already have regions and zones setup in your configuration. Once a key/label or vSphere Tag Category is selected for each, create a `labels:` section in the `vsphere.conf` then assign tag names for both `region` and `zone`.
 
 In the example `vsphere.conf` below, `k8s-region` and `k8s-zone` was selected:
 
 ```bash
-[Global]
-# properties in this section will be used for all specified vCenters unless overridden in VirtualCenter section.
+# Global properties in this section will be used for all specified vCenters unless overriden in VirtualCenter section.
+global:
+  user: YourVCenterUser
+  password: YourVCenterPass
+  port: "443"
+  # set insecureFlag to true if the vCenter uses a self-signed cert
+  insecureFlag: true
+  # settings for using k8s secret
+  secretName: cpi-secret
+  secretNamespace: kube-system
 
-user = "vCenter username for cloud provider"
-password = "password"
-port = "443" #Optional
-insecure-flag = "1" #set to 1 if the vCenter uses a self-signed cert
-datacenters = "list of datacenters where Kubernetes node VMs are present"
+# VirtualCenter section
+vcenter:
+  tenant1:
+    user: YourVCenterUser
+    password: YourVCenterPass
+    server: 10.0.0.1
+    datacenters:
+      - mydc1
+  tenant2:
+    server: 127.0.0.1
+    port: 448
+    insecureFlag: false
+    datacenters:
+      - myotherdc1
+      - myotherdc2
 
-[VirtualCenter "1.2.3.4"]
-# Override specific properties for this Virtual Center.
-        user = "vCenter username for cloud provider"
-        password = "password"
-        # port, insecure-flag, datacenters will be used from Global section.
-
-[VirtualCenter "10.0.0.1"]
-# Override specific properties for this Virtual Center.
-        port = "448"
-        insecure-flag = "0"
-        # user, password, datacenters will be used from Global section.
-
-[Labels]
-region = k8s-region
-zone = k8s-zone
+# labels for regions and zones
+labels:
+  region: k8s-region
+  zone: k8s-zone
 ```
 
 ### 2. Creating Zones in your vSphere Environment via Tags

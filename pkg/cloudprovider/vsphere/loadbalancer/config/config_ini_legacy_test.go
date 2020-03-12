@@ -17,35 +17,39 @@
 package config
 
 import (
-	"strings"
 	"testing"
 )
 
-func TestReadConfig(t *testing.T) {
+/*
+	TODO:
+	When the INI based cloud-config is deprecated. This file should be deleted.
+*/
+
+func TestReadINIConfig(t *testing.T) {
 	contents := `
 [LoadBalancer]
-ipPoolName = pool1
+ip-pool-name = pool1
 size = MEDIUM
-lbServiceId = 4711
-tier1GatewayPath = 1234
-tcpAppProfileName = default-tcp-lb-app-profile
-udpAppProfileName = default-udp-lb-app-profile
+lb-service-id = 4711
+tier1-gateway-path = 1234
+tcp-app-profile-name = default-tcp-lb-app-profile
+udp-app-profile-name = default-udp-lb-app-profile
 tags = {\"tag1\": \"value1\", \"tag2\": \"value 2\"}
 
 [LoadBalancerClass "public"]
-ipPoolName = poolPublic
+ip-pool-name = poolPublic
 
 [LoadBalancerClass "private"]
-ipPoolName = poolPrivate
-tcpAppProfileName = tcp2
-udpAppProfileName = udp2
+ip-pool-name = poolPrivate
+tcp-app-profile-name = tcp2
+udp-app-profile-name = udp2
 
-[NSX-T]
+[NSXT]
 user = admin
 password = secret
 host = nsxt-server
 `
-	config, err := ReadConfig(strings.NewReader(contents))
+	config, err := ReadRawConfigINI([]byte(contents))
 	if err != nil {
 		t.Error(err)
 		return
@@ -62,36 +66,36 @@ host = nsxt-server
 	assertEquals("LoadBalancer.tcpAppProfileName", config.LoadBalancer.TCPAppProfileName, "default-tcp-lb-app-profile")
 	assertEquals("LoadBalancer.udpAppProfileName", config.LoadBalancer.UDPAppProfileName, "default-udp-lb-app-profile")
 	assertEquals("LoadBalancer.size", config.LoadBalancer.Size, "MEDIUM")
-	if len(config.LoadBalancerClasses) != 2 {
-		t.Errorf("expected two LoadBalancerClass subsections, but got %d", len(config.LoadBalancerClasses))
+	if len(config.LoadBalancerClass) != 2 {
+		t.Errorf("expected two LoadBalancerClass subsections, but got %d", len(config.LoadBalancerClass))
 	}
-	assertEquals("LoadBalancerClass.public.ipPoolName", config.LoadBalancerClasses["public"].IPPoolName, "poolPublic")
-	assertEquals("LoadBalancerClass.private.tcpAppProfileName", config.LoadBalancerClasses["private"].TCPAppProfileName, "tcp2")
-	assertEquals("LoadBalancerClass.private.udpAppProfileName", config.LoadBalancerClasses["private"].UDPAppProfileName, "udp2")
+	assertEquals("LoadBalancerClass.public.ipPoolName", config.LoadBalancerClass["public"].IPPoolName, "poolPublic")
+	assertEquals("LoadBalancerClass.private.tcpAppProfileName", config.LoadBalancerClass["private"].TCPAppProfileName, "tcp2")
+	assertEquals("LoadBalancerClass.private.udpAppProfileName", config.LoadBalancerClass["private"].UDPAppProfileName, "udp2")
 	if len(config.LoadBalancer.AdditionalTags) != 2 || config.LoadBalancer.AdditionalTags["tag1"] != "value1" || config.LoadBalancer.AdditionalTags["tag2"] != "value 2" {
 		t.Errorf("unexpected additionalTags %v", config.LoadBalancer.AdditionalTags)
 	}
-	assertEquals("NSX-T.user", config.NSXT.User, "admin")
-	assertEquals("NSX-T.password", config.NSXT.Password, "secret")
-	assertEquals("NSX-T.host", config.NSXT.Host, "nsxt-server")
+	assertEquals("NSXT.user", config.NSXT.User, "admin")
+	assertEquals("NSXT.password", config.NSXT.Password, "secret")
+	assertEquals("NSXT.host", config.NSXT.Host, "nsxt-server")
 }
 
-func TestReadConfigOnVMC(t *testing.T) {
+func TestReadINIConfigOnVMC(t *testing.T) {
 	contents := `
 [LoadBalancer]
-ipPoolID = 123-456
+ip-pool-id = 123-456
 size = MEDIUM
-tier1GatewayPath = 1234
-tcpAppProfilePath = infra/xxx/tcp1234
-udpAppProfilePath = infra/xxx/udp1234
+tier1-gateway-path = 1234
+tcp-app-profile-path = infra/xxx/tcp1234
+udp-app-profile-path = infra/xxx/udp1234
 
-[NSX-T]
-vmcAccessToken = token123
-vmcAuthHost = authHost
+[NSXT]
+vmc-access-token = token123
+vmc-auth-host = authHost
 host = nsxt-server
 insecure-flag = true
 `
-	config, err := ReadConfig(strings.NewReader(contents))
+	config, err := ReadRawConfigINI([]byte(contents))
 	if err != nil {
 		t.Error(err)
 		return
@@ -101,15 +105,15 @@ insecure-flag = true
 			t.Errorf("%s %s != %s", name, left, right)
 		}
 	}
-	assertEquals("LoadBalancer.ipPoolID", config.LoadBalancer.IPPoolID, "123-456")
+	assertEquals("LoadBalancer.ip-pool-id", config.LoadBalancer.IPPoolID, "123-456")
 	assertEquals("LoadBalancer.size", config.LoadBalancer.Size, "MEDIUM")
-	assertEquals("LoadBalancer.tier1GatewayPath", config.LoadBalancer.Tier1GatewayPath, "1234")
-	assertEquals("LoadBalancer.tcpAppProfilePath", config.LoadBalancer.TCPAppProfilePath, "infra/xxx/tcp1234")
-	assertEquals("LoadBalancer.udpAppProfilePath", config.LoadBalancer.UDPAppProfilePath, "infra/xxx/udp1234")
-	assertEquals("NSX-T.vmcAccessToken", config.NSXT.VMCAccessToken, "token123")
-	assertEquals("NSX-T.vmcAuthHost", config.NSXT.VMCAuthHost, "authHost")
-	assertEquals("NSX-T.host", config.NSXT.Host, "nsxt-server")
+	assertEquals("LoadBalancer.tier1-gateway-path", config.LoadBalancer.Tier1GatewayPath, "1234")
+	assertEquals("LoadBalancer.tcp-app-profile-path", config.LoadBalancer.TCPAppProfilePath, "infra/xxx/tcp1234")
+	assertEquals("LoadBalancer.udp-app-profile-path", config.LoadBalancer.UDPAppProfilePath, "infra/xxx/udp1234")
+	assertEquals("NSXT.vmc-access-token", config.NSXT.VMCAccessToken, "token123")
+	assertEquals("NSXT.vmc-auth-host", config.NSXT.VMCAuthHost, "authHost")
+	assertEquals("NSXT.host", config.NSXT.Host, "nsxt-server")
 	if !config.NSXT.InsecureFlag {
-		t.Errorf("NSX-T.insecure-flag != true")
+		t.Errorf("NSXT.insecure-flag != true")
 	}
 }
