@@ -18,15 +18,17 @@ package config
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
 
 	"k8s.io/klog"
-
-	"gopkg.in/gcfg.v1"
 )
+
+/*
+	TODO:
+	When the INI based cloud-config is deprecated, this functions below should be preserved
+*/
 
 func getEnvKeyValue(match string, partial bool) (string, string, error) {
 	for _, e := range os.Environ() {
@@ -143,13 +145,6 @@ func (cfg *Config) FromEnv() error {
 		cfg.Labels.Zone = v
 	}
 
-	if v := os.Getenv("VSPHERE_IP_FAMILY"); v != "" {
-		cfg.Global.IPFamily = v
-	}
-	if cfg.Global.IPFamily == "" {
-		cfg.Global.IPFamily = DefaultIPFamily
-	}
-
 	//Build VirtualCenter from ENVs
 	for _, e := range os.Environ() {
 		pair := strings.Split(e, "=")
@@ -222,9 +217,10 @@ func (cfg *Config) FromEnv() error {
 				secretRef = vcenter
 			}
 
+			iPFamilyPriority := []string{DefaultIPFamily}
 			_, ipFamily, errIPFamily := getEnvKeyValue("VCENTER_"+id+"_IP_FAMILY", false)
 			if errIPFamily != nil {
-				ipFamily = cfg.Global.IPFamily
+				iPFamilyPriority = []string{ipFamily}
 			}
 
 			// If server is explicitly set, that means the vcenter value above is the TenantRef
@@ -235,226 +231,68 @@ func (cfg *Config) FromEnv() error {
 				tenantRef = vcenter
 			}
 
-			cfg.VirtualCenter[tenantRef] = &VirtualCenterConfig{
-				User:              username,
-				Password:          password,
-				TenantRef:         tenantRef,
-				VCenterIP:         vcenterIP,
-				VCenterPort:       port,
-				InsecureFlag:      insecureFlag,
-				Datacenters:       datacenters,
-				RoundTripperCount: roundtrip,
-				CAFile:            caFile,
-				Thumbprint:        thumbprint,
-				SecretRef:         secretRef,
-				SecretName:        secretName,
-				SecretNamespace:   secretNamespace,
-				IPFamily:          ipFamily,
+			var vcc *VirtualCenterConfig
+			if cfg.VirtualCenter[tenantRef] != nil {
+				vcc = cfg.VirtualCenter[tenantRef]
+			} else {
+				vcc = &VirtualCenterConfig{}
+				cfg.VirtualCenter[tenantRef] = vcc
 			}
-		}
-	}
 
-	if cfg.Global.VCenterIP != "" && cfg.VirtualCenter[cfg.Global.VCenterIP] == nil {
-		cfg.VirtualCenter[cfg.Global.VCenterIP] = &VirtualCenterConfig{
-			User:              cfg.Global.User,
-			Password:          cfg.Global.Password,
-			TenantRef:         cfg.Global.VCenterIP,
-			VCenterIP:         cfg.Global.VCenterIP,
-			VCenterPort:       cfg.Global.VCenterPort,
-			InsecureFlag:      cfg.Global.InsecureFlag,
-			Datacenters:       cfg.Global.Datacenters,
-			RoundTripperCount: cfg.Global.RoundTripperCount,
-			CAFile:            cfg.Global.CAFile,
-			Thumbprint:        cfg.Global.Thumbprint,
-			SecretRef:         DefaultCredentialManager,
-			SecretName:        cfg.Global.SecretName,
-			SecretNamespace:   cfg.Global.SecretNamespace,
-			IPFamily:          cfg.Global.IPFamily,
+			vcc.User = username
+			vcc.Password = password
+			vcc.TenantRef = tenantRef
+			vcc.VCenterIP = vcenterIP
+			vcc.VCenterPort = port
+			vcc.InsecureFlag = insecureFlag
+			vcc.Datacenters = datacenters
+			vcc.RoundTripperCount = roundtrip
+			vcc.CAFile = caFile
+			vcc.Thumbprint = thumbprint
+			vcc.SecretRef = secretRef
+			vcc.SecretName = secretName
+			vcc.SecretNamespace = secretNamespace
+			vcc.IPFamilyPriority = iPFamilyPriority
 		}
-	}
-
-	err := cfg.validateConfig()
-	if err != nil {
-		return err
 	}
 
 	return nil
 }
 
-// IsSecretInfoProvided returns true if k8s secret is set or using generic CO secret method.
-// If both k8s secret and generic CO both are true, we don't know which to use, so return false.
-func (cfg *Config) IsSecretInfoProvided() bool {
-	return (cfg.Global.SecretName != "" && cfg.Global.SecretNamespace != "" && cfg.Global.SecretsDirectory == "") ||
-		(cfg.Global.SecretName == "" && cfg.Global.SecretNamespace == "" && cfg.Global.SecretsDirectory != "")
-}
-
-func validateIPFamily(value string) ([]string, error) {
-	if len(value) == 0 {
-		return []string{DefaultIPFamily}, nil
-	}
-
-	ipFamilies := strings.Split(value, ",")
-	for i, ipFamily := range ipFamilies {
-		ipFamily = strings.TrimSpace(ipFamily)
-		if len(ipFamily) == 0 {
-			copy(ipFamilies[i:], ipFamilies[i+1:])      // Shift a[i+1:] left one index.
-			ipFamilies[len(ipFamilies)-1] = ""          // Erase last element (write zero value).
-			ipFamilies = ipFamilies[:len(ipFamilies)-1] // Truncate slice.
-			continue
-		}
-		if !strings.EqualFold(ipFamily, IPv4Family) && !strings.EqualFold(ipFamily, IPv6Family) {
-			return nil, ErrInvalidIPFamilyType
-		}
-	}
-
-	return ipFamilies, nil
-}
-
-func (cfg *Config) validateConfig() error {
-	//Fix default global values
-	if cfg.Global.RoundTripperCount == 0 {
-		cfg.Global.RoundTripperCount = DefaultRoundTripperCount
-	}
-	if cfg.Global.VCenterPort == "" {
-		cfg.Global.VCenterPort = DefaultVCenterPort
-	}
-	if cfg.Global.APIBinding == "" {
-		cfg.Global.APIBinding = DefaultAPIBinding
-	}
-	if cfg.Global.IPFamily == "" {
-		cfg.Global.IPFamily = DefaultIPFamily
-	}
-
-	ipFamilyPriority, err := validateIPFamily(cfg.Global.IPFamily)
-	if err != nil {
-		klog.Errorf("Invalid Global IPFamily: %s, err=%s", cfg.Global.IPFamily, err)
-		return err
-	}
-
-	// Create a single instance of VSphereInstance for the Global VCenterIP if the
-	// VirtualCenter does not already exist in the map
-	if cfg.Global.VCenterIP != "" && cfg.VirtualCenter[cfg.Global.VCenterIP] == nil {
-		vcConfig := &VirtualCenterConfig{
-			User:              cfg.Global.User,
-			Password:          cfg.Global.Password,
-			TenantRef:         cfg.Global.VCenterIP,
-			VCenterIP:         cfg.Global.VCenterIP,
-			VCenterPort:       cfg.Global.VCenterPort,
-			InsecureFlag:      cfg.Global.InsecureFlag,
-			Datacenters:       cfg.Global.Datacenters,
-			RoundTripperCount: cfg.Global.RoundTripperCount,
-			CAFile:            cfg.Global.CAFile,
-			Thumbprint:        cfg.Global.Thumbprint,
-			SecretRef:         DefaultCredentialManager,
-			SecretName:        cfg.Global.SecretName,
-			SecretNamespace:   cfg.Global.SecretNamespace,
-			IPFamily:          cfg.Global.IPFamily,
-			IPFamilyPriority:  ipFamilyPriority,
-		}
-		cfg.VirtualCenter[cfg.Global.VCenterIP] = vcConfig
-	}
-
-	// Must have at least one vCenter defined
-	if len(cfg.VirtualCenter) == 0 {
-		klog.Error(ErrMissingVCenter)
-		return ErrMissingVCenter
-	}
-
-	// vsphere.conf is no longer supported in the old format.
-	for vcServer, vcConfig := range cfg.VirtualCenter {
-		klog.V(4).Infof("Initializing vc server %s", vcServer)
-		if vcServer == "" {
-			klog.Error(ErrInvalidVCenterIP)
-			return ErrInvalidVCenterIP
-		}
-
-		// If vcConfig.VCenterIP is explicitly set, that means the vcServer
-		// above is the TenantRef
-		if vcConfig.VCenterIP != "" {
-			//vcConfig.VCenterIP is already set
-			vcConfig.TenantRef = vcServer
-		} else {
-			vcConfig.VCenterIP = vcServer
-			vcConfig.TenantRef = vcServer
-		}
-
-		if !cfg.IsSecretInfoProvided() && !vcConfig.IsSecretInfoProvided() {
-			if vcConfig.User == "" {
-				vcConfig.User = cfg.Global.User
-				if vcConfig.User == "" {
-					klog.Errorf("vcConfig.User is empty for vc %s!", vcServer)
-					return ErrUsernameMissing
-				}
-			}
-			if vcConfig.Password == "" {
-				vcConfig.Password = cfg.Global.Password
-				if vcConfig.Password == "" {
-					klog.Errorf("vcConfig.Password is empty for vc %s!", vcServer)
-					return ErrPasswordMissing
-				}
-			}
-		} else if cfg.IsSecretInfoProvided() && !vcConfig.IsSecretInfoProvided() {
-			vcConfig.SecretRef = DefaultCredentialManager
-		} else if vcConfig.IsSecretInfoProvided() {
-			vcConfig.SecretRef = vcConfig.SecretNamespace + "/" + vcConfig.SecretName
-		}
-
-		if vcConfig.VCenterPort == "" {
-			vcConfig.VCenterPort = cfg.Global.VCenterPort
-		}
-
-		if vcConfig.Datacenters == "" {
-			if cfg.Global.Datacenters != "" {
-				vcConfig.Datacenters = cfg.Global.Datacenters
-			}
-		}
-		if vcConfig.RoundTripperCount == 0 {
-			vcConfig.RoundTripperCount = cfg.Global.RoundTripperCount
-		}
-		if vcConfig.CAFile == "" {
-			vcConfig.CAFile = cfg.Global.CAFile
-		}
-		if vcConfig.Thumbprint == "" {
-			vcConfig.Thumbprint = cfg.Global.Thumbprint
-		}
-
-		if vcConfig.IPFamily == "" {
-			vcConfig.IPFamily = cfg.Global.IPFamily
-		}
-
-		ipFamilyPriority, err := validateIPFamily(vcConfig.IPFamily)
-		if err != nil {
-			klog.Errorf("Invalid vcConfig IPFamily: %s, err=%s", vcConfig.IPFamily, err)
-			return err
-		}
-		vcConfig.IPFamilyPriority = ipFamilyPriority
-
-		insecure := vcConfig.InsecureFlag
-		if !insecure {
-			vcConfig.InsecureFlag = cfg.Global.InsecureFlag
-		}
-	}
-
-	return nil
-}
+/*
+	TODO:
+	When the INI based cloud-config is deprecated, the references to the
+	INI based code (ie the call to ReadConfigINI) below should be deleted.
+*/
 
 // ReadConfig parses vSphere cloud config file and stores it into VSphereConfig.
 // Environment variables are also checked
-func ReadConfig(config io.Reader) (*Config, error) {
-	if config == nil {
-		return nil, fmt.Errorf("no vSphere cloud provider config file given")
+func ReadConfig(byConfig []byte) (*Config, error) {
+	if len(byConfig) == 0 {
+		return nil, fmt.Errorf("Invalid YAML/INI file")
 	}
 
-	cfg := &Config{}
+	cfg, err := ReadConfigYAML(byConfig)
+	if err != nil {
+		klog.Warningf("ReadConfigYAML failed: %s", err)
 
-	if err := gcfg.FatalOnly(gcfg.ReadInto(cfg, config)); err != nil {
-		return nil, err
+		cfg, err = ReadConfigINI(byConfig)
+		if err != nil {
+			klog.Errorf("ReadConfigINI failed: %s", err)
+			return nil, err
+		} else {
+			klog.Info("ReadConfig INI succeeded. INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.")
+		}
+	} else {
+		klog.Info("ReadConfig YAML succeeded")
 	}
 
 	// Env Vars should override config file entries if present
 	if err := cfg.FromEnv(); err != nil {
+		klog.Errorf("FromEnv failed: %s", err)
 		return nil, err
 	}
 
+	klog.Info("Config initialized")
 	return cfg, nil
 }

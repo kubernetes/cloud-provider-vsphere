@@ -11,12 +11,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vsphere
+package config
 
 import (
 	"strings"
 	"testing"
 )
+
+/*
+	TODO:
+	When the INI based cloud-config is deprecated. This file should be deleted.
+*/
 
 const subnetCidrConfig = `
 [Global]

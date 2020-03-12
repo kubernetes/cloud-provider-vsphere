@@ -17,10 +17,14 @@ limitations under the License.
 package config
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
+
+/*
+	TODO:
+	When the INI based cloud-config is deprecated. This file should be deleted.
+*/
 
 const basicConfig = `
 [Global]
@@ -60,12 +64,12 @@ secret-namespace = "kube-system"
 `
 
 func TestReadConfigGlobal(t *testing.T) {
-	_, err := ReadConfig(nil)
+	_, err := ReadConfigINI([]byte(""))
 	if err == nil {
 		t.Errorf("Should fail when no config is provided: %s", err)
 	}
 
-	cfg, err := ReadConfig(strings.NewReader(basicConfig))
+	cfg, err := ReadConfigINI([]byte(basicConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
 	}
@@ -83,12 +87,23 @@ func TestReadConfigGlobal(t *testing.T) {
 	}
 }
 
+/*
+TODO: move to global
+func TestBlankEnvFails(t *testing.T) {
+	cfg := &ConfigINI{}
+
+	err := cfg.FromEnv()
+	if err == nil {
+		t.Fatalf("Env only config should fail if env not set")
+	}
+}
+
 func TestEnvOverridesFile(t *testing.T) {
 	ip := "127.0.0.1"
 	os.Setenv("VSPHERE_VCENTER", ip)
 	defer os.Unsetenv("VSPHERE_VCENTER")
 
-	cfg, err := ReadConfig(strings.NewReader(basicConfig))
+	cfg, err := ReadConfigINI([]byte(basicConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
 	}
@@ -97,86 +112,73 @@ func TestEnvOverridesFile(t *testing.T) {
 		t.Errorf("expected IP: %s, got: %s", ip, cfg.Global.VCenterIP)
 	}
 }
-
-func TestBlankEnvFails(t *testing.T) {
-	cfg := &Config{}
-
-	err := cfg.FromEnv()
-	if err == nil {
-		t.Fatalf("Env only config should fail if env not set")
-	}
-}
+*/
 
 func TestIPFamilies(t *testing.T) {
-	input := "ipv6"
-	ipFamilies, err := validateIPFamily(input)
+	vcci := VirtualCenterConfigINI{}
+
+	vcci.IPFamily = "ipv6"
+	err := vcci.validateIPFamily()
 	if err != nil {
 		t.Errorf("Valid ipv6 but yielded err: %s", err)
 	}
-	size := len(ipFamilies)
+	size := len(vcci.IPFamilyPriority)
 	if size != 1 {
 		t.Errorf("Invalid family list expected: 1, actual: %d", size)
 	}
 
-	input = "ipv4"
-	ipFamilies, err = validateIPFamily(input)
+	vcci.IPFamily = "ipv4"
+	err = vcci.validateIPFamily()
 	if err != nil {
 		t.Errorf("Valid ipv4 but yielded err: %s", err)
 	}
-	size = len(ipFamilies)
+	size = len(vcci.IPFamilyPriority)
 	if size != 1 {
 		t.Errorf("Invalid family list expected: 1, actual: %d", size)
 	}
 
-	input = "ipv4, "
-	ipFamilies, err = validateIPFamily(input)
+	vcci.IPFamily = "ipv4, "
+	err = vcci.validateIPFamily()
 	if err != nil {
 		t.Errorf("Valid ipv4, but yielded err: %s", err)
 	}
-	size = len(ipFamilies)
+	size = len(vcci.IPFamilyPriority)
 	if size != 1 {
 		t.Errorf("Invalid family list expected: 1, actual: %d", size)
 	}
 
-	input = "ipv6,ipv4"
-	ipFamilies, err = validateIPFamily(input)
+	vcci.IPFamily = "ipv6,ipv4"
+	err = vcci.validateIPFamily()
 	if err != nil {
 		t.Errorf("Valid ipv6/ipv4 but yielded err: %s", err)
 	}
-	size = len(ipFamilies)
+	size = len(vcci.IPFamilyPriority)
 	if size != 2 {
 		t.Errorf("Invalid family list expected: 2, actual: %d", size)
 	}
 
-	input = "ipv7"
-	_, err = validateIPFamily(input)
+	vcci.IPFamily = "ipv7"
+	err = vcci.validateIPFamily()
 	if err == nil {
 		t.Errorf("Invalid ipv7 but successful")
 	}
 
-	input = "ipv4,ipv7"
-	_, err = validateIPFamily(input)
+	vcci.IPFamily = "ipv4,ipv7"
+	err = vcci.validateIPFamily()
 	if err == nil {
 		t.Errorf("Invalid ipv4,ipv7 but successful")
 	}
 }
 
 func TestTenantRefs(t *testing.T) {
-	cfg, err := ReadConfig(strings.NewReader(multiVCDCsUsingSecretConfig))
+	cfg, err := ReadConfigINI([]byte(multiVCDCsUsingSecretConfig))
 	if err != nil {
 		t.Fatalf("Should succeed when a valid config is provided: %s", err)
-	}
-
-	if cfg.IsSecretInfoProvided() {
-		t.Error("IsSecretInfoProvided should not be set.")
 	}
 
 	vcConfig1 := cfg.VirtualCenter["tenant1"]
 	if vcConfig1 == nil {
 		t.Fatalf("Should return a valid vcConfig1")
-	}
-	if !vcConfig1.IsSecretInfoProvided() {
-		t.Error("vcConfig1.IsSecretInfoProvided() should be set.")
 	}
 	if !strings.EqualFold(vcConfig1.VCenterIP, "10.0.0.1") {
 		t.Errorf("vcConfig1 VCenterIP should be 10.0.0.1 but actual=%s", vcConfig1.VCenterIP)
@@ -192,9 +194,6 @@ func TestTenantRefs(t *testing.T) {
 	if vcConfig2 == nil {
 		t.Fatalf("Should return a valid vcConfig2")
 	}
-	if !vcConfig2.IsSecretInfoProvided() {
-		t.Error("vcConfig2.IsSecretInfoProvided() should be set.")
-	}
 	if !strings.EqualFold(vcConfig2.VCenterIP, "10.0.0.2") {
 		t.Errorf("vcConfig2 VCenterIP should be 10.0.0.2 but actual=%s", vcConfig2.VCenterIP)
 	}
@@ -208,9 +207,6 @@ func TestTenantRefs(t *testing.T) {
 	vcConfig3 := cfg.VirtualCenter["10.0.0.3"]
 	if vcConfig3 == nil {
 		t.Fatalf("Should return a valid vcConfig3")
-	}
-	if !vcConfig3.IsSecretInfoProvided() {
-		t.Error("vcConfig3.IsSecretInfoProvided() should be set.")
 	}
 	if !strings.EqualFold(vcConfig3.VCenterIP, "10.0.0.3") {
 		t.Errorf("vcConfig3 VCenterIP should be 10.0.0.3 but actual=%s", vcConfig3.VCenterIP)

@@ -21,6 +21,11 @@ import (
 	"testing"
 )
 
+/*
+	TODO:
+	When the INI based cloud-config is deprecated. This file should be deleted.
+*/
+
 func TestReadConfig(t *testing.T) {
 	contents := `
 [LoadBalancer]

@@ -12,10 +12,10 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.9.0
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
-	github.com/spf13/cobra v0.0.3
-	github.com/spf13/pflag v1.0.3
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/pflag v1.0.5
 	github.com/vmware/govmomi v0.21.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.1.1
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.1.1
@@ -28,6 +28,7 @@ require (
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/square/go-jose.v2 v2.3.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v2 v2.2.7
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
@@ -38,6 +39,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190401085232-94e1e7b7574c // indirect
 	k8s.io/kubernetes v1.15.0
 	k8s.io/sample-controller v0.0.0-20190731144349-6f8905ae4ee5
+	sigs.k8s.io/kind v0.7.0 // indirect
 )
 
 replace (

@@ -112,13 +112,14 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	}
 	cfg.VirtualCenter = make(map[string]*vcfg.VirtualCenterConfig)
 	cfg.VirtualCenter[s.URL.Hostname()] = &vcfg.VirtualCenterConfig{
-		User:         cfg.Global.User,
-		Password:     cfg.Global.Password,
-		TenantRef:    cfg.Global.VCenterIP,
-		VCenterIP:    cfg.Global.VCenterIP,
-		VCenterPort:  cfg.Global.VCenterPort,
-		InsecureFlag: cfg.Global.InsecureFlag,
-		Datacenters:  cfg.Global.Datacenters,
+		User:             cfg.Global.User,
+		Password:         cfg.Global.Password,
+		TenantRef:        cfg.Global.VCenterIP,
+		VCenterIP:        cfg.Global.VCenterIP,
+		VCenterPort:      cfg.Global.VCenterPort,
+		InsecureFlag:     cfg.Global.InsecureFlag,
+		Datacenters:      cfg.Global.Datacenters,
+		IPFamilyPriority: []string{vcfg.DefaultIPFamily},
 	}
 
 	// Configure region and zone categories
