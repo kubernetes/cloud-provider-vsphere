@@ -113,21 +113,21 @@ Set taints on all nodes to allow them to be initialised by the vSphere Cloud Pro
 On worker nodes set this taint:
 
 ```sh
-kubectl taint nodes <your k8s node name> node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+kubectl taint nodes --selector='!node-role.kubernetes.io/master' node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
 ```
 
 On master nodes set this taint:
 
 ```sh
-kubectl taint nodes <your k8s master node name> node-role.kubernetes.io/master=:NoSchedule
+kubectl taint nodes --selector='node-role.kubernetes.io/master' node-role.kubernetes.io/master=:NoSchedule
 ```
 
 ### Install the vSphere Cloud Provider Interface
 
-Please refer to this guide for details on installing the CPI – <https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-kubeadm.md#install-the-vsphere-cloud-provider-interface>
+Please refer to this guide for details on installing the CPI – <https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html#install-the-vsphere-cloud-provider-interface>
 
 **Note: Taints needs to be set on the nodes BEFORE the installation of the CPI.**
 
 ### Install the vSphere CSI Driver
 
-Please refer to this guide for details on installing the CSI Driver - <https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-kubeadm.md#install-the-vsphere-csi-driver>
+Please refer to this guide for details on installing the CSI Driver - <https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html#install-the-vsphere-csi-driver>
