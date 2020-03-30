@@ -4,9 +4,7 @@ This is documentation for the [Kubernetes vSphere Cloud Provider](https://github
 
 ## Introduction
 
-This documentation provides information about running Kubernetes on vSphere and specifically focuses on the Container Storage Interface (CSI) and Cloud Provider Interface (CPI), previously called Cloud Control Manager (CCM). This documentation covers key concepts, features, known issues, installation requirements, and offers sample procedures to run Kubernetes clusters on vSphere. 
-
-Note that you can continue running Kubernetes clusters on vSphere without enabling the cloud provider integration. However, if you do not use the Cloud Provider Interface, your Kubernetes clusters will not have integration with the underlying infrastructure.
+This documentation provides information about running Kubernetes on vSphere and specifically focuses on the Container Storage Interface (CSI) and Cloud Provider Interface (CPI), previously called Cloud Control Manager (CCM). This documentation covers key concepts, features, known issues, installation requirements, and offers sample procedures to run Kubernetes clusters on vSphere. Note that you can continue running Kubernetes clusters on vSphere without enabling the cloud provider integration. However, if you do not use the Cloud Provider Interface, your Kubernetes clusters will not have integration with the underlying infrastructure.
 
 ## History
 
