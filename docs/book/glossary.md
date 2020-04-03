@@ -12,7 +12,7 @@ vSphere is a VMware suite of virtualization products and technologies, among whi
 
 ## ESXi
 
-ESXi is a VMware hypervisor, or host operating system, that installs on a physical server and enables VMs with different operating systems to run side-by-side. ESXi provides strong separation between VMs and itself, offering security boundaries between the guest operating systems and the host. 
+ESXi is a VMware hypervisor, or host operating system, that installs on a physical server and enables VMs with different operating systems to run side-by-side. ESXi provides strong separation between VMs and itself, offering security boundaries between the guest operating systems and the host.
 ESXi can be used as a standalone entity without vCenter Server. However, you need vCenter Server to use such essential features as vSphere HA, vSphere vMotion, Workload Balance, and vSAN.
 
 ## vCenter Server
