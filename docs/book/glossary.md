@@ -3,7 +3,7 @@
 ## VM
 
 A virtual machine (VM) is a software computer that, like a physical computer, runs an operating system and applications. The VM abstracts the operating system from physical hardware resources, with which the OS typically interacts, and creates virtual representations of these resources.
-The virtual hardware resources include CPU, memory, disks, and so on. The VM is a self-contained entity and shares no components with the host OS. 
+The virtual hardware resources include CPU, memory, disks, and so on. The VM is a self-contained entity and shares no components with the host OS.
 In the vSphere environment, the host OS is ESXi.
 
 ## vSphere
