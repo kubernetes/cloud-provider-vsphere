@@ -49,7 +49,7 @@ var (
 var provisionCmd = &cobra.Command{
 	Use:   "provision",
 	Short: "Initialize provisioning with vSphere cloud provider",
-	Long: `Starting prerequisites for deploying a cloud provider on vSphere, in cluding :
+	Long: `Starting prerequisites for deploying a cloud provider on vSphere, including :
 	[x] vSphere configuration health check.
 	[x] Create vSphere solution user.
 	[x] Create vSphere role with minimal set of permissions.
