@@ -1,4 +1,4 @@
-# Overview of the VCP - vSphere Cloud Provider
+# About vSphere Cloud Provider
 
 Project Hatchway was the first VMware container project. It offered to container environments the vSphere storage infrastructure choices, from hyper-converged infrastructure (HCI) powered by VMware vSAN to traditional SAN and NAS storage. Initially, the project included two distinct parts – one focusing on docker container volumes and the other focusing on Kubernetes. Both aimed to provision VMDKs (block volumes) on vSphere storage to provide a persistent storage solution for containerized applications running in a Container Orchestrator on vSphere. The Kubernetes part became known as the vSphere Cloud Provider (VCP) and was included in-tree in Kubernetes distributions since Kubernetes version v1.6.5. This enabled both static and dynamic consumption of vSphere storage from Kubernetes. It was also fully integrated with Storage Policy Based Management, meaning that Persistent Volumes could also inherit and select capabilities of the underlying storage infrastructure, e.g. RAID levels, encryption, deduplication, compression, etc.
 
