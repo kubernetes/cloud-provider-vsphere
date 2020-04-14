@@ -1,12 +1,12 @@
 # Summary
 
-* [Concepts](concepts.md)
+* [Introduction](README.md)
   * [VMware vSphere Storage Concepts](concepts/vmware_vsphere_storage.md)
-  * [In-tree vs Out-of-Tree](concepts/in_tree_vs_out_of_tree.md)
-  * [Overview of the VCP](concepts/vcp_overview.md)
+  * [In-Tree and Out-of-Tree Implementation Models](concepts/in_tree_vs_out_of_tree.md)
+  * [About vSphere Cloud Provider](concepts/vcp_overview.md)
   * [Overview of the CPI](concepts/cpi_overview.md)
   * [Overview of the CSI](concepts/csi_overview.md)
-* [Glossary](glossary.md)
+  * [Glossary](glossary.md)
 * [Cloud Provider Interface (CPI)](cloud_provider_interface.md)
 * [Container Storage Interface (CSI)](container_storage_interface.md)
 * [Cloud Config Spec](cloud_config.md)
