@@ -441,7 +441,9 @@ You can check if the node has joined by running `# kubectl get nodes` on the mas
 
 ## Install the vSphere Cloud Provider Interface
 
-The following steps are only done on the master. Please note that the CSI driver requires the presence of the Cloud Provider Interface (CPI), so the step of installing the CPI is mandatory.
+The following steps are only done on the master.
+
+Please note that the CSI driver requires the presence of a `ProviderID` label on each node in the K8s cluster. This can be populated by whatever means is most convenient - Ideally, the Cloud Provider Interface (CPI) would be used as it is actively maintained and updated, but if the vSphere Cloud Provider (VCP) must be used due to brownfield requirements or architectural constraints of your distribution - that is also acceptable. As long as the `ProviderID` is populated by some means - the vSphere CSI driver will work.
 
 ### Create a CPI configMap
 
