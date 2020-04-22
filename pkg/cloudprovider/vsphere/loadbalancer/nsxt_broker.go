@@ -128,6 +128,7 @@ func NewNsxtBroker(nsxtConfig *config.NsxtConfig) (NsxtBroker, error) {
 	}
 	httpClient := http.Client{
 		Transport: &http.Transport{
+			Proxy:           http.ProxyFromEnvironment,
 			TLSClientConfig: tlsConfig,
 		},
 	}
