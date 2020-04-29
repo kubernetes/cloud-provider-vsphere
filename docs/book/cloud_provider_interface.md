@@ -102,4 +102,4 @@ CPI is supported for vSphere versions 6.7U3 or later. CPI also requires a Kubern
 
 ## How do I install it?
 
-See the [Deploying cloud-provider-vsphere docs](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/deploying_cloud_provider_vsphere_with_rbac.html) for install steps.
+See the [Deploying cloud-provider-vsphere docs](https://github.com/cormachogan/cloud-provider-vsphere/blob/master/docs/book/tutorials/deploying_cloud_provider_vsphere_with_rbac.md) for install steps.
