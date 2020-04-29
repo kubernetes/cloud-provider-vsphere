@@ -54,7 +54,7 @@ You can see the node addresses set by the vSphere cloud provider with the follow
 
 A Kubernetes cloud provider has the ability to propagate the "instance type" of a node as a label on the Kubernetes node object during registration. For the case of the out-of-tree vSphere cloud provider, every node should have a node label similar to the following:
 
-![Example vSphere Node Instance Type](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/cpi_node_instance_type_example.png "Example vSphere Node Instance Type")
+![Example vSphere Node Instance Type](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/images/cpi_nodes_instance_type_example.png "Example vSphere Node Instance Type")
 
 The instance type label follows the format vsphere-vm.cpu-[num of cpus].mem-[num GBs of memory]gb.os-[Guest OS shorthand].
 
