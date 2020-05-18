@@ -14,7 +14,7 @@ Get started with Cloud controller manager for vSphere with Kubeadm with this [qu
 
 ## Quickstart using Helm
 
-Get started with Cloud controller manager for vSphere using Helm with this [Helm quickstart](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html).
+Get started with Cloud controller manager for vSphere using Helm with this [Helm quickstart](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-helm.html).
 
 ## Documentation
 
