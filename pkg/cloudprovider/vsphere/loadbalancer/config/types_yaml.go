@@ -71,6 +71,8 @@ type NsxtConfigYAML struct {
 	Host string `yaml:"host"`
 	// InsecureFlag is to be set to true if NSX-T uses self-signed cert.
 	InsecureFlag bool `yaml:"insecureFlag"`
+	// RemoteAuth is to be set to true if NSX-T uses remote authentication (authentication done through the vIDM).
+	RemoteAuth bool `yaml:"remoteAuth"`
 
 	VMCAccessToken     string `yaml:"vmcAccessToken"`
 	VMCAuthHost        string `yaml:"vmcAuthHost"`

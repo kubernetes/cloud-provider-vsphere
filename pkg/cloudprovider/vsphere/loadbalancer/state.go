@@ -346,7 +346,10 @@ func (s *state) updatedPoolMembers(oldMembers []model.LBPoolMember) ([]model.LBP
 	nodeIPAddresses := collectNodeInternalAddresses(s.nodes)
 	newMembers := []model.LBPoolMember{}
 	for _, member := range oldMembers {
-		if _, ok := nodeIPAddresses[member.IpAddress]; ok {
+		if member.IpAddress == nil {
+			continue
+		}
+		if _, ok := nodeIPAddresses[*member.IpAddress]; ok {
 			newMembers = append(newMembers, member)
 		} else {
 			modified = true
@@ -356,7 +359,7 @@ func (s *state) updatedPoolMembers(oldMembers []model.LBPoolMember) ([]model.LBP
 		for nodeIPAddress, nodeName := range nodeIPAddresses {
 			found := false
 			for _, member := range oldMembers {
-				if member.IpAddress == nodeIPAddress {
+				if member.IpAddress != nil && *member.IpAddress == nodeIPAddress {
 					found = true
 					break
 				}
@@ -365,7 +368,7 @@ func (s *state) updatedPoolMembers(oldMembers []model.LBPoolMember) ([]model.LBP
 				member := model.LBPoolMember{
 					AdminState:  strptr("ENABLED"),
 					DisplayName: strptr(fmt.Sprintf("%s:%s", s.clusterName, nodeName)),
-					IpAddress:   nodeIPAddress,
+					IpAddress:   strptr(nodeIPAddress),
 				}
 				newMembers = append(newMembers, member)
 				modified = true
@@ -428,8 +431,8 @@ func (s *state) updateVirtualServer(server *model.LBVirtualServer, mapping Mappi
 	if err != nil {
 		return errors.Wrapf(err, "Lookup of application profile failed for %s", mapping.Protocol)
 	}
-	if !mapping.MatchNodePort(server) || !safeEquals(server.PoolPath, poolPath) || server.ApplicationProfilePath != applicationProfilePath {
-		server.ApplicationProfilePath = applicationProfilePath
+	if !mapping.MatchNodePort(server) || !safeEquals(server.PoolPath, poolPath) || !safeEquals(server.ApplicationProfilePath, &applicationProfilePath) {
+		server.ApplicationProfilePath = strptr(applicationProfilePath)
 		server.DefaultPoolMemberPorts = []string{formatPort(mapping.NodePort)}
 		server.PoolPath = poolPath
 		s.CtxInfof("updating LbVirtualServer %s for %s", *server.Id, mapping)

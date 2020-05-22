@@ -11,9 +11,9 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/vmware/govmomi v0.22.1
-	github.com/vmware/vsphere-automation-sdk-go/lib v0.1.1
-	github.com/vmware/vsphere-automation-sdk-go/runtime v0.1.1
-	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.1.1
+	github.com/vmware/vsphere-automation-sdk-go/lib v0.2.0
+	github.com/vmware/vsphere-automation-sdk-go/runtime v0.2.0
+	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.3.0
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	google.golang.org/grpc v1.27.0
 	gopkg.in/gcfg.v1 v1.2.3
