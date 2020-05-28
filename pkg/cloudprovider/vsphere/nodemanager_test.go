@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/vmware/govmomi/simulator"
+	vimtypes "github.com/vmware/govmomi/vim25/types"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +42,14 @@ func TestRegUnregNode(t *testing.T) {
 	nm := newNodeManager(nil, connMgr)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm.Guest.HostName = vm.Name
+	vm.Guest.Net = []vimtypes.GuestNicInfo{
+		{
+			Network:   "foo-bar",
+			IpAddress: []string{"10.0.0.1"},
+		},
+	}
+
 	name := vm.Name
 	UUID := vm.Config.Uuid
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
@@ -92,6 +101,12 @@ func TestDiscoverNodeByName(t *testing.T) {
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
+	vm.Guest.Net = []vimtypes.GuestNicInfo{
+		{
+			Network:   "foo-bar",
+			IpAddress: []string{"10.0.0.1"},
+		},
+	}
 	name := vm.Name
 
 	err := connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
@@ -122,6 +137,13 @@ func TestExport(t *testing.T) {
 	nm := newNodeManager(nil, connMgr)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
+	vm.Guest.Net = []vimtypes.GuestNicInfo{
+		{
+			Network:   "foo-bar",
+			IpAddress: []string{"10.0.0.1"},
+		},
+	}
 	name := vm.Name
 	UUID := vm.Config.Uuid
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)

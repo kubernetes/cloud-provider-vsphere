@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/vmware/govmomi/simulator"
+	vimtypes "github.com/vmware/govmomi/vim25/types"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,10 +51,10 @@ func (nm *MyNodeManager) RegisterNode(node *v1.Node) {
 	v1helper.AddToNodeAddresses(&addrs,
 		v1.NodeAddress{
 			Type:    v1.NodeExternalIP,
-			Address: "127.0.0.1",
+			Address: "10.0.0.1",
 		}, v1.NodeAddress{
 			Type:    v1.NodeInternalIP,
-			Address: "127.0.0.1",
+			Address: "10.0.0.1",
 		}, v1.NodeAddress{
 			Type:    v1.NodeHostName,
 			Address: node.Name,
@@ -81,6 +82,12 @@ func TestInstance(t *testing.T) {
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
 	vm.Guest.HostName = name
+	vm.Guest.Net = []vimtypes.GuestNicInfo{
+		{
+			Network:   "foo-bar",
+			IpAddress: []string{"10.0.0.1"},
+		},
+	}
 	UUID := strings.ToUpper(vm.Config.Uuid)
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
 
