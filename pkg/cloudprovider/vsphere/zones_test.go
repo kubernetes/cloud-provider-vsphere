@@ -26,6 +26,7 @@ import (
 	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/types"
 
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
@@ -59,6 +60,13 @@ func TestZones(t *testing.T) {
 
 	// Get a simulator VM
 	myvm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	myvm.Guest.HostName = myvm.Name
+	myvm.Guest.Net = []types.GuestNicInfo{
+		{
+			Network:   "foo-bar",
+			IpAddress: []string{"10.0.0.1"},
+		},
+	}
 	name := myvm.Name
 	UUID := myvm.Config.Uuid
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)

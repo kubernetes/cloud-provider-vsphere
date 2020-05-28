@@ -61,8 +61,13 @@ func newNodeManager(cpiCfg *CPIConfig, cm *cm.ConnectionManager) *NodeManager {
 // RegisterNode is the handler for when a node is added to a K8s cluster.
 func (nm *NodeManager) RegisterNode(node *v1.Node) {
 	klog.V(4).Info("RegisterNode ENTER: ", node.Name)
+
 	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
-	nm.DiscoverNode(uuid, cm.FindVMByUUID)
+	if err := nm.DiscoverNode(uuid, cm.FindVMByUUID); err != nil {
+		klog.Errorf("error discovering node %s: %v", node.Name, err)
+		return
+	}
+
 	nm.addNode(uuid, node)
 	klog.V(4).Info("RegisterNode LEAVE: ", node.Name)
 }
@@ -325,7 +330,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	}
 
 	if !found {
-		klog.Warningf("Unable to find a suitable IP address. ipFamily: %s", ipFamily)
+		return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
 	}
 
 	klog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
