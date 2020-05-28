@@ -70,7 +70,7 @@ GOOS ?= linux
 GOARCH ?= amd64
 
 LDFLAGS := $(shell cat hack/make/ldflags.txt)
-LDFLAGS_CCM := $(LDFLAGS) -X "main.version=$(VERSION)"
+LDFLAGS_CCM := $(LDFLAGS) -X "main.version=$(VERSION)" -X "k8s.io/kubernetes/pkg/version.gitVersion=$(VERSION)" -X "k8s.io/component-base/pkg/version.gitVersion=$(VERSION)"
 
 # The cloud controller binary.
 CCM_BIN_NAME := vsphere-cloud-controller-manager
