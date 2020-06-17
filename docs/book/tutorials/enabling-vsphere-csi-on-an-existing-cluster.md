@@ -130,4 +130,4 @@ Please refer to this guide for details on installing the CPI – <https://cloud-
 
 ### Install the vSphere CSI Driver
 
-Please refer to this guide for details on installing the CSI Driver - <https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html#install-the-vsphere-csi-driver>
+Please refer to this guide for details on installing the CSI Driver - <https://vsphere-csi-driver.sigs.k8s.io/>
