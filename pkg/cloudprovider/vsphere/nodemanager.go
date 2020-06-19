@@ -181,6 +181,10 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return err
 	}
 
+	if oVM.Guest == nil {
+		return errors.New("VirtualMachine Guest property was nil")
+	}
+
 	tenantRef := vmDI.VcServer
 	if vmDI.TenantRef != "" {
 		tenantRef = vmDI.TenantRef
