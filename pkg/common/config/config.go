@@ -55,7 +55,7 @@ func getEnvKeyValue(match string, partial bool) (string, string, error) {
 	return "", "", fmt.Errorf("Failed to find %s with %s", matchType, match)
 }
 
-// FromEnv initializes the provided configuratoin object with values
+// FromEnv initializes the provided configuration object with values
 // obtained from environment variables. If an environment variable is set
 // for a property that's already initialized, the environment variable's value
 // takes precedence.
