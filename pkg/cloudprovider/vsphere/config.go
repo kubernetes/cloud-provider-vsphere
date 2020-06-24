@@ -24,7 +24,7 @@ import (
 	"gopkg.in/gcfg.v1"
 )
 
-// FromCPIEnv initializes the provided configuratoin object with values
+// FromCPIEnv initializes the provided configuration object with values
 // obtained from environment variables. If an environment variable is set
 // for a property that's already initialized, the environment variable's value
 // takes precedence.
