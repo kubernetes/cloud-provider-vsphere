@@ -238,7 +238,7 @@ The recommended `exclude-nics` filter is as follows for `/etc/vmware-tools/tools
 ```bash
 [guestinfo]
 primary-nics=eth0
-exclude-nics=antrea-*,ovs-system,br,flannel*,veth*,docker*,virbr*,vxlan_sys_*,genev_sys_*,gre_sys_*,stt_sys_*,????????-??????
+exclude-nics=antrea-*,ovs-system,br*,flannel*,veth*,docker*,virbr*,vxlan_sys_*,genev_sys_*,gre_sys_*,stt_sys_*,????????-??????
 ```
 
 Restart VMTools for the changes to take effect.
