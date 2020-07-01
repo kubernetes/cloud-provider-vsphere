@@ -78,6 +78,10 @@ All installation and configuration commands should be executed with root privile
 Setup steps required on all nodes
 The following section details the steps that are needed on both the master and worker nodes.
 
+### Install VMTools (if necessary)
+
+For more information about VMTools including installation, please visit the [official documentation](https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.vsphere.html.hostclient.doc/GUID-28C39A00-743B-4222-B697-6632E94A8E72.html).
+
 ### disk.EnableUUID=1
 
 The following govc commands will set the disk.EnableUUID=1 on all nodes.
@@ -223,6 +227,26 @@ Docker is now installed. Verify the status of docker via the following command:
 #docker info | egrep "Server Version|Cgroup Driver"
 Server Version: 18.06.0-ce
 Cgroup Driver: systemd
+```
+
+### VMTools NIC/Device Filtering
+
+A number of [CNI](https://github.com/containernetworking/cni) implementations (such Calico, Antrea, and etc) introduce networking artifacts that interfere with the normal operation of vSphere's internal reporting for network/device interfaces. To address this issue, an `exclude-nics` filter for VMTools needs to be applied in order to prevent these artifacts from getting reported to vSphere and causing problems with network/device associations to vNICs on virtual machines.
+
+The recommended `exclude-nics` filter is as follows for `/etc/vmware-tools/tools.conf`:
+
+```
+[guestinfo]
+primary-nics=eth0
+exclude-nics=antrea-*,ovs-system,br,flannel*,veth*,docker*,virbr*,vxlan_sys_*,genev_sys_*,gre_sys_*,stt_sys_*,????????-??????
+```
+
+Restart VMTools for the changes to take effect.
+
+```
+/etc/vmware-tools/services.sh start.
+/etc/vmware-tools/services.sh stop.
+/etc/vmware-tools/services.sh restart
 ```
 
 ### Install Kubelet, Kubectl, Kubeadm
