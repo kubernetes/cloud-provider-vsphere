@@ -244,8 +244,8 @@ exclude-nics=antrea-*,ovs-system,br,flannel*,veth*,docker*,virbr*,vxlan_sys_*,ge
 Restart VMTools for the changes to take effect.
 
 ```bash
-/etc/vmware-tools/services.sh start.
-/etc/vmware-tools/services.sh stop.
+/etc/vmware-tools/services.sh start
+/etc/vmware-tools/services.sh stop
 /etc/vmware-tools/services.sh restart
 ```
 
