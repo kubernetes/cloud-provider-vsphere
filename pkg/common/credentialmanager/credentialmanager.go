@@ -193,7 +193,6 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 		return ErrCredentialMissing
 	}
 	for credentialKey, credentialValue := range data {
-		credentialKey = strings.ToLower(credentialKey)
 		if strings.HasSuffix(credentialKey, "password") {
 			vcServer := strings.Split(credentialKey, ".password")[0]
 			if _, ok := config[vcServer]; !ok {
