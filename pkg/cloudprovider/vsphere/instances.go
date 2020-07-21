@@ -159,13 +159,14 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 		return true, nil
 	}
 
-	if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err == nil {
+	err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID)
+	if err == nil {
 		klog.V(2).Info("instances.InstanceExistsByProviderID() EXISTS with ", uid)
-		return true, err
+		return true, nil
 	}
 
 	klog.V(4).Info("instances.InstanceExistsByProviderID() NOT FOUND with ", uid)
-	return false, nil
+	return false, err
 }
 
 // InstanceShutdownByProviderID returns true if the instance is in safe state to detach volumes

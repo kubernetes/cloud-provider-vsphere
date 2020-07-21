@@ -196,8 +196,8 @@ func TestInvalidInstance(t *testing.T) {
 	}
 
 	exists, err := instances.InstanceExistsByProviderID(ctx, providerID)
-	if err != nil {
-		t.Errorf("InstanceExistsByProviderID failed err=%v", err)
+	if err == nil {
+		t.Errorf("InstanceExistsByProviderID expected failure but err=nil")
 	}
 	if exists {
 		t.Error("InstanceExistsByProviderID excepted not exists")
