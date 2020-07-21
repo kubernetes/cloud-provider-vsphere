@@ -73,7 +73,6 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	model.Service.RegisterSDK(lookup.New())
 
 	cfg.Global.InsecureFlag = insecureAllowed
-
 	cfg.Global.VCenterIP = s.URL.Hostname()
 	cfg.Global.VCenterPort = s.URL.Port()
 	cfg.Global.User = s.URL.User.Username()
@@ -85,14 +84,15 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 		cfg.Global.Datacenters = vclib.TestDefaultDatacenter
 	}
 	cfg.VirtualCenter = make(map[string]*vcfg.VirtualCenterConfig)
-	cfg.VirtualCenter[s.URL.Hostname()] = &vcfg.VirtualCenterConfig{
-		User:         cfg.Global.User,
-		Password:     cfg.Global.Password,
-		TenantRef:    cfg.Global.VCenterIP,
-		VCenterIP:    cfg.Global.VCenterIP,
-		VCenterPort:  cfg.Global.VCenterPort,
-		InsecureFlag: cfg.Global.InsecureFlag,
-		Datacenters:  cfg.Global.Datacenters,
+	cfg.VirtualCenter[cfg.Global.VCenterIP] = &vcfg.VirtualCenterConfig{
+		User:             cfg.Global.User,
+		Password:         cfg.Global.Password,
+		TenantRef:        cfg.Global.VCenterIP,
+		VCenterIP:        cfg.Global.VCenterIP,
+		VCenterPort:      cfg.Global.VCenterPort,
+		InsecureFlag:     cfg.Global.InsecureFlag,
+		Datacenters:      cfg.Global.Datacenters,
+		IPFamilyPriority: []string{vcfg.DefaultIPFamily},
 	}
 
 	// Configure region and zone categories
@@ -105,12 +105,13 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	}
 }
 
+// configFromEnvOrSim builds a config from configFromSim and overrides using configFromEnv
 func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
-	cfg := &vcfg.Config{}
+	cfg, fin := configFromSim(multiDc)
 	if err := cfg.FromEnv(); err != nil {
-		return configFromSim(multiDc)
+		return nil, nil
 	}
-	return cfg, func() {}
+	return cfg, fin
 }
 
 func TestListAllVcPairs(t *testing.T) {

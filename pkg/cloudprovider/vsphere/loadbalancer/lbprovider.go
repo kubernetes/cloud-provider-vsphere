@@ -53,6 +53,9 @@ var _ LBProvider = &lbProvider{}
 
 // NewLBProvider creates a new LBProvider
 func NewLBProvider(cfg *config.LBConfig) (LBProvider, error) {
+	if cfg == nil {
+		return nil, nil
+	}
 	if !cfg.IsEnabled() {
 		return nil, nil
 	}

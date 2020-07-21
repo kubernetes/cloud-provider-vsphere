@@ -17,126 +17,22 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
-	"strings"
 
-	"gopkg.in/gcfg.v1"
-
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog"
-
-	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
 )
 
-const (
-	// DefaultLoadBalancerClass is the default load balancer class
-	DefaultLoadBalancerClass = "default"
-)
-
-// LoadBalancerSizes contains the valid size names
-var LoadBalancerSizes = sets.NewString(
-	model.LBService_SIZE_SMALL,
-	model.LBService_SIZE_MEDIUM,
-	model.LBService_SIZE_LARGE,
-	model.LBService_SIZE_XLARGE,
-	model.LBService_SIZE_DLB,
-)
-
-// LBConfig  is used to read and store information from the cloud configuration file
-type LBConfig struct {
-	LoadBalancer        LoadBalancerConfig                  `gcfg:"LoadBalancer"`
-	LoadBalancerClasses map[string]*LoadBalancerClassConfig `gcfg:"LoadBalancerClass"`
-	NSXT                NsxtConfig                          `gcfg:"NSX-T"`
-}
-
-// LoadBalancerConfig contains the configuration for the load balancer itself
-type LoadBalancerConfig struct {
-	LoadBalancerClassConfig
-	Size             string `gcfg:"size"`
-	LBServiceID      string `gcfg:"lbServiceId"`
-	Tier1GatewayPath string `gcfg:"tier1GatewayPath"`
-	RawTags          string `gcfg:"tags"`
-	AdditionalTags   map[string]string
-}
-
-// LoadBalancerClassConfig contains the configuration for a load balancer class
-type LoadBalancerClassConfig struct {
-	IPPoolName        string `gcfg:"ipPoolName"`
-	IPPoolID          string `gcfg:"ipPoolID"`
-	TCPAppProfileName string `gcfg:"tcpAppProfileName"`
-	TCPAppProfilePath string `gcfg:"tcpAppProfilePath"`
-	UDPAppProfileName string `gcfg:"udpAppProfileName"`
-	UDPAppProfilePath string `gcfg:"udpAppProfilePath"`
-}
-
-// NsxtConfig contains the NSX-T specific configuration
-type NsxtConfig struct {
-	// NSX-T username.
-	User string `gcfg:"user"`
-	// NSX-T password in clear text.
-	Password string `gcfg:"password"`
-	// NSX-T host.
-	Host string `gcfg:"host"`
-	// InsecureFlag is to be set to true if NSX-T uses self-signed cert.
-	InsecureFlag bool `gcfg:"insecure-flag"`
-
-	VMCAccessToken     string `gcfg:"vmcAccessToken"`
-	VMCAuthHost        string `gcfg:"vmcAuthHost"`
-	ClientAuthCertFile string `gcfg:"client-auth-cert-file"`
-	ClientAuthKeyFile  string `gcfg:"client-auth-key-file"`
-	CAFile             string `gcfg:"ca-file"`
-}
+/*
+	TODO:
+	When the INI based cloud-config is deprecated, this functions below should be preserved
+*/
 
 // IsEnabled checks whether the load balancer feature is enabled
 // It is enabled if any flavor of the load balancer configuration is given.
 func (cfg *LBConfig) IsEnabled() bool {
-	return len(cfg.LoadBalancerClasses) > 0 || !cfg.LoadBalancer.IsEmpty()
-}
-
-func (cfg *LBConfig) validateConfig() error {
-	if cfg.LoadBalancer.LBServiceID == "" && cfg.LoadBalancer.Tier1GatewayPath == "" {
-		msg := "either load balancer service id or T1 gateway path required"
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	if cfg.LoadBalancer.TCPAppProfileName == "" && cfg.LoadBalancer.TCPAppProfilePath == "" {
-		msg := "either load balancer TCP application profile name or path required"
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	if cfg.LoadBalancer.UDPAppProfileName == "" && cfg.LoadBalancer.UDPAppProfilePath == "" {
-		msg := "either load balancer UDP application profile name or path required"
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	if !LoadBalancerSizes.Has(cfg.LoadBalancer.Size) {
-		msg := fmt.Sprintf("load balancer size is invalid. Valid values are: %s", strings.Join(LoadBalancerSizes.List(), ","))
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	if cfg.LoadBalancer.IPPoolID == "" && cfg.LoadBalancer.IPPoolName == "" {
-		class, ok := cfg.LoadBalancerClasses[DefaultLoadBalancerClass]
-		if !ok {
-			msg := "no default load balancer class defined"
-			klog.Errorf(msg)
-			return fmt.Errorf(msg)
-		} else if class.IPPoolName == "" && class.IPPoolID == "" {
-			msg := "default load balancer class: ipPoolName and ipPoolID is empty"
-			klog.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	} else {
-		if cfg.LoadBalancer.IPPoolName != "" && cfg.LoadBalancer.IPPoolID != "" {
-			msg := "either load balancer ipPoolName or ipPoolID can be set"
-			klog.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	}
-	return cfg.NSXT.validateConfig()
+	return len(cfg.LoadBalancerClass) > 0 || !cfg.LoadBalancer.IsEmpty()
 }
 
 // IsEmpty checks whether the load balancer config is empty (no values specified)
@@ -144,32 +40,6 @@ func (cfg *LoadBalancerConfig) IsEmpty() bool {
 	return cfg.Size == "" && cfg.LBServiceID == "" &&
 		cfg.IPPoolID == "" && cfg.IPPoolName == "" &&
 		cfg.Tier1GatewayPath == ""
-}
-
-func (cfg *NsxtConfig) validateConfig() error {
-	if cfg.VMCAccessToken != "" {
-		if cfg.VMCAuthHost == "" {
-			msg := "vmc auth host must be provided if auth token is provided"
-			klog.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	} else if cfg.User != "" {
-		if cfg.Password == "" {
-			msg := "password is empty"
-			klog.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	} else {
-		msg := "either user or vmc access token must be set"
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	if cfg.Host == "" {
-		msg := "host is empty"
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	return nil
 }
 
 // FromEnv initializes the provided configuration object with values
@@ -207,55 +77,40 @@ func (cfg *NsxtConfig) FromEnv() error {
 	return nil
 }
 
-// ReadConfig parses vSphere cloud config file and stores it into LBConfig.
+/*
+	TODO:
+	When the INI based cloud-config is deprecated, the references to the
+	INI based code (ie the call to ReadConfigINI) below should be deleted.
+*/
+
+// ReadLBConfig parses vSphere cloud config file and stores it into VSphereConfig.
 // Environment variables are also checked
-func ReadConfig(config io.Reader) (*LBConfig, error) {
-	if config == nil {
-		return nil, fmt.Errorf("no vSphere cloud provider config file given")
+func ReadLBConfig(byConfig []byte) (*LBConfig, error) {
+	if len(byConfig) == 0 {
+		return nil, fmt.Errorf("Invalid YAML/INI file")
 	}
 
-	cfg := &LBConfig{}
-
-	if err := gcfg.FatalOnly(gcfg.ReadInto(cfg, config)); err != nil {
-		return nil, err
-	}
-
-	err := cfg.CompleteAndValidate()
+	cfg, err := ReadConfigYAML(byConfig)
 	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
-}
+		klog.Warningf("ReadConfigYAML failed: %s", err)
 
-// CompleteAndValidate sets default values, overrides by env and validates the resulting config
-func (cfg *LBConfig) CompleteAndValidate() error {
-	if !cfg.IsEnabled() {
-		return nil
-	}
-
-	cfg.LoadBalancer.AdditionalTags = map[string]string{}
-	if cfg.LoadBalancer.RawTags != "" {
-		err := json.Unmarshal([]byte(cfg.LoadBalancer.RawTags), &cfg.LoadBalancer.AdditionalTags)
+		cfg, err = ReadConfigINI(byConfig)
 		if err != nil {
-			return fmt.Errorf("unmarshalling load balancer tags failed: %s", err)
+			klog.Errorf("ReadConfigINI failed: %s", err)
+			return nil, err
 		}
-	}
-	if cfg.LoadBalancerClasses == nil {
-		cfg.LoadBalancerClasses = map[string]*LoadBalancerClassConfig{}
-	}
-	for _, class := range cfg.LoadBalancerClasses {
-		if class.IPPoolName == "" {
-			if class.IPPoolID == "" {
-				class.IPPoolID = cfg.LoadBalancer.IPPoolID
-				class.IPPoolName = cfg.LoadBalancer.IPPoolName
-			}
-		}
+
+		klog.Info("ReadConfig INI succeeded. LoadBalancer INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.")
+	} else {
+		klog.Info("ReadConfig YAML succeeded")
 	}
 
 	// Env Vars should override config file entries if present
 	if err := cfg.NSXT.FromEnv(); err != nil {
-		return err
+		klog.Errorf("FromEnv failed: %s", err)
+		return nil, err
 	}
 
-	return cfg.validateConfig()
+	klog.Info("Config initialized")
+	return cfg, nil
 }

@@ -21,7 +21,10 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"os"
+
+	"k8s.io/klog"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/ssoadmin"
@@ -46,7 +49,14 @@ func ParseConfig(configFile string) (*config.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Can not open config file %s, %v", configFile, err)
 	}
-	cfg, err := config.ReadConfig(f)
+
+	byConfig, err := ioutil.ReadAll(f)
+	if err != nil {
+		klog.Errorf("ReadAll failed: %s", err)
+		return nil, err
+	}
+
+	cfg, err := config.ReadConfig(byConfig)
 	if err != nil {
 		return nil, err
 	}

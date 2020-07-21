@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
@@ -47,14 +48,14 @@ var (
 	ErrVMNotFound = errors.New("VM not found")
 )
 
-func newNodeManager(cpiCfg *CPIConfig, cm *cm.ConnectionManager) *NodeManager {
+func newNodeManager(cfg *ccfg.CPIConfig, cm *cm.ConnectionManager) *NodeManager {
 	return &NodeManager{
 		nodeNameMap:       make(map[string]*NodeInfo),
 		nodeUUIDMap:       make(map[string]*NodeInfo),
 		nodeRegUUIDMap:    make(map[string]*v1.Node),
 		vcList:            make(map[string]*VCenterInfo),
 		connectionManager: cm,
-		cpiCfg:            cpiCfg,
+		cfg:               cfg,
 	}
 }
 
@@ -203,21 +204,21 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	var internalVMNetworkName string
 	var externalVMNetworkName string
 
-	if nm.cpiCfg != nil {
-		if nm.cpiCfg.Nodes.InternalNetworkSubnetCIDR != "" {
-			_, internalNetworkSubnet, err = net.ParseCIDR(nm.cpiCfg.Nodes.InternalNetworkSubnetCIDR)
+	if nm.cfg != nil {
+		if nm.cfg.Nodes.InternalNetworkSubnetCIDR != "" {
+			_, internalNetworkSubnet, err = net.ParseCIDR(nm.cfg.Nodes.InternalNetworkSubnetCIDR)
 			if err != nil {
 				return err
 			}
 		}
-		if nm.cpiCfg.Nodes.ExternalNetworkSubnetCIDR != "" {
-			_, externalNetworkSubnet, err = net.ParseCIDR(nm.cpiCfg.Nodes.ExternalNetworkSubnetCIDR)
+		if nm.cfg.Nodes.ExternalNetworkSubnetCIDR != "" {
+			_, externalNetworkSubnet, err = net.ParseCIDR(nm.cfg.Nodes.ExternalNetworkSubnetCIDR)
 			if err != nil {
 				return err
 			}
 		}
-		internalVMNetworkName = nm.cpiCfg.Nodes.InternalVMNetworkName
-		externalVMNetworkName = nm.cpiCfg.Nodes.ExternalVMNetworkName
+		internalVMNetworkName = nm.cfg.Nodes.InternalVMNetworkName
+		externalVMNetworkName = nm.cfg.Nodes.ExternalVMNetworkName
 	}
 
 	var addressMatchingEnabled bool

@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
-	"strings"
 	"testing"
 
 	lookup "github.com/vmware/govmomi/lookup/simulator"
@@ -29,6 +28,7 @@ import (
 	sts "github.com/vmware/govmomi/sts/simulator"
 	vapi "github.com/vmware/govmomi/vapi/simulator"
 
+	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
@@ -132,22 +132,22 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	}
 }
 
-// configFromEnvOrSim returns config from configFromEnv if set, otherwise returns configFromSim.
+// configFromEnvOrSim builds a config from configFromSim and overrides using configFromEnv
 func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
-	cfg := &vcfg.Config{}
+	cfg, fin := configFromSim(multiDc)
 	if err := cfg.FromEnv(); err != nil {
-		return configFromSim(multiDc)
+		return nil, nil
 	}
-	return cfg, func() {}
+	return cfg, fin
 }
 
 func TestNewVSphere(t *testing.T) {
-	cfg := &CPIConfig{}
+	cfg := &ccfg.CPIConfig{}
 	if err := cfg.FromCPIEnv(); err != nil {
 		t.Skipf("No config found in environment")
 	}
 
-	_, err := newVSphere(cfg)
+	_, err := newVSphere(cfg, nil)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -156,11 +156,11 @@ func TestNewVSphere(t *testing.T) {
 func TestVSphereLogin(t *testing.T) {
 	initCfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
-	cfg := &CPIConfig{}
+	cfg := &ccfg.CPIConfig{}
 	cfg.Config = *initCfg
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg)
+	vs, err := newVSphere(cfg, nil)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -187,7 +187,7 @@ func TestVSphereLogin(t *testing.T) {
 func TestVSphereLoginByToken(t *testing.T) {
 	initCfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
-	cfg := &CPIConfig{}
+	cfg := &ccfg.CPIConfig{}
 	cfg.Config = *initCfg
 
 	// Configure for SAML token auth
@@ -195,7 +195,7 @@ func TestVSphereLoginByToken(t *testing.T) {
 	cfg.Global.Password = localhostKey
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg)
+	vs, err := newVSphere(cfg, nil)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -216,54 +216,6 @@ func TestVSphereLoginByToken(t *testing.T) {
 	vcInstance.Conn.Logout(ctx)
 }
 
-/*
-func TestVSphereLoginWithCaCert(t *testing.T) {
-	caCertPEM, err := ioutil.ReadFile(fixtures.CaCertPath)
-	if err != nil {
-		t.Fatalf("Could not read ca cert from file")
-	}
-
-	serverCert, err := tls.LoadX509KeyPair(fixtures.ServerCertPath, fixtures.ServerKeyPath)
-	if err != nil {
-		t.Fatalf("Could not load server cert and server key from files: %#v", err)
-	}
-
-	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM(caCertPEM); !ok {
-		t.Fatalf("Cannot add CA to CAPool")
-	}
-
-	tlsConfig := tls.Config{
-		Certificates: []tls.Certificate{serverCert},
-		RootCAs:      certPool,
-	}
-
-	cfg, cleanup := configFromSimWithTLS(&tlsConfig, false)
-	defer cleanup()
-
-	cfg.Global.CAFile = fixtures.CaCertPath
-
-	// Create vSphere configuration object
-	vs, err := newVSphere(cfg)
-	if err != nil {
-		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
-	}
-
-	ctx := context.Background()
-
-	// Create vSphere client
-	vcInstance, ok := vs.vsphereInstanceMap[cfg.Global.VCenterIP]
-	if !ok {
-		t.Fatalf("Couldn't get vSphere instance: %s", cfg.Global.VCenterIP)
-	}
-
-	err = vcInstance.conn.Connect(ctx)
-	if err != nil {
-		t.Errorf("Failed to connect to vSphere: %s", err)
-	}
-	vcInstance.conn.Logout(ctx)
-}
-*/
 func TestSecretVSphereConfig(t *testing.T) {
 	var vs *VSphere
 	var (
@@ -483,7 +435,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Logf("Executing Testcase: %s", testcase.testName)
-		cfg, err := ReadCPIConfig(strings.NewReader(testcase.conf))
+		cfg, err := ccfg.ReadCPIConfig([]byte(testcase.conf))
 		if err != nil {
 			if testcase.expectedError != nil {
 				if err != testcase.expectedError {
@@ -495,7 +447,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 				t.Fatalf("readConfig: unexpected error returned: %v", err)
 			}
 		}
-		vs, err = buildVSphereFromConfig(cfg)
+		vs, err = buildVSphereFromConfig(cfg, nil)
 		if err != nil { // testcase.expectedError {
 			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 		}

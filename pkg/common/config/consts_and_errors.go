@@ -29,8 +29,10 @@ const (
 	// exposing the API service.
 	DefaultAPIBinding string = ":43001"
 
-	// DefaultVCenterPort is the default port used to access vCenter.
-	DefaultVCenterPort string = "443"
+	// DefaultVCenterPortStr is the default port used to access vCenter in string form
+	DefaultVCenterPortStr string = "443"
+	// DefaultVCenterPort is the default port used to access vCenter in uint form
+	DefaultVCenterPort uint = 443
 
 	// DefaultSecretDirectory is the default path to the secrets directory.
 	DefaultSecretDirectory string = "/etc/cloud/secrets"

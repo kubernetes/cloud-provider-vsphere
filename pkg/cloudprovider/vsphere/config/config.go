@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vsphere
+package config
 
 import (
 	"fmt"
-	"io"
 	"os"
 
-	"gopkg.in/gcfg.v1"
+	"k8s.io/klog"
 )
 
 // FromCPIEnv initializes the provided configuration object with values
@@ -50,27 +49,42 @@ func (cfg *CPIConfig) FromCPIEnv() error {
 	return nil
 }
 
+/*
+	TODO:
+	When the INI based cloud-config is deprecated, the references to the
+	INI based code (ie the call to ReadConfigINI) below should be deleted.
+*/
+
 // ReadCPIConfig parses vSphere cloud config file and stores it into CPIConfig.
 // Environment variables are also checked
-func ReadCPIConfig(config io.Reader) (*CPIConfig, error) {
-	if config == nil {
-		return nil, fmt.Errorf("no vSphere cloud provider config file given")
+func ReadCPIConfig(byConfig []byte) (*CPIConfig, error) {
+	if len(byConfig) == 0 {
+		err := fmt.Errorf("no vSphere cloud provider config file given")
+		klog.Error("config is nil")
+		return nil, err
 	}
 
-	cfg := &CPIConfig{}
+	cfg, err := ReadCPIConfigYAML(byConfig)
+	if err != nil {
+		klog.Warningf("ReadCPIConfigYAML failed: %s", err)
 
-	if err := gcfg.FatalOnly(gcfg.ReadInto(cfg, config)); err != nil {
-		return nil, err
+		cfg, err = ReadCPIConfigINI(byConfig)
+		if err != nil {
+			klog.Errorf("ReadConfigINI failed: %s", err)
+			return nil, err
+		}
+
+		klog.Info("ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.")
+	} else {
+		klog.Info("ReadConfig YAML succeeded")
 	}
 
 	// Env Vars should override config file entries if present
 	if err := cfg.FromCPIEnv(); err != nil {
+		klog.Errorf("FromEnv failed: %s", err)
 		return nil, err
 	}
 
-	if err := cfg.LBConfig.CompleteAndValidate(); err != nil {
-		return nil, err
-	}
-
+	klog.Info("Config initialized")
 	return cfg, nil
 }

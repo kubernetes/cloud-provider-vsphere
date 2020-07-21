@@ -17,18 +17,21 @@ limitations under the License.
 package vsphere
 
 import (
-	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"runtime"
 
 	v1 "k8s.io/api/core/v1"
-	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/klog"
+
+	cloudprovider "k8s.io/cloud-provider"
 
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/log"
 
+	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
+	lcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
@@ -44,17 +47,28 @@ const (
 
 func init() {
 	cloudprovider.RegisterCloudProvider(ProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
-		cpiConfig, err := ReadCPIConfig(config)
+		byConfig, err := ioutil.ReadAll(config)
+		if err != nil {
+			klog.Errorf("ReadAll failed: %s", err)
+			return nil, err
+		}
+
+		cfg, err := ccfg.ReadCPIConfig(byConfig)
 		if err != nil {
 			return nil, err
 		}
-		return newVSphere(cpiConfig, true)
+		lbcfg, err := lcfg.ReadLBConfig(byConfig)
+		if err != nil {
+			lbcfg = nil //Error reading LBConfig, explicitly set to nil
+		}
+
+		return newVSphere(cfg, lbcfg, true)
 	})
 }
 
 // Creates new Controller node interface and returns
-func newVSphere(cfg *CPIConfig, finalize ...bool) (*VSphere, error) {
-	vs, err := buildVSphereFromConfig(cfg)
+func newVSphere(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, finalize ...bool) (*VSphere, error) {
+	vs, err := buildVSphereFromConfig(cfg, lbcfg)
 	if err != nil {
 		return nil, err
 	}
@@ -161,31 +175,30 @@ func (vs *VSphere) HasClusterID() bool {
 }
 
 // Initializes vSphere from vSphere CloudProvider Configuration
-func buildVSphereFromConfig(cfg *CPIConfig) (*VSphere, error) {
+func buildVSphereFromConfig(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig) (*VSphere, error) {
 	nm := newNodeManager(cfg, nil)
-	lb, err := loadbalancer.NewLBProvider(&cfg.LBConfig)
+
+	lb, err := loadbalancer.NewLBProvider(lbcfg)
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := os.LookupEnv("ENABLE_ALPHA_NSXT_LB"); !ok {
-		if lb != nil {
-			klog.Infof("To enable NSX-T load balancer support you need to set the env variable ENABLE_ALPHA_NSXT_LB")
-			lb = nil
-		}
-	} else {
+	if _, ok := os.LookupEnv("ENABLE_ALPHA_NSXT_LB"); ok {
 		if lb == nil {
-			return nil, fmt.Errorf("To enable NSX-T load balancer support you need to configure section LoadBalancer")
+			klog.Warning("To enable NSX-T load balancer support you need to configure section LoadBalancer")
+		} else {
+			klog.Infof("NSX-T load balancer support enabled. This feature is alpha, use in production at your own risk.")
+			// redirect vapi logging from the NSX-T GO SDK to klog
+			log.SetLogger(NewKlogBridge())
 		}
-	}
-	if lb == nil {
-		klog.Infof("NSX-T load balancer support disabled")
 	} else {
-		klog.Infof("NSX-T load balancer support enabled. This feature is alpha, use in production at your own risk.")
-		// redirect vapi logging from the NSX-T GO SDK to klog
-		log.SetLogger(NewKlogBridge())
+		// explicitly nil the LB interface if ENABLE_ALPHA_NSXT_LB is not set even if the LBConfig is valid
+		// ENABLE_ALPHA_NSXT_LB must be explicitly enabled
+		lb = nil
 	}
+
 	vs := VSphere{
 		cfg:          cfg,
+		cfgLB:        lbcfg,
 		nodeManager:  nm,
 		loadbalancer: lb,
 		instances:    newInstances(nm),

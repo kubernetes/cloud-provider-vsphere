@@ -24,7 +24,7 @@ connected to this load balancer service.
 ## Features
 
 The load balancer controller part of the vsphere cloud controller manager
-is optional. If no `LoadBalancer` or `LoadBalancerClass` section is given
+is optional. If no `loadBalancer` or `loadBalancerClass` section is given
 in the controller configuration loadbalancing support is disabled.
 If enabled the follwing feature are supported:
 
@@ -41,7 +41,7 @@ service object is already (accidentally) gone.
 This load balancer controller supports the usage of multiple load balancer
 classes. Classes are preconfigured in the configuration file of the cloud
 controller manager. There may be an arbitrary set of such classes in a dedicated
-setup. Every class may use another `IPPool` configured in NSX-T.
+setup. Every class may use another `ipPool` configured in NSX-T.
 This supports the creation of load balancers in different visibility realms,
 for example an `*internet facing* or a *private* load balancer. The IPPools must
 be preconfigured in NSX-T.
@@ -72,29 +72,31 @@ For TCP load balancers a health check will be generated.
 The controller manager requires dedicated entries in the cloud controller's
 configuration file:
 
-```ini
-[LoadBalancer]
-ipPoolName = pool1
-lbServiceId = 4711
-size = SMALL
-tcpAppProfileName = default-tcp-lb-app-profile
-udpAppProfileName = default-udp-lb-app-profile
-tags = {\"tag1\": \"value1\", \"tag2\": \"value 2\"}
+```yaml
+loadBalancer:
+  ipPoolName: pool1
+  lbServiceId: 4711
+  size: SMALL
+  tcpAppProfileName: default-tcp-lb-app-profile
+  udpAppProfileName: default-udp-lb-app-profile
+  tags:
+    tag1: value1
+    tag2: value 2
 
-[LoadBalancerClass "public"]
-ipPoolName = poolPublic
+loadBalancerClass:
+  public:
+    ipPoolName: poolPublic
+  private":
+    ipPoolName: poolPrivate
 
-[LoadBalancerClass "private"]
-ipPoolName = poolPrivate
-
-[NSX-T]
-user = admin
-password = secret
-host = nsxt-server
-insecure-flag = false
+nsxt:
+  user: admin
+  password": secret
+  host: nsxt-server
+  insecureFlag: false
 ```
 
-If the `LoadBalancer` section or at least one `LoadBalancerClass` section is
+If the `loadBalancer` section or at least one `loadBalancerClass` section is
 given, the load balancer support of the vSphere cloud controller manager is
 enabled, otherwise it is disabled.
 
@@ -112,12 +114,12 @@ the tags and string values.
 The tag scope `owner` can be used to overwrite the owner name using the
 controller's app name by default.
 
-The `LoadBalancer` section defines an implicit default load balancer class. This
+The `loadBalancer` section defines an implicit default load balancer class. This
 load balancer class is used if the service does not specify a dedicated
 load balancer class via annotation. Its values are also used as defaults
 for all explicitly specified load balancer classes.
 
-Additionaly classes may be configured by the `LoadBalancerClass`
+Additionaly classes may be configured by the `loadBalancerClass`
 subsections.
 
 ### Managing Modes
@@ -132,7 +134,7 @@ There are two different modes the load balancer support can be used with:
   gateway must be specified, which is used for the segments the cluster
   nodes are connected to. The NSX-T load balancer service is only created if it
   is required. This saves resources if no kubernetes service of type
-  `LoadBalancer` is actually used.
+  `loadBalancer` is actually used.
 
 Exactly one of the properties `lbServiceId` or `tier1GatewayPath` must be
 specified if the load balancer support for the vSphere cloud controller
@@ -141,20 +143,20 @@ manager is enabled.
 If the load balancer service should be managed by the controller (*managed* mode),
 the `tier1GatewayPath` must be set (`lbServiceId` must not be set in this case):
 
-```ini
-[LoadBalancer]
-ipPoolName = pool1
-tier1GatewayPath = /infra/tier-1s/12345
-size = SMALL
-tcpAppProfileName = default-tcp-lb-app-profile
-udpAppProfileName = default-udp-lb-app-profile
+```yaml
+loadBalancer:
+  ipPoolName: pool1
+  tier1GatewayPath: /infra/tier-1s/12345
+  size: SMALL
+  tcpAppProfileName: default-tcp-lb-app-profile
+  udpAppProfileName: default-udp-lb-app-profile
 ...
 ```
 
 ### Configuraton Option Reference
 
-The load balancer configuration uses the sections `[NSX-T]`, `[LoadBalancer]` and
-the subsections `[LoadBalancerClass "<name>"]`
+The load balancer configuration uses the sections `nsxt`, `loadBalancer` and
+the subsections `loadBalancerClass`
 
 #### Section NSX-T
 
@@ -165,16 +167,16 @@ The following attributes are supported:
 |Attribute|Meaning|
 |---------|-------|
 |`host`|NSXT-T host|
-|`insecure-flag`|to be set to true if NSX-T uses locally signed cert without specifying a ca|
-|`ca-file`|certificate authority for the server certificate for locally signed certificates |
+|`insecureFlag`|to be set to true if NSX-T uses locally signed cert without specifying a ca|
+|`caFile`|certificate authority for the server certificate for locally signed certificates |
 |`user`|user name (either password, access token or certificate based authentification must be specified)|
 |`password`|password in clear text for password based authentification|
 |`vmcAccessToken`|access token for token based authentification|
 |`vmcAuthHost`|verification host for token based authentification|
-|`client-auth-cert-file`|client certificate for the certificate based authorization|
-|`client-auth-key-file`|private key for the client certificate|
+|`clientAuthCertFile`|client certificate for the certificate based authorization|
+|`clientAuthKeyFile`|private key for the client certificate|
 
-#### Section LoadBalancer
+#### Section loadBalancer
 
 The load balancer section contains general settings and default settings for
 the load balancer classes. The following attributes are supported:
@@ -193,7 +195,7 @@ dangling elements in the infrastructure originating from this controller manager
 If the cluster name option is not given, there will be no automated cleanup of
 dangling elements.
 
-Additionally the attributes of a `LoadBalancerClass` can be specified here. These
+Additionally the attributes of a `loadBalancerClass` can be specified here. These
 values are used as defaults for configured load balancer classes.
 If no explicit default load balancer class (with name `default`) is configured,
 these settings are used for the default load balancer class.
@@ -202,7 +204,7 @@ The default load balancer class settings are always used if the kubernetes
 service object does not explicitly specify a load balancer class by using the
 annotation `loadbalancer.vmware.io/class`.
 
-#### Subsections LoadBalancerClass
+#### Subsections loadBalancerClass
 
 The name of the subsection is used as name for the load balancer class to configure.
 A load balancer class configuration uses the following attributes:
@@ -216,7 +218,7 @@ A load balancer class configuration uses the following attributes:
 |`udpAppProfileName`| name of application profile used for UDP connections (either `udpAppProfileName` or `udpAppProfileID` must be specified)|
 |`udpAppProfileID`| id of application profile used for UDP connections|
 
-If a name/id pair is missing completely it will be defaulted by the settings from the `LoadBalancer` section.
+If a name/id pair is missing completely it will be defaulted by the settings from the `loadBalancer` section.
 If there no value is specified, also, the configuration is invalid.
 If a name is specified instead of an id there *MUST* not be multiple such elements with the same name, even this
 is possible in NSX-T.

@@ -56,7 +56,7 @@ func setupClasses(access NSXTAccess, cfg *config.LBConfig) (*loadBalancerClasses
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid LoadBalancerClass %s", config.DefaultLoadBalancerClass)
 	}
-	if defCfg, ok := cfg.LoadBalancerClasses[defaultClass.className]; ok {
+	if defCfg, ok := cfg.LoadBalancerClass[defaultClass.className]; ok {
 		defaultClass, err = newLBClass(config.DefaultLoadBalancerClass, defCfg, defaultClass, resolver)
 		if err != nil {
 			return nil, errors.Wrapf(err, "invalid LoadBalancerClass %s", config.DefaultLoadBalancerClass)
@@ -65,7 +65,7 @@ func setupClasses(access NSXTAccess, cfg *config.LBConfig) (*loadBalancerClasses
 		lbClasses.add(defaultClass)
 	}
 
-	for name, classConfig := range cfg.LoadBalancerClasses {
+	for name, classConfig := range cfg.LoadBalancerClass {
 		if _, ok := lbClasses.classes[name]; ok {
 			return nil, fmt.Errorf("duplicate LoadBalancerClass %s", name)
 		}
