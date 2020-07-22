@@ -475,6 +475,8 @@ Please note that the CSI driver requires the presence of a `ProviderID` label on
 
 This cloud-config configmap file, passed to the CPI on initialization, contains details about the vSphere configuration. This file, which here we have called `vsphere.conf` has been populated with some sample values. Obviously, you will need to modify this file to reflect your own vSphere configuration.
 
+**NOTE:** As of CPI version 1.2.0 or higher, the preferred cloud-config format will be `YAML` based. The `INI` based format will be deprecated but supported until the transition to the preferred `YAML` based configuration has been completed. This deprecation notice will be placed in the CPI logs when using the `INI` based configuration format.
+
 ```bash
 # tee /etc/kubernetes/vsphere.conf >/dev/null <<EOF
 
@@ -492,7 +494,7 @@ vcenter:
   tenant-finance:
     server: 1.1.1.1
     datacenters:
-      - globalfinanace
+      - finanace
   tenant-hr:
     server: 192.168.0.1
     datacenters:
@@ -501,8 +503,7 @@ vcenter:
   tenant-engineering:
     server: 10.0.0.1
     datacenters:
-      - engrwest1
-      - engrwest2
+      - engineering
     secretName: cpi-engineering-secret
     secretNamespace: kube-system
 
@@ -522,6 +523,31 @@ Here is a description of the fields used in the vsphere.conf configmap.
 * `secretNamespace` is set to the namespace where the secret has been created.
 * `port` is the vCenter Server Port. The default is 443 if not specified.
 * `datacenters` should be the list of datacenters where kubernetes node VMs are present.
+
+For those users deploying CPI versions 1.1.0 or earlier, the corresponding `INI` based configuration that mirrors the above configuration appears as the following:
+
+```bash
+# tee /etc/kubernetes/vsphere.conf >/dev/null <<EOF
+
+[Global]
+port = "443"
+insecure-flag = "true"
+secret-name = "cpi-global-secret"
+secret-namespace = "kube-system"
+
+[VirtualCenter "1.1.1.1"]
+datacenters = "finance"
+
+[VirtualCenter "192.168.0.1"]
+datacenters = "hrwest,hreast"
+
+[VirtualCenter "10.0.0.1"]
+datacenters = "engineering"
+secret-name = "cpi-engineering-secret"
+secret-namespace = "kube-system"
+
+EOF
+```
 
 Create the configmap by running the following command:
 
