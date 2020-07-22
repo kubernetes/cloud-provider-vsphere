@@ -69,6 +69,8 @@ Steps that will be covered in order to setup zones for the vSphere CPI, vSphere 
 
 The zones implementation depends on 2 sets of vSphere tags to be used on objects, such as datacenters or clusters. The first is a `region` tag and the second is a `zone` tag. vSphere tags are very simply put key/value pairs that can be assigned to objects and instead of using fixed keys to denote a `region` or a `zone`, we give the end-user the ability to come up with their own keys for a `region` and `zone` in the form of vSphere Tag Catagory. It just allows for a level of indirection in case you already have regions and zones setup in your configuration. Once a key/label or vSphere Tag Category is selected for each, create a `labels:` section in the `vsphere.conf` then assign tag names for both `region` and `zone`.
 
+**NOTE:** If you are using CPI version 1.1.0 or earlier, please use the `INI` based cloud configuration as outlined in the [Deploying a Kubernetes Cluster on vSphere with CSI and CPI](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-kubeadm.md) documentation.
+
 In the example `vsphere.conf` below, `k8s-region` and `k8s-zone` was selected:
 
 ```bash
@@ -103,6 +105,15 @@ vcenter:
 labels:
   region: k8s-region
   zone: k8s-zone
+```
+
+**NOTE:** For the `INI` based configuration the zones configuration would appear as the following at the end of your cloud-config file:
+
+```bash
+# labels for regions and zones
+[Labels]
+region = k8s-region
+zone = k8s-zone
 ```
 
 ### 2. Creating Zones in your vSphere Environment via Tags
