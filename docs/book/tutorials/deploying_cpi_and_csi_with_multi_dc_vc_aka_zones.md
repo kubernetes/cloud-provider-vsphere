@@ -78,7 +78,7 @@ In the example `vsphere.conf` below, `k8s-region` and `k8s-zone` was selected:
 global:
   user: YourVCenterUser
   password: YourVCenterPass
-  port: "443"
+  port: 443
   # set insecureFlag to true if the vCenter uses a self-signed cert
   insecureFlag: true
   # settings for using k8s secret
