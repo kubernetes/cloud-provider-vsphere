@@ -43,6 +43,10 @@ func (z *zones) GetZone(ctx context.Context) (cloudprovider.Zone, error) {
 
 	zone := cloudprovider.Zone{}
 
+	if len(z.region) == 0 || len(z.zone) == 0 {
+		return zone, nil
+	}
+
 	nodeName, err := os.Hostname()
 	if err != nil {
 		klog.V(2).Info("Failed to get hostname. Err: ", err)
@@ -90,6 +94,10 @@ func (z *zones) GetZoneByNodeName(ctx context.Context, nodeName k8stypes.NodeNam
 
 	zone := cloudprovider.Zone{}
 
+	if len(z.region) == 0 || len(z.zone) == 0 {
+		return zone, nil
+	}
+
 	node, ok := z.nodeManager.nodeNameMap[string(nodeName)]
 	if !ok {
 		klog.V(2).Info("zones.GetZoneByNodeName() NOT FOUND with ", string(nodeName))
@@ -128,8 +136,12 @@ func (z *zones) GetZoneByProviderID(ctx context.Context, providerID string) (clo
 	klog.V(4).Info("zones.GetZoneByProviderID() called with ", providerID)
 
 	zone := cloudprovider.Zone{}
-	uid := GetUUIDFromProviderID(providerID)
 
+	if len(z.region) == 0 || len(z.zone) == 0 {
+		return zone, nil
+	}
+
+	uid := GetUUIDFromProviderID(providerID)
 	node, ok := z.nodeManager.nodeUUIDMap[uid]
 	if !ok {
 		klog.V(2).Info("zones.GetZoneByProviderID() NOT FOUND with ", uid)
