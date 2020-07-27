@@ -19,6 +19,7 @@ package vsphere
 import (
 	"context"
 	"errors"
+	"os"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,6 +27,7 @@ import (
 	"k8s.io/klog"
 
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 // Error constants
@@ -154,19 +156,25 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
-	if _, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
-		klog.V(2).Info("instances.InstanceExistsByProviderID() CACHED with ", uid)
-		return true, nil
-	}
-
 	err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID)
 	if err == nil {
 		klog.V(2).Info("instances.InstanceExistsByProviderID() EXISTS with ", uid)
 		return true, nil
 	}
 
-	klog.V(4).Info("instances.InstanceExistsByProviderID() NOT FOUND with ", uid)
-	return false, err
+	if err != vclib.ErrNoVMFound {
+		klog.V(4).Info("instances.InstanceExistsByProviderID() failed with ", uid, ". Err: ", err)
+		return false, err
+	}
+
+	// at this point, err is vclib.ErrNoVMFound
+	if _, ok := os.LookupEnv("SKIP_NODE_DELETION"); ok {
+		klog.V(4).Info("instances.InstanceExistsByProviderID() NOT FOUND with ", uid, ". Override and prevent deletion.")
+		return false, err
+	}
+
+	klog.V(4).Info("instances.InstanceExistsByProviderID() NOT FOUND with ", uid, ". Signaling deletion.")
+	return false, nil
 }
 
 // InstanceShutdownByProviderID returns true if the instance is in safe state to detach volumes
