@@ -345,7 +345,7 @@ func (cm *ConnectionManager) LookupZoneByMoref(ctx context.Context, tenantRef st
 			tags, err := client.ListAttachedTags(ctx, obj)
 			if err != nil {
 				klog.Errorf("Cannot list attached tags. Err: %v", err)
-				return err
+				continue
 			}
 			for _, value := range tags {
 				tag, err := client.GetTag(ctx, value)
