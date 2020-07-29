@@ -41,6 +41,8 @@ func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
 	return &instances{nodeManager}
 }
 
+var _ cloudprovider.Instances = &instances{}
+
 // NodeAddresses returns all the valid addresses of the instance identified by
 // nodeName. Only the public/private IPv4 addresses are considered for now.
 //
