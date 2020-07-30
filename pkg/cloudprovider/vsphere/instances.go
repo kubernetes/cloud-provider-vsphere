@@ -111,7 +111,8 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 		return node.UUID, nil
 	}
 
-	if err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName); err == nil {
+	err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName)
+	if err == nil {
 		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
 			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
 			return "", ErrNodeNotFound
@@ -120,8 +121,19 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 		return i.nodeManager.nodeNameMap[string(nodeName)].UUID, nil
 	}
 
+	if err != vclib.ErrNoVMFound {
+		klog.V(4).Infof("instances.InstanceID() failed with err: %v", err)
+		return "", err
+	}
+
+	// at this point, err is vclib.ErrNoVMFound
+	if _, ok := os.LookupEnv("SKIP_NODE_DELETION"); ok {
+		klog.V(4).Infof("instances.InstanceID() NOT FOUND for node %s. Override and prevent deletion.", string(nodeName))
+		return "", err
+	}
+
 	klog.V(4).Info("instances.InstanceID() NOT FOUND with ", string(nodeName))
-	return "", ErrNodeNotFound
+	return "", cloudprovider.InstanceNotFound
 }
 
 // InstanceType returns the type of the instance identified by name.
