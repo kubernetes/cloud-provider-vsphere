@@ -58,7 +58,7 @@ loadbalancer.vmware.io/class: <class name>
 ```
 
 If no such annotation is given the default class will be used. This gives
-the adminstrator of the cluster a chance to restrict the usage of the
+the administrator of the cluster a chance to restrict the usage of the
 NSXT-T resources for cluster users. They can determine which elements should
 be used for a dedicated purpose. The cluster user just needs to know and select
 the purpose by annotating the appropriate load balancer class.
