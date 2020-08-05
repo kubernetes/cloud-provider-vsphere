@@ -9,7 +9,7 @@ The recommended `exclude-nics` filter is as follows for `/etc/vmware-tools/tools
 ```bash
 [guestinfo]
 primary-nics=eth0
-exclude-nics=antrea-*,ovs-system,br*,flannel*,veth*,docker*,virbr*,vxlan_sys_*,genev_sys_*,gre_sys_*,stt_sys_*,????????-??????
+exclude-nics=antrea-*,cali*,ovs-system,br*,flannel*,veth*,docker*,virbr*,vxlan_sys_*,genev_sys_*,gre_sys_*,stt_sys_*,????????-??????
 ```
 
 Each filter represents known CNI network/device interfaces. Most filters are straight foward, such as `docker*` for devices based on docker. Some filters, such as `????????-??????`, aren't so straight-forward as that filter identifies Antrea devices which get created per POD.
