@@ -62,7 +62,7 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	klog.V(1).Infof("vsphere-cloud-controller-manager version: %s", version)
+	klog.Infof("vsphere-cloud-controller-manager version: %s", version)
 
 	// Set cloud-provider flag to vsphere
 	command.Flags().VisitAll(func(flag *pflag.Flag) {
