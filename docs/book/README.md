@@ -25,7 +25,7 @@ This document covers both the in-tree and out-of-tree vSphere integrations for K
 * [Glossary](glossary.md)
   * [Cloud Provider Interface (CPI)](cloud_provider_interface.md)
   * [Container Storage Interface (CSI)](container_storage_interface.md)
-  * [Cloud Config Spec](cloud_config.md)
+* [Known Issues](known_issues.md)
 
 ## Tutorials
 
