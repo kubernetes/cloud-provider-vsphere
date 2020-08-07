@@ -21,6 +21,10 @@ required (S, M, L or XL).
 For every service port a dedicated virtual server is managed which is
 connected to this load balancer service.
 
+## Minimum Requirements
+
+This is an alpha feature and as such, your mileage might vary with the functionality of this feature. Support will be provided on a best effort basis. Since this is an alpha feature, it should go without saying that this should never be enabled in a production environment. The feature minimally requires NSX-T 2.5 or higher.
+
 ## Features
 
 The load balancer controller part of the vsphere cloud controller manager
