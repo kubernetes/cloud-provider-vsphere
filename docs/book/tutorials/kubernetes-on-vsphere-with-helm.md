@@ -4,7 +4,7 @@ The purpose of this guide is to provide the reader with step by step instruction
 
 ## Prerequisites
 
-Review the comprehensive guide locate at [Deploying a Kubernetes Cluster on vSphere with CSI and CPI](./kubernetes-on-vsphere-with-kubeadm.md). The prerequisties found in that guide also apply when deploying the CPI via Helm. This guide also assumes that you have a Kubernetes cluster up and running. If you need assistance in setting up a Kubernetes cluster, please refer to the [Deploying a Kubernetes Cluster on vSphere with CSI and CPI](./kubernetes-on-vsphere-with-kubeadm.md) guide for cluster setup instructions.
+Review the comprehensive guide locate at [Deploying a Kubernetes Cluster on vSphere with CSI and CPI](./kubernetes-on-vsphere-with-kubeadm.md). The prerequisites found in that guide also apply when deploying the CPI via Helm. This guide also assumes that you have a Kubernetes cluster up and running. If you need assistance in setting up a Kubernetes cluster, please refer to the [Deploying a Kubernetes Cluster on vSphere with CSI and CPI](./kubernetes-on-vsphere-with-kubeadm.md) guide for cluster setup instructions.
 
 ### Helm requirements
 
