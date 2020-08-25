@@ -28,6 +28,7 @@ import (
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	v1helper "k8s.io/cloud-provider/node/helpers"
 	"k8s.io/klog"
 
@@ -110,13 +111,17 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 		vmDI, err := nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
 		if err == nil {
 			klog.Info("Discovered VM using FQDN or short-hand name")
-			return vmDI, err
+			return vmDI, nil
+		}
+
+		if err != vclib.ErrNoVMFound {
+			return nil, err
 		}
 
 		vmDI, err = nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVMByIP)
 		if err == nil {
 			klog.Info("Discovered VM using IP address")
-			return vmDI, err
+			return vmDI, nil
 		}
 
 		klog.Errorf("WhichVCandDCByNodeID failed using VM name. Err: %v", err)
@@ -127,7 +132,11 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 	vmDI, err := nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
 	if err == nil {
 		klog.Info("Discovered VM using normal UUID format")
-		return vmDI, err
+		return vmDI, nil
+	}
+
+	if err != vclib.ErrNoVMFound {
+		return nil, err
 	}
 
 	// Need to lookup the original format of the UUID because photon 2.0 formats the UUID
@@ -137,7 +146,7 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 	vmDI, err = nm.connectionManager.WhichVCandDCByNodeID(ctx, reverseUUID, cm.FindVM(searchBy))
 	if err == nil {
 		klog.Info("Discovered VM using reverse UUID format")
-		return vmDI, err
+		return vmDI, nil
 	}
 
 	klog.Errorf("WhichVCandDCByNodeID failed using UUID. Err: %v", err)
@@ -184,6 +193,10 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	if oVM.Guest == nil {
 		return errors.New("VirtualMachine Guest property was nil")
+	}
+
+	if oVM.Guest.HostName == "" {
+		return errors.New("VM Guest hostname is empty")
 	}
 
 	tenantRef := vmDI.VcServer
