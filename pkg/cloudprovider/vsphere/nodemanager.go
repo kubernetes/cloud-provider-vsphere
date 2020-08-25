@@ -234,12 +234,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		externalVMNetworkName = nm.cfg.Nodes.ExternalVMNetworkName
 	}
 
-	var addressMatchingEnabled bool
-	if internalNetworkSubnet != nil && externalNetworkSubnet != nil {
-		addressMatchingEnabled = true
-	}
-
-	found := false
+	foundInternal := false
+	foundExternal := false
 	addrs := []v1.NodeAddress{}
 
 	klog.V(2).Infof("Adding Hostname: %s", oVM.Guest.HostName)
@@ -273,35 +269,36 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		for _, family := range ipFamily {
 			ips := returnIPsFromSpecificFamily(family, v.IpAddress)
 
-			if addressMatchingEnabled {
-				for _, ip := range ips {
-					parsedIP := net.ParseIP(ip)
-					if parsedIP == nil {
-						return fmt.Errorf("can't parse IP: %s", ip)
-					}
-
-					if internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
-						klog.V(2).Infof("Adding Internal IP by AddressMatching: %s", ip)
-						v1helper.AddToNodeAddresses(&addrs,
-							v1.NodeAddress{
-								Type:    v1.NodeInternalIP,
-								Address: ip,
-							},
-						)
-					}
-
-					if externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
-						klog.V(2).Infof("Adding External IP by AddressMatching: %s", ip)
-						v1helper.AddToNodeAddresses(&addrs,
-							v1.NodeAddress{
-								Type:    v1.NodeExternalIP,
-								Address: ip,
-							},
-						)
-					}
+			for _, ip := range ips {
+				parsedIP := net.ParseIP(ip)
+				if parsedIP == nil {
+					return fmt.Errorf("can't parse IP: %s", ip)
 				}
-			} else if internalVMNetworkName != "" && strings.EqualFold(internalVMNetworkName, v.Network) {
-				for _, ip := range ips {
+
+				// prioritize address masking over networkname
+				if !foundInternal && internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
+					klog.V(2).Infof("Adding Internal IP by AddressMatching: %s", ip)
+					v1helper.AddToNodeAddresses(&addrs,
+						v1.NodeAddress{
+							Type:    v1.NodeInternalIP,
+							Address: ip,
+						},
+					)
+					foundInternal = true
+				}
+				if !foundExternal && externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
+					klog.V(2).Infof("Adding External IP by AddressMatching: %s", ip)
+					v1helper.AddToNodeAddresses(&addrs,
+						v1.NodeAddress{
+							Type:    v1.NodeExternalIP,
+							Address: ip,
+						},
+					)
+					foundExternal = true
+				}
+
+				// then use network name
+				if !foundInternal && internalVMNetworkName != "" && strings.EqualFold(internalVMNetworkName, v.Network) {
 					klog.V(2).Infof("Adding Internal IP by NetworkName: %s", ip)
 					v1helper.AddToNodeAddresses(&addrs,
 						v1.NodeAddress{
@@ -309,11 +306,9 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 							Address: ip,
 						},
 					)
-					found = true
-					break
+					foundInternal = true
 				}
-			} else if externalVMNetworkName != "" && strings.EqualFold(externalVMNetworkName, v.Network) {
-				for _, ip := range ips {
+				if !foundExternal && externalVMNetworkName != "" && strings.EqualFold(externalVMNetworkName, v.Network) {
 					klog.V(2).Infof("Adding External IP by NetworkName: %s", ip)
 					v1helper.AddToNodeAddresses(&addrs,
 						v1.NodeAddress{
@@ -321,33 +316,47 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 							Address: ip,
 						},
 					)
-					found = true
-					break
-				}
-			} else {
-				for _, ip := range ips {
-					klog.V(2).Infof("Adding IP: %s", ip)
-					v1helper.AddToNodeAddresses(&addrs,
-						v1.NodeAddress{
-							Type:    v1.NodeExternalIP,
-							Address: ip,
-						}, v1.NodeAddress{
-							Type:    v1.NodeInternalIP,
-							Address: ip,
-						},
-					)
-					found = true
-					break
+					foundExternal = true
 				}
 			}
 
-			if found {
+			// At least one of the Internal or External addresses has been found.
+			// Minimally the Internal needs to exist for the node to function correctly.
+			// If only one was discovered, will log the warning and continue which will
+			// ultimately be visible to the end user
+			if foundInternal || foundExternal {
+				if foundInternal && !foundExternal {
+					klog.Warning("Internal address found, but external address not found. Returning what addresses were discovered.")
+				} else if !foundInternal && foundExternal {
+					klog.Warning("External address found, but internal address not found. Returning what addresses were discovered.")
+				}
+				break
+			}
+
+			// Neither internal or external addresses were found. This defaults to the old
+			// address selection behavior which is we only support a single address and we
+			// return the first one found
+			klog.V(5).Info("Default address selection. Single NIC, Single IP Address")
+			for _, ip := range ips {
+				klog.V(2).Infof("Adding IP: %s", ip)
+				v1helper.AddToNodeAddresses(&addrs,
+					v1.NodeAddress{
+						Type:    v1.NodeInternalIP,
+						Address: ip,
+					},
+					v1.NodeAddress{
+						Type:    v1.NodeExternalIP,
+						Address: ip,
+					},
+				)
+				foundInternal = true
+				foundExternal = true
 				break
 			}
 		}
 	}
 
-	if !found {
+	if !foundInternal && !foundExternal {
 		return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
 	}
 
