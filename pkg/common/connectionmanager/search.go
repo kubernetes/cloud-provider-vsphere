@@ -18,6 +18,7 @@ package connectionmanager
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -46,7 +47,7 @@ func (f FindVM) String() string {
 func (cm *ConnectionManager) WhichVCandDCByNodeID(ctx context.Context, nodeID string, searchBy FindVM) (*VMDiscoveryInfo, error) {
 	if nodeID == "" {
 		klog.V(3).Info("WhichVCandDCByNodeID called but nodeID is empty")
-		return nil, vclib.ErrNoVMFound
+		return nil, errors.New("nodeID is empty")
 	}
 	type vmSearch struct {
 		tenantRef  string
