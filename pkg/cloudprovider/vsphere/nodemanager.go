@@ -111,7 +111,7 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 		vmDI, err := nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
 		if err == nil {
 			klog.Info("Discovered VM using FQDN or short-hand name")
-			return vmDI, err
+			return vmDI, nil
 		}
 
 		if err != vclib.ErrNoVMFound {
@@ -121,7 +121,7 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 		vmDI, err = nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVMByIP)
 		if err == nil {
 			klog.Info("Discovered VM using IP address")
-			return vmDI, err
+			return vmDI, nil
 		}
 
 		klog.Errorf("WhichVCandDCByNodeID failed using VM name. Err: %v", err)
@@ -132,7 +132,7 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 	vmDI, err := nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVM(searchBy))
 	if err == nil {
 		klog.Info("Discovered VM using normal UUID format")
-		return vmDI, err
+		return vmDI, nil
 	}
 
 	if err != vclib.ErrNoVMFound {
@@ -146,7 +146,7 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 	vmDI, err = nm.connectionManager.WhichVCandDCByNodeID(ctx, reverseUUID, cm.FindVM(searchBy))
 	if err == nil {
 		klog.Info("Discovered VM using reverse UUID format")
-		return vmDI, err
+		return vmDI, nil
 	}
 
 	klog.Errorf("WhichVCandDCByNodeID failed using UUID. Err: %v", err)
