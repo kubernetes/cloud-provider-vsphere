@@ -26,13 +26,14 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
 	"k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
-	_ "k8s.io/component-base/metrics/prometheus/clientgo" // for client metrics registration
-	_ "k8s.io/component-base/metrics/prometheus/version"  // for version metric registration
 	"k8s.io/kubernetes/cmd/cloud-controller-manager/app"
+	_ "k8s.io/kubernetes/pkg/util/prometheusclientgo" // for client metric registration
+	_ "k8s.io/kubernetes/pkg/version/prometheus"      // for version metric registration
+
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

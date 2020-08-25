@@ -66,8 +66,6 @@ func init() {
 	})
 }
 
-var _ cloudprovider.Interface = &VSphere{}
-
 // Creates new Controller node interface and returns
 func newVSphere(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, finalize ...bool) (*VSphere, error) {
 	vs, err := buildVSphereFromConfig(cfg, lbcfg)
