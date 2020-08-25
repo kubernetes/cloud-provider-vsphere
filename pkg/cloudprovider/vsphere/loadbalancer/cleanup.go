@@ -76,7 +76,7 @@ func (p *lbProvider) cleanup(clusterName string, client clientcorev1.ServiceInte
 
 func (p *lbProvider) doCleanupStep(clusterName string, client clientcorev1.ServiceInterface) error {
 	klog.Infof("starting cleanup...")
-	list, err := client.List(context.TODO(), metav1.ListOptions{})
+	list, err := client.List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

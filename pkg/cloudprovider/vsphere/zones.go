@@ -37,8 +37,6 @@ func newZones(nodeManager *NodeManager, zone string, region string) cloudprovide
 	}
 }
 
-var _ cloudprovider.Zones = &zones{}
-
 // GetZone implements Zones.GetZone for In-Tree providers
 func (z *zones) GetZone(ctx context.Context) (cloudprovider.Zone, error) {
 	klog.V(4).Info("zones.GetZone() called")
