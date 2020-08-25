@@ -28,6 +28,7 @@ import (
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	v1helper "k8s.io/cloud-provider/node/helpers"
 	"k8s.io/klog"
 
@@ -111,6 +112,10 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 		if err == nil {
 			klog.Info("Discovered VM using FQDN or short-hand name")
 			return vmDI, err
+		}
+
+		if err != vclib.ErrNoVMFound {
+			return nil, err
 		}
 
 		vmDI, err = nm.connectionManager.WhichVCandDCByNodeID(ctx, nodeID, cm.FindVMByIP)
