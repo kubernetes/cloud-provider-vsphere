@@ -135,6 +135,10 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 		return vmDI, err
 	}
 
+	if err != vclib.ErrNoVMFound {
+		return nil, err
+	}
+
 	// Need to lookup the original format of the UUID because photon 2.0 formats the UUID
 	// different from Photon 3, RHEL, CentOS, Ubuntu, and etc
 	klog.Errorf("WhichVCandDCByNodeID failed using normally formatted UUID. Err: %v", err)
