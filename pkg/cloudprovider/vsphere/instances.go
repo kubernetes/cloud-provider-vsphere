@@ -123,19 +123,8 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 		return i.nodeManager.nodeNameMap[string(nodeName)].UUID, nil
 	}
 
-	if err != vclib.ErrNoVMFound {
-		klog.V(4).Infof("instances.InstanceID() failed with err: %v", err)
-		return "", err
-	}
-
-	// at this point, err is vclib.ErrNoVMFound
-	if _, ok := os.LookupEnv("SKIP_NODE_DELETION"); ok {
-		klog.V(4).Infof("instances.InstanceID() NOT FOUND for node %s. Override and prevent deletion.", string(nodeName))
-		return "", err
-	}
-
-	klog.V(4).Info("instances.InstanceID() NOT FOUND with ", string(nodeName))
-	return "", cloudprovider.InstanceNotFound
+	klog.V(4).Infof("instances.InstanceID() failed with err: %v", err)
+	return "", err
 }
 
 // InstanceType returns the type of the instance identified by name.
