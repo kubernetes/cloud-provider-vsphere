@@ -193,7 +193,7 @@ spec:
       serviceAccountName: cloud-controller-manager
       containers:
         - name: vsphere-cloud-controller-manager
-          image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.2.0
+          image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.2.1
           args:
             - --v=2
             - --cloud-provider=vsphere
