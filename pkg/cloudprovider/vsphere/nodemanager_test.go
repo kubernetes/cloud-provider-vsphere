@@ -127,6 +127,88 @@ func TestDiscoverNodeByName(t *testing.T) {
 	}
 }
 
+func TestAlphaDualStack(t *testing.T) {
+	cfg, ok := configFromEnvOrSim(true)
+	defer ok()
+
+
+
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	defer connMgr.Logout()
+
+	nm := newNodeManager(nil, connMgr)
+
+	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
+	vm.Guest.Net = []vimtypes.GuestNicInfo{
+		{
+			Network:   "foo-bar",
+			IpAddress: []string{"10.0.0.1", "fd01:0:101:2609:bdd2:ee20:7bd7:5836"},
+		},
+	}
+
+
+	err := connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
+	if err != nil {
+		t.Errorf("Failed to Connect to vSphere: %s", err)
+	}
+
+	// set config for ip for vc to ipv4, ipv6 (dual-stack)
+	vcInstance := nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
+	vcInstance.Cfg.IPFamilyPriority = []string{"ipv6","ipv4"}
+
+	name := vm.Name
+	UUID := vm.Config.Uuid
+	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
+
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Status: v1.NodeStatus{
+			NodeInfo: v1.NodeSystemInfo{
+				SystemUUID: k8sUUID,
+			},
+		},
+	}
+
+	// get node registered so node can be exported
+	nm.RegisterNode(node)
+
+	err = nm.DiscoverNode(name, cm.FindVMByName)
+
+	if err != nil {
+		t.Errorf("Failed DiscoverNode: %s", err)
+	}
+
+	nodeList := make([]*pb.Node, 0)
+	_ = nm.ExportNodes("", "", &nodeList)
+
+	ips := nodeList[0].Addresses
+	//check ipv4 ip
+
+	ipv4Ips := returnIPsFromSpecificFamily(vcfg.IPv4Family, ips)
+
+	size := len(ipv4Ips)
+	if size != 1 {
+		t.Errorf("Should only return single IPv4 address. expected: 1, actual: %d", size)
+	} else if !strings.EqualFold(ipv4Ips[0], "10.0.0.1") {
+		t.Errorf("IPv6 does not match. expected: 10.0.0.1, actual: %s", ipv4Ips[0])
+	}
+
+	//check ipv6 ip
+
+	ipv6Ips := returnIPsFromSpecificFamily(vcfg.IPv6Family, ips)
+
+	size = len(ipv6Ips)
+	if size != 1 {
+		t.Errorf("Should only return single IPv6 address. expected: 1, actual: %d", size)
+	} else if !strings.EqualFold(ipv6Ips[0], "fd01:0:101:2609:bdd2:ee20:7bd7:5836") {
+		t.Errorf("IPv6 does not match. expected: fd01:0:101:2609:bdd2:ee20:7bd7:5836, actual: %s", ipv6Ips[0])
+	}
+
+}
+
 func TestExport(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()

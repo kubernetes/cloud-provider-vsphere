@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -268,6 +267,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		// Must break out of loop in the event of ipv6,ipv4 where the NIC does
 		// contain a valid IPv6 and IPV4 address
 		for _, family := range ipFamily {
+			foundInternal = false
+			foundExternal = false
 
 			ips := returnIPsFromSpecificFamily(family, v.IpAddress)
 
@@ -332,13 +333,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 				} else if !foundInternal && foundExternal {
 					klog.Warning("External address found, but internal address not found. Returning what addresses were discovered.")
 				}
-				if _, ok := os.LookupEnv("ENABLE_ALPHA_DUAL_STACK"); ok {
-					foundExternal = false
-					foundInternal = false
-					continue
-				} else {
-					break
-				}
+				continue
 			}
 
 			// Neither internal or external addresses were found. This defaults to the old
@@ -366,13 +361,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 				return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
 			}
 
-			if _, ok := os.LookupEnv("ENABLE_ALPHA_DUAL_STACK"); ok {
-
-				foundExternal = false
-				foundInternal = false
-			} else {
-				break
-			}
 		}
 	}
 

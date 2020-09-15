@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
+	"os"
 	"testing"
 
 	lookup "github.com/vmware/govmomi/lookup/simulator"
@@ -214,6 +215,71 @@ func TestVSphereLoginByToken(t *testing.T) {
 		t.Errorf("Failed to connect to vSphere: %s", err)
 	}
 	vcInstance.Conn.Logout(ctx)
+}
+
+func TestAlphaDualStackConfig(t *testing.T) {
+	var vs *VSphere
+	var (
+		username = "user"
+		password = "password"
+	)
+	var testcases = []struct {
+		testName                 string
+		conf                     string
+		enableDualStackFeature	 bool
+		expectedIsSecretProvided bool
+		expectedUsername         string
+		expectedPassword         string
+		expectedError            error
+		expectedThumbprints      map[string]string
+	}{
+		{
+			testName: "Vcenter ip family should be length of 2 when dual stack feature is enabled",
+			conf: `[Global]
+			user = user
+			password = password
+			datacenters = us-west
+			[VirtualCenter "0.0.0.0"]
+			user = user
+			password = password
+			ipFamily = ipv6,ipv4
+
+			[VirtualCenter "1.1.1.1"]
+			user = user
+			password = password
+			
+			`,
+			enableDualStackFeature: true,
+			expectedUsername: username,
+			expectedPassword: password,
+			expectedError:    nil,
+		},
+	}
+	for _, testcase := range testcases {
+		t.Logf("Executing Testcase: %s", testcase.testName)
+		cfg, err := ccfg.ReadCPIConfig([]byte(testcase.conf))
+		if err != nil {
+			if testcase.expectedError != nil {
+				if err != testcase.expectedError {
+					t.Fatalf("readConfig: expected err: %s, received err: %s", testcase.expectedError, err)
+				} else {
+					continue
+				}
+			} else {
+				t.Fatalf("readConfig: unexpected error returned: %v", err)
+			}
+		}
+
+		if testcase.enableDualStackFeature {
+			_ :os.Setenv("ENABLE_ALPHA_DUAL_STACK", "1")
+		}
+
+		vs, err = buildVSphereFromConfig(cfg, nil)
+		if err != nil { // testcase.expectedError {
+			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
+		}
+		vs.connectionManager = cm.NewConnectionManager(&cfg.Config, nil, nil)
+	}
 }
 
 func TestSecretVSphereConfig(t *testing.T) {
