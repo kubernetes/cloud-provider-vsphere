@@ -31,7 +31,7 @@ import (
 type LBProvider interface {
 	cloudprovider.LoadBalancer
 	Initialize(clusterName string, client clientset.Interface, stop <-chan struct{})
-	CleanupServices(clusterName string, services map[types.NamespacedName]corev1.Service) error
+	CleanupServices(clusterName string, services map[types.NamespacedName]corev1.Service, ensureLBServiceDeleted bool) error
 }
 
 // NSXTAccess provides methods for dealing with NSX-T objects
