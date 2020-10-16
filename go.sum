@@ -161,6 +161,7 @@ github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550/go.mod h1:50XU6
 github.com/evanphx/json-patch v4.2.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.5.0+incompatible h1:ouOWdg56aJriqS0huScTkVXPC5IcNrDCXZ6OoTAWu7M=
 github.com/evanphx/json-patch v4.5.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
+github.com/evanphx/json-patch v4.9.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d/go.mod h1:ZZMPRZwes7CROmyNKgQzC3XPs6L/G2EJLHddWejkmf4=
 github.com/fatih/camelcase v0.0.0-20160318181535-f6a740d52f96/go.mod h1:yN2Sb0lFhZJUdVvtELVWefmrXpuZESvPmqwoZc+/fpc=
 github.com/fatih/camelcase v1.0.0/go.mod h1:yN2Sb0lFhZJUdVvtELVWefmrXpuZESvPmqwoZc+/fpc=
@@ -972,6 +973,7 @@ k8s.io/kubernetes v1.15.0 h1:0P6jAdZ1cF5/wSc14HqHCjWlbnwYzmFJBYeXBezZEE0=
 k8s.io/kubernetes v1.15.0/go.mod h1:3RE5ikMc73WK+dSxk4pQuQ6ZaJcPXiZX2dj98RcdCuM=
 k8s.io/kubernetes v1.18.6 h1:2rkR3ffvd5YVyPYU4LAUDCKoKQZtjuuj8ga15mbv96o=
 k8s.io/kubernetes v1.18.6/go.mod h1:Efg82S+Ti02A/Mww53bxroc7IgzX2bgPsf6hT8gAs3M=
+k8s.io/kubernetes v1.18.9/go.mod h1:1uB7+7NGbXMLX7XOjMcXnk2Lc1v2J3NcBFDUTn1JkX8=
 k8s.io/kubernetes/staging/src/k8s.io/api v0.0.0-20190615005809-e8462b5b5dc2 h1:QL6koOuCIVuZykmePms3wYWWW7mYEuPQhFZbdm7naas=
 k8s.io/kubernetes/staging/src/k8s.io/api v0.0.0-20190615005809-e8462b5b5dc2/go.mod h1:rcBmQEBoKrTUCORrHN/yvdmJPQsGpCEL61sZkMpMX/8=
 k8s.io/kubernetes/staging/src/k8s.io/api v0.0.0-20200715165012-dff82dc0de47 h1:l/uxU4KK2L6u1whk4aoSloAOExfKH6byKLccAXlKanQ=
@@ -1034,6 +1036,7 @@ k8s.io/sample-controller v0.0.0-20190731144349-6f8905ae4ee5 h1:ea2vnvAbw4TFNz3/s
 k8s.io/sample-controller v0.0.0-20190731144349-6f8905ae4ee5/go.mod h1:2MhJKrmNXzVhvWtN8vzWei6Riv0ceIP7KPKePk+Wkh8=
 k8s.io/sample-controller v0.18.6 h1:Uz0m2EscQY6nhrtRCeHcNGE80EjQCSR95Le1OsudxyQ=
 k8s.io/sample-controller v0.18.6/go.mod h1:xn1exAmtuaxuIbp0+7c7Al7UYobXtspFzAfMYWDy/z0=
+k8s.io/sample-controller v0.18.9/go.mod h1:18MzCgLscoc8+1Dw+/tCdVOwQPLnXfo4h9RYB0RM638=
 k8s.io/system-validators v1.0.4/go.mod h1:HgSgTg4NAGNoYYjKsUyk52gdNi2PVDswQ9Iyn66R7NI=
 k8s.io/utils v0.0.0-20190221042446-c2654d5206da h1:ElyM7RPonbKnQqOcw7dG2IK5uvQQn3b/WPHqD5mBvP4=
 k8s.io/utils v0.0.0-20190221042446-c2654d5206da/go.mod h1:8k8uAuAQ0rXslZKaEWd0c3oVhZz7sSzSiPnVZayjIX0=
