@@ -155,7 +155,7 @@ func TestAlphaDualStack(t *testing.T) {
 
 	// set config for ip for vc to ipv4, ipv6 (dual-stack)
 	vcInstance := nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
-	vcInstance.Cfg.IPFamilyPriority = []string{"ipv6","ipv4"}
+	vcInstance.Cfg.IPFamilyPriority = []string{"ipv6", "ipv4"}
 
 	name := vm.Name
 	UUID := vm.Config.Uuid

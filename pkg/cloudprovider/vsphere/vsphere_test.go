@@ -219,10 +219,10 @@ func TestVSphereLoginByToken(t *testing.T) {
 
 func TestAlphaDualStackConfig(t *testing.T) {
 	var testCases = []struct {
-		testName                 string
-		conf                     string
-		enableDualStackFeature	 bool
-		expectedError            string
+		testName               string
+		conf                   string
+		enableDualStackFeature bool
+		expectedError          string
 	}{
 		{
 			testName: "Verifying dual stack env var required when providing two ip families",
@@ -237,7 +237,7 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			
 			`,
 			enableDualStackFeature: false,
-			expectedError:    "two IP families provided, but dual stack feature is not enabled",
+			expectedError:          "two IP families provided, but dual stack feature is not enabled",
 		},
 		{
 			testName: "Verifying dual stack env var existing when providing two ip families",
@@ -252,7 +252,7 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			
 			`,
 			enableDualStackFeature: true,
-			expectedError:    "",
+			expectedError:          "",
 		},
 		{
 			testName: "Dual stack env var not required when providing single ip family",
@@ -267,7 +267,7 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			
 			`,
 			enableDualStackFeature: false,
-			expectedError:    "",
+			expectedError:          "",
 		},
 	}
 	for _, testcase := range testCases {
@@ -284,9 +284,10 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			}
 
 			if testcase.enableDualStackFeature {
-			_ :os.Setenv("ENABLE_ALPHA_DUAL_STACK", "1")
+			_:
+				os.Setenv("ENABLE_ALPHA_DUAL_STACK", "1")
 				defer func() {
-					err :=os.Unsetenv("ENABLE_ALPHA_DUAL_STACK")
+					err := os.Unsetenv("ENABLE_ALPHA_DUAL_STACK")
 					if err != nil {
 						t.Fatalf("Received error %s when unsetting env var", err)
 					}
@@ -300,7 +301,7 @@ func TestAlphaDualStackConfig(t *testing.T) {
 					if err.Error() != testcase.expectedError {
 						t.Fatalf("buildVSphereFromConfig: expected err: %s, receiver err: %s", testcase.expectedError, err)
 					}
-				}  else {
+				} else {
 					t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 				}
 			}

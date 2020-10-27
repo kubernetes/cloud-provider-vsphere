@@ -202,7 +202,7 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig) (*VSphere
 	// add alpha dual stack feature
 	for tenant := range cfg.VirtualCenter {
 		if len(cfg.VirtualCenter[tenant].IPFamilyPriority) > 1 {
-			if _, ok := os.LookupEnv("ENABLE_ALPHA_DUAL_STACK"); !ok{
+			if _, ok := os.LookupEnv("ENABLE_ALPHA_DUAL_STACK"); !ok {
 				klog.Errorf("number of ip family provided for VCenter %s is 2, ENABLE_ALPHA_DUAL_STACK env var is not set", tenant)
 				return nil, errors.New("two IP families provided, but dual stack feature is not enabled")
 			}
