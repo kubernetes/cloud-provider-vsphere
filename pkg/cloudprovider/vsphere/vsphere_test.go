@@ -284,14 +284,15 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			}
 
 			if testcase.enableDualStackFeature {
-			_:
-				os.Setenv("ENABLE_ALPHA_DUAL_STACK", "1")
+				err := os.Setenv("ENABLE_ALPHA_DUAL_STACK", "1")
+				if err != nil {
+					t.Fatalf("Received error %s when setting env var ENABLE_ALPHA_DUAL_STACK", err)
+				}
 				defer func() {
 					err := os.Unsetenv("ENABLE_ALPHA_DUAL_STACK")
 					if err != nil {
 						t.Fatalf("Received error %s when unsetting env var", err)
 					}
-
 				}()
 			}
 

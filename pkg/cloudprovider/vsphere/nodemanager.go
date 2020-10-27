@@ -360,7 +360,6 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 			if !foundInternal && !foundExternal {
 				return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
 			}
-
 		}
 	}
 

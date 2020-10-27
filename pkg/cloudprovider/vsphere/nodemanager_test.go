@@ -199,7 +199,6 @@ func TestAlphaDualStack(t *testing.T) {
 	} else if !strings.EqualFold(ipv6Ips[0], ipv6Ip) {
 		t.Errorf("IPv6 does not match. expected: fd01:0:101:2609:bdd2:ee20:7bd7:5836, actual: %s", ipv6Ips[0])
 	}
-
 }
 
 func TestExport(t *testing.T) {
