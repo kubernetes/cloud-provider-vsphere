@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
@@ -149,6 +150,96 @@ func TestAlphaDualStack(t *testing.T) {
 	}
 
 	err := connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
+	if err != nil {
+		t.Errorf("Failed to Connect to vSphere: %s", err)
+	}
+
+	// set config for ip for vc to ipv4, ipv6 (dual-stack)
+	vcInstance := nm.connectionManager.VsphereInstanceMap[cfg.Global.VCenterIP]
+	vcInstance.Cfg.IPFamilyPriority = []string{"ipv6", "ipv4"}
+
+	name := vm.Name
+	UUID := vm.Config.Uuid
+	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
+
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Status: v1.NodeStatus{
+			NodeInfo: v1.NodeSystemInfo{
+				SystemUUID: k8sUUID,
+			},
+		},
+	}
+
+	// get node registered so node can be exported
+	nm.RegisterNode(node)
+	err = nm.DiscoverNode(name, cm.FindVMByName)
+	if err != nil {
+		t.Errorf("Failed DiscoverNode: %s", err)
+	}
+
+	nodeList := make([]*pb.Node, 0)
+	_ = nm.ExportNodes("", "", &nodeList)
+
+	ips := nodeList[0].Addresses
+
+	ipv4Ips := returnIPsFromSpecificFamily(vcfg.IPv4Family, ips)
+	size := len(ipv4Ips)
+	if size != 1 {
+		t.Errorf("Should only return single IPv4 address. expected: 1, actual: %d", size)
+	} else if !strings.EqualFold(ipv4Ips[0], ipv4Ip) {
+		t.Errorf("IPv6 does not match. expected: %s, actual: %s", ipv4Ip, ipv4Ips[0])
+	}
+
+	ipv6Ips := returnIPsFromSpecificFamily(vcfg.IPv6Family, ips)
+	size = len(ipv6Ips)
+	if size != 1 {
+		t.Errorf("Should only return single IPv6 address. expected: 1, actual: %d", size)
+	} else if !strings.EqualFold(ipv6Ips[0], ipv6Ip) {
+		t.Errorf("IPv6 does not match. expected: fd01:0:101:2609:bdd2:ee20:7bd7:5836, actual: %s", ipv6Ips[0])
+	}
+}
+
+func TestExternalInternalSubnet(t *testing.T) {
+
+	var subnetCidrINIConfig = `
+	[VirtualCenter "0.0.0.0"]
+	user = user
+	password = password
+	ip-family = ipv6,ipv4
+	[Nodes]
+	internal-network-subnet-cidr = "10.0.0.0/24"
+	external-network-subnet-cidr = "fd01:0:101:2609:bdd2:ee20:7bd7:0/112"
+	`
+
+	iniCfg, err := ccfg.ReadCPIConfigINI([]byte(subnetCidrINIConfig))
+	if err != nil{
+		t.Errorf("Seeing error %s when import INI config", err)
+	}
+	cfg, ok := configFromEnvOrSim(true)
+	defer ok()
+	iniCfg.Config = *cfg
+
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	defer connMgr.Logout()
+
+	ipv4Ip := "10.0.0.1"
+	ipv6Ip := "fd01:0:101:2609:bdd2:ee20:7bd7:5836"
+
+	nm := newNodeManager(iniCfg, connMgr)
+
+	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
+	vm.Guest.Net = []vimtypes.GuestNicInfo{
+		{
+			Network:   "foo-bar",
+			IpAddress: []string{ipv4Ip, ipv6Ip},
+		},
+	}
+
+	err = connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
 	if err != nil {
 		t.Errorf("Failed to Connect to vSphere: %s", err)
 	}
