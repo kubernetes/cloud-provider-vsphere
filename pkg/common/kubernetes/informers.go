@@ -17,14 +17,16 @@ limitations under the License.
 package kubernetes
 
 import (
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	listerv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/sample-controller/pkg/signals"
 )
 
 func noResyncPeriodFunc() time.Duration {
@@ -37,10 +39,34 @@ var (
 	onceForInformer sync.Once
 )
 
+var (
+	onlyOneSignalHandler = make(chan struct{})
+	shutdownSignals      = []os.Signal{os.Interrupt, syscall.SIGTERM}
+)
+
+// SetupSignalHandler registered for SIGTERM and SIGINT. A stop channel is returned
+// which is closed on one of these signals. If a second signal is caught, the program
+// is terminated with exit code 1.
+func setupSignalHandler() (stopCh <-chan struct{}) {
+	close(onlyOneSignalHandler) // panics when called twice
+
+	stop := make(chan struct{})
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, shutdownSignals...)
+	go func() {
+		<-c
+		close(stop)
+		<-c
+		os.Exit(1) // second signal. Exit directly.
+	}()
+
+	return stop
+}
+
 // NewInformer creates a newk8s client based on a service account
 func NewInformer(client clientset.Interface, singleWatcher bool) *InformerManager {
 	onceForInformer.Do(func() {
-		signalHandler = signals.SetupSignalHandler()
+		signalHandler = setupSignalHandler()
 		informerFactory = informers.NewSharedInformerFactory(client, noResyncPeriodFunc())
 	})
 
