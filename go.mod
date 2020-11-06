@@ -3,13 +3,9 @@ module k8s.io/cloud-provider-vsphere
 go 1.13
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/golang/protobuf v1.4.2
-	github.com/google/btree v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/cobra v1.0.0
@@ -18,14 +14,11 @@ require (
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.1.1
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.1.1
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.1.1
-	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	google.golang.org/grpc v1.27.0
 	gopkg.in/gcfg.v1 v1.2.3
-	gopkg.in/square/go-jose.v2 v2.2.2
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.2.8
-	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 	k8s.io/api v0.19.3
 	k8s.io/apimachinery v0.19.3
 	k8s.io/client-go v0.19.3
@@ -33,7 +26,6 @@ require (
 	k8s.io/component-base v0.0.0
 	k8s.io/klog v1.0.0
 	k8s.io/kubernetes v1.19.3
-	sigs.k8s.io/kind v0.7.0 // indirect
 )
 
 replace (
