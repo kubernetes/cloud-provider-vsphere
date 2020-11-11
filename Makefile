@@ -287,7 +287,7 @@ release: | $(DOCKER_SOCK)
 ################################################################################
 .PHONY: release-push
 release-push: | $(DOCKER_SOCK)
-	hack/release.sh -p -l
+	hack/release.sh -p
 
 ################################################################################
 ##                                  CI IMAGE                                  ##
