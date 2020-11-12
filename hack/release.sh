@@ -36,7 +36,6 @@ readonly CPI_IMAGE_CI=${CPI_IMAGE_CI:-${BASE_IMAGE_REPO}/cpi/ci/manager}
 
 AUTH=
 PUSH=
-LATEST=
 CPI_IMAGE_NAME=
 VERSION=$(git describe --dirty --always 2>/dev/null)
 GCR_KEY_FILE="${GCR_KEY_FILE:-}"
@@ -66,8 +65,6 @@ FLAGS
   -h    show this help and exit
   -k    path to GCR key file. Used to login to registry if specified
         (defaults to: ${GCR_KEY_FILE})
-  -l    tag the images as \"latest\" in addition to their version
-        when used with -p, both tags will be pushed
   -p    push the images to the public container registry
   -t    the build/release type (defaults to: ${BUILD_RELEASE_TYPE})
         one of [ci,pr,release]
@@ -111,10 +108,6 @@ function build_images() {
     --build-arg "VERSION=${VERSION}" \
     --build-arg "GOPROXY=${GOPROXY}" \
     .
-  if [ "${LATEST}" ]; then
-    echo "tagging image ${CPI_IMAGE_NAME}:${VERSION} as latest"
-    docker tag "${CPI_IMAGE_NAME}:${VERSION}" "${CPI_IMAGE_NAME}:latest"
-  fi
 }
 
 function logout() {
@@ -141,10 +134,6 @@ function push_images() {
 
   echo "pushing ${CPI_IMAGE_NAME}:${VERSION}"
   docker push "${CPI_IMAGE_NAME}":"${VERSION}"
-  if [ "${LATEST}" ]; then
-    echo "also pushing ${CPI_IMAGE_NAME}:${VERSION} as latest"
-    docker push "${CPI_IMAGE_NAME}":latest
-  fi
 }
 
 function build_ccm_bin() {
@@ -166,16 +155,13 @@ function push_ccm_bin() {
 }
 
 # Start of main script
-while getopts ":hk:lpt:" opt; do
+while getopts ":hk:pt:" opt; do
   case ${opt} in
     h)
       error "${USAGE}" && exit 1
       ;;
     k)
       GCR_KEY_FILE="${OPTARG}"
-      ;;
-    l)
-      LATEST=1
       ;;
     p)
       PUSH=1
