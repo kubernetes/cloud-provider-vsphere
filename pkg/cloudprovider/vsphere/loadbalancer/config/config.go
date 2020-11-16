@@ -18,8 +18,6 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 
 	"k8s.io/klog"
 )
@@ -40,41 +38,6 @@ func (cfg *LoadBalancerConfig) IsEmpty() bool {
 	return cfg.Size == "" && cfg.LBServiceID == "" &&
 		cfg.IPPoolID == "" && cfg.IPPoolName == "" &&
 		cfg.Tier1GatewayPath == ""
-}
-
-// FromEnv initializes the provided configuration object with values
-// obtained from environment variables. If an environment variable is set
-// for a property that's already initialized, the environment variable's value
-// takes precedence.
-func (cfg *NsxtConfig) FromEnv() error {
-	if v := os.Getenv("NSXT_MANAGER_HOST"); v != "" {
-		cfg.Host = v
-	}
-	if v := os.Getenv("NSXT_USERNAME"); v != "" {
-		cfg.User = v
-	}
-	if v := os.Getenv("NSXT_PASSWORD"); v != "" {
-		cfg.Password = v
-	}
-	if v := os.Getenv("NSXT_ALLOW_UNVERIFIED_SSL"); v != "" {
-		InsecureFlag, err := strconv.ParseBool(v)
-		if err != nil {
-			klog.Errorf("Failed to parse NSXT_ALLOW_UNVERIFIED_SSL: %s", err)
-			return fmt.Errorf("Failed to parse NSXT_ALLOW_UNVERIFIED_SSL: %s", err)
-		}
-		cfg.InsecureFlag = InsecureFlag
-	}
-	if v := os.Getenv("NSXT_CLIENT_AUTH_CERT_FILE"); v != "" {
-		cfg.ClientAuthCertFile = v
-	}
-	if v := os.Getenv("NSXT_CLIENT_AUTH_KEY_FILE"); v != "" {
-		cfg.ClientAuthKeyFile = v
-	}
-	if v := os.Getenv("NSXT_CA_FILE"); v != "" {
-		cfg.CAFile = v
-	}
-
-	return nil
 }
 
 /*
