@@ -33,6 +33,8 @@ import (
 	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
 	lcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer/config"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route"
+	rcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
@@ -62,16 +64,21 @@ func init() {
 		if err != nil {
 			lbcfg = nil //Error reading LBConfig, explicitly set to nil
 		}
+		routecfg, err := rcfg.ReadRouteConfig(byConfig)
+		if err != nil {
+			klog.Errorf("ReadRouteConfig failed: %s", err)
+			routecfg = nil
+		}
 
-		return newVSphere(cfg, lbcfg, true)
+		return newVSphere(cfg, lbcfg, routecfg, true)
 	})
 }
 
 var _ cloudprovider.Interface = &VSphere{}
 
 // Creates new Controller node interface and returns
-func newVSphere(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, finalize ...bool) (*VSphere, error) {
-	vs, err := buildVSphereFromConfig(cfg, lbcfg)
+func newVSphere(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, routecfg *rcfg.Config, finalize ...bool) (*VSphere, error) {
+	vs, err := buildVSphereFromConfig(cfg, lbcfg, routecfg)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +164,9 @@ func (vs *VSphere) Clusters() (cloudprovider.Clusters, bool) {
 // Routes returns a routes interface along with whether the interface
 // is supported.
 func (vs *VSphere) Routes() (cloudprovider.Routes, bool) {
+	if vs.routes != nil {
+		return vs.routes, true
+	}
 	klog.Warning("The vSphere cloud provider does not support routes")
 	return nil, false
 }
@@ -178,7 +188,7 @@ func (vs *VSphere) HasClusterID() bool {
 }
 
 // Initializes vSphere from vSphere CloudProvider Configuration
-func buildVSphereFromConfig(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig) (*VSphere, error) {
+func buildVSphereFromConfig(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, routecfg *rcfg.Config) (*VSphere, error) {
 	nm := newNodeManager(cfg, nil)
 
 	lb, err := loadbalancer.NewLBProvider(lbcfg)
@@ -209,11 +219,17 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig) (*VSphere
 		}
 	}
 
+	routes, err := route.NewRouteProvider(routecfg)
+	if err != nil {
+		return nil, err
+	}
+
 	vs := VSphere{
 		cfg:          cfg,
 		cfgLB:        lbcfg,
 		nodeManager:  nm,
 		loadbalancer: lb,
+		routes:       routes,
 		instances:    newInstances(nm),
 		zones:        newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
 		server:       server.NewServer(cfg.Global.APIBinding, nm),
@@ -234,6 +250,9 @@ func (vs *VSphere) nodeAdded(obj interface{}) {
 	}
 
 	vs.nodeManager.RegisterNode(node)
+	if vs.routes != nil {
+		vs.routes.AddNode(node)
+	}
 }
 
 // Notification handler when node is removed from k8s cluster.
@@ -245,4 +264,7 @@ func (vs *VSphere) nodeDeleted(obj interface{}) {
 	}
 
 	vs.nodeManager.UnregisterNode(node)
+	if vs.routes != nil {
+		vs.routes.DeleteNode(node)
+	}
 }
