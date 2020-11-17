@@ -85,5 +85,7 @@ items:
     - get
     - list
     - watch
+    - create
+    - update
 kind: List
 metadata: {}
