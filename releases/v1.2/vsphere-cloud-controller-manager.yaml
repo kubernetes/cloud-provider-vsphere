@@ -162,6 +162,8 @@ rules:
   - get
   - list
   - watch
+  - create
+  - update
 ---
 apiVersion: apps/v1
 kind: DaemonSet
