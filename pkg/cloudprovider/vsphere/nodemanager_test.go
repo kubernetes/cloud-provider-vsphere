@@ -187,7 +187,8 @@ func TestAlphaDualStack(t *testing.T) {
 
 	ipv4Ips := returnIPsFromSpecificFamily(vcfg.IPv4Family, ips)
 	size := len(ipv4Ips)
-	if size != 1 {
+	// size need to equal to 2, one for internal and one for external, in this case they are the same
+	if size != 2 {
 		t.Errorf("Should only return single IPv4 address. expected: 1, actual: %d", size)
 	} else if !strings.EqualFold(ipv4Ips[0], ipv4Ip) {
 		t.Errorf("IPv6 does not match. expected: %s, actual: %s", ipv4Ip, ipv4Ips[0])
@@ -195,7 +196,7 @@ func TestAlphaDualStack(t *testing.T) {
 
 	ipv6Ips := returnIPsFromSpecificFamily(vcfg.IPv6Family, ips)
 	size = len(ipv6Ips)
-	if size != 1 {
+	if size != 2 {
 		t.Errorf("Should only return single IPv6 address. expected: 1, actual: %d", size)
 	} else if !strings.EqualFold(ipv6Ips[0], ipv6Ip) {
 		t.Errorf("IPv6 does not match. expected: fd01:0:101:2609:bdd2:ee20:7bd7:5836, actual: %s", ipv6Ips[0])
