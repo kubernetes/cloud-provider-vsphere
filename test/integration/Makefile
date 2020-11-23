@@ -52,7 +52,7 @@ delete-vcsim:
 	kubectl -n kube-system delete service vcsim
 
 deploy-ccm:
-	kubectl -n kube-system create configmap vsphere-cloud-config --from-file=vsphere.conf && \
+	kubectl -n kube-system create configmap cloud-config --from-file=vsphere.conf && \
 	kubectl -n kube-system create -f secrets.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-roles.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-role-bindings.yaml && \
