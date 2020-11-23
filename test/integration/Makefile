@@ -26,7 +26,7 @@ kind:
 	./install_kind.sh
 
 cluster-up: $(KIND_CONFIG) kind | $(DOCKER_SOCK)
-	kind create cluster --config "$(KIND_CONFIG)" --name "$(CLUSTER_NAME)"
+	kind create cluster --config "$(KIND_CONFIG)" --name "$(CLUSTER_NAME)" --kubeconfig "$(KUBECONFIG_ORIG)"
 ifeq (true,$(DOCKER_SOCK_FROM_HOST))
 	ipv4=$$(docker exec "$(CLUSTER_NAME)-control-plane" ip route get dev eth0 1 | awk '{print $$NF;exit}') && \
 	sed -e 's~server: .\{1,\}$$~server: https://'"$${ipv4}":6443'~g' <"$(KUBECONFIG_ORIG)" >"$(KUBECONFIG_DIND)"
@@ -52,7 +52,7 @@ delete-vcsim:
 	kubectl -n kube-system delete service vcsim
 
 deploy-ccm:
-	kubectl -n kube-system create configmap vsphere-cloud-config --from-file=vsphere.conf && \
+	kubectl -n kube-system create configmap cloud-config --from-file=vsphere.conf && \
 	kubectl -n kube-system create -f secrets.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-roles.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-role-bindings.yaml && \

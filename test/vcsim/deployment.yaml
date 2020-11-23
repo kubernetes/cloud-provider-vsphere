@@ -18,7 +18,7 @@ metadata:
   name: vcsim
   namespace: kube-system
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: vcsim
@@ -26,6 +26,9 @@ metadata:
 spec:
   serviceName: "vcsim"
   replicas: 1
+  selector:
+    matchLabels:
+      app: vcsim
   template:
     metadata:
       labels:
