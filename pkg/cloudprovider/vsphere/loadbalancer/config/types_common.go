@@ -52,6 +52,8 @@ type NsxtConfig struct {
 	Host string
 	// InsecureFlag is to be set to true if NSX-T uses self-signed cert.
 	InsecureFlag bool
+	// RemoteAuth is to be set to true if NSX-T uses remote authentication (authentication done through the vIDM).
+	RemoteAuth bool
 
 	VMCAccessToken     string
 	VMCAuthHost        string

@@ -85,6 +85,20 @@ type nsxtBroker struct {
 	realizedEntitiesClient  realized_state.RealizedEntitiesClient
 }
 
+type remoteBasicAuthHeaderProcessor struct {
+}
+
+func newRemoteBasicAuthHeaderProcessor() *remoteBasicAuthHeaderProcessor {
+	return &remoteBasicAuthHeaderProcessor{}
+}
+
+func (processor remoteBasicAuthHeaderProcessor) Process(req *http.Request) error {
+	oldAuthHeader := req.Header.Get("Authorization")
+	newAuthHeader := strings.Replace(oldAuthHeader, "Basic", "Remote", 1)
+	req.Header.Set("Authorization", newAuthHeader)
+	return nil
+}
+
 // NewNsxtBroker creates a new NsxtBroker using the configuration
 func NewNsxtBroker(nsxtConfig *config.NsxtConfig) (NsxtBroker, error) {
 	url := fmt.Sprintf("https://%s", nsxtConfig.Host)
@@ -134,6 +148,9 @@ func NewNsxtBroker(nsxtConfig *config.NsxtConfig) (NsxtBroker, error) {
 	}
 	connector := client.NewRestConnector(url, httpClient)
 	connector.SetSecurityContext(securityCtx)
+	if nsxtConfig.RemoteAuth {
+		connector.AddRequestProcessor(newRemoteBasicAuthHeaderProcessor())
+	}
 
 	// perform API call to check connector
 	_, err = infra.NewDefaultLbMonitorProfilesClient(connector).List(nil, nil, nil, nil, nil, nil)
@@ -477,7 +494,7 @@ func (b *nsxtBroker) GetRealizedExternalIPAddress(ipAllocationPath string, timeo
 		if sleep > sleepMax {
 			sleep = sleepMax
 		}
-		list, err := b.realizedEntitiesClient.List(ipAllocationPath)
+		list, err := b.realizedEntitiesClient.List(ipAllocationPath, nil)
 		if err != nil {
 			return nil, nicerVAPIError(err)
 		}

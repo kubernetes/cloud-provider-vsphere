@@ -94,6 +94,7 @@ vmc-access-token = token123
 vmc-auth-host = authHost
 host = nsxt-server
 insecure-flag = true
+remote-auth = true
 `
 	config, err := ReadRawConfigINI([]byte(contents))
 	if err != nil {
@@ -115,5 +116,8 @@ insecure-flag = true
 	assertEquals("NSXT.host", config.NSXT.Host, "nsxt-server")
 	if !config.NSXT.InsecureFlag {
 		t.Errorf("NSXT.insecure-flag != true")
+	}
+	if !config.NSXT.RemoteAuth {
+		t.Errorf("NSX-T.remote-auth != true")
 	}
 }

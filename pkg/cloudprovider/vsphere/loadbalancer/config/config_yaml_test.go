@@ -96,6 +96,7 @@ nsxt:
   vmcAuthHost: authHost
   host: nsxt-server
   insecureFlag: true
+  remoteAuth: true
 `
 	config, err := ReadRawConfigYAML([]byte(contents))
 	if err != nil {
@@ -117,5 +118,8 @@ nsxt:
 	assertEquals("nsxt.host", config.NSXT.Host, "nsxt-server")
 	if !config.NSXT.InsecureFlag {
 		t.Errorf("nsxt.insecureFlag != true")
+	}
+	if !config.NSXT.RemoteAuth {
+		t.Errorf("nsxt.remoteAuth != true")
 	}
 }

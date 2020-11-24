@@ -96,7 +96,7 @@ func (p *lbProvider) GetLoadBalancer(_ context.Context, clusterName string, serv
 	if len(servers) == 0 {
 		return nil, false, nil
 	}
-	return newLoadBalancerStatus(&servers[0].IpAddress), true, nil
+	return newLoadBalancerStatus(servers[0].IpAddress), true, nil
 }
 
 func newLoadBalancerStatus(ipAddress *string) *corev1.LoadBalancerStatus {
