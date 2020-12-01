@@ -10,6 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.4.0
 	github.com/vmware/govmomi v0.22.1
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.2.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.2.0

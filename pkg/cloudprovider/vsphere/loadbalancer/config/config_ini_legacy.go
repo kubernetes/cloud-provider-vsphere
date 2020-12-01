@@ -121,39 +121,13 @@ func (lbc *LBConfigINI) validateConfig() error {
 			return fmt.Errorf(msg)
 		}
 	}
-	return lbc.NSXT.validateConfig()
+	return lbc.NSXT.ValidateConfig()
 }
 
 func (lbc *LoadBalancerConfigINI) isEmpty() bool {
 	return lbc.Size == "" && lbc.LBServiceID == "" &&
 		lbc.IPPoolID == "" && lbc.IPPoolName == "" &&
 		lbc.Tier1GatewayPath == ""
-}
-
-func (lbc *NsxtConfigINI) validateConfig() error {
-	if lbc.VMCAccessToken != "" {
-		if lbc.VMCAuthHost == "" {
-			msg := "vmc auth host must be provided if auth token is provided"
-			klog.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	} else if lbc.User != "" {
-		if lbc.Password == "" {
-			msg := "password is empty"
-			klog.Errorf(msg)
-			return fmt.Errorf(msg)
-		}
-	} else {
-		msg := "either user or vmc access token must be set"
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	if lbc.Host == "" {
-		msg := "host is empty"
-		klog.Errorf(msg)
-		return fmt.Errorf(msg)
-	}
-	return nil
 }
 
 // CompleteAndValidate sets default values, overrides by env and validates the resulting config

@@ -16,11 +16,15 @@
 
 package config
 
+import (
+	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
+)
+
 // LBConfigINI  is used to read and store information from the cloud configuration file
 type LBConfigINI struct {
 	LoadBalancer      LoadBalancerConfigINI                  `gcfg:"loadbalancer"`
 	LoadBalancerClass map[string]*LoadBalancerClassConfigINI `gcfg:"loadbalancerclass"`
-	NSXT              NsxtConfigINI                          `gcfg:"nsxt"`
+	NSXT              nsxtcfg.NsxtConfigINI                  `gcfg:"nsxt"`
 }
 
 // LoadBalancerConfigINI contains the configuration for the load balancer itself
@@ -41,24 +45,4 @@ type LoadBalancerClassConfigINI struct {
 	TCPAppProfilePath string `gcfg:"tcp-app-profile-path"`
 	UDPAppProfileName string `gcfg:"udp-app-profile-name"`
 	UDPAppProfilePath string `gcfg:"udp-app-profile-path"`
-}
-
-// NsxtConfigINI contains the NSX-T specific configuration
-type NsxtConfigINI struct {
-	// NSX-T username.
-	User string `gcfg:"user"`
-	// NSX-T password in clear text.
-	Password string `gcfg:"password"`
-	// NSX-T host.
-	Host string `gcfg:"host"`
-	// InsecureFlag is to be set to true if NSX-T uses self-signed cert.
-	InsecureFlag bool `gcfg:"insecure-flag"`
-	// RemoteAuth is to be set to true if NSX-T uses remote authentication (authentication done through the vIDM).
-	RemoteAuth bool `gcfg:"remote-auth"`
-
-	VMCAccessToken     string `gcfg:"vmc-access-token"`
-	VMCAuthHost        string `gcfg:"vmc-auth-host"`
-	ClientAuthCertFile string `gcfg:"client-auth-cert-file"`
-	ClientAuthKeyFile  string `gcfg:"client-auth-key-file"`
-	CAFile             string `gcfg:"ca-file"`
 }
