@@ -19,7 +19,7 @@ package config
 import (
 	"fmt"
 
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 /*

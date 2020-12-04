@@ -28,7 +28,7 @@ import (
 	"github.com/vmware/govmomi/sts"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/soap"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // VSphereConnection contains information for connecting to vCenter
@@ -180,12 +180,6 @@ func (connection *VSphereConnection) NewClient(ctx context.Context) (*vim25.Clie
 	err = connection.login(ctx, client)
 	if err != nil {
 		return nil, err
-	}
-	if klog.V(3) {
-		s, err := session.NewManager(client).UserSession(ctx)
-		if err == nil {
-			klog.Infof("New session ID for '%s' = %s", s.UserName, s.Key)
-		}
 	}
 
 	if connection.RoundTripperCount == 0 {

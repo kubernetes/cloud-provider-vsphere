@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	"google.golang.org/grpc"
 

@@ -26,7 +26,7 @@ import (
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/govmomi/vslm"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // Datastore extends the govmomi Datastore object

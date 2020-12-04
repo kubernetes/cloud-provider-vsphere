@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/vmware/govmomi/vim25/mo"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"

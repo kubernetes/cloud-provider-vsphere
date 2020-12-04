@@ -30,7 +30,7 @@ import (
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	v1helper "k8s.io/cloud-provider/node/helpers"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	"github.com/vmware/govmomi/vim25/mo"
 )

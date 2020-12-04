@@ -19,7 +19,7 @@ package kubernetes
 import (
 	"os"
 
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
