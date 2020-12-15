@@ -17,7 +17,7 @@ There exist 2 significant issues when deploying Kubernetes workloads or pods in 
 1. Datastore objects, specifically names and even morefs (Managed Object References), are not unique across vCenters instances
 2. Datastore objects, specifically names, are not unique within a single vCenter since objects of the same name can exist in different Datacenters
 
-![Which datastore?](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/whichdatastore.png)
+![Which datastore?](https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/images/whichdatastore.png)
 
 There needs to be a mechanism in place to allow end-users to continue to use the human readable "friendly" names for objects like datastores and datastore clusters and still be able to target workloads to use resources from them. This is where the concept of zones or zoning comes in. Zones allow you to partition datacenters and compute clusters so that the end-user can target workloads to specific locations in your vSphere environment.
 
