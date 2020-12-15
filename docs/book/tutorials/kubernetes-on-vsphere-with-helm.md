@@ -152,7 +152,7 @@ The CPI supports storing vCenter credentials either in:
 
 In the example `vsphere.conf` above, there are two configured [Kubernetes secret](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets). The vCenter at `10.0.0.1` contains credentials in the secret named `cpi-engineering-secret` in the namespace `kube-system` and the vCenter at `1.1.1.1` and `192.168.0.1` contains credentials in the secret named `cpi-global-secret` in the namespace `kube-system` defined in the `[Global]` section.
 
-An example [Secrets YAML](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vccm-secret.yaml) can be used for reference when creating your own `secrets`. If the example secret YAML is used, update the secret name to use a `<unique secret name>`, the vCenter IP address in the keys of `stringData`, and the `username` and `password` for each key.
+An example [Secrets YAML](https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/manifests/controller-manager/vccm-secret.yaml) can be used for reference when creating your own `secrets`. If the example secret YAML is used, update the secret name to use a `<unique secret name>`, the vCenter IP address in the keys of `stringData`, and the `username` and `password` for each key.
 
 The secret for the vCenter at `1.1.1.1` might look like the following:
 
