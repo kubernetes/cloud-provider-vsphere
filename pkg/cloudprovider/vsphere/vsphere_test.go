@@ -148,7 +148,7 @@ func TestNewVSphere(t *testing.T) {
 		t.Skipf("No config found in environment")
 	}
 
-	_, err := newVSphere(cfg, nil)
+	_, err := newVSphere(cfg, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -161,7 +161,7 @@ func TestVSphereLogin(t *testing.T) {
 	cfg.Config = *initCfg
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg, nil)
+	vs, err := newVSphere(cfg, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -196,7 +196,7 @@ func TestVSphereLoginByToken(t *testing.T) {
 	cfg.Global.Password = localhostKey
 
 	// Create vSphere configuration object
-	vs, err := newVSphere(cfg, nil)
+	vs, err := newVSphere(cfg, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to construct/authenticate vSphere: %s", err)
 	}
@@ -296,7 +296,7 @@ func TestAlphaDualStackConfig(t *testing.T) {
 				}()
 			}
 
-			_, err = buildVSphereFromConfig(cfg, nil)
+			_, err = buildVSphereFromConfig(cfg, nil, nil)
 			if err != nil {
 				if testcase.expectedError != "" {
 					if err.Error() != testcase.expectedError {
@@ -541,7 +541,7 @@ func TestSecretVSphereConfig(t *testing.T) {
 				t.Fatalf("readConfig: unexpected error returned: %v", err)
 			}
 		}
-		vs, err = buildVSphereFromConfig(cfg, nil)
+		vs, err = buildVSphereFromConfig(cfg, nil, nil)
 		if err != nil { // testcase.expectedError {
 			t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
 		}

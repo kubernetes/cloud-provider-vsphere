@@ -25,6 +25,7 @@ import (
 	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
 	lbcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer/config"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
@@ -47,6 +48,7 @@ type VSphere struct {
 	// pluggable interfaces (tbd)
 	cfgLB        *lbcfg.LBConfig
 	loadbalancer loadbalancer.LBProvider
+	routes       route.RoutesProvider
 
 	// cloud provider interfaces
 	instances cloudprovider.Instances
