@@ -33,7 +33,7 @@ import (
 func (rci *RouteConfigINI) CreateConfig() *Config {
 	cfg := &Config{}
 	cfg.Route.RouterPath = rci.Route.RouterPath
-	//NSXT
+	// NSXT configurations
 	cfg.NSXT.User = rci.NSXT.User
 	cfg.NSXT.Password = rci.NSXT.Password
 	cfg.NSXT.Host = rci.NSXT.Host
