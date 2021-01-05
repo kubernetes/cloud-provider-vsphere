@@ -39,4 +39,9 @@ const (
 
 	// DisplayNameMaxLength is the maximum length of static route display name
 	DisplayNameMaxLength = 255
+
+	// ProviderIDPrefix is the prefix of node's provider ID
+	ProviderIDPrefix = "vsphere://"
+	// BiosUuidPrefix is the prefix of VM BIOS UUID
+	BiosUuidPrefix = "biosUuid:"
 )

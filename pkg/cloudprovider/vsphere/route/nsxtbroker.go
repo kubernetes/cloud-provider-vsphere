@@ -19,10 +19,12 @@ package route
 import (
 	"strings"
 
+	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/infra"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/infra/realized_state"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/infra/tier_1s"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/search"
+
 	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
 	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
 )
@@ -33,6 +35,7 @@ type NsxtBroker interface {
 	CreateStaticRoute(routerPath string, staticRouteID string, staticRoute model.StaticRoutes) error
 	DeleteStaticRoute(routerPath string, staticRouteID string) error
 	ListRealizedEntities(path string) (model.GenericPolicyRealizedResourceListResult, error)
+	GetSegment(path string) (model.Segment, error)
 }
 
 // nsxtBroker includes NSXT API clients
@@ -41,6 +44,7 @@ type nsxtBroker struct {
 	tier1StaticRoutesClient tier_1s.StaticRoutesClient
 	realizedEntitiesClient  realized_state.RealizedEntitiesClient
 	queryClient             *search.DefaultQueryClient
+	segmentClient           *infra.DefaultSegmentsClient
 }
 
 // NewNsxtBroker creates a new NsxtBroker to the NSXT API
@@ -53,6 +57,7 @@ func NewNsxtBroker(nsxtConfig *nsxtcfg.NsxtConfig) (NsxtBroker, error) {
 		tier1StaticRoutesClient: tier_1s.NewDefaultStaticRoutesClient(connector),
 		realizedEntitiesClient:  realized_state.NewDefaultRealizedEntitiesClient(connector),
 		queryClient:             search.NewDefaultQueryClient(connector),
+		segmentClient:           infra.NewDefaultSegmentsClient(connector),
 	}, nil
 }
 
@@ -62,12 +67,12 @@ func (b *nsxtBroker) QueryEntities(queryParam string) (model.SearchResponse, err
 }
 
 func (b *nsxtBroker) CreateStaticRoute(routerPath string, staticRouteID string, staticRoute model.StaticRoutes) error {
-	routerID := getRouterID(routerPath)
+	routerID := getResourceID(routerPath)
 	return b.tier1StaticRoutesClient.Patch(routerID, staticRouteID, staticRoute)
 }
 
 func (b *nsxtBroker) DeleteStaticRoute(routerPath string, staticRouteID string) error {
-	routerID := getRouterID(routerPath)
+	routerID := getResourceID(routerPath)
 	return b.tier1StaticRoutesClient.Delete(routerID, staticRouteID)
 }
 
@@ -75,8 +80,13 @@ func (b *nsxtBroker) ListRealizedEntities(path string) (model.GenericPolicyReali
 	return b.realizedEntitiesClient.List(path, nil)
 }
 
-// getRouterID returns router ID from router path
-func getRouterID(routerPath string) string {
-	path := strings.Split(routerPath, "/")
+func (b *nsxtBroker) GetSegment(path string) (model.Segment, error) {
+	segmentID := getResourceID(path)
+	return b.segmentClient.Get(segmentID)
+}
+
+// getResourceID returns ID from path
+func getResourceID(resourcePath string) string {
+	path := strings.Split(resourcePath, "/")
 	return path[len(path)-1]
 }

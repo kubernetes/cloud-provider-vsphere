@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	listerv1 "k8s.io/client-go/listers/core/v1"
@@ -103,4 +105,10 @@ func (im *InformerManager) AddNodeListener(add, remove func(obj interface{}), up
 // already been initialized, it will not re-init them. Only new non-init Listers will be initialized.
 func (im *InformerManager) Listen() {
 	go im.informerFactory.Start(im.stopCh)
+}
+
+// GetNodeList gets node list
+func (im *InformerManager) GetNodeList() ([]*v1.Node, error) {
+	nodeLister := im.informerFactory.Core().V1().Nodes().Lister()
+	return nodeLister.List(labels.Nothing())
 }

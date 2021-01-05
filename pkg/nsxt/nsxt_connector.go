@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	nsxt "github.com/vmware/go-vmware-nsxt"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/core"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/protocol/client"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/security"
@@ -172,4 +173,27 @@ func getAPIToken(vmcAuthHost string, vmcAccessToken string) (string, error) {
 	}
 
 	return token.AccessToken, nil
+}
+
+// NewManagerClient creates a new NSXT Manager Client
+func NewManagerClient(nsxtConfig *config.NsxtConfig) (*nsxt.APIClient, error) {
+	nsxtClient, err := nsxt.NewAPIClient(&nsxt.Configuration{
+		Host:               nsxtConfig.Host,
+		BasePath:           fmt.Sprintf("https://%s/api/v1", nsxtConfig.Host),
+		UserName:           nsxtConfig.User,
+		Password:           nsxtConfig.Password,
+		ClientAuthCertFile: nsxtConfig.ClientAuthCertFile,
+		ClientAuthKeyFile:  nsxtConfig.ClientAuthKeyFile,
+		CAFile:             nsxtConfig.CAFile,
+		Insecure:           nsxtConfig.InsecureFlag,
+		RetriesConfiguration: nsxt.ClientRetriesConfiguration{
+			MaxRetries:    1,
+			RetryMinDelay: 100,
+			RetryMaxDelay: 500,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return nsxtClient, nil
 }

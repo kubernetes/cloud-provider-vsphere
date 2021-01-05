@@ -124,6 +124,13 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 		}
 		vs.loadbalancer.Initialize(loadbalancer.ClusterName, client, stop)
 	}
+	if vs.routes != nil {
+		err = vs.routes.Initialize(vs.informMgr)
+		if err != nil {
+			klog.Errorf("Route Init Failed: %v", err)
+			vs.routes = nil
+		}
+	}
 }
 
 func (vs *VSphere) isLoadBalancerSupportEnabled() bool {

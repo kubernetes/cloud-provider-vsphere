@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	gonsxt "github.com/vmware/go-vmware-nsxt"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/data"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
 
@@ -32,12 +33,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route/config"
+	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
+	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
 	"k8s.io/klog"
 )
 
 // RoutesProvider is the interface for route functionality
 type RoutesProvider interface {
 	cloudprovider.Routes
+	Initialize(*k8s.InformerManager) error
 	AddNode(*v1.Node)
 	DeleteNode(*v1.Node)
 }
@@ -45,6 +49,7 @@ type RoutesProvider interface {
 type routeProvider struct {
 	routerPath  string
 	broker      NsxtBroker
+	mpClient    *gonsxt.APIClient
 	nodeMap     map[string]*v1.Node
 	nodeMapLock sync.RWMutex
 }
@@ -53,18 +58,134 @@ var _ RoutesProvider = &routeProvider{}
 
 // NewRouteProvider creates a new RouteProvider
 func NewRouteProvider(cfg *config.Config) (RoutesProvider, error) {
-	if cfg == nil || cfg.Route.RouterPath == "" {
+	if cfg == nil {
 		return nil, nil
 	}
 	nsxtbroker, err := NewNsxtBroker(&cfg.NSXT)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating nsxt broker failed")
 	}
+	mpclient, err := nsxt.NewManagerClient(&cfg.NSXT)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating nsxt manager client failed")
+	}
+
 	return &routeProvider{
 		broker:     nsxtbroker,
+		mpClient:   mpclient,
 		routerPath: cfg.Route.RouterPath,
 		nodeMap:    make(map[string]*v1.Node),
 	}, nil
+}
+
+// Initialize tries to find node router on NSXT automatically
+func (p *routeProvider) Initialize(im *k8s.InformerManager) error {
+	if p.routerPath == "" {
+		nodeList, err := im.GetNodeList()
+		if err != nil {
+			return errors.Wrap(err, "failed to get node list")
+		}
+		routerPath, err := p.findNodeRouter(nodeList)
+		if err != nil {
+			return errors.Wrap(err, "failed to find node router")
+		}
+		klog.Infof("Finding node router %s", routerPath)
+		p.routerPath = routerPath
+	}
+	return nil
+}
+
+// findNodeRouter finds node's router via providerID
+// The finding path is providerID -> externalID -> vifID -> segment port -> segment -> router
+func (p *routeProvider) findNodeRouter(nodeList []*v1.Node) (string, error) {
+	for _, node := range nodeList {
+		providerID := node.Spec.ProviderID
+		if !strings.HasPrefix(providerID, config.ProviderIDPrefix) {
+			continue
+		}
+		providerID = providerID[len(config.ProviderIDPrefix):]
+		externalID, err := p.getNodeExternalID(providerID)
+		if err != nil || externalID == "" {
+			continue
+		}
+		vifID, err := p.getNodeVifID(externalID)
+		if err != nil || vifID == "" {
+			continue
+		}
+		segmentPath, err := p.getNodeSegmentPath(vifID)
+		if err != nil || segmentPath == "" {
+			continue
+		}
+		routerPath, err := p.getNodeRouterPath(segmentPath)
+		if err != nil || routerPath == "" {
+			continue
+		}
+		return routerPath, nil
+	}
+	return "", errors.New("Finding node router failed")
+}
+
+func (p *routeProvider) getNodeExternalID(providerID string) (string, error) {
+	vms, _, err := p.mpClient.FabricApi.ListVirtualMachines(p.mpClient.Context, nil)
+	if err != nil {
+		return "", err
+	}
+	for _, vm := range vms.Results {
+		for _, computeID := range vm.ComputeIds {
+			if !strings.HasPrefix(computeID, config.BiosUuidPrefix) {
+				continue
+			}
+			if providerID == computeID[len(config.BiosUuidPrefix):] {
+				return vm.ExternalId, nil
+			}
+		}
+	}
+	return "", nil
+}
+
+func (p *routeProvider) getNodeVifID(externalID string) (string, error) {
+	localVarOptionals := make(map[string]interface{})
+	localVarOptionals["ownerVmId"] = externalID
+	vifs, _, err := p.mpClient.FabricApi.ListVifs(p.mpClient.Context, localVarOptionals)
+	if err != nil {
+		return "", err
+	}
+	if len(vifs.Results) == 0 {
+		return "", errors.Errorf("VIF for VM %s not found", externalID)
+	}
+	vifID := ""
+	for _, vif := range vifs.Results {
+		// Node only has one interface attached to NSXT segment
+		if vif.LportAttachmentId != "" {
+			vifID = vif.LportAttachmentId
+			break
+		}
+	}
+	return vifID, nil
+}
+
+func (p *routeProvider) getNodeSegmentPath(vifID string) (string, error) {
+	queryParam := fmt.Sprintf("resource_type:SegmentPort AND attachment.id:%s", vifID)
+	ports, err := p.broker.QueryEntities(queryParam)
+	if err != nil {
+		return "", err
+	}
+	if len(ports.Results) == 0 {
+		return "", nil
+	}
+	port := ports.Results[0]
+	pathField, _ := port.Field("parent_path")
+	parentPath := (pathField).(*data.StringValue).Value()
+	return parentPath, nil
+}
+
+func (p *routeProvider) getNodeRouterPath(segmentPath string) (string, error) {
+	segment, err := p.broker.GetSegment(segmentPath)
+	if err != nil {
+		return "", nil
+	}
+	routerPath := *segment.ConnectivityPath
+	return routerPath, nil
 }
 
 // ListRoutes returns a list of routes which have static routes on NSXT

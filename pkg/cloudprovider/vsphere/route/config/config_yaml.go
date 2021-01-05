@@ -17,7 +17,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 
 	yaml "gopkg.in/yaml.v2"
@@ -49,9 +48,6 @@ func (rcy *RouteConfigYAML) CreateConfig() *Config {
 }
 
 func (rcy *RouteConfigYAML) validateConfig() error {
-	if rcy.Route.RouterPath == "" {
-		return errors.New("router path is required")
-	}
 	return rcy.NSXT.ValidateConfig()
 }
 

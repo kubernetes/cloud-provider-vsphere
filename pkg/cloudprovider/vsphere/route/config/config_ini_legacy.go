@@ -17,7 +17,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 
 	"gopkg.in/gcfg.v1"
@@ -48,9 +47,6 @@ func (rci *RouteConfigINI) CreateConfig() *Config {
 }
 
 func (rci *RouteConfigINI) validateConfig() error {
-	if rci.Route.RouterPath == "" {
-		return errors.New("router path is required")
-	}
 	return rci.NSXT.ValidateConfig()
 }
 
