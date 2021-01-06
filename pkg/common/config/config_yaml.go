@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 /*

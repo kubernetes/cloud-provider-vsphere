@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	ini "gopkg.in/gcfg.v1"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 /*

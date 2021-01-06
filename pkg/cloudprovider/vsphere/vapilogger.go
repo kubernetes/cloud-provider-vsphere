@@ -18,7 +18,7 @@ package vsphere
 
 import (
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/log"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // klogBridge is a connector for the vapi logger to klog

@@ -36,7 +36,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // AppName is the full name of this CCM

@@ -21,7 +21,7 @@ import (
 	"os"
 	"strconv"
 
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // FromEnv initializes the provided configuration object with values

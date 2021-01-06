@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/vmware/govmomi/vim25/mo"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )

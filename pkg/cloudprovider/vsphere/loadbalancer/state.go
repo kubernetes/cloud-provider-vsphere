@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
 
@@ -33,7 +33,6 @@ import (
 
 type state struct {
 	*lbService
-	klog.Verbose
 	clusterName    string
 	objectName     types.NamespacedName
 	service        *corev1.Service
@@ -53,15 +52,12 @@ func newState(lbService *lbService, clusterName string, service *corev1.Service,
 		service:     service,
 		nodes:       nodes,
 		objectName:  namespacedNameFromService(service),
-		Verbose:     klog.V(klog.Level(2)),
 	}
 }
 
 // CxtInfof logs with object name context
 func (s *state) CtxInfof(format string, args ...interface{}) {
-	if s.Verbose {
-		s.Infof("%s: %s", s.objectName, fmt.Sprintf(format, args...))
-	}
+	klog.V(2).Infof("%s: %s", s.objectName, fmt.Sprintf(format, args...))
 }
 
 // Process processes a load balancer and ensures that all needed objects are existing

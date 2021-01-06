@@ -24,7 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
