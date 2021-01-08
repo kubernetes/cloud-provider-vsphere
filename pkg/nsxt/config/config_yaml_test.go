@@ -55,3 +55,52 @@ func TestYAMLValidateUserConfig(t *testing.T) {
 	err = cfg.ValidateConfig()
 	assert.Nil(t, err)
 }
+
+func TestYAMLValidateCertConfig(t *testing.T) {
+	testCases := []struct {
+		name               string
+		cfg                *NsxtConfigYAML
+		expectedErrMessage string
+	}{
+		{
+			name: "empty client cert file",
+			cfg: &NsxtConfigYAML{
+				ClientAuthKeyFile: "client-key",
+			},
+			expectedErrMessage: "client cert file is required if client key file is provided",
+		},
+		{
+			name: "empty client key file",
+			cfg: &NsxtConfigYAML{
+				ClientAuthCertFile: "client-cert",
+			},
+			expectedErrMessage: "client key file is required if client cert file is provided",
+		},
+		{
+			name: "empty host",
+			cfg: &NsxtConfigYAML{
+				ClientAuthKeyFile:  "client-key",
+				ClientAuthCertFile: "client-cert",
+			},
+			expectedErrMessage: "host is empty",
+		},
+		{
+			name: "valid config",
+			cfg: &NsxtConfigYAML{
+				ClientAuthKeyFile:  "client-key",
+				ClientAuthCertFile: "client-cert",
+				Host:               "server",
+			},
+			expectedErrMessage: "",
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := testCase.cfg.ValidateConfig()
+		if err != nil {
+			assert.EqualError(t, err, testCase.expectedErrMessage)
+		} else {
+			assert.Equal(t, "", testCase.expectedErrMessage)
+		}
+	}
+}

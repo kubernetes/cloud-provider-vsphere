@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route/config"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // RoutesProvider is the interface for route functionality
