@@ -16,8 +16,8 @@
 
 package config
 
-// NsxtConfig contains the NSX-T specific configuration
-type NsxtConfig struct {
+// Config is used to read and store information from the cloud configuration file
+type Config struct {
 	// NSX-T username.
 	User string
 	// NSX-T password in clear text.
@@ -28,6 +28,10 @@ type NsxtConfig struct {
 	InsecureFlag bool
 	// RemoteAuth is to be set to true if NSX-T uses remote authentication (authentication done through the vIDM).
 	RemoteAuth bool
+	// SecretName is the secret name for NSX-T username and password
+	SecretName string
+	// SecretNamespace is the secret namespace for NSX-T username and password
+	SecretNamespace string
 
 	VMCAccessToken     string
 	VMCAuthHost        string

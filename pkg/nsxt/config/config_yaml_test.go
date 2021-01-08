@@ -23,62 +23,62 @@ import (
 )
 
 func TestYAMLValidateTokenConfig(t *testing.T) {
-	cfg := &NsxtConfigYAML{}
-	err := cfg.ValidateConfig()
+	cfg := &NsxtYAML{}
+	err := cfg.validateConfig()
 	assert.EqualError(t, err, "user or vmc access token or client cert file must be set")
 
 	cfg.VMCAccessToken = "token"
-	err = cfg.ValidateConfig()
+	err = cfg.validateConfig()
 	assert.EqualError(t, err, "vmc auth host must be provided if auth token is provided")
 
 	cfg.VMCAuthHost = "auth-host"
-	err = cfg.ValidateConfig()
+	err = cfg.validateConfig()
 	assert.EqualError(t, err, "host is empty")
 
 	cfg.Host = "server"
-	err = cfg.ValidateConfig()
+	err = cfg.validateConfig()
 	assert.Nil(t, err)
 }
 
 func TestYAMLValidateUserConfig(t *testing.T) {
-	cfg := &NsxtConfigYAML{
+	cfg := &NsxtYAML{
 		User: "admin",
 	}
-	err := cfg.ValidateConfig()
+	err := cfg.validateConfig()
 	assert.EqualError(t, err, "password is empty")
 
 	cfg.Password = "secret"
-	err = cfg.ValidateConfig()
+	err = cfg.validateConfig()
 	assert.EqualError(t, err, "host is empty")
 
 	cfg.Host = "server"
-	err = cfg.ValidateConfig()
+	err = cfg.validateConfig()
 	assert.Nil(t, err)
 }
 
 func TestYAMLValidateCertConfig(t *testing.T) {
 	testCases := []struct {
 		name               string
-		cfg                *NsxtConfigYAML
+		cfg                *NsxtYAML
 		expectedErrMessage string
 	}{
 		{
 			name: "empty client cert file",
-			cfg: &NsxtConfigYAML{
+			cfg: &NsxtYAML{
 				ClientAuthKeyFile: "client-key",
 			},
 			expectedErrMessage: "client cert file is required if client key file is provided",
 		},
 		{
 			name: "empty client key file",
-			cfg: &NsxtConfigYAML{
+			cfg: &NsxtYAML{
 				ClientAuthCertFile: "client-cert",
 			},
 			expectedErrMessage: "client key file is required if client cert file is provided",
 		},
 		{
 			name: "empty host",
-			cfg: &NsxtConfigYAML{
+			cfg: &NsxtYAML{
 				ClientAuthKeyFile:  "client-key",
 				ClientAuthCertFile: "client-cert",
 			},
@@ -86,7 +86,7 @@ func TestYAMLValidateCertConfig(t *testing.T) {
 		},
 		{
 			name: "valid config",
-			cfg: &NsxtConfigYAML{
+			cfg: &NsxtYAML{
 				ClientAuthKeyFile:  "client-key",
 				ClientAuthCertFile: "client-cert",
 				Host:               "server",
@@ -96,11 +96,101 @@ func TestYAMLValidateCertConfig(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		err := testCase.cfg.ValidateConfig()
+		err := testCase.cfg.validateConfig()
 		if err != nil {
 			assert.EqualError(t, err, testCase.expectedErrMessage)
 		} else {
 			assert.Equal(t, "", testCase.expectedErrMessage)
 		}
 	}
+}
+
+func TestYAMLValidateSecretConfig(t *testing.T) {
+	testCases := []struct {
+		name               string
+		cfg                *NsxtYAML
+		expectedErrMessage string
+	}{
+		{
+			name: "empty secret namespace",
+			cfg: &NsxtYAML{
+				SecretName: "secret-name",
+			},
+			expectedErrMessage: "secret namespace is required if secret name is provided",
+		},
+		{
+			name: "empty secret name",
+			cfg: &NsxtYAML{
+				SecretNamespace: "secret-ns",
+			},
+			expectedErrMessage: "secret name is required if secret namespace is provided",
+		},
+		{
+			name: "empty host",
+			cfg: &NsxtYAML{
+				SecretName:      "secret-name",
+				SecretNamespace: "secret-ns",
+			},
+			expectedErrMessage: "host is empty",
+		},
+		{
+			name: "valid config",
+			cfg: &NsxtYAML{
+				SecretName:      "secret-name",
+				SecretNamespace: "secret-ns",
+				Host:            "server",
+			},
+			expectedErrMessage: "",
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := testCase.cfg.validateConfig()
+		if err != nil {
+			assert.EqualError(t, err, testCase.expectedErrMessage)
+		} else {
+			assert.Equal(t, "", testCase.expectedErrMessage)
+		}
+	}
+}
+
+func TestReadYAMLConfig(t *testing.T) {
+	contents := `
+nsxt:
+  user: admin
+  password: secret
+  host: nsxt-server
+  insecureFlag: false
+  remoteAuth: true
+  vmcAccessToken: vmc-token
+  vmcAuthHost: vmc-host
+  clientAuthCertFile: client-cert-file
+  clientAuthKeyFile: client-key-file
+  caFile: ca-file
+  secretName: secret-name
+  secretNamespace: secret-ns
+`
+	config, err := ReadRawConfigYAML([]byte(contents))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	assertEquals := func(name, left, right string) {
+		if left != right {
+			t.Errorf("%s %s != %s", name, left, right)
+		}
+	}
+	assertEquals("NSXT.user", config.NSXT.User, "admin")
+	assertEquals("NSXT.password", config.NSXT.Password, "secret")
+	assertEquals("NSXT.host", config.NSXT.Host, "nsxt-server")
+	assert.Equal(t, false, config.NSXT.InsecureFlag)
+	assert.Equal(t, true, config.NSXT.RemoteAuth)
+	assertEquals("NSXT.vmcAccessToken", config.NSXT.VMCAccessToken, "vmc-token")
+	assertEquals("NSXT.vmcAuthHost", config.NSXT.VMCAuthHost, "vmc-host")
+	assertEquals("NSXT.clientAuthCertFile", config.NSXT.ClientAuthCertFile, "client-cert-file")
+	assertEquals("NSXT.clientAuthKeyFile", config.NSXT.ClientAuthKeyFile, "client-key-file")
+	assertEquals("NSXT.caFile", config.NSXT.CAFile, "ca-file")
+	assertEquals("NSXT.secretName", config.NSXT.SecretName, "secret-name")
+	assertEquals("NSXT.secretNamespace", config.NSXT.SecretNamespace, "secret-ns")
 }

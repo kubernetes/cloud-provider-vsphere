@@ -28,7 +28,7 @@ import (
 // obtained from environment variables. If an environment variable is set
 // for a property that's already initialized, the environment variable's value
 // takes precedence.
-func (cfg *NsxtConfig) FromEnv() error {
+func (cfg *Config) FromEnv() error {
 	if v := os.Getenv("NSXT_MANAGER_HOST"); v != "" {
 		cfg.Host = v
 	}
@@ -55,6 +55,46 @@ func (cfg *NsxtConfig) FromEnv() error {
 	if v := os.Getenv("NSXT_CA_FILE"); v != "" {
 		cfg.CAFile = v
 	}
+	if v := os.Getenv("NSXT_SECRET_NAME"); v != "" {
+		cfg.SecretName = v
+	}
+	if v := os.Getenv("NSXT_SECRET_NAMESPACE"); v != "" {
+		cfg.SecretNamespace = v
+	}
 
 	return nil
+}
+
+/*
+	TODO:
+	When the INI based cloud-config is deprecated, the references to the
+	INI based code (ie the call to ReadConfigINI) below should be deleted.
+*/
+
+// ReadNsxtConfig parses vSphere cloud config file and stores it into VSphereConfig.
+// Environment variables are also checked
+func ReadNsxtConfig(configData []byte) (*Config, error) {
+	if len(configData) == 0 {
+		return nil, fmt.Errorf("Invalid YAML/INI file")
+	}
+
+	cfg, err := ReadConfigYAML(configData)
+	if err != nil {
+		cfg, err = ReadConfigINI(configData)
+		if err != nil {
+			return nil, err
+		}
+
+		klog.Info("ReadConfig INI succeeded. NSXT INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.")
+	} else {
+		klog.Info("ReadNsxtConfig YAML succeeded")
+	}
+
+	// Env Vars should override config file entries if present
+	if err := cfg.FromEnv(); err != nil {
+		return nil, err
+	}
+
+	klog.Info("NSXT Config initialized")
+	return cfg, nil
 }

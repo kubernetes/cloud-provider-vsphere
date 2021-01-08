@@ -33,17 +33,6 @@ import (
 func (rci *RouteConfigINI) CreateConfig() *Config {
 	cfg := &Config{}
 	cfg.Route.RouterPath = rci.Route.RouterPath
-	// NSXT configurations
-	cfg.NSXT.User = rci.NSXT.User
-	cfg.NSXT.Password = rci.NSXT.Password
-	cfg.NSXT.Host = rci.NSXT.Host
-	cfg.NSXT.InsecureFlag = rci.NSXT.InsecureFlag
-	cfg.NSXT.VMCAccessToken = rci.NSXT.VMCAccessToken
-	cfg.NSXT.VMCAuthHost = rci.NSXT.VMCAuthHost
-	cfg.NSXT.ClientAuthCertFile = rci.NSXT.ClientAuthCertFile
-	cfg.NSXT.ClientAuthKeyFile = rci.NSXT.ClientAuthKeyFile
-	cfg.NSXT.CAFile = rci.NSXT.CAFile
-
 	return cfg
 }
 
@@ -51,7 +40,7 @@ func (rci *RouteConfigINI) validateConfig() error {
 	if rci.Route.RouterPath == "" {
 		return errors.New("router path is required")
 	}
-	return rci.NSXT.ValidateConfig()
+	return nil
 }
 
 // CompleteAndValidate sets default values, overrides by env and validates the resulting config

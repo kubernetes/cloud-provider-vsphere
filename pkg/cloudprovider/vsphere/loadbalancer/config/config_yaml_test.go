@@ -45,11 +45,6 @@ loadBalancerClass:
     ipPoolName: poolPrivate
     tcpAppProfileName: tcp2
     udpAppProfileName: udp2
-
-nsxt:
-  user: admin
-  password: secret
-  host: nsxt-server
 `
 	config, err := ReadRawConfigYAML([]byte(contents))
 	if err != nil {
@@ -77,9 +72,6 @@ nsxt:
 	if len(config.LoadBalancer.AdditionalTags) != 2 || config.LoadBalancer.AdditionalTags["tag1"] != "value1" || config.LoadBalancer.AdditionalTags["tag2"] != "value 2" {
 		t.Errorf("unexpected additionalTags %v", config.LoadBalancer.AdditionalTags)
 	}
-	assertEquals("nsxt.user", config.NSXT.User, "admin")
-	assertEquals("nsxt.password", config.NSXT.Password, "secret")
-	assertEquals("nsxt.host", config.NSXT.Host, "nsxt-server")
 }
 
 func TestReadYAMLConfigOnVMC(t *testing.T) {
@@ -90,13 +82,6 @@ loadBalancer:
   tier1GatewayPath: 1234
   tcpAppProfilePath: infra/xxx/tcp1234
   udpAppProfilePath: infra/xxx/udp1234
-
-nsxt:
-  vmcAccessToken: token123
-  vmcAuthHost: authHost
-  host: nsxt-server
-  insecureFlag: true
-  remoteAuth: true
 `
 	config, err := ReadRawConfigYAML([]byte(contents))
 	if err != nil {
@@ -113,13 +98,4 @@ nsxt:
 	assertEquals("loadBalancer.tier1GatewayPath", config.LoadBalancer.Tier1GatewayPath, "1234")
 	assertEquals("loadBalancer.tcpAppProfilePath", config.LoadBalancer.TCPAppProfilePath, "infra/xxx/tcp1234")
 	assertEquals("loadBalancer.udpAppProfilePath", config.LoadBalancer.UDPAppProfilePath, "infra/xxx/udp1234")
-	assertEquals("nsxt.vmcAccessToken", config.NSXT.VMCAccessToken, "token123")
-	assertEquals("nsxt.vmcAuthHost", config.NSXT.VMCAuthHost, "authHost")
-	assertEquals("nsxt.host", config.NSXT.Host, "nsxt-server")
-	if !config.NSXT.InsecureFlag {
-		t.Errorf("nsxt.insecureFlag != true")
-	}
-	if !config.NSXT.RemoteAuth {
-		t.Errorf("nsxt.remoteAuth != true")
-	}
 }

@@ -25,7 +25,7 @@ import (
 )
 
 func TestFromEnv(t *testing.T) {
-	cfg := &NsxtConfig{}
+	cfg := &Config{}
 	os.Setenv("NSXT_MANAGER_HOST", "nsxt-server")
 	os.Setenv("NSXT_USERNAME", "admin")
 	os.Setenv("NSXT_PASSWORD", "secret")
@@ -33,6 +33,8 @@ func TestFromEnv(t *testing.T) {
 	os.Setenv("NSXT_CLIENT_AUTH_CERT_FILE", "client-cert")
 	os.Setenv("NSXT_CLIENT_AUTH_KEY_FILE", "client-key")
 	os.Setenv("NSXT_CA_FILE", "ca-cert")
+	os.Setenv("NSXT_SECRET_NAME", "secret-name")
+	os.Setenv("NSXT_SECRET_NAMESPACE", "secret-ns")
 
 	err := cfg.FromEnv()
 	if err != nil {
@@ -45,6 +47,8 @@ func TestFromEnv(t *testing.T) {
 	assert.Equal(t, "client-cert", cfg.ClientAuthCertFile)
 	assert.Equal(t, "client-key", cfg.ClientAuthKeyFile)
 	assert.Equal(t, "ca-cert", cfg.CAFile)
+	assert.Equal(t, "secret-name", cfg.SecretName)
+	assert.Equal(t, "secret-ns", cfg.SecretNamespace)
 
 	clearNsxtEnv()
 }

@@ -29,6 +29,7 @@ import (
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
+	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
 )
 
 // GRPCServer describes an object that can start a gRPC server.
@@ -61,6 +62,7 @@ type VSphere struct {
 	connectionManager *cm.ConnectionManager
 	nodeManager       *NodeManager
 	informMgr         *k8s.InformerManager
+	nsxtConnectorMgr  *nsxt.ConnectorManager
 }
 
 // NodeInfo is information about a Kubernetes node.

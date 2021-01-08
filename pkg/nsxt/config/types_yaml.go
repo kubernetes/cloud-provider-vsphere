@@ -16,8 +16,21 @@
 
 package config
 
-// NsxtConfigYAML contains the NSX-T specific configuration
+/*
+	TODO:
+	When the INI based cloud-config is deprecated, this file should be renamed
+	from types_yaml.go to types.go and the structs within this file should be named:
+
+	NsxtConfigYAML -> NsxtConfig
+*/
+
+// NsxtConfigYAML is used to read and store information from the cloud configuration file
 type NsxtConfigYAML struct {
+	NSXT NsxtYAML `yaml:"nsxt"`
+}
+
+// NsxtYAML contains the NSX-T specific configuration
+type NsxtYAML struct {
 	// NSX-T username.
 	User string `yaml:"user"`
 	// NSX-T password in clear text.
@@ -28,6 +41,10 @@ type NsxtConfigYAML struct {
 	InsecureFlag bool `yaml:"insecureFlag"`
 	// RemoteAuth is to be set to true if NSX-T uses remote authentication (authentication done through the vIDM).
 	RemoteAuth bool `yaml:"remoteAuth"`
+	// SecretName is the secret name for NSX-T username and password
+	SecretName string `yaml:"secretName"`
+	// SecretNamespace is the secret namespace for NSX-T username and password
+	SecretNamespace string `yaml:"secretNamespace"`
 
 	VMCAccessToken     string `yaml:"vmcAccessToken"`
 	VMCAuthHost        string `yaml:"vmcAuthHost"`

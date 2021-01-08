@@ -29,11 +29,6 @@ func TestReadINIConfig(t *testing.T) {
 	contents := `
 [Route]
 router-path = /infra/tier-1s/test-router
-
-[NSXT]
-user = admin
-password = secret
-host = nsxt-server
 `
 	config, err := ReadRawConfigINI([]byte(contents))
 	if err != nil {
@@ -47,7 +42,4 @@ host = nsxt-server
 		}
 	}
 	assertEquals("Route.routerPath", config.Route.RouterPath, "/infra/tier-1s/test-router")
-	assertEquals("NSXT.user", config.NSXT.User, "admin")
-	assertEquals("NSXT.password", config.NSXT.Password, "secret")
-	assertEquals("NSXT.host", config.NSXT.Host, "nsxt-server")
 }

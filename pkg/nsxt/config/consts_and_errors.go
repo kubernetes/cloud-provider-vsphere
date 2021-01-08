@@ -1,5 +1,5 @@
 /*
- Copyright 2020 The Kubernetes Authors.
+ Copyright 2021 The Kubernetes Authors.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -16,20 +16,9 @@
 
 package config
 
-/*
-	TODO:
-	When the INI based cloud-config is deprecated, this file should be renamed
-	from types_yaml.go to types.go and the structs within this file should be named:
-
-	RouteConfigYAML -> RouteConfig
-*/
-
-// RouteConfigYAML is used to read and store information from the cloud configuration file
-type RouteConfigYAML struct {
-	Route RouteYAML `yaml:"route"`
-}
-
-// RouteYAML contains the configuration for route
-type RouteYAML struct {
-	RouterPath string `yaml:"routerPath"`
-}
+const (
+	// UsernameKeyInSecret is the username key in secret
+	UsernameKeyInSecret = "username"
+	// PasswordKeyInSecret is the password key in secret
+	PasswordKeyInSecret = "password"
+)

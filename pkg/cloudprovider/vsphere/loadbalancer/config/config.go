@@ -68,12 +68,6 @@ func ReadLBConfig(byConfig []byte) (*LBConfig, error) {
 		klog.Info("ReadConfig YAML succeeded")
 	}
 
-	// Env Vars should override config file entries if present
-	if err := cfg.NSXT.FromEnv(); err != nil {
-		klog.Errorf("FromEnv failed: %s", err)
-		return nil, err
-	}
-
 	klog.Info("Config initialized")
 	return cfg, nil
 }

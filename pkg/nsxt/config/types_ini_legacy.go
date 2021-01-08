@@ -16,8 +16,13 @@
 
 package config
 
-// NsxtConfigINI contains the NSX-T specific configuration
+// NsxtConfigINI  is used to read and store information from the cloud configuration file
 type NsxtConfigINI struct {
+	NSXT NsxtINI `gcfg:"nsxt"`
+}
+
+// NsxtINI contains the NSX-T specific configuration
+type NsxtINI struct {
 	// NSX-T username.
 	User string `gcfg:"user"`
 	// NSX-T password in clear text.
@@ -28,6 +33,10 @@ type NsxtConfigINI struct {
 	InsecureFlag bool `gcfg:"insecure-flag"`
 	// RemoteAuth is to be set to true if NSX-T uses remote authentication (authentication done through the vIDM).
 	RemoteAuth bool `gcfg:"remote-auth"`
+	// SecretName is the secret name for NSX-T username and password
+	SecretName string `gcfg:"secret-name"`
+	// SecretNamespace is the secret namespace for NSX-T username and password
+	SecretNamespace string `gcfg:"secret-namespace"`
 
 	VMCAccessToken     string `gcfg:"vmc-access-token"`
 	VMCAuthHost        string `gcfg:"vmc-auth-host"`

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/vmware/vsphere-automation-sdk-go/runtime/protocol/client"
 	corev1 "k8s.io/api/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 
@@ -52,7 +53,7 @@ var ClusterName string
 var _ LBProvider = &lbProvider{}
 
 // NewLBProvider creates a new LBProvider
-func NewLBProvider(cfg *config.LBConfig) (LBProvider, error) {
+func NewLBProvider(cfg *config.LBConfig, connector client.Connector) (LBProvider, error) {
 	if cfg == nil {
 		return nil, nil
 	}
@@ -60,7 +61,7 @@ func NewLBProvider(cfg *config.LBConfig) (LBProvider, error) {
 		return nil, nil
 	}
 
-	broker, err := NewNsxtBroker(&cfg.NSXT)
+	broker, err := NewNsxtBroker(connector)
 	if err != nil {
 		return nil, err
 	}
