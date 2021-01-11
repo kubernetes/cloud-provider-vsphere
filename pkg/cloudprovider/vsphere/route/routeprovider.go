@@ -76,7 +76,14 @@ func (p *routeProvider) ListRoutes(ctx context.Context, clusterName string) ([]*
 		klog.Errorf("querying static routes for cluster %s failed", clusterName)
 		return nil, err
 	}
+	if *staticRoutes.ResultCount == 0 {
+		return []*cloudprovider.Route{}, nil
+	}
+	return p.generateRoutes(staticRoutes), nil
+}
 
+// generateRoutes generates cloudprovider Routes based on NSXT static routes
+func (p *routeProvider) generateRoutes(staticRoutes model.SearchResponse) []*cloudprovider.Route {
 	var routes []*cloudprovider.Route
 	for _, item := range staticRoutes.Results {
 		nodeName := ""
@@ -99,7 +106,7 @@ func (p *routeProvider) ListRoutes(ctx context.Context, clusterName string) ([]*
 		}
 		routes = append(routes, route)
 	}
-	return routes, nil
+	return routes
 }
 
 // CreateRoute creates a static route on NSXT for a Node
@@ -112,23 +119,7 @@ func (p *routeProvider) CreateRoute(ctx context.Context, clusterName string, nam
 		klog.Errorf("getting node %s IP address failed: %v", nodeName, err)
 		return err
 	}
-
-	var tags []model.Tag
-	clusterNameScope := config.ClusterNameTagScope
-	nodeNameScope := config.NodeNameTagScope
-	tags = append(tags, model.Tag{Scope: &clusterNameScope, Tag: &clusterName})
-	tags = append(tags, model.Tag{Scope: &nodeNameScope, Tag: &nodeName})
-	var nexthops []model.RouterNexthop
-	nexthops = append(nexthops, model.RouterNexthop{IpAddress: &nodeIP})
-	routeID := nameHint + "_" + route.DestinationCIDR
-	routeID = strings.ReplaceAll(routeID, "/", "_")
-	routeName := clusterName + "_" + nodeName + "_" + route.DestinationCIDR
-	staticRoute := model.StaticRoutes{
-		DisplayName: &routeName,
-		Network:     &route.DestinationCIDR,
-		NextHops:    nexthops,
-		Tags:        tags,
-	}
+	routeID, staticRoute := p.generateStaticRoute(clusterName, nameHint, nodeName, route.DestinationCIDR, nodeIP)
 	err = p.broker.CreateStaticRoute(p.routerPath, routeID, staticRoute)
 	if err != nil {
 		klog.Errorf("creating static route %s for node %s failed: %s", routeID, nodeName, err)
@@ -137,6 +128,28 @@ func (p *routeProvider) CreateRoute(ctx context.Context, clusterName string, nam
 
 	// Get realized state
 	return p.checkStaticRouteRealizedState(routeID)
+}
+
+// generateStaticRoute generates NSXT static route
+func (p *routeProvider) generateStaticRoute(clusterName string, nameHint string, nodeName string, cidr string, nodeIP string) (
+	routeID string, staticRoute model.StaticRoutes) {
+	var tags []model.Tag
+	clusterNameScope := config.ClusterNameTagScope
+	nodeNameScope := config.NodeNameTagScope
+	tags = append(tags, model.Tag{Scope: &clusterNameScope, Tag: &clusterName})
+	tags = append(tags, model.Tag{Scope: &nodeNameScope, Tag: &nodeName})
+	var nexthops []model.RouterNexthop
+	nexthops = append(nexthops, model.RouterNexthop{IpAddress: &nodeIP})
+	routeID = nameHint + "_" + cidr
+	routeID = strings.ReplaceAll(routeID, "/", "_")
+	routeName := clusterName + "_" + nodeName + "_" + cidr
+	staticRoute = model.StaticRoutes{
+		DisplayName: &routeName,
+		Network:     &cidr,
+		NextHops:    nexthops,
+		Tags:        tags,
+	}
+	return routeID, staticRoute
 }
 
 // DeleteRoute deletes Node's static route on NSXT
@@ -156,23 +169,28 @@ func (p *routeProvider) DeleteRoute(ctx context.Context, clusterName string, rou
 // Do not delete the creating static route after the timeout
 func (p *routeProvider) checkStaticRouteRealizedState(routeID string) error {
 	path := p.routerPath + "/static-routes/" + routeID
-	limit := time.Now().Add(config.RealizedStateTimeout)
-	for time.Now().Before(limit) {
-		list, err := p.broker.ListRealizedEntities(path)
-		if err != nil {
-			return fmt.Errorf("get route %s realized state failed: %s", path, err)
-		}
-		for _, resource := range list.Results {
-			if len(resource.IntentPaths) == 0 {
-				continue
+	timeout := time.After(config.RealizedStateTimeout)
+	ticker := time.NewTicker(config.RealizedStateSleepTime)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timed out waiting for static route %s", path)
+		case <-ticker.C:
+			list, err := p.broker.ListRealizedEntities(path)
+			if err != nil {
+				return fmt.Errorf("get route %s realized state failed: %s", path, err)
 			}
-			if resource.IntentPaths[0] == path && *resource.State == config.RealizedState {
-				return nil
+			for _, resource := range list.Results {
+				if len(resource.IntentPaths) == 0 {
+					continue
+				}
+				if resource.IntentPaths[0] == path && *resource.State == config.RealizedState {
+					return nil
+				}
 			}
 		}
-		time.Sleep(config.RealizedStateSleepTime)
 	}
-	return fmt.Errorf("timed out waiting for static route %s", path)
 }
 
 // getNodeIPAddress gets node IP address

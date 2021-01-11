@@ -167,7 +167,7 @@ func (vs *VSphere) Routes() (cloudprovider.Routes, bool) {
 	if vs.routes != nil {
 		return vs.routes, true
 	}
-	klog.Warning("The vSphere cloud provider does not support routes")
+	klog.Warning("Routes interface was not configured")
 	return nil, false
 }
 

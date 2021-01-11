@@ -34,7 +34,7 @@ import (
 func (rcy *RouteConfigYAML) CreateConfig() *Config {
 	cfg := &Config{}
 	cfg.Route.RouterPath = rcy.Route.RouterPath
-	//NSXT
+	// NSXT configurations
 	cfg.NSXT.User = rcy.NSXT.User
 	cfg.NSXT.Password = rcy.NSXT.Password
 	cfg.NSXT.Host = rcy.NSXT.Host

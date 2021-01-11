@@ -40,16 +40,7 @@ func TestListRoutes(t *testing.T) {
 	response := `
 {
   "results" : [ {
-    "unique_id" : "be13d703-97c9-49f3-818b-91280151b71e",
-    "_last_modified_user" : "admin",
-    "_revision" : 0,
-    "_system_owned" : false,
-    "resource_type" : "StaticRoutes",
-    "_protection" : "NOT_PROTECTED",
-    "_last_modified_time" : 1606960153899,
-    "overridden" : false,
     "display_name" : "62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
-    "_create_user" : "admin",
     "network" : "100.96.0.0/24",
     "tags" : [ {
       "scope" : "vsphere.k8s.io/cluster-name",
@@ -58,43 +49,13 @@ func TestListRoutes(t *testing.T) {
       "scope" : "vsphere.k8s.io/node-name",
       "tag" : "node1"
     } ],
-    "_create_time" : 1606960153895,
     "path" : "/infra/tier-1s/test-t1/static-routes/62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
-    "marked_for_delete" : false,
-    "enabled_on_secondary" : false,
-    "parent_path" : "/infra/tier-1s/test-t1",
     "id" : "62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
-    "relative_path" : "62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
     "next_hops" : [ {
       "ip_address" : "172.50.0.13",
       "admin_distance" : 1
-    } ],
-    "status" : {
-      "consolidated_status_per_enforcement_point" : [ {
-        "consolidated_status" : {
-          "consolidated_status" : "SUCCESS"
-        },
-        "resource_type" : "ConsolidatedStatusPerEnforcementPoint",
-        "enforcement_point_id" : "default"
-      } ],
-      "intent_version" : "0",
-      "consolidated_status" : {
-        "consolidated_status" : "SUCCESS"
-      },
-      "intent_path" : "/infra/tier-1s/test-t1/static-routes/62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
-      "publish_status" : "REALIZED"
-    }
-  }, {
-    "unique_id" : "92cab961-2178-430c-9626-1f87a4448960",
-    "_last_modified_user" : "admin",
-    "_revision" : 0,
-    "_system_owned" : false,
-    "resource_type" : "StaticRoutes",
-    "_protection" : "NOT_PROTECTED",
-    "_last_modified_time" : 1606960153899,
-    "overridden" : false,
+    } ]}, {
     "display_name" : "a4775ec4-8b68-42ea-86fc-d17390e4c373_100.96.1.0_24",
-    "_create_user" : "admin",
     "network" : "100.96.1.0/24",
     "tags" : [ {
       "scope" : "vsphere.k8s.io/cluster-name",
@@ -103,35 +64,14 @@ func TestListRoutes(t *testing.T) {
       "scope" : "vsphere.k8s.io/node-name",
       "tag" : "node2"
     } ],
-    "_create_time" : 1606960153896,
     "path" : "/infra/tier-1s/test-t1/static-routes/a4775ec4-8b68-42ea-86fc-d17390e4c373_100.96.1.0_24",
-    "marked_for_delete" : false,
-    "enabled_on_secondary" : false,
-    "parent_path" : "/infra/tier-1s/test-t1",
     "id" : "a4775ec4-8b68-42ea-86fc-d17390e4c373_100.96.1.0_24",
-    "relative_path" : "a4775ec4-8b68-42ea-86fc-d17390e4c373_100.96.1.0_24",
     "next_hops" : [ {
       "ip_address" : "172.50.0.137",
       "admin_distance" : 1
-    } ],
-    "status" : {
-      "consolidated_status_per_enforcement_point" : [ {
-        "consolidated_status" : {
-          "consolidated_status" : "SUCCESS"
-        },
-        "resource_type" : "ConsolidatedStatusPerEnforcementPoint",
-        "enforcement_point_id" : "default"
-      } ],
-      "intent_version" : "0",
-      "consolidated_status" : {
-        "consolidated_status" : "SUCCESS"
-      },
-      "intent_path" : "/infra/tier-1s/test-t1/static-routes/a4775ec4-8b68-42ea-86fc-d17390e4c373_100.96.1.0_24",
-      "publish_status" : "REALIZED"
-    }
+    } ]
   } ],
-  "result_count" : 2,
-  "cursor" : "2"
+  "result_count" : 2
 }
 `
 	d := json.NewDecoder(strings.NewReader(response))
@@ -167,6 +107,50 @@ func TestListRoutes(t *testing.T) {
 		"Route name should be a4775ec4-8b68-42ea-86fc-d17390e4c373_100.96.1.0_24")
 	assert.Equal(t, types.NodeName("node2"), route.TargetNode, "Node name should be node2")
 	assert.Equal(t, "100.96.1.0/24", route.DestinationCIDR, "DestinationCIDR should be 100.96.      1.0/24")
+}
+
+func TestGenerateRoute(t *testing.T) {
+	response := `
+{
+  "results" : [ {
+    "resource_type" : "StaticRoutes",
+    "display_name" : "62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
+    "network" : "100.96.0.0/24",
+    "tags" : [ {
+      "scope" : "vsphere.k8s.io/cluster-name",
+      "tag" : "kubernetes"
+    }, {
+      "scope" : "vsphere.k8s.io/node-name",
+      "tag" : "node1"
+    } ],
+    "path" : "/infra/tier-1s/test-t1/static-routes/62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
+    "id" : "62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24",
+    "next_hops" : [ {
+      "ip_address" : "172.50.0.13",
+      "admin_distance" : 1
+    } ]
+  }],
+  "result_count" : 1
+}
+`
+	d := json.NewDecoder(strings.NewReader(response))
+	d.UseNumber()
+	var jsondata interface{}
+	d.Decode(&jsondata)
+	decoder := cleanjson.NewJsonToDataValueDecoder()
+	dataValue, _ := decoder.Decode(jsondata)
+	typeConverter := bindings.NewTypeConverter()
+	data, _ := typeConverter.ConvertToGolang(dataValue, bindings.NewReferenceType(model.SearchResponseBindingType))
+
+	p := &routeProvider{}
+	routes := p.generateRoutes(data.(model.SearchResponse))
+
+	assert.Equal(t, 1, len(routes), "Should have 1 routes")
+	route := routes[0]
+	assert.Equal(t, "62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24", route.Name,
+		"Route name should be 62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24")
+	assert.Equal(t, types.NodeName("node1"), route.TargetNode, "Node name should be node1")
+	assert.Equal(t, "100.96.0.0/24", route.DestinationCIDR, "DestinationCIDR should be 100.96.0.0/24")
 }
 
 func TestCreateRoute(t *testing.T) {
@@ -206,6 +190,54 @@ func TestCreateRoute(t *testing.T) {
 	mockBroker.EXPECT().CreateStaticRoute(p.routerPath, routeID, staticRoute).Return(errors.New("mock error"))
 	p.CreateRoute(context.TODO(), clusterName, nameHint, &route)
 	mockBroker.EXPECT().ListRealizedEntities(routeID).Times(0)
+}
+
+func TestGenerateIPv4StaticRoute(t *testing.T) {
+	clusterName := "cluster1"
+	nameHint := "nameHint"
+	nodeName := "node1"
+	cidr := "100.96.0.0/24"
+	nodeIP := "172.50.0.13"
+
+	p := &routeProvider{}
+	routeID, staticRoute := p.generateStaticRoute(clusterName, nameHint, nodeName, cidr, nodeIP)
+
+	assert.Equal(t, "nameHint_100.96.0.0_24", routeID, "routeID should be nameHint_100.96.0.0_24")
+	assert.Equal(t, "cluster1_node1_100.96.0.0/24", *staticRoute.DisplayName,
+		"DisplayName should be cluster1_node1_100.96.0.0/24")
+	assert.Equal(t, "100.96.0.0/24", *staticRoute.Network, "Network should be 100.96.0.0/24")
+	assert.Equal(t, "172.50.0.13", *staticRoute.NextHops[0].IpAddress,
+		"NextHop should be 172.50.0.13")
+	tag := staticRoute.Tags[0]
+	assert.Equal(t, "vsphere.k8s.io/cluster-name", *tag.Scope, "Scope should be vsphere.k8s.io/cluster-name")
+	assert.Equal(t, "cluster1", *tag.Tag, "Tag should be cluster1")
+	tag = staticRoute.Tags[1]
+	assert.Equal(t, "vsphere.k8s.io/node-name", *tag.Scope, "Scope should be vsphere.k8s.io/node-name")
+	assert.Equal(t, "node1", *tag.Tag, "Tag should be node1")
+}
+
+func TestGenerateIPv6StaticRoute(t *testing.T) {
+	clusterName := "cluster1"
+	nameHint := "nameHint"
+	nodeName := "node1"
+	cidr := "21DA:00D3:0000:2F3B::/64"
+	nodeIP := "21DA:00D3:0000:2F3B:02AC:00FF:FE28:9C5A"
+
+	p := &routeProvider{}
+	routeID, staticRoute := p.generateStaticRoute(clusterName, nameHint, nodeName, cidr, nodeIP)
+
+	assert.Equal(t, "nameHint_21DA:00D3:0000:2F3B::_64", routeID, "routeID should be nameHint_21DA:00D3:0000:2F3B::_64")
+	assert.Equal(t, "cluster1_node1_21DA:00D3:0000:2F3B::/64", *staticRoute.DisplayName,
+		"DisplayName should be cluster1_node1_21DA:00D3:0000:2F3B::/64")
+	assert.Equal(t, "21DA:00D3:0000:2F3B::/64", *staticRoute.Network, "Network should be 21DA:00D3:0000:2F3B::/64")
+	assert.Equal(t, "21DA:00D3:0000:2F3B:02AC:00FF:FE28:9C5A", *staticRoute.NextHops[0].IpAddress,
+		"NextHop should be 21DA:00D3:0000:2F3B:02AC:00FF:FE28:9C5A")
+	tag := staticRoute.Tags[0]
+	assert.Equal(t, "vsphere.k8s.io/cluster-name", *tag.Scope, "Scope should be vsphere.k8s.io/cluster-name")
+	assert.Equal(t, "cluster1", *tag.Tag, "Tag should be cluster1")
+	tag = staticRoute.Tags[1]
+	assert.Equal(t, "vsphere.k8s.io/node-name", *tag.Scope, "Scope should be vsphere.k8s.io/node-name")
+	assert.Equal(t, "node1", *tag.Tag, "Tag should be node1")
 }
 
 func TestCheckStaticRouteRealizedState(t *testing.T) {
@@ -290,6 +322,7 @@ func buildFakeNode(nodeName string) *v1.Node {
 	addresses := make([]v1.NodeAddress, 2)
 	addresses = append(addresses, v1.NodeAddress{Type: v1.NodeHostName, Address: nodeName})
 	addresses = append(addresses, v1.NodeAddress{Type: v1.NodeInternalIP, Address: "172.50.0.13"})
+	addresses = append(addresses, v1.NodeAddress{Type: v1.NodeInternalIP, Address: "fe80::20c:29ff:fe0b:b407"})
 	node := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: nodeName,
@@ -301,7 +334,7 @@ func buildFakeNode(nodeName string) *v1.Node {
 	return node
 }
 
-func TestGetNodeIPAddress(t *testing.T) {
+func TestGetNodeIPv4Address(t *testing.T) {
 	p := &routeProvider{
 		nodeMap: make(map[string]*v1.Node),
 	}
@@ -310,6 +343,18 @@ func TestGetNodeIPAddress(t *testing.T) {
 	p.nodeMap[nodeName] = node
 	ip, err := p.getNodeIPAddress(nodeName, true)
 	assert.Equal(t, "172.50.0.13", ip, "Node IP address should be 172.50.0.13")
+	assert.Equal(t, nil, err, "Should not return error")
+}
+
+func TestGetNodeIPv6Address(t *testing.T) {
+	p := &routeProvider{
+		nodeMap: make(map[string]*v1.Node),
+	}
+	nodeName := "node1"
+	node := buildFakeNode(nodeName)
+	p.nodeMap[nodeName] = node
+	ip, err := p.getNodeIPAddress(nodeName, false)
+	assert.Equal(t, "fe80::20c:29ff:fe0b:b407", ip, "Node IP address should be fe80::20c:29ff:fe0b:b407")
 	assert.Equal(t, nil, err, "Should not return error")
 }
 
