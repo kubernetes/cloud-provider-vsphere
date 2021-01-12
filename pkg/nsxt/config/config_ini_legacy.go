@@ -28,6 +28,14 @@ func (cfg *NsxtConfigINI) ValidateConfig() error {
 		if cfg.Password == "" {
 			return errors.New("password is empty")
 		}
+	} else if cfg.ClientAuthKeyFile != "" {
+		if cfg.ClientAuthCertFile == "" {
+			return errors.New("client cert file is required if client key file is provided")
+		}
+	} else if cfg.ClientAuthCertFile != "" {
+		if cfg.ClientAuthKeyFile == "" {
+			return errors.New("client key file is required if client cert file is provided")
+		}
 	} else {
 		return errors.New("user or vmc access token or client cert file must be set")
 	}

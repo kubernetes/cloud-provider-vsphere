@@ -49,13 +49,14 @@ func (processor remoteBasicAuthHeaderProcessor) Process(req *http.Request) error
 // NewNsxtConnector creates a new NSXT connector
 func NewNsxtConnector(nsxtConfig *config.NsxtConfig) (client.Connector, error) {
 	url := fmt.Sprintf("https://%s", nsxtConfig.Host)
-	securityCtx := core.NewSecurityContextImpl()
+	var securityCtx *core.SecurityContextImpl
 	securityContextNeeded := true
 	if len(nsxtConfig.ClientAuthCertFile) > 0 {
 		securityContextNeeded = false
 	}
 
 	if securityContextNeeded {
+		securityCtx = core.NewSecurityContextImpl()
 		if len(nsxtConfig.VMCAccessToken) > 0 {
 			if nsxtConfig.VMCAuthHost == "" {
 				return nil, fmt.Errorf("vmc auth host must be provided if auth token is provided")
@@ -95,7 +96,9 @@ func NewNsxtConnector(nsxtConfig *config.NsxtConfig) (client.Connector, error) {
 	}
 
 	connector := client.NewRestConnector(url, httpClient)
-	connector.SetSecurityContext(securityCtx)
+	if securityCtx != nil {
+		connector.SetSecurityContext(securityCtx)
+	}
 	if nsxtConfig.RemoteAuth {
 		connector.AddRequestProcessor(newRemoteBasicAuthHeaderProcessor())
 	}
