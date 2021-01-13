@@ -34,17 +34,6 @@ import (
 func (rcy *RouteConfigYAML) CreateConfig() *Config {
 	cfg := &Config{}
 	cfg.Route.RouterPath = rcy.Route.RouterPath
-	// NSXT configurations
-	cfg.NSXT.User = rcy.NSXT.User
-	cfg.NSXT.Password = rcy.NSXT.Password
-	cfg.NSXT.Host = rcy.NSXT.Host
-	cfg.NSXT.InsecureFlag = rcy.NSXT.InsecureFlag
-	cfg.NSXT.VMCAccessToken = rcy.NSXT.VMCAccessToken
-	cfg.NSXT.VMCAuthHost = rcy.NSXT.VMCAuthHost
-	cfg.NSXT.ClientAuthCertFile = rcy.NSXT.ClientAuthCertFile
-	cfg.NSXT.ClientAuthKeyFile = rcy.NSXT.ClientAuthKeyFile
-	cfg.NSXT.CAFile = rcy.NSXT.CAFile
-
 	return cfg
 }
 
@@ -52,7 +41,7 @@ func (rcy *RouteConfigYAML) validateConfig() error {
 	if rcy.Route.RouterPath == "" {
 		return errors.New("router path is required")
 	}
-	return rcy.NSXT.ValidateConfig()
+	return nil
 }
 
 // CompleteAndValidate sets default values, overrides by env and validates the resulting config

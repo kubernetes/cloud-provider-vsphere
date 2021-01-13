@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"k8s.io/client-go/informers"
+	informerv1 "k8s.io/client-go/informers/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	listerv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -84,6 +85,14 @@ func (im *InformerManager) GetSecretLister() listerv1.SecretLister {
 	}
 
 	return im.secretInformer.Lister()
+}
+
+// GetSecretInformer gets secret informer
+func (im *InformerManager) GetSecretInformer() informerv1.SecretInformer {
+	if im.secretInformer == nil {
+		im.secretInformer = im.informerFactory.Core().V1().Secrets()
+	}
+	return im.secretInformer
 }
 
 // AddNodeListener hooks up add, update, delete callbacks

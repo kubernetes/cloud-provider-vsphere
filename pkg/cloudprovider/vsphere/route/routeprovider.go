@@ -26,6 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/data"
+	"github.com/vmware/vsphere-automation-sdk-go/runtime/protocol/client"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
 
 	v1 "k8s.io/api/core/v1"
@@ -52,11 +53,11 @@ type routeProvider struct {
 var _ RoutesProvider = &routeProvider{}
 
 // NewRouteProvider creates a new RouteProvider
-func NewRouteProvider(cfg *config.Config) (RoutesProvider, error) {
+func NewRouteProvider(cfg *config.Config, connector client.Connector) (RoutesProvider, error) {
 	if cfg == nil || cfg.Route.RouterPath == "" {
 		return nil, nil
 	}
-	nsxtbroker, err := NewNsxtBroker(&cfg.NSXT)
+	nsxtbroker, err := NewNsxtBroker(connector)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating nsxt broker failed")
 	}

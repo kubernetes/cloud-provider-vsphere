@@ -63,18 +63,6 @@ func (lbc *LBConfigINI) CreateConfig() *LBConfig {
 		}
 	}
 
-	//NSXT
-	cfg.NSXT.User = lbc.NSXT.User
-	cfg.NSXT.Password = lbc.NSXT.Password
-	cfg.NSXT.Host = lbc.NSXT.Host
-	cfg.NSXT.InsecureFlag = lbc.NSXT.InsecureFlag
-	cfg.NSXT.RemoteAuth = lbc.NSXT.RemoteAuth
-	cfg.NSXT.VMCAccessToken = lbc.NSXT.VMCAccessToken
-	cfg.NSXT.VMCAuthHost = lbc.NSXT.VMCAuthHost
-	cfg.NSXT.ClientAuthCertFile = lbc.NSXT.ClientAuthCertFile
-	cfg.NSXT.ClientAuthKeyFile = lbc.NSXT.ClientAuthKeyFile
-	cfg.NSXT.CAFile = lbc.NSXT.CAFile
-
 	return cfg
 }
 
@@ -121,7 +109,7 @@ func (lbc *LBConfigINI) validateConfig() error {
 			return fmt.Errorf(msg)
 		}
 	}
-	return lbc.NSXT.ValidateConfig()
+	return nil
 }
 
 func (lbc *LoadBalancerConfigINI) isEmpty() bool {

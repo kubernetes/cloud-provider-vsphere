@@ -43,11 +43,6 @@ ip-pool-name = poolPublic
 ip-pool-name = poolPrivate
 tcp-app-profile-name = tcp2
 udp-app-profile-name = udp2
-
-[NSXT]
-user = admin
-password = secret
-host = nsxt-server
 `
 	config, err := ReadRawConfigINI([]byte(contents))
 	if err != nil {
@@ -75,9 +70,6 @@ host = nsxt-server
 	if len(config.LoadBalancer.AdditionalTags) != 2 || config.LoadBalancer.AdditionalTags["tag1"] != "value1" || config.LoadBalancer.AdditionalTags["tag2"] != "value 2" {
 		t.Errorf("unexpected additionalTags %v", config.LoadBalancer.AdditionalTags)
 	}
-	assertEquals("NSXT.user", config.NSXT.User, "admin")
-	assertEquals("NSXT.password", config.NSXT.Password, "secret")
-	assertEquals("NSXT.host", config.NSXT.Host, "nsxt-server")
 }
 
 func TestReadINIConfigOnVMC(t *testing.T) {
@@ -88,13 +80,6 @@ size = MEDIUM
 tier1-gateway-path = 1234
 tcp-app-profile-path = infra/xxx/tcp1234
 udp-app-profile-path = infra/xxx/udp1234
-
-[NSXT]
-vmc-access-token = token123
-vmc-auth-host = authHost
-host = nsxt-server
-insecure-flag = true
-remote-auth = true
 `
 	config, err := ReadRawConfigINI([]byte(contents))
 	if err != nil {
@@ -111,13 +96,4 @@ remote-auth = true
 	assertEquals("LoadBalancer.tier1-gateway-path", config.LoadBalancer.Tier1GatewayPath, "1234")
 	assertEquals("LoadBalancer.tcp-app-profile-path", config.LoadBalancer.TCPAppProfilePath, "infra/xxx/tcp1234")
 	assertEquals("LoadBalancer.udp-app-profile-path", config.LoadBalancer.UDPAppProfilePath, "infra/xxx/udp1234")
-	assertEquals("NSXT.vmc-access-token", config.NSXT.VMCAccessToken, "token123")
-	assertEquals("NSXT.vmc-auth-host", config.NSXT.VMCAuthHost, "authHost")
-	assertEquals("NSXT.host", config.NSXT.Host, "nsxt-server")
-	if !config.NSXT.InsecureFlag {
-		t.Errorf("NSXT.insecure-flag != true")
-	}
-	if !config.NSXT.RemoteAuth {
-		t.Errorf("NSX-T.remote-auth != true")
-	}
 }

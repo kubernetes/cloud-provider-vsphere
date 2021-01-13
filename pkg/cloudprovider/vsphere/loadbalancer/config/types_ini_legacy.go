@@ -16,15 +16,10 @@
 
 package config
 
-import (
-	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
-)
-
 // LBConfigINI  is used to read and store information from the cloud configuration file
 type LBConfigINI struct {
 	LoadBalancer      LoadBalancerConfigINI                  `gcfg:"loadbalancer"`
 	LoadBalancerClass map[string]*LoadBalancerClassConfigINI `gcfg:"loadbalancerclass"`
-	NSXT              nsxtcfg.NsxtConfigINI                  `gcfg:"nsxt"`
 }
 
 // LoadBalancerConfigINI contains the configuration for the load balancer itself

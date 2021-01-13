@@ -63,9 +63,6 @@ func ReadRouteConfig(configData []byte) (*Config, error) {
 	if err := cfg.Route.FromEnv(); err != nil {
 		return nil, err
 	}
-	if err := cfg.NSXT.FromEnv(); err != nil {
-		return nil, err
-	}
 
 	klog.Info("Route Config initialized")
 	return cfg, nil

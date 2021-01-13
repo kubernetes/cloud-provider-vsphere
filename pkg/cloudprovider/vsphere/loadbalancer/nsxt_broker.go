@@ -32,9 +32,6 @@ import (
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/infra/ip_pools"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/infra/realized_state"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
-
-	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
-	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
 )
 
 // NsxtBroker is an internal interface to enable mocking the nsxt backend
@@ -79,13 +76,9 @@ type nsxtBroker struct {
 }
 
 // NewNsxtBroker creates a new NsxtBroker using the configuration
-func NewNsxtBroker(nsxtConfig *nsxtcfg.NsxtConfig) (NsxtBroker, error) {
-	connector, err := nsxt.NewNsxtConnector(nsxtConfig)
-	if err != nil {
-		return nil, err
-	}
+func NewNsxtBroker(connector client.Connector) (NsxtBroker, error) {
 	// perform API call to check connector
-	_, err = infra.NewDefaultLbMonitorProfilesClient(connector).List(nil, nil, nil, nil, nil, nil)
+	_, err := infra.NewDefaultLbMonitorProfilesClient(connector).List(nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Connection to NSX-T API failed. Please check your connection settings.")
 	}

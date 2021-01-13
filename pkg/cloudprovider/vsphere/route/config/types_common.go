@@ -16,14 +16,9 @@
 
 package config
 
-import (
-	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
-)
-
 // Config is used to read and store information from the cloud configuration file
 type Config struct {
 	Route RouteConfig
-	NSXT  nsxtcfg.NsxtConfig
 }
 
 // RouteConfig contains the configuration for the route itself

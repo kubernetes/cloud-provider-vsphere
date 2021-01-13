@@ -38,6 +38,8 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
+	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
+	ncfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
 )
 
 const (
@@ -60,6 +62,11 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
+		nsxtcfg, err := ncfg.ReadNsxtConfig(byConfig)
+		if err != nil {
+			klog.Errorf("ReadNsxtConfig failed: %s", err)
+			nsxtcfg = nil
+		}
 		lbcfg, err := lcfg.ReadLBConfig(byConfig)
 		if err != nil {
 			lbcfg = nil //Error reading LBConfig, explicitly set to nil
@@ -70,15 +77,15 @@ func init() {
 			routecfg = nil
 		}
 
-		return newVSphere(cfg, lbcfg, routecfg, true)
+		return newVSphere(cfg, nsxtcfg, lbcfg, routecfg, true)
 	})
 }
 
 var _ cloudprovider.Interface = &VSphere{}
 
 // Creates new Controller node interface and returns
-func newVSphere(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, routecfg *rcfg.Config, finalize ...bool) (*VSphere, error) {
-	vs, err := buildVSphereFromConfig(cfg, lbcfg, routecfg)
+func newVSphere(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lcfg.LBConfig, routecfg *rcfg.Config, finalize ...bool) (*VSphere, error) {
+	vs, err := buildVSphereFromConfig(cfg, nsxtcfg, lbcfg, routecfg)
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +130,10 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 			klog.Warning("Missing cluster id, no periodical cleanup possible")
 		}
 		vs.loadbalancer.Initialize(loadbalancer.ClusterName, client, stop)
+	}
+	err = vs.nsxtConnectorMgr.AddSecretListener(vs.informMgr.GetSecretInformer())
+	if err != nil {
+		klog.Warning("Adding NSXT secret listener failed: %v", err)
 	}
 }
 
@@ -188,10 +199,15 @@ func (vs *VSphere) HasClusterID() bool {
 }
 
 // Initializes vSphere from vSphere CloudProvider Configuration
-func buildVSphereFromConfig(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, routecfg *rcfg.Config) (*VSphere, error) {
+func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lcfg.LBConfig, routecfg *rcfg.Config) (*VSphere, error) {
 	nm := newNodeManager(cfg, nil)
 
-	lb, err := loadbalancer.NewLBProvider(lbcfg)
+	ncm, err := nsxt.NewConnectorManager(nsxtcfg)
+	if err != nil {
+		return nil, err
+	}
+
+	lb, err := loadbalancer.NewLBProvider(lbcfg, ncm.GetConnector())
 	if err != nil {
 		return nil, err
 	}
@@ -219,20 +235,21 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, lbcfg *lcfg.LBConfig, routecfg 
 		}
 	}
 
-	routes, err := route.NewRouteProvider(routecfg)
+	routes, err := route.NewRouteProvider(routecfg, ncm.GetConnector())
 	if err != nil {
 		return nil, err
 	}
 
 	vs := VSphere{
-		cfg:          cfg,
-		cfgLB:        lbcfg,
-		nodeManager:  nm,
-		loadbalancer: lb,
-		routes:       routes,
-		instances:    newInstances(nm),
-		zones:        newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
-		server:       server.NewServer(cfg.Global.APIBinding, nm),
+		cfg:              cfg,
+		cfgLB:            lbcfg,
+		nodeManager:      nm,
+		nsxtConnectorMgr: ncm,
+		loadbalancer:     lb,
+		routes:           routes,
+		instances:        newInstances(nm),
+		zones:            newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
+		server:           server.NewServer(cfg.Global.APIBinding, nm),
 	}
 	return &vs, nil
 }

@@ -23,14 +23,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/core"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/protocol/client"
 	"github.com/vmware/vsphere-automation-sdk-go/runtime/security"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
+	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
+	klog "k8s.io/klog/v2"
 )
+
+// ConnectorManager manages NSXT connection
+type ConnectorManager struct {
+	config    *config.Config
+	connector client.Connector
+}
 
 type remoteBasicAuthHeaderProcessor struct {
 }
@@ -46,8 +58,13 @@ func (processor remoteBasicAuthHeaderProcessor) Process(req *http.Request) error
 	return nil
 }
 
-// NewNsxtConnector creates a new NSXT connector
-func NewNsxtConnector(nsxtConfig *config.NsxtConfig) (client.Connector, error) {
+// NewConnectorManager creates a new NSXT connector
+func NewConnectorManager(nsxtConfig *config.Config) (*ConnectorManager, error) {
+	cm := &ConnectorManager{}
+	if nsxtConfig == nil {
+		return cm, nil
+	}
+	cm.config = nsxtConfig
 	url := fmt.Sprintf("https://%s", nsxtConfig.Host)
 	var securityCtx *core.SecurityContextImpl
 	securityContextNeeded := true
@@ -69,15 +86,7 @@ func NewNsxtConnector(nsxtConfig *config.NsxtConfig) (client.Connector, error) {
 
 			securityCtx.SetProperty(security.AUTHENTICATION_SCHEME_ID, security.OAUTH_SCHEME_ID)
 			securityCtx.SetProperty(security.ACCESS_TOKEN, apiToken)
-		} else {
-			if nsxtConfig.User == "" {
-				return nil, fmt.Errorf("username must be provided")
-			}
-
-			if nsxtConfig.Password == "" {
-				return nil, fmt.Errorf("password must be provided")
-			}
-
+		} else if nsxtConfig.User != "" && nsxtConfig.Password != "" {
 			securityCtx.SetProperty(security.AUTHENTICATION_SCHEME_ID, security.USER_PASSWORD_SCHEME_ID)
 			securityCtx.SetProperty(security.USER_KEY, nsxtConfig.User)
 			securityCtx.SetProperty(security.PASSWORD_KEY, nsxtConfig.Password)
@@ -102,8 +111,9 @@ func NewNsxtConnector(nsxtConfig *config.NsxtConfig) (client.Connector, error) {
 	if nsxtConfig.RemoteAuth {
 		connector.AddRequestProcessor(newRemoteBasicAuthHeaderProcessor())
 	}
+	cm.connector = connector
 
-	return connector, nil
+	return cm, nil
 }
 
 // getConnectorTLSConfig loads certificates to build TLS configuration
@@ -175,4 +185,103 @@ func getAPIToken(vmcAuthHost string, vmcAccessToken string) (string, error) {
 	}
 
 	return token.AccessToken, nil
+}
+
+// GetConnector gets NSXT connector
+func (cm *ConnectorManager) GetConnector() client.Connector {
+	return cm.connector
+}
+
+// AddSecretListener adds secret informer add, update, delete callbacks
+func (cm *ConnectorManager) AddSecretListener(secretInformer v1.SecretInformer) error {
+	if cm.config.SecretName == "" || cm.config.SecretNamespace == "" {
+		klog.V(6).Infof("No need to initialize NSXT secret manager as secret is not provided")
+		return nil
+	}
+	if secretInformer == nil {
+		return errors.New("failed to initialize NSXT secret manager as secret informer is nil")
+	}
+
+	secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    cm.secretAdded,
+		UpdateFunc: cm.secretUpdated,
+		DeleteFunc: cm.secretDeleted,
+	})
+
+	return nil
+}
+
+// isForNsxtSecret checks if secret is for nsxt config
+func (cm *ConnectorManager) isForNsxtSecret(secret *corev1.Secret) bool {
+	if secret.GetName() == cm.config.SecretName && secret.GetNamespace() == cm.config.SecretNamespace {
+		return true
+	}
+	return false
+}
+
+// secretAdded handles secret added event
+func (cm *ConnectorManager) secretAdded(obj interface{}) {
+	secret, ok := obj.(*corev1.Secret)
+	if secret == nil || !ok {
+		return
+	}
+	if cm.isForNsxtSecret(secret) {
+		cm.updateConnectorContext(secret)
+	}
+}
+
+// secretUpdated handles secret updated event
+func (cm *ConnectorManager) secretUpdated(oldObj, newObj interface{}) {
+	oldSecret, ok := oldObj.(*corev1.Secret)
+	if oldSecret == nil || !ok {
+		return
+	}
+	newSecret, ok := newObj.(*corev1.Secret)
+	if newSecret == nil || !ok {
+		return
+	}
+	if cm.isForNsxtSecret(newSecret) && !reflect.DeepEqual(oldSecret.Data, newSecret.Data) {
+		cm.updateConnectorContext(newSecret)
+	}
+}
+
+// secretDeleted handles secret deleted event
+func (cm *ConnectorManager) secretDeleted(obj interface{}) {
+	secret, ok := obj.(*corev1.Secret)
+	if secret == nil || !ok {
+		return
+	}
+	if cm.isForNsxtSecret(secret) {
+		cm.resetConnectorContext()
+	}
+}
+
+// updateConnectorContext updates security context of connector
+func (cm *ConnectorManager) updateConnectorContext(secret *corev1.Secret) {
+	var username, password string
+	for key, value := range secret.Data {
+		if key == nsxtcfg.UsernameKeyInSecret {
+			username = string(value)
+		}
+		if key == nsxtcfg.PasswordKeyInSecret {
+			password = string(value)
+		}
+	}
+	if username == "" || password == "" {
+		klog.Warningf("NSXT username and password should be both provided in secret")
+		return
+	}
+	klog.V(6).Infof("Updating security context for NSXT connection")
+	securityCtx := core.NewSecurityContextImpl()
+	securityCtx.SetProperty(security.AUTHENTICATION_SCHEME_ID, security.USER_PASSWORD_SCHEME_ID)
+	securityCtx.SetProperty(security.USER_KEY, username)
+	securityCtx.SetProperty(security.PASSWORD_KEY, password)
+	cm.connector.SetSecurityContext(securityCtx)
+}
+
+// resetConnectorContext resets security context of connector
+func (cm *ConnectorManager) resetConnectorContext() {
+	klog.V(6).Infof("Resetting security context for NSXT connection")
+	securityCtx := core.NewSecurityContextImpl()
+	cm.connector.SetSecurityContext(securityCtx)
 }

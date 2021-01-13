@@ -29,10 +29,6 @@ func TestReadYAMLConfig(t *testing.T) {
 	contents := `
 route:
   routerPath: /infra/tier-1s/test-router
-nsxt:
-  user: admin
-  password: secret
-  host: nsxt-server
 `
 	config, err := ReadRawConfigYAML([]byte(contents))
 	if err != nil {
@@ -46,7 +42,4 @@ nsxt:
 		}
 	}
 	assertEquals("route.routerPath", config.Route.RouterPath, "/infra/tier-1s/test-router")
-	assertEquals("nsxt.user", config.NSXT.User, "admin")
-	assertEquals("nsxt.password", config.NSXT.Password, "secret")
-	assertEquals("nsxt.host", config.NSXT.Host, "nsxt-server")
 }

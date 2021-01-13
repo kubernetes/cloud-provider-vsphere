@@ -16,14 +16,9 @@
 
 package config
 
-import (
-	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
-)
-
-// RouteConfigINI  is used to read and store information from the cloud configuration file
+// RouteConfigINI is used to read and store information from the cloud configuration file
 type RouteConfigINI struct {
-	Route RouteINI              `gcfg:"route"`
-	NSXT  nsxtcfg.NsxtConfigINI `gcfg:"nsxt"`
+	Route RouteINI `gcfg:"route"`
 }
 
 // RouteINI contains the configuration for route

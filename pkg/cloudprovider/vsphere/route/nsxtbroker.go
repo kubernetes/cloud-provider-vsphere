@@ -19,13 +19,11 @@ package route
 import (
 	"strings"
 
+	"github.com/vmware/vsphere-automation-sdk-go/runtime/protocol/client"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/infra/realized_state"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/infra/tier_1s"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/search"
-
-	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
-	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
 )
 
 // NsxtBroker is an internal interface to access nsxt backend
@@ -45,11 +43,7 @@ type nsxtBroker struct {
 }
 
 // NewNsxtBroker creates a new NsxtBroker to the NSXT API
-func NewNsxtBroker(nsxtConfig *nsxtcfg.NsxtConfig) (NsxtBroker, error) {
-	connector, err := nsxt.NewNsxtConnector(nsxtConfig)
-	if err != nil {
-		return nil, err
-	}
+func NewNsxtBroker(connector client.Connector) (NsxtBroker, error) {
 	return &nsxtBroker{
 		tier1StaticRoutesClient: tier_1s.NewDefaultStaticRoutesClient(connector),
 		realizedEntitiesClient:  realized_state.NewDefaultRealizedEntitiesClient(connector),

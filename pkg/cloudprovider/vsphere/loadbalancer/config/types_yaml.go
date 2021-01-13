@@ -16,10 +16,6 @@
 
 package config
 
-import (
-	nsxtcfg "k8s.io/cloud-provider-vsphere/pkg/nsxt/config"
-)
-
 /*
 	TODO:
 	When the INI based cloud-config is deprecated, this file should be renamed
@@ -28,14 +24,12 @@ import (
 	LBConfigYAML -> LBConfig
 	LoadBalancerClassConfigYAML -> LoadBalancerClassConfig
 	LoadBalancerClassConfigYAML -> LoadBalancerClassConfig
-	NsxtConfigYAML -> NsxtConfig
 */
 
 // LBConfigYAML  is used to read and store information from the cloud configuration file
 type LBConfigYAML struct {
 	LoadBalancer      LoadBalancerConfigYAML                  `yaml:"loadBalancer"`
 	LoadBalancerClass map[string]*LoadBalancerClassConfigYAML `yaml:"loadBalancerClass"`
-	NSXT              nsxtcfg.NsxtConfigYAML                  `yaml:"nsxt"`
 }
 
 // LoadBalancerConfigYAML contains the configuration for the load balancer itself
