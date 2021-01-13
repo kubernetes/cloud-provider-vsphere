@@ -194,6 +194,9 @@ func (cm *ConnectorManager) GetConnector() client.Connector {
 
 // AddSecretListener adds secret informer add, update, delete callbacks
 func (cm *ConnectorManager) AddSecretListener(secretInformer v1.SecretInformer) error {
+	if cm.config == nil {
+		return errors.New("config is not available for NSXT connector manager")
+	}
 	if cm.config.SecretName == "" || cm.config.SecretNamespace == "" {
 		klog.V(6).Infof("No need to initialize NSXT secret manager as secret is not provided")
 		return nil
