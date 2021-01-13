@@ -17,7 +17,7 @@ limitations under the License.
 package vsphere
 
 import (
-	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -48,6 +48,9 @@ const (
 	ProviderName string = "vsphere"
 	// ClientName is the user agent passed into the controller client builder.
 	ClientName string = "vsphere-cloud-controller-manager"
+
+	// dualStackFeatureGateEnv is a required environment variable when enabling dual-stack nodes
+	dualStackFeatureGateEnv string = "ENABLE_ALPHA_DUAL_STACK"
 )
 
 func init() {
@@ -212,17 +215,15 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 		return nil, err
 	}
 
-	// add alpha dual stack feature
-	for tenant := range cfg.VirtualCenter {
-		if len(cfg.VirtualCenter[tenant].IPFamilyPriority) > 1 {
-			if _, ok := os.LookupEnv("ENABLE_ALPHA_DUAL_STACK"); !ok {
-				klog.Errorf("number of ip family provided for VCenter %s is 2, ENABLE_ALPHA_DUAL_STACK env var is not set", tenant)
-				return nil, errors.New("two IP families provided, but dual stack feature is not enabled")
-			}
-		}
+	routes, err := route.NewRouteProvider(routecfg, ncm.GetConnector())
+	if err != nil {
+		return nil, err
 	}
 
-	routes, err := route.NewRouteProvider(routecfg, ncm.GetConnector())
+	// redirect vapi logging from the NSX-T GO SDK to klog
+	log.SetLogger(NewKlogBridge())
+
+	err = validateDualStack(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +240,23 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 		server:           server.NewServer(cfg.Global.APIBinding, nm),
 	}
 	return &vs, nil
+}
+
+// validateDualStack returns an error if dual-stack was configured but not enabled
+// using the alpha environment variable feature gate ENABLE_ALPHA_DUAL_STACK
+func validateDualStack(cfg *ccfg.CPIConfig) error {
+	_, dualStackEnabled := os.LookupEnv(dualStackFeatureGateEnv)
+	if dualStackEnabled {
+		return nil
+	}
+
+	for vcName, vcConfig := range cfg.VirtualCenter {
+		if len(vcConfig.IPFamilyPriority) > 1 {
+			return fmt.Errorf("mulitple IP families specified for virtual center %q but ENABLE_ALPHA_DUAL_STACK env var is not set", vcName)
+		}
+	}
+
+	return nil
 }
 
 func logout(vs *VSphere) {
