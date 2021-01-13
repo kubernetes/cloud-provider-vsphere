@@ -19,8 +19,10 @@ package vsphere
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 
 	lookup "github.com/vmware/govmomi/lookup/simulator"
@@ -222,7 +224,7 @@ func TestAlphaDualStackConfig(t *testing.T) {
 		testName               string
 		conf                   string
 		enableDualStackFeature bool
-		expectedError          string
+		expectedError          error
 	}{
 		{
 			testName: "Verifying dual stack env var required when providing two ip families",
@@ -230,14 +232,12 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			user = user
 			password = password
 			datacenters = us-west
-			[VirtualCenter "0.0.0.0"]
+			[VirtualCenter "127.0.0.1"]
 			user = user
 			password = password
-			ip-family = ipv6,ipv4
-			
-			`,
+			ip-family = ipv6,ipv4`,
 			enableDualStackFeature: false,
-			expectedError:          "two IP families provided, but dual stack feature is not enabled",
+			expectedError:          fmt.Errorf("mulitple IP families specified for virtual center %q but ENABLE_ALPHA_DUAL_STACK env var is not set", "127.0.0.1"),
 		},
 		{
 			testName: "Verifying dual stack env var existing when providing two ip families",
@@ -245,14 +245,12 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			user = user
 			password = password
 			datacenters = us-west
-			[VirtualCenter "0.0.0.0"]
+			[VirtualCenter "127.0.0.1"]
 			user = user
 			password = password
-			ip-family = ipv6,ipv4
-			
-			`,
+			ip-family = ipv6,ipv4`,
 			enableDualStackFeature: true,
-			expectedError:          "",
+			expectedError:          nil,
 		},
 		{
 			testName: "Dual stack env var not required when providing single ip family",
@@ -260,27 +258,19 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			user = user
 			password = password
 			datacenters = us-west
-			[VirtualCenter "0.0.0.0"]
+			[VirtualCenter "127.0.0.1"]
 			user = user
 			password = password
-			ip-family = ipv6
-			
-			`,
+			ip-family = ipv6`,
 			enableDualStackFeature: false,
-			expectedError:          "",
+			expectedError:          nil,
 		},
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
 			cfg, err := ccfg.ReadCPIConfig([]byte(testcase.conf))
 			if err != nil {
-				if testcase.expectedError != "" {
-					if err.Error() != testcase.expectedError {
-						t.Fatalf("readConfig: expected err: %s, received err: %s", testcase.expectedError, err)
-					}
-				} else {
-					t.Fatalf("readConfig: unexpected error returned: %v", err)
-				}
+				t.Fatalf("error reading CPI config: %v", err)
 			}
 
 			if testcase.enableDualStackFeature {
@@ -297,14 +287,10 @@ func TestAlphaDualStackConfig(t *testing.T) {
 			}
 
 			_, err = buildVSphereFromConfig(cfg, nil, nil, nil)
-			if err != nil {
-				if testcase.expectedError != "" {
-					if err.Error() != testcase.expectedError {
-						t.Fatalf("buildVSphereFromConfig: expected err: %s, receiver err: %s", testcase.expectedError, err)
-					}
-				} else {
-					t.Fatalf("buildVSphereFromConfig: Should succeed when a valid config is provided: %v", err)
-				}
+			if !reflect.DeepEqual(err, testcase.expectedError) {
+				t.Logf("actual error: %v", err)
+				t.Logf("expected error: %v", err)
+				t.Error("unexpected error")
 			}
 		})
 	}
