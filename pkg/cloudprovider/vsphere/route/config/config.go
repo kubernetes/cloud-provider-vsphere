@@ -18,21 +18,9 @@ package config
 
 import (
 	"fmt"
-	"os"
 
 	klog "k8s.io/klog/v2"
 )
-
-// FromEnv initializes the provided configuration object with values
-// obtained from environment variables. If an environment variable is set
-// for a property that's already initialized, the environment variable's value
-// takes precedence.
-func (cfg *RouteConfig) FromEnv() error {
-	if v := os.Getenv("NSXT_ROUTER_PATH"); v != "" {
-		cfg.RouterPath = v
-	}
-	return nil
-}
 
 /*
 	TODO:
@@ -57,11 +45,6 @@ func ReadRouteConfig(configData []byte) (*Config, error) {
 		klog.Info("ReadConfig INI succeeded. Route INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.")
 	} else {
 		klog.Info("ReadRouteConfig YAML succeeded")
-	}
-
-	// Env Vars should override config file entries if present
-	if err := cfg.Route.FromEnv(); err != nil {
-		return nil, err
 	}
 
 	klog.Info("Route Config initialized")
