@@ -211,19 +211,6 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := os.LookupEnv("ENABLE_ALPHA_NSXT_LB"); ok {
-		if lb == nil {
-			klog.Warning("To enable NSX-T load balancer support you need to configure section LoadBalancer")
-		} else {
-			klog.Infof("NSX-T load balancer support enabled. This feature is alpha, use in production at your own risk.")
-			// redirect vapi logging from the NSX-T GO SDK to klog
-			log.SetLogger(NewKlogBridge())
-		}
-	} else {
-		// explicitly nil the LB interface if ENABLE_ALPHA_NSXT_LB is not set even if the LBConfig is valid
-		// ENABLE_ALPHA_NSXT_LB must be explicitly enabled
-		lb = nil
-	}
 
 	// add alpha dual stack feature
 	for tenant := range cfg.VirtualCenter {
