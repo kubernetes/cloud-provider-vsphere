@@ -212,25 +212,34 @@ func (vs *VSphere) HasClusterID() bool {
 func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lcfg.LBConfig, routecfg *rcfg.Config) (*VSphere, error) {
 	nm := newNodeManager(cfg, nil)
 
-	ncm, err := nsxt.NewConnectorManager(nsxtcfg)
-	if err != nil {
-		return nil, err
-	}
+	var ncm *nsxt.ConnectorManager
+	var lb loadbalancer.LBProvider
+	var routes route.RoutesProvider
+	if nsxtcfg != nil {
+		ncm, err := nsxt.NewConnectorManager(nsxtcfg)
+		if err != nil {
+			return nil, err
+		}
 
-	lb, err := loadbalancer.NewLBProvider(lbcfg, ncm.GetConnector())
-	if err != nil {
-		return nil, err
-	}
+		if lbcfg != nil {
+			lb, err = loadbalancer.NewLBProvider(lbcfg, ncm.GetConnector())
+			if err != nil {
+				return nil, err
+			}
+		}
 
-	routes, err := route.NewRouteProvider(routecfg, ncm.GetConnector())
-	if err != nil {
-		return nil, err
+		if routecfg != nil {
+			routes, err = route.NewRouteProvider(routecfg, ncm.GetConnector())
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// redirect vapi logging from the NSX-T GO SDK to klog
 	log.SetLogger(NewKlogBridge())
 
-	err = validateDualStack(cfg)
+	err := validateDualStack(cfg)
 	if err != nil {
 		return nil, err
 	}

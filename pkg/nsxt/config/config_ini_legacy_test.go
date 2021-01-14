@@ -23,19 +23,57 @@ import (
 )
 
 func TestINIValidateTokenConfig(t *testing.T) {
-	cfg := &NsxtINI{
-		VMCAccessToken: "token",
+	testCases := []struct {
+		name               string
+		cfg                *NsxtINI
+		expectedErrMessage string
+	}{
+		{
+			name:               "empty file",
+			cfg:                &NsxtINI{},
+			expectedErrMessage: "user or vmc access token or client cert file or secret for user must be set",
+		},
+		{
+			name: "empty auth host",
+			cfg: &NsxtINI{
+				VMCAccessToken: "token",
+			},
+			expectedErrMessage: "vmc auth host is required if auth token is provided",
+		},
+		{
+			name: "empty auth token",
+			cfg: &NsxtINI{
+				VMCAuthHost: "host",
+			},
+			expectedErrMessage: "vmc auth token is required if auth host is provided",
+		},
+		{
+			name: "empty host",
+			cfg: &NsxtINI{
+				VMCAccessToken: "token",
+				VMCAuthHost:    "host",
+			},
+			expectedErrMessage: "host is empty",
+		},
+		{
+			name: "valid config",
+			cfg: &NsxtINI{
+				VMCAccessToken: "token",
+				VMCAuthHost:    "host",
+				Host:           "server",
+			},
+		},
 	}
-	err := cfg.validateConfig()
-	assert.EqualError(t, err, "vmc auth host must be provided if auth token is provided")
 
-	cfg.VMCAuthHost = "auth-host"
-	err = cfg.validateConfig()
-	assert.EqualError(t, err, "host is empty")
+	for _, testCase := range testCases {
+		err := testCase.cfg.validateConfig()
+		if err != nil {
+			assert.EqualError(t, err, testCase.expectedErrMessage)
+		} else {
+			assert.Equal(t, "", testCase.expectedErrMessage)
+		}
+	}
 
-	cfg.Host = "server"
-	err = cfg.validateConfig()
-	assert.Nil(t, err)
 }
 
 func TestINIValidateUserConfig(t *testing.T) {

@@ -23,21 +23,56 @@ import (
 )
 
 func TestYAMLValidateTokenConfig(t *testing.T) {
-	cfg := &NsxtYAML{}
-	err := cfg.validateConfig()
-	assert.EqualError(t, err, "user or vmc access token or client cert file must be set")
+	testCases := []struct {
+		name               string
+		cfg                *NsxtYAML
+		expectedErrMessage string
+	}{
+		{
+			name:               "empty file",
+			cfg:                &NsxtYAML{},
+			expectedErrMessage: "user or vmc access token or client cert file or secret for user must be set",
+		},
+		{
+			name: "empty auth host",
+			cfg: &NsxtYAML{
+				VMCAccessToken: "token",
+			},
+			expectedErrMessage: "vmc auth host is required if auth token is provided",
+		},
+		{
+			name: "empty auth token",
+			cfg: &NsxtYAML{
+				VMCAuthHost: "host",
+			},
+			expectedErrMessage: "vmc auth token is required if auth host is provided",
+		},
+		{
+			name: "empty host",
+			cfg: &NsxtYAML{
+				VMCAccessToken: "token",
+				VMCAuthHost:    "host",
+			},
+			expectedErrMessage: "host is empty",
+		},
+		{
+			name: "valid config",
+			cfg: &NsxtYAML{
+				VMCAccessToken: "token",
+				VMCAuthHost:    "host",
+				Host:           "server",
+			},
+		},
+	}
 
-	cfg.VMCAccessToken = "token"
-	err = cfg.validateConfig()
-	assert.EqualError(t, err, "vmc auth host must be provided if auth token is provided")
-
-	cfg.VMCAuthHost = "auth-host"
-	err = cfg.validateConfig()
-	assert.EqualError(t, err, "host is empty")
-
-	cfg.Host = "server"
-	err = cfg.validateConfig()
-	assert.Nil(t, err)
+	for _, testCase := range testCases {
+		err := testCase.cfg.validateConfig()
+		if err != nil {
+			assert.EqualError(t, err, testCase.expectedErrMessage)
+		} else {
+			assert.Equal(t, "", testCase.expectedErrMessage)
+		}
+	}
 }
 
 func TestYAMLValidateUserConfig(t *testing.T) {
