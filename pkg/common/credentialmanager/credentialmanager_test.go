@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/kubernetes/pkg/controller"
 )
 
 func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
@@ -184,7 +183,7 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 		},
 	}
 
-	informerFactory := informers.NewSharedInformerFactory(client, controller.NoResyncPeriodFunc())
+	informerFactory := informers.NewSharedInformerFactory(client, 0)
 	secretInformer := informerFactory.Core().V1().Secrets()
 	secretCredentialManager := &CredentialManager{
 		SecretName:      secretName,
