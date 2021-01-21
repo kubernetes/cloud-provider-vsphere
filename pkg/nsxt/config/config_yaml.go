@@ -52,7 +52,11 @@ func (ncy *NsxtConfigYAML) CreateConfig() *Config {
 func (cfg *NsxtYAML) validateConfig() error {
 	if cfg.VMCAccessToken != "" {
 		if cfg.VMCAuthHost == "" {
-			return errors.New("vmc auth host must be provided if auth token is provided")
+			return errors.New("vmc auth host is required if auth token is provided")
+		}
+	} else if cfg.VMCAuthHost != "" {
+		if cfg.VMCAccessToken == "" {
+			return errors.New("vmc auth token is required if auth host is provided")
 		}
 	} else if cfg.User != "" {
 		if cfg.Password == "" {
@@ -75,7 +79,7 @@ func (cfg *NsxtYAML) validateConfig() error {
 			return errors.New("secret name is required if secret namespace is provided")
 		}
 	} else {
-		return errors.New("user or vmc access token or client cert file must be set")
+		return errors.New("user or vmc access token or client cert file or secret for user must be set")
 	}
 	if cfg.Host == "" {
 		return errors.New("host is empty")
