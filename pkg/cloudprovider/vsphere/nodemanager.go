@@ -403,6 +403,8 @@ func (nm *NodeManager) GetNode(UUID string, node *pb.Node) error {
 
 	for _, address := range nodeInfo.NodeAddresses {
 		switch address.Type {
+		case v1.NodeInternalIP:
+			node.Addresses = append(node.Addresses, address.Address)
 		case v1.NodeExternalIP:
 			node.Addresses = append(node.Addresses, address.Address)
 		case v1.NodeHostName:
@@ -466,6 +468,8 @@ func (nm *NodeManager) datacenterToNodeList(vmList map[string]*NodeInfo, nodeLis
 		}
 		for _, address := range node.NodeAddresses {
 			switch address.Type {
+			case v1.NodeInternalIP:
+				pbNode.Addresses = append(pbNode.Addresses, address.Address)
 			case v1.NodeExternalIP:
 				pbNode.Addresses = append(pbNode.Addresses, address.Address)
 			case v1.NodeHostName:
