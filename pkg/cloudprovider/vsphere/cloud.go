@@ -164,7 +164,6 @@ func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
 // InstancesV2 returns an implementation of cloudprovider.InstancesV2.
 //  TODO: implement this for v1.20
 func (vs *VSphere) InstancesV2() (cloudprovider.InstancesV2, bool) {
-	klog.Warning("The vSphere cloud provider does not support InstancesV2")
 	return nil, false
 }
 
