@@ -35,6 +35,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual"
 	"k8s.io/cloud-provider/app"
 	cloudcontrollerconfig "k8s.io/cloud-provider/app/config"
 	cloudnodecontroller "k8s.io/cloud-provider/controllers/node"
@@ -89,8 +90,19 @@ func main() {
 
 			klog.Infof("vsphere-cloud-controller-manager version: %s", version)
 
+			// Default to the vsphere cloud provider if not set
+			cloudProviderFlag := cmd.Flags().Lookup("cloud-provider")
+			if cloudProviderFlag.Value.String() == "" {
+				cloudProviderFlag.Value.Set(vsphere.ProviderName)
+			}
+
+			cloudProvider := cloudProviderFlag.Value.String()
+			if cloudProvider != vsphere.ProviderName && cloudProvider != vsphereparavirtual.ProviderName {
+				klog.Fatalf("unknown cloud provider %s, only 'vsphere' and 'vsphere-paravirtual' are supported", cloudProvider)
+			}
+
 			// initialize cloud provider with the cloud provider name and config file provided
-			cloud, err := cloudprovider.InitCloudProvider(vsphere.ProviderName, c.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile)
+			cloud, err := cloudprovider.InitCloudProvider(cloudProvider, c.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile)
 			if err != nil {
 				klog.Fatalf("Cloud provider could not be initialized: %v", err)
 			}
