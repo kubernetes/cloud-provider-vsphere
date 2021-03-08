@@ -1,0 +1,198 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vmware-system-cloud-provider
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloud-provider-svc-account
+  namespace: vmware-system-cloud-provider
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloud-provider-cluster-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - services
+  - nodes
+  - endpoints
+  - secrets
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - policy
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloud-provider-patch-cluster-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  - events
+  verbs:
+  - create
+  - update
+  - replace
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - services/status
+  verbs:
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - nodes/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloud-provider-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cloud-provider-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: cloud-provider-svc-account
+  namespace: vmware-system-cloud-provider
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloud-provider-patch-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cloud-provider-patch-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: cloud-provider-svc-account
+  namespace: vmware-system-cloud-provider
+---
+apiVersion: v1
+data:
+  cloud-config: ""
+kind: ConfigMap
+metadata:
+  name: ccm-cloud-config
+  namespace: vmware-system-cloud-provider
+---
+apiVersion: v1
+data:
+  owner-reference: |
+    {"apiVersion": "{{ .TanzuKubernetesClusterAPIVersion }}", "kind": "{{ .TanzuKubernetesClusterKind }}", "name": "{{ .TanzuKubernetesClusterName }}", "uid": "{{ .TanzuKubernetesClusterUID }}"}
+kind: ConfigMap
+metadata:
+  name: ccm-owner-reference
+  namespace: vmware-system-cloud-provider
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vsphere-paravirtual-cloud-controller-manager
+  namespace: vmware-system-cloud-provider
+spec:
+  selector:
+    matchLabels:
+      name: vsphere-paravirtual-cloud-controller-manager
+  template:
+    metadata:
+      labels:
+        name: vsphere-paravirtual-cloud-controller-manager
+    spec:
+      containers:
+      - args:
+        - --controllers=service
+        - --controllers=cloud-node
+        - --cloud-config=/config/cloud-config
+        - --cluster-name={{ .TanzuKubernetesClusterName }}
+        - --cloud-provider=vsphere-paravirtual
+        env:
+        - name: SUPERVISOR_APISERVER_ENDPOINT_IP
+          value: '{{ .SupervisorMasterEndpointIP }}'
+        - name: SUPERVISOR_APISERVER_PORT
+          value: '{{ .SupervisorMasterPort }}'
+        image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.2.1
+        imagePullPolicy: IfNotPresent
+        name: vsphere-paravirtual-cloud-controller-manager
+        volumeMounts:
+        - mountPath: /config
+          name: ccm-config
+          readOnly: true
+        - mountPath: /etc/kubernetes/guestclusters/tanzukubernetescluster
+          name: ccm-owner-reference
+          readOnly: true
+        - mountPath: /etc/cloud/ccm-provider
+          name: ccm-provider
+          readOnly: true
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      serviceAccountName: cloud-provider-svc-account
+      tolerations:
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      volumes:
+      - name: ccm-config
+        projected:
+          sources:
+          - configMap:
+              items:
+              - key: cloud-config
+                path: cloud-config
+              name: ccm-cloud-config
+      - name: ccm-owner-reference
+        projected:
+          sources:
+          - configMap:
+              items:
+              - key: owner-reference
+                path: ownerref.json
+              name: ccm-owner-reference
+      - name: ccm-provider
+        projected:
+          sources:
+          - secret:
+              items:
+              - key: ca.crt
+                path: ca.crt
+              - key: token
+                path: token
+              - key: namespace
+                path: namespace
+              name: cloud-provider-creds
