@@ -22,7 +22,6 @@ require (
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
 	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
-	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/grpc v1.27.1
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/warnings.v0 v0.1.2 // indirect
@@ -34,7 +33,7 @@ require (
 	k8s.io/cloud-provider v0.20.2
 	k8s.io/component-base v0.20.2
 	k8s.io/klog/v2 v2.4.0
+	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 	sigs.k8s.io/controller-runtime v0.6.5
 	sigs.k8s.io/yaml v1.2.0
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 )
