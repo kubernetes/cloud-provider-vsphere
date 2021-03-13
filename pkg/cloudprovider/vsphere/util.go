@@ -28,7 +28,7 @@ import (
 const (
 	// ProviderPrefix is the Kubernetes cloud provider prefix for this
 	// cloud provider.
-	ProviderPrefix = "vsphere://"
+	ProviderPrefix = ProviderName + "://"
 
 	// MinUUIDLen is the min length for a valid UUID
 	MinUUIDLen int = 36

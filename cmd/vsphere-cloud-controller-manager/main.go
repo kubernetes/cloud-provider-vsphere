@@ -93,11 +93,11 @@ func main() {
 			// Default to the vsphere cloud provider if not set
 			cloudProviderFlag := cmd.Flags().Lookup("cloud-provider")
 			if cloudProviderFlag.Value.String() == "" {
-				cloudProviderFlag.Value.Set(vsphere.ProviderName)
+				cloudProviderFlag.Value.Set(vsphere.RegisteredProviderName)
 			}
 
 			cloudProvider := cloudProviderFlag.Value.String()
-			if cloudProvider != vsphere.ProviderName && cloudProvider != vsphereparavirtual.ProviderName {
+			if cloudProvider != vsphere.RegisteredProviderName && cloudProvider != vsphereparavirtual.RegisteredProviderName {
 				klog.Fatalf("unknown cloud provider %s, only 'vsphere' and 'vsphere-paravirtual' are supported", cloudProvider)
 			}
 
@@ -174,8 +174,8 @@ func main() {
 	// Set cloud-provider flag to vsphere
 	command.Flags().VisitAll(func(flag *pflag.Flag) {
 		if flag.Name == "cloud-provider" {
-			flag.Value.Set(vsphere.ProviderName)
-			flag.DefValue = vsphere.ProviderName
+			flag.Value.Set(vsphere.RegisteredProviderName)
+			flag.DefValue = vsphere.RegisteredProviderName
 			return
 		}
 	})
