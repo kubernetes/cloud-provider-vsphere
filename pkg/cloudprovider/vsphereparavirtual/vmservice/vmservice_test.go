@@ -51,7 +51,6 @@ var (
 		UID:        "1bbf49a7-fbce-4502-bb4c-4c3544cacc9e",
 	}
 	vms            VMService
-	testK8sService *v1.Service
 	fakeLBIP       = "1.1.1.1"
 
 	// FakeClientWrapper allows functions to be replaced for fault injection
@@ -214,6 +213,8 @@ func TestCreateVMService_ZeroNodeport(t *testing.T) {
 func TestCreateVMService_CreationErr(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
+	assert.NotEqual(t, vmServiceObj, (*vmopv1alpha1.VirtualMachineService)(nil))
+	assert.NoError(t, err)
 	// Try to create the same object twice
 	vmServiceObj, err = vms.Create(context.Background(), testK8sService, testClustername)
 	assert.Equal(t, vmServiceObj, (*vmopv1alpha1.VirtualMachineService)(nil))

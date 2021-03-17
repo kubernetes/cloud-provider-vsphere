@@ -24,6 +24,7 @@ require (
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.3.0
+	honnef.co/go/tools v0.1.3 // indirect
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
 	k8s.io/apiserver v0.20.2
