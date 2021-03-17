@@ -81,7 +81,7 @@ func TestNewLoadBalancer(t *testing.T) {
 			cfg, err := testCase.testEnv.Start()
 			assert.NoError(t, err)
 
-			_, err = NewInstances(testClusterNameSpace, cfg)
+			_, err = NewLoadBalancer(testClusterNameSpace, cfg, &testOwnerReference)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.err, err)
 
@@ -91,71 +91,41 @@ func TestNewLoadBalancer(t *testing.T) {
 	}
 }
 
-func TestGetLoadBalancer(t *testing.T) {
-	testCases := []struct {
-		name   string
-		exists bool
-	}{
-		{
-			name:   "when VMService is not found",
-			exists: false,
+func TestGetLoadBalancer_VMServiceNotFound(t *testing.T) {
+	lb, _ := newTestLoadBalancer()
+	testK8sService := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testK8sServiceName,
+			Namespace: testK8sServiceNameSpace,
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			lb, _ := newTestLoadBalancer()
-
-			testK8sService := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      testK8sServiceName,
-					Namespace: testK8sServiceNameSpace,
-				},
-			}
-
-			_, exists, err := lb.GetLoadBalancer(context.Background(), testClustername, testK8sService)
-			assert.Equal(t, testCase.exists, exists)
-			assert.NotEqual(t, err, nil)
-		})
-	}
+	_, exists, err := lb.GetLoadBalancer(context.Background(), testClustername, testK8sService)
+	assert.Equal(t, exists, false)
+	assert.Error(t, err)
 }
 
-func TestGetLoadBalancer2(t *testing.T) {
-	testCases := []struct {
-		name  string
-		exits bool
-	}{
-		{
-			name:  "when VMService is created",
-			exits: true,
+func TestGetLoadBalancer_VMServiceCreated(t *testing.T) {
+	lb, _ := newTestLoadBalancer()
+	testK8sService := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testK8sServiceName,
+			Namespace: testK8sServiceNameSpace,
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			lb, _ := newTestLoadBalancer()
+	_, err := lb.EnsureLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
+	assert.Equal(t, vmservice.ErrVMServiceIPNotFound, err)
 
-			testK8sService := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      testK8sServiceName,
-					Namespace: testK8sServiceNameSpace,
-				},
-			}
+	_, exists, err := lb.GetLoadBalancer(context.Background(), testClustername, testK8sService)
+	assert.Equal(t, exists, true)
+	assert.NoError(t, err)
 
-			_, err := lb.EnsureLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
-			assert.Equal(t, vmservice.ErrVMServiceIPNotFound, err)
-
-			_, exists, err := lb.GetLoadBalancer(context.Background(), testClustername, testK8sService)
-			assert.Equal(t, testCase.exits, exists)
-			assert.Equal(t, err, nil)
-
-			err = lb.EnsureLoadBalancerDeleted(context.Background(), testClustername, testK8sService)
-			assert.Equal(t, err, nil)
-		})
-	}
+	err = lb.EnsureLoadBalancerDeleted(context.Background(), testClustername, testK8sService)
+	assert.NoError(t, err)
 }
 
-func TestUpdateLoadBalancerWhenVMServiceFailed(t *testing.T) {
+func TestUpdateLoadBalancer_GetVMServiceFailed(t *testing.T) {
 	lb, _ := newTestLoadBalancer()
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -216,9 +186,9 @@ func TestUpdateLoadBalancer(t *testing.T) {
 				fcw.UpdateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
 					return fmt.Errorf("Some undefined update error")
 				}
-				assert.NotEqual(t, err, nil)
+				assert.Error(t, err)
 			} else {
-				assert.Equal(t, err, nil)
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -259,6 +229,7 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 }
 
 func TestEnsureLoadBalancer_VMServiceCreatedIPNotFound(t *testing.T) {
+	// test when VMService is created but IP not found
 	lb, _ := newTestLoadBalancer()
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -271,7 +242,7 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPNotFound(t *testing.T) {
 	assert.Equal(t, ensureErr, vmservice.ErrVMServiceIPNotFound)
 
 	err := lb.EnsureLoadBalancerDeleted(context.Background(), testClustername, testK8sService)
-	assert.Equal(t, err, nil)
+	assert.NoError(t, err)
 }
 
 func TestEnsureLoadBalancer_VMServiceCreationFailed(t *testing.T) {
@@ -288,10 +259,10 @@ func TestEnsureLoadBalancer_VMServiceCreationFailed(t *testing.T) {
 	}
 
 	_, ensureErr := lb.EnsureLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
-	assert.NotEqual(t, ensureErr, nil)
+	assert.Error(t, ensureErr)
 
 	err := lb.EnsureLoadBalancerDeleted(context.Background(), testClustername, testK8sService)
-	assert.Equal(t, err, nil)
+	assert.NoError(t, err)
 }
 
 func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
@@ -341,11 +312,11 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 	}
 
 	status, ensureErr := lb.EnsureLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
-	assert.Equal(t, ensureErr, nil)
+	assert.NoError(t, ensureErr)
 	assert.Equal(t, status.Ingress[0].IP, "10.10.10.10")
 
 	err := lb.EnsureLoadBalancerDeleted(context.Background(), testClustername, testK8sService)
-	assert.Equal(t, err, nil)
+	assert.NoError(t, err)
 }
 
 func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
@@ -359,19 +330,20 @@ func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 
 	// should pass without error
 	err := lb.EnsureLoadBalancerDeleted(context.Background(), testClustername, testK8sService)
-	assert.Equal(t, err, nil)
+	assert.NoError(t, err)
 
 	// should ignore not found error
 	fcw.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
 		return apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
 	}
 	err = lb.EnsureLoadBalancerDeleted(context.Background(), "test", testK8sService)
-	assert.Equal(t, err, nil)
+	assert.NoError(t, err)
 
 	// should return error
 	fcw.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
 		return fmt.Errorf("an error occurred while deleting load balancer")
 	}
+
 	err = lb.EnsureLoadBalancerDeleted(context.Background(), "test", testK8sService)
 	assert.Equal(t, err.Error(), "an error occurred while deleting load balancer")
 }

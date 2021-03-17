@@ -50,8 +50,8 @@ var (
 		Name:       testClustername,
 		UID:        "1bbf49a7-fbce-4502-bb4c-4c3544cacc9e",
 	}
-	vms            VMService
-	fakeLBIP       = "1.1.1.1"
+	vms      VMService
+	fakeLBIP = "1.1.1.1"
 
 	// FakeClientWrapper allows functions to be replaced for fault injection
 	fcw *util.FakeClientWrapper
@@ -120,14 +120,12 @@ func TestNewVMService(t *testing.T) {
 
 func TestGetVMServiceName(t *testing.T) {
 	_, vms, _ := initTest()
-
 	k8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
 			Namespace: testK8sServiceNameSpace,
 		},
 	}
-
 	name := vms.GetVMServiceName(k8sService, testClustername)
 	hashStr := vms.(*vmService).hashString(testK8sServiceName + "." + testK8sServiceNameSpace)
 	expectedName := testClustername + "-" + hashStr[:MaxCheckSumLen]
@@ -162,7 +160,8 @@ func TestGetVMService(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, (*vmService).Spec, (*createdVMService).Spec)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestCreateVMService(t *testing.T) {
@@ -181,7 +180,8 @@ func TestCreateVMService(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestCreateVMService_ZeroNodeport(t *testing.T) {
@@ -221,9 +221,8 @@ func TestCreateVMService_CreationErr(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateVMService_LBConfigurations(t *testing.T) {
+func TestCreateVMService_LBConfigs(t *testing.T) {
 	_, vms, _ := initTest()
-
 	testCases := []struct {
 		name           string
 		testK8sService *v1.Service
@@ -299,14 +298,14 @@ func TestCreateVMService_LBConfigurations(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			ports, _ := findPorts(testCase.testK8sService)
 			testCase.expectedSpec.Ports = ports
-
 			vmServiceObj, err := vms.Create(context.Background(), testCase.testK8sService, testClustername)
+			assert.NoError(t, err)
+			assert.Equal(t, (*vmServiceObj).Spec, testCase.expectedSpec)
 
 			testCase.testK8sService.Spec.LoadBalancerIP = ""
 			testCase.testK8sService.Spec.LoadBalancerSourceRanges = []string{}
-			_ = vms.Delete(context.Background(), testCase.testK8sService, testClustername)
+			err = vms.Delete(context.Background(), testCase.testK8sService, testClustername)
 			assert.NoError(t, err)
-			assert.Equal(t, (*vmServiceObj).Spec, testCase.expectedSpec)
 		})
 	}
 }
@@ -316,8 +315,8 @@ func TestCreateVMService_ExternalTrafficPolicyTypeLocal(t *testing.T) {
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
 	testK8sService.Spec.HealthCheckNodePort = 30012
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
-
 	assert.NoError(t, err)
+
 	v, ok := vmServiceObj.Annotations[AnnotationServiceExternalTrafficPolicyKey]
 	assert.Equal(t, ok, true)
 	assert.Equal(t, v, string(v1.ServiceExternalTrafficPolicyTypeLocal))
@@ -327,15 +326,16 @@ func TestCreateVMService_ExternalTrafficPolicyTypeLocal(t *testing.T) {
 	assert.Equal(t, hcPort, strconv.Itoa(30012))
 
 	testK8sService.Spec.ExternalTrafficPolicy = ""
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestCreateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeCluster
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
-
 	assert.NoError(t, err)
+
 	_, ok := vmServiceObj.Annotations[AnnotationServiceExternalTrafficPolicyKey]
 	assert.NotEqual(t, ok, true)
 
@@ -343,7 +343,8 @@ func TestCreateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
 	assert.NotEqual(t, ok, true)
 
 	testK8sService.Spec.ExternalTrafficPolicy = ""
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestVMService_NotExist(t *testing.T) {
@@ -354,7 +355,6 @@ func TestVMService_NotExist(t *testing.T) {
 			Namespace: testK8sServiceNameSpace,
 		},
 	}
-
 	_, err := vms.CreateOrUpdate(context.Background(), k8sService, testClustername)
 	assert.Error(t, err)
 	assert.Equal(t, err, ErrVMServiceIPNotFound)
@@ -362,7 +362,6 @@ func TestVMService_NotExist(t *testing.T) {
 
 func TestVMService_EmptyClusterName(t *testing.T) {
 	testK8sService, vms, _ := initTest()
-
 	_, err := vms.CreateOrUpdate(context.Background(), testK8sService, "")
 	assert.Error(t, err)
 }
@@ -373,7 +372,6 @@ func TestVMService_ReturnErr(t *testing.T) {
 	fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 		return fmt.Errorf("failed to get VirtualMachineService")
 	}
-
 	_, err := vms.CreateOrUpdate(context.Background(), testK8sService, testClustername)
 	assert.Error(t, err)
 }
@@ -393,7 +391,6 @@ func TestVMService_CreationFails(t *testing.T) {
 
 func TestVMService_AlreadyExists(t *testing.T) {
 	testK8sService, vms, _ := initTest()
-
 	oldK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -431,30 +428,21 @@ func TestVMService_AlreadyExists(t *testing.T) {
 	assert.Equal(t, err, ErrVMServiceIPNotFound)
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
-}
-
-func TestUpdateVMService_CreationFails(t *testing.T) {
-	testK8sService, vms, _ := initTest()
-
-	createdVMService, _ := vms.Create(context.Background(), testK8sService, testClustername)
-	_, err := vms.Update(context.Background(), testK8sService, testClustername, createdVMService)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
 	assert.NoError(t, err)
-
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
 }
 
 func TestUpdateVMService_NoChange(t *testing.T) {
 	testK8sService, vms, _ := initTest()
-
 	createdVMService, _ := vms.Create(context.Background(), testK8sService, testClustername)
 	_, err := vms.Update(context.Background(), testK8sService, testClustername, createdVMService)
 	assert.NoError(t, err)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
-func TestUpdateVMService(t *testing.T) {
+func TestUpdateVMService_NodePortChanges(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	oldK8sService := testK8sService.DeepCopy()
 	oldK8sService.Spec.Ports[0].NodePort = 30500
@@ -474,7 +462,8 @@ func TestUpdateVMService(t *testing.T) {
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 	assert.NoError(t, err)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestUpdateVMService_LBIPAdded(t *testing.T) {
@@ -498,7 +487,8 @@ func TestUpdateVMService_LBIPAdded(t *testing.T) {
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 	assert.NoError(t, err)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestUpdateVMService_LBIPChanges(t *testing.T) {
@@ -523,7 +513,8 @@ func TestUpdateVMService_LBIPChanges(t *testing.T) {
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 	assert.NoError(t, err)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestUpdateVMService_LBSourceRangesAdded(t *testing.T) {
@@ -547,7 +538,8 @@ func TestUpdateVMService_LBSourceRangesAdded(t *testing.T) {
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 	assert.NoError(t, err)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestUpdateVMService_LBSourceRangesChanges(t *testing.T) {
@@ -572,10 +564,11 @@ func TestUpdateVMService_LBSourceRangesChanges(t *testing.T) {
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 	assert.NoError(t, err)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
-func TestUpdateVMService_ExternalTrafficPolicyTypeLocal(t *testing.T) {
+func TestUpdateVMService_ExternalTrafficPolicyLocal(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
@@ -593,7 +586,6 @@ func TestUpdateVMService_ExternalTrafficPolicyTypeLocal(t *testing.T) {
 		AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
 		AnnotationServiceHealthCheckNodePortKey:   "31234",
 	}
-
 	// create an old VMService
 	createdVMService, _ := vms.Create(context.Background(), oldK8sService, testClustername)
 
@@ -602,10 +594,12 @@ func TestUpdateVMService_ExternalTrafficPolicyTypeLocal(t *testing.T) {
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 	assert.Equal(t, (*vmServiceObj).Annotations, expectedAnnotations)
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
-func TestUpdateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
+func TestUpdateVMService_ExternalTrafficPolicyCluster(t *testing.T) {
+	// test when external traffic policy is set to cluster from local
 	testK8sService, vms, _ := initTest()
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeCluster
@@ -620,7 +614,6 @@ func TestUpdateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
 			NodeSelectorKey:    NodeRole,
 		},
 	}
-
 	// create an old VMService
 	createdVMService, _ := vms.Create(context.Background(), oldK8sService, testClustername)
 
@@ -629,7 +622,8 @@ func TestUpdateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
 	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
 	assert.Equal(t, (*vmServiceObj).Annotations, map[string]string(nil))
 
-	_ = vms.Delete(context.Background(), testK8sService, testClustername)
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
 }
 
 func TestDeleteVMServicet(t *testing.T) {
