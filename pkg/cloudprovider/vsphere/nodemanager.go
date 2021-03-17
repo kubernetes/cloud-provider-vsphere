@@ -355,7 +355,9 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 				break
 			}
 		}
+	}
 
+	if len(oVM.Guest.Net) > 0 {
 		if !foundInternal && !foundExternal {
 			return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
 		}
