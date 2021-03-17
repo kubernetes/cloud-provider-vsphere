@@ -127,6 +127,72 @@ func TestDiscoverNodeByName(t *testing.T) {
 	}
 }
 
+func TestDiscoverNodeWithMultiIFByName(t *testing.T) {
+	cfg, ok := configFromEnvOrSim(true)
+	defer ok()
+
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	defer connMgr.Logout()
+
+	nm := newNodeManager(nil, connMgr)
+
+	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
+	expectedIP := "10.10.108.12"
+	vm.Guest.Net = []vimtypes.GuestNicInfo{
+		{
+			Network: "test_k8s_tenant_c123",
+			IpAddress: []string{
+				"fe80::250:56ff:fe89:d2c7",
+			},
+		},
+		{
+			Network: "test_k8s_tenant_c123",
+			IpAddress: []string{
+				expectedIP,
+				"10.10.108.10",
+				"fe80::250:56ff:fe89:d2c7",
+			},
+		},
+	}
+	name := vm.Name
+
+	err := connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
+	if err != nil {
+		t.Errorf("Failed to Connect to vSphere: %s", err)
+	}
+
+	err = nm.DiscoverNode(name, cm.FindVMByName)
+	if err != nil {
+		t.Errorf("Failed DiscoverNode: %s", err)
+	}
+
+	if len(nm.nodeNameMap) != 1 {
+		t.Errorf("Failed: nodeNameMap should be a length of 1")
+	}
+
+	if len(nm.nodeUUIDMap) != 1 {
+		t.Errorf("Failed: nodeUUIDMap should be a length of  1")
+	}
+
+	if nodeInfo, ok := nm.nodeNameMap[strings.ToLower(name)]; ok {
+		for _, adr := range nodeInfo.NodeAddresses {
+			if adr.Type == "InternalIP" {
+				if adr.Address != expectedIP {
+					t.Errorf("failed: InternalIP should be %v, not %v.", expectedIP, adr.Address)
+				}
+			}
+			if adr.Type == "ExternalIP" {
+				if adr.Address != expectedIP {
+					t.Errorf("failed: InternalIP should be %v, not %v.", expectedIP, adr.Address)
+				}
+			}
+		}
+	} else {
+		t.Errorf("failed: %v not found", name)
+	}
+}
+
 func TestExport(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
