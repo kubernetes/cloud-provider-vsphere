@@ -44,6 +44,8 @@ type instances struct {
 }
 
 const (
+	// providerPrefix is the Kubernetes cloud provider prefix for this
+	// cloud provider.
 	providerPrefix = ProviderName + "://"
 )
 

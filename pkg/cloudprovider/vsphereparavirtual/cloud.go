@@ -32,10 +32,14 @@ import (
 )
 
 const (
-	// ProviderName is the name of the cloud provider registered with
+	// RegisteredProviderName is the name of the cloud provider registered with
 	// Kubernetes.
-	ProviderName string = "vsphere-paravirtual"
-	clientName   string = "vsphere-paravirtual-cloud-controller-manager"
+	RegisteredProviderName string = "vsphere-paravirtual"
+
+	// ProviderName is the name used for constructing Provider ID
+	ProviderName string = "vsphere"
+
+	clientName string = "vsphere-paravirtual-cloud-controller-manager"
 
 	// CloudControllerManagerNS is the namespace for vsphere paravirtual cluster cloud provider
 	CloudControllerManagerNS = "vmware-system-cloud-provider"
@@ -47,7 +51,7 @@ var (
 )
 
 func init() {
-	cloudprovider.RegisterCloudProvider(ProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
+	cloudprovider.RegisterCloudProvider(RegisteredProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
 		if config == nil {
 			return nil, errors.New("no vSphere paravirtual cloud provider config file given")
 		}
@@ -166,6 +170,9 @@ func (cp *VSphereParavirtual) Routes() (cloudprovider.Routes, bool) {
 }
 
 // ProviderName returns the cloud provider ID.
+// Note: Returns 'vsphere' instead of 'vsphere-paravirtual'
+// since CAPV expects the ProviderID to be in form 'vsphere://***'
+// https://github.com/kubernetes/cloud-provider-vsphere/issues/447
 func (cp *VSphereParavirtual) ProviderName() string {
 	return ProviderName
 }

@@ -43,9 +43,13 @@ import (
 )
 
 const (
-	// ProviderName is the name of the cloud provider registered with
+	// RegisteredProviderName is the name of the cloud provider registered with
 	// Kubernetes.
+	RegisteredProviderName string = "vsphere"
+
+	// ProviderName is the name used for constructing Provider ID
 	ProviderName string = "vsphere"
+
 	// ClientName is the user agent passed into the controller client builder.
 	ClientName string = "vsphere-cloud-controller-manager"
 
@@ -54,7 +58,7 @@ const (
 )
 
 func init() {
-	cloudprovider.RegisterCloudProvider(ProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
+	cloudprovider.RegisterCloudProvider(RegisteredProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
 		byConfig, err := ioutil.ReadAll(config)
 		if err != nil {
 			klog.Errorf("ReadAll failed: %s", err)
