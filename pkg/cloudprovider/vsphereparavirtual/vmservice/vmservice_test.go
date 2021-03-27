@@ -210,7 +210,7 @@ func TestCreateVMService_ZeroNodeport(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateVMService_CreationErr(t *testing.T) {
+func TestCreateDuplicateVMService(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
 	assert.NotEqual(t, vmServiceObj, (*vmopv1alpha1.VirtualMachineService)(nil))
@@ -347,26 +347,43 @@ func TestCreateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestVMService_NotExist(t *testing.T) {
-	_, vms, _ := initTest()
-	k8sService := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testK8sServiceName,
-			Namespace: testK8sServiceNameSpace,
+func TestCreateOrUpdateVMService(t *testing.T) {
+	testK8sService, vms, _ := initTest()
+	testCases := []struct {
+		name        string
+		k8sService  *v1.Service
+		clustername string
+		expectedErr string
+	}{
+		{
+			name: "when VMService does not exist",
+			k8sService: &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      testK8sServiceName,
+					Namespace: testK8sServiceNameSpace,
+				},
+			},
+			clustername: testClustername,
+			expectedErr: ErrVMServiceIPNotFound.Error(),
+		},
+		{
+			name:        "when clusterName is empty",
+			k8sService:  testK8sService,
+			clustername: "",
+			expectedErr: "cluster name cannot be empty: " + ErrCreateVMService.Error(),
 		},
 	}
-	_, err := vms.CreateOrUpdate(context.Background(), k8sService, testClustername)
-	assert.Error(t, err)
-	assert.Equal(t, err, ErrVMServiceIPNotFound)
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := vms.CreateOrUpdate(context.Background(), testCase.k8sService, testCase.clustername)
+			assert.Error(t, err)
+			assert.Equal(t, err.Error(), testCase.expectedErr)
+		})
+	}
 }
 
-func TestVMService_EmptyClusterName(t *testing.T) {
-	testK8sService, vms, _ := initTest()
-	_, err := vms.CreateOrUpdate(context.Background(), testK8sService, "")
-	assert.Error(t, err)
-}
-
-func TestVMService_ReturnErr(t *testing.T) {
+func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 	testK8sService, vms, fcw := initTest()
 	// Redefine Get in the client to return an error
 	fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
@@ -376,7 +393,7 @@ func TestVMService_ReturnErr(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestVMService_CreationFails(t *testing.T) {
+func TestCreateOrUpdateVMService_CreationFails(t *testing.T) {
 	testK8sService, vms, fcw := initTest()
 	// Redefine Get in the client to return an error
 	fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
