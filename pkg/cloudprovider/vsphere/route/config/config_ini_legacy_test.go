@@ -26,20 +26,39 @@ import (
 */
 
 func TestReadINIConfig(t *testing.T) {
-	contents := `
-[Route]
-router-path = /infra/tier-1s/test-router
-`
-	config, err := ReadRawConfigINI([]byte(contents))
-	if err != nil {
-		t.Error(err)
-		return
+	testCases := []struct {
+		name     string
+		contents string
+	}{
+		{
+			name: "valid INI config",
+			contents: `
+			[Route]
+			router-path = /infra/tier-1s/test-router
+			`,
+		},
+		{
+			name: "INI config with extra key/value pairs",
+			contents: `
+			[Route]
+			router-path = /infra/tier-1s/test-router
+			extra-key = value
+			routers-path = /infra/tier-2s/test-router
+			`,
+		},
 	}
-
-	assertEquals := func(name, left, right string) {
-		if left != right {
-			t.Errorf("%s %s != %s", name, left, right)
+	for _, testCase := range testCases {
+		config, err := ReadRawConfigINI([]byte(testCase.contents))
+		if err != nil {
+			t.Error(err)
+			return
 		}
+
+		assertEquals := func(name, left, right string) {
+			if left != right {
+				t.Errorf("%s %s != %s", name, left, right)
+			}
+		}
+		assertEquals("Route.routerPath", config.Route.RouterPath, "/infra/tier-1s/test-router")
 	}
-	assertEquals("Route.routerPath", config.Route.RouterPath, "/infra/tier-1s/test-router")
 }
