@@ -7,8 +7,6 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.2
-	github.com/onsi/ginkgo v1.14.1
-	github.com/onsi/gomega v1.10.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/cobra v1.1.1
@@ -34,7 +32,7 @@ require (
 	k8s.io/cloud-provider v0.20.2
 	k8s.io/component-base v0.20.2
 	k8s.io/klog/v2 v2.4.0
+	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 	sigs.k8s.io/controller-runtime v0.6.5
 	sigs.k8s.io/yaml v1.2.0
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 )
