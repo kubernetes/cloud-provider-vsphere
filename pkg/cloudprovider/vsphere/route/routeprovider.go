@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route/config"
+	"k8s.io/cloud-provider-vsphere/pkg/util"
 	klog "k8s.io/klog/v2"
 )
 
@@ -115,7 +116,7 @@ func (p *routeProvider) CreateRoute(ctx context.Context, clusterName string, nam
 	nodeName := string(route.TargetNode)
 	klog.V(6).Infof("Creating static route for node %s", nodeName)
 
-	nodeIP, err := p.getNodeIPAddress(nodeName, IsIPv4(route.DestinationCIDR))
+	nodeIP, err := p.getNodeIPAddress(nodeName, util.IsIPv4(route.DestinationCIDR))
 	if err != nil {
 		klog.Errorf("getting node %s IP address failed: %v", nodeName, err)
 		return err
@@ -254,11 +255,4 @@ func (p *routeProvider) getNode(name string) (*v1.Node, error) {
 		return p.nodeMap[name], nil
 	}
 	return nil, errors.New("Node not found")
-}
-
-// IsIPv4 checks whether IP address is IPv4
-func IsIPv4(str string) bool {
-	str = strings.Split(str, "/")[0]
-	ip := net.ParseIP(str)
-	return ip != nil && ip.To4() != nil
 }

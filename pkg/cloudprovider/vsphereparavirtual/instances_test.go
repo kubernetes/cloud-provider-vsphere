@@ -36,7 +36,7 @@ import (
 
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 
-	util "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice/testutil"
+	"k8s.io/cloud-provider-vsphere/pkg/util"
 )
 
 var (

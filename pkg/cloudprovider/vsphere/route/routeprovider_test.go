@@ -358,14 +358,6 @@ func TestGetNodeIPv6Address(t *testing.T) {
 	assert.Equal(t, nil, err, "Should not return error")
 }
 
-func TestIsIPv4(t *testing.T) {
-	str := "100.96.1.0/24"
-	assert.Equal(t, true, IsIPv4(str))
-
-	str = "fe80::20c:29ff:fe0b:b407/64"
-	assert.Equal(t, false, IsIPv4(str))
-}
-
 func TestAddNode(t *testing.T) {
 	p := &routeProvider{
 		nodeMap: make(map[string]*v1.Node),

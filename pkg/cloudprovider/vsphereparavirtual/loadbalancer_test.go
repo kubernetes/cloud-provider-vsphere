@@ -33,9 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
-	util "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice/testutil"
+	"k8s.io/cloud-provider-vsphere/pkg/util"
 
-	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 )
 
@@ -210,7 +209,7 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 		vms := &vmopv1alpha1.VirtualMachineService{
 			Status: vmopv1alpha1.VirtualMachineServiceStatus{
 				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
-					Ingress: []v1alpha1.LoadBalancerIngress{
+					Ingress: []vmopv1alpha1.LoadBalancerIngress{
 						{
 							IP: "10.10.10.10",
 						},
@@ -281,7 +280,7 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 		vms := &vmopv1alpha1.VirtualMachineService{
 			Status: vmopv1alpha1.VirtualMachineServiceStatus{
 				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
-					Ingress: []v1alpha1.LoadBalancerIngress{
+					Ingress: []vmopv1alpha1.LoadBalancerIngress{
 						{
 							IP: "10.10.10.10",
 						},
@@ -296,7 +295,7 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 			},
 			Spec: vmopv1alpha1.VirtualMachineServiceSpec{
 				Type: vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
-				Ports: []v1alpha1.VirtualMachineServicePort{
+				Ports: []vmopv1alpha1.VirtualMachineServicePort{
 					{
 						Name:       "test-port",
 						Port:       80,
@@ -331,7 +330,7 @@ func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 		{
 			name: "should ignore not found error",
 			deleteFunc: func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
-				return apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
+				return apierrors.NewNotFound(vmopv1alpha1.Resource("virtualmachineservice"), testClustername)
 			},
 		},
 		{

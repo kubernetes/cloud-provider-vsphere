@@ -36,7 +36,7 @@ import (
 
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 
-	util "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice/testutil"
+	"k8s.io/cloud-provider-vsphere/pkg/util"
 )
 
 var (
@@ -663,7 +663,7 @@ func TestUpdateVMService_ExternalTrafficPolicyCluster(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestDeleteVMServicet(t *testing.T) {
+func TestDeleteVMService(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	_, _ = vms.Create(context.Background(), testK8sService, testClustername)
 	err := vms.Delete(context.Background(), testK8sService, testClustername)
