@@ -17,20 +17,20 @@ require (
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.2.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.2.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.3.0
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
-	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
-	golang.org/x/tools v0.1.0 // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/grpc v1.27.1
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.20.6
-	k8s.io/apimachinery v0.20.6
-	k8s.io/client-go v0.20.6
-	k8s.io/cloud-provider v0.20.6
-	k8s.io/component-base v0.20.6
-	k8s.io/klog/v2 v2.4.0
+	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/api v0.21.0
+	k8s.io/apiextensions-apiserver v0.21.0
+	k8s.io/apimachinery v0.21.0
+	k8s.io/client-go v0.21.0
+	k8s.io/cloud-provider v0.21.0
+	k8s.io/component-base v0.21.0
+	k8s.io/klog/v2 v2.8.0
 	sigs.k8s.io/controller-runtime v0.6.5
 	sigs.k8s.io/yaml v1.2.0
 )

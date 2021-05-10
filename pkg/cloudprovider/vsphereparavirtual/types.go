@@ -32,4 +32,5 @@ type VSphereParavirtual struct {
 	informMgr      *k8s.InformerManager
 	loadBalancer   cloudprovider.LoadBalancer
 	instances      cloudprovider.Instances
+	routes         RoutesProvider
 }
