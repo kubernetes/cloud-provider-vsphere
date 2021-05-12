@@ -8,6 +8,20 @@ This project replaces the deprecated in-tree vSphere cloud provider located with
 
 There is ongoing work for refactoring cloud providers out of the upstream repository. For more details, please check [this KEP](https://github.com/kubernetes/enhancements/blob/master/keps/sig-cloud-provider/20180530-cloud-controller-manager.md).
 
+## Compatibility with Kubernetes
+
+The vSphere cloud provider is released with a specific semantic version `MAJOR.MINOR.PATCH` that correlates with the Kubernetes upstream version. Compatibility with a new Kubernetes version requires upgrading existing cloud provider components since compatibility is ONLY guaranteed between a specific release and its corresponding Kubernetes version.
+
+In the future, the major and minor versions of releases should be equivalent to the compatible upstream Kubernetes release, and the patch version is used for bug fixes pertaining to specific Kubernetes releases. See [the external cloud provider versioning KEP](https://github.com/kubernetes/enhancements/tree/master/keps/sig-cloud-provider/1771-versioning-policy-for-external-cloud-providers) for more details.
+
+Version matrix:
+
+| Kubernetes Version | vSphere Cloud Provider Release Version | Cloud Provider Branch |
+| ----------- | ----------- | ----------- |
+| v1.20.X | v1.20.X | release-1.20 |
+| v1.19.X | v1.19.X | release-1.19 |
+| v1.18.X | v1.18.X | release-1.18 |
+
 ## Quickstart
 
 Get started with Cloud controller manager for vSphere with Kubeadm with this [quickstart](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html).
