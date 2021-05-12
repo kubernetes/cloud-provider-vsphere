@@ -102,4 +102,35 @@ CPI is supported for vSphere versions 6.7U3 or later. CPI also requires a Kubern
 
 ## How do I install it?
 
-See the [Deploying cloud-provider-vsphere docs](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/deploying_cloud_provider_vsphere_with_rbac.html) for install steps.
+### Deployment Overview
+
+Here are the steps to quickly deploying `cloud-provider-vsphere`:
+
+#### 1. Set the Kubernetes cluster to use an external Cloud Controller Manager
+
+For most installations, it should be sufficient to only set `--cloud-provider=external` on all Kubernetes master and worker nodes for cloud-provider-vsphere (configuration file typically located at: /etc/sysconfig/kubelet). This is already covered in the Kubernetes documentation. Please take a look at configuration guidelines located [here](https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#running-cloud-controller-manager).
+
+#### 2. Edit your vSphere configuration
+
+An example [vsphere.conf](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vsphere.conf) is located in the `cloud-provider-vsphere` repo in the [manifests/controller-manager](https://github.com/kubernetes/cloud-provider-vsphere/tree/master/manifests/controller-manager) directory.
+You can edit vSphere configurations in [CCM release YAML file](https://github.com/kubernetes/cloud-provider-vsphere/blob/release-1.19/releases/v1.2/vsphere-cloud-controller-manager.yaml#L15).
+
+#### 3. Deploy `cloud-provider-vsphere` CCM
+
+`cloud-provider-vsphere` can be deployed as a DaemonSet.
+
+##### Deploy `cloud-provider-vsphere` as a DaemonSet
+
+The YAML to deploy `cloud-provider-vsphere` as a DaemonSet can be found in [cloud-provider-vsphere/releases/](https://github.com/kubernetes/cloud-provider-vsphere/tree/master/releases).
+
+In this file:
+
+* a sample vsphere.conf is provided using a Kubernetes Secret to store vCenter Credentials
+* the RBAC roles required by the provider
+* the RBAC role bindings required by the provider
+
+Run the following command:
+
+```bash
+kubectl create -f vsphere-cloud-controller-manager.yaml
+```
