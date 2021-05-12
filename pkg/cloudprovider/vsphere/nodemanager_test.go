@@ -138,7 +138,7 @@ func TestDiscoverNodeWithMultiIFByName(t *testing.T) {
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
-	expected_ip := "10.10.108.12"
+	expectedIP := "10.10.108.12"
 	vm.Guest.Net = []vimtypes.GuestNicInfo{
 		{
 			Network: "test_k8s_tenant_c123",
@@ -149,7 +149,7 @@ func TestDiscoverNodeWithMultiIFByName(t *testing.T) {
 		{
 			Network: "test_k8s_tenant_c123",
 			IpAddress: []string{
-				expected_ip,
+				expectedIP,
 				"10.10.108.10",
 				"fe80::250:56ff:fe89:d2c7",
 			},
@@ -178,13 +178,13 @@ func TestDiscoverNodeWithMultiIFByName(t *testing.T) {
 	if nodeInfo, ok := nm.nodeNameMap[strings.ToLower(name)]; ok {
 		for _, adr := range nodeInfo.NodeAddresses {
 			if adr.Type == "InternalIP" {
-				if adr.Address != expected_ip {
-					t.Errorf("failed: InternalIP should be %v, not %v.", expected_ip, adr.Address)
+				if adr.Address != expectedIP {
+					t.Errorf("failed: InternalIP should be %v, not %v.", expectedIP, adr.Address)
 				}
 			}
 			if adr.Type == "ExternalIP" {
-				if adr.Address != expected_ip {
-					t.Errorf("failed: InternalIP should be %v, not %v.", expected_ip, adr.Address)
+				if adr.Address != expectedIP {
+					t.Errorf("failed: InternalIP should be %v, not %v.", expectedIP, adr.Address)
 				}
 			}
 		}
