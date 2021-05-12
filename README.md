@@ -1,5 +1,10 @@
 # Kubernetes vSphere Cloud Provider
 
+![GitHub release (latest SemVer including pre-releases](https://img.shields.io/github/v/release/kubernetes/cloud-provider-vsphere?include_prereleases)
+![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)
+
+![image](/docs/images/vsphere_kubernetes_logo.png)
+
 ## vSphere Cloud Controller Manager
 
 This repository contains the [Kubernetes cloud-controller-manager](https://kubernetes.io/docs/concepts/architecture/cloud-controller/) for vSphere.
@@ -14,7 +19,7 @@ Get started with Cloud controller manager for vSphere with Kubeadm with this [qu
 
 ## Quickstart using Helm
 
-Get started with Cloud controller manager for vSphere using Helm with this [Helm quickstart](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-helm.html).
+Get started with Cloud controller manager for vSphere using Helm with this [Helm quickstart](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-helm.md).
 
 ## Documentation
 
