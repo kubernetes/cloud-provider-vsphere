@@ -59,6 +59,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		SchemeGroupVersion,
 		&RouteSet{},
 		&RouteSetList{},
+		&IPPool{},
+		&IPPoolList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

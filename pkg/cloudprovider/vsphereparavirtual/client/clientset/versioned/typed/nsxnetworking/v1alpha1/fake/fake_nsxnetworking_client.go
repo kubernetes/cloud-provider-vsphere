@@ -28,6 +28,10 @@ type FakeNsxV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeNsxV1alpha1) IPPools(namespace string) v1alpha1.IPPoolInterface {
+	return &FakeIPPools{c, namespace}
+}
+
 func (c *FakeNsxV1alpha1) RouteSets(namespace string) v1alpha1.RouteSetInterface {
 	return &FakeRouteSets{c, namespace}
 }
