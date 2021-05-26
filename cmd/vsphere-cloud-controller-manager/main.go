@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -139,21 +140,26 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	// Set cloud-provider flag to vsphere
+	var clusterNameFlag *pflag.Value
+	var controllersFlag *pflag.Value
+	var cloudProviderFlag *pflag.Value
 	command.Flags().VisitAll(func(flag *pflag.Flag) {
-		if flag.Name == "cloud-provider" {
+		switch flag.Name {
+		// Set cloud-provider flag to vsphere
+		case "cloud-provider":
+			cloudProviderFlag = &flag.Value
 			flag.Value.Set(vsphere.RegisteredProviderName)
 			flag.DefValue = vsphere.RegisteredProviderName
-			return
+		case "cluster-name":
+			clusterNameFlag = &flag.Value
+		case "controllers":
+			controllersFlag = &flag.Value
 		}
 	})
 
 	var versionFlag *pflag.Value
-	var clusterNameFlag *pflag.Value
 	pflag.CommandLine.VisitAll(func(flag *pflag.Flag) {
 		switch flag.Name {
-		case "cluster-name":
-			clusterNameFlag = &flag.Value
 		case "version":
 			versionFlag = &flag.Value
 		}
@@ -168,6 +174,14 @@ func main() {
 		}
 		if clusterNameFlag != nil {
 			loadbalancer.ClusterName = (*clusterNameFlag).String()
+			vsphereparavirtual.ClusterName = (*clusterNameFlag).String()
+		}
+		// if route controller is enabled in vsphereparavirtual cloud provider, set routeEnabled to true
+		if controllersFlag != nil &&
+			!strings.Contains((*controllersFlag).String(), "-route") &&
+			(strings.Contains((*controllersFlag).String(), "route") || strings.Contains((*controllersFlag).String(), "*")) &&
+			vsphereparavirtual.RegisteredProviderName == (*cloudProviderFlag).String() {
+			vsphereparavirtual.RouteEnabled = true
 		}
 		innerRun(cmd, args)
 	}
