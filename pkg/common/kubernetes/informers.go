@@ -108,6 +108,16 @@ func (im *InformerManager) AddNodeListener(add, remove func(obj interface{}), up
 	})
 }
 
+// GetNodeLister creates a lister to use
+func (im *InformerManager) GetNodeLister() listerv1.NodeLister {
+	return im.informerFactory.Core().V1().Nodes().Lister()
+}
+
+// IsNodeInformerSynced returns whether node informer is synced
+func (im *InformerManager) IsNodeInformerSynced() cache.InformerSynced {
+	return im.informerFactory.Core().V1().Nodes().Informer().HasSynced
+}
+
 // Listen starts the Informers. Based on client-go informer package, if the Lister has
 // already been initialized, it will not re-init them. Only new non-init Listers will be initialized.
 func (im *InformerManager) Listen() {
