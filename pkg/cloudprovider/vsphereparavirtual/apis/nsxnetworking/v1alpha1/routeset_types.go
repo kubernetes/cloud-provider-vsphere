@@ -44,13 +44,17 @@ type Route struct {
 	// Name is the name of this route entry.
 	Name string `json:"name"`
 	// Destination is the CIDR block used for the destination match.
+	// It is network address in CIDR format, support both IPv4 and IPv6.
 	Destination string `json:"destination"`
 	// Target is the IP address used to determine where traffic goes to.
+	// Support both IPv4 and IPv6, and it needs to be consistent with Destination.
 	Target string `json:"target"`
 }
 
 // RouteSetStatus defines the realized state of RouteSet.
 type RouteSetStatus struct {
+	// Routes is the set of realized routes.
+	Routes []Route `json:"routes"`
 	// Conditions defines current state of the RouteSet.
 	Conditions []RouteSetCondition `json:"conditions"`
 }
