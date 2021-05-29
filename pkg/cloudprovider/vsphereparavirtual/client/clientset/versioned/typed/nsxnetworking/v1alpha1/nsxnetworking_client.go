@@ -26,12 +26,17 @@ import (
 
 type NsxV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	IPPoolsGetter
 	RouteSetsGetter
 }
 
 // NsxV1alpha1Client is used to interact with features provided by the nsx.vmware.com group.
 type NsxV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *NsxV1alpha1Client) IPPools(namespace string) IPPoolInterface {
+	return newIPPools(c, namespace)
 }
 
 func (c *NsxV1alpha1Client) RouteSets(namespace string) RouteSetInterface {

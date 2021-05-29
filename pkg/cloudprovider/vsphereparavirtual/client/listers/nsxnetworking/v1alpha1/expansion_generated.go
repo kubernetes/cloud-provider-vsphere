@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// IPPoolListerExpansion allows custom methods to be added to
+// IPPoolLister.
+type IPPoolListerExpansion interface{}
+
+// IPPoolNamespaceListerExpansion allows custom methods to be added to
+// IPPoolNamespaceLister.
+type IPPoolNamespaceListerExpansion interface{}
+
 // RouteSetListerExpansion allows custom methods to be added to
 // RouteSetLister.
 type RouteSetListerExpansion interface{}
