@@ -14,6 +14,8 @@
 
 ## Tutorials
 
-* [Running a Kubernetes cluster on vSphere with kubeadm](/tutorials/kubernetes-on-vsphere-with-kubeadm.md)
-* [Deploying CCM and CSI with Zones Topology](/tutorials/deploying_cpi_and_csi_with_multi_dc_vc_aka_zones.md)
-* [Deploying the (deprecated) in-tree vSphere Cloud Provider using kubeadm](./tutorials/k8s-vcp-on-vsphere-with-kubeadm.md)
+* [Deploying the vSphere CPI and CSI in a Multi-vCenter OR Multi-Datacenter Environment using Zones](/tutorials/deploying_cpi_and_csi_with_multi_dc_vc_aka_zones.md)
+* [Enabling vSphere CSI on an existing cluster](/tutorials/enabling-vsphere-csi-on-an-existing-cluster.md)
+* [Running a Kubernetes Cluster on vSphere with kubeadm](./tutorials/k8s-vcp-on-vsphere-with-kubeadm.md)
+* [Deploying vSphere CPI using Helm](/tutorials/kubernetes-on-vsphere-with-helm.md)
+* [Deploying a Kubernetes Cluster on vSphere with CSI and CPI](/tutorials/kubernetes-on-vsphere-with-kubeadm.md)
