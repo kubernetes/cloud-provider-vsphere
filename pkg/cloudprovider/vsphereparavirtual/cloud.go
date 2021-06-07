@@ -28,6 +28,7 @@ import (
 
 	cloudprovider "k8s.io/cloud-provider"
 
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod"
 	cpcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
@@ -49,6 +50,12 @@ const (
 var (
 	// SupervisorClusterSecret is the name of vsphere paravirtual supervisor cluster cloud provider secret
 	SupervisorClusterSecret = "cloud-provider-creds"
+
+	// ClusterName contains the cluster-name flag injected from main, needed for cleanup
+	ClusterName string
+
+	// RouteEnabled if set to true, will start ippool and node controller.
+	RouteEnabled bool
 )
 
 func init() {
@@ -132,6 +139,15 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	}
 	cp.instances = instances
 
+	if RouteEnabled {
+		klog.V(0).Info("Starting routable pod controllers")
+
+		if err := routablepod.StartControllers(kcfg, client, cp.informMgr, ClusterName, clusterNS, ownerRef); err != nil {
+			klog.Errorf("Failed to start Routable pod controllers: %v", err)
+		}
+	}
+
+	cp.informMgr.Listen()
 	klog.V(0).Info("Initing vSphere Paravirtual Cloud Provider Succeeded")
 }
 
