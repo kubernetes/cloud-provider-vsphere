@@ -215,10 +215,7 @@ func (c *Controller) processIPPoolCreateOrUpdate(ippool *ippoolv1alpha1.IPPool) 
 	// make map of allocated subnets
 	subs := make(map[string]string)
 	for _, sub := range ippool.Status.Subnets {
-		// if ippool is exhausted, the cidr value could be empty
-		if sub.CIDR != "" {
-			subs[sub.Name] = sub.CIDR
-		}
+		subs[sub.Name] = sub.CIDR
 	}
 	nodes, err := c.kubeclientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -228,18 +225,16 @@ func (c *Controller) processIPPoolCreateOrUpdate(ippool *ippoolv1alpha1.IPPool) 
 	// update node with allocated subnet
 	for _, n := range nodes.Items {
 		if v, ok := subs[n.Name]; ok {
-			if n.Spec.PodCIDR == "" || len(n.Spec.PodCIDRs) == 0 {
-				// If we reached here, it means that the node has no CIDR currently assigned. So we set it.
-				if err := c.patchNodeCIDRWithRetry(types.NodeName(n.Name), v); err == nil {
-					// continue to next node if this one succeeded
-					continue
-				}
-				klog.Errorf("Failed to update node %v PodCIDR to %v after multiple attempts: %v", n.Name, v, err)
-				c.recordNodeStatusChange(&n, "CIDRAssignmentFailed")
-				klog.Errorf("CIDR assignment for node %v failed: %v. Try again in next reconcile", n.Name, err)
-
-				return err
+			// Set or overwrite the podCIDR on current node
+			if err := c.patchNodeCIDRWithRetry(types.NodeName(n.Name), v); err == nil {
+				// continue to next node if this one succeeded
+				continue
 			}
+			klog.Errorf("Failed to update node %v PodCIDR to %v after multiple attempts: %v", n.Name, v, err)
+			c.recordNodeStatusChange(&n, "CIDRAssignmentFailed")
+			klog.Errorf("CIDR assignment for node %v failed: %v. Try again in next reconcile", n.Name, err)
+
+			return err
 		}
 	}
 
