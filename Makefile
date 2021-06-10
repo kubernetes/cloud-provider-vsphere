@@ -18,6 +18,9 @@ export BIN_OUT ?= $(BUILD_OUT)/bin
 # test grid at the end of a Prow job.
 export ARTIFACTS ?= $(BUILD_OUT)/artifacts
 
+# BRANCH_NAME is the name of current branch.
+export BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
+
 -include hack/make/docker.mk
 
 ################################################################################
@@ -312,3 +315,16 @@ update-codegen:
 	hack/update-codegen.sh
 verify-codegen:
 	hack/verify-codegen.sh
+
+################################################################################
+##                                  HELPERS                                  ##
+################################################################################
+.PHONY: squash
+squash:
+	hack/git-squash.sh $(MESSAGE)
+
+.PHONY: docker-image
+docker-image:
+	docker build \
+	-f cluster/images/controller-manager/Dockerfile \
+	-t "$(IMAGE):$(BRANCH_NAME)" . \
