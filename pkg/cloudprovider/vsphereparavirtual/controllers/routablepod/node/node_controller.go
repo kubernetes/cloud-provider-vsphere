@@ -68,7 +68,6 @@ func NewController(
 	clusterNS string,
 	ownerRef *metav1.OwnerReference) *Controller {
 
-	utilruntime.Must(ippoolv1alpha1.AddToScheme(ippoolscheme.Scheme))
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events(clusterNS)})
@@ -102,7 +101,7 @@ func NewController(
 		// update
 		func(_, cur interface{}) {
 			node := cur.(*corev1.Node).DeepCopy()
-			// assume there is no subnet change after the allocation
+			// no need to add request if it's already allocated
 			if len(node.Spec.PodCIDR) == 0 || len(node.Spec.PodCIDRs) == 0 {
 				c.enqueueNode(node)
 			}

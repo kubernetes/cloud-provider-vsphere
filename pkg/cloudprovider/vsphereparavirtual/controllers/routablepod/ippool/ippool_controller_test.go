@@ -134,7 +134,7 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 					CIDR: "10.0.0.1/24",
 				},
 			},
-			expectedNumPatches: 1,
+			expectedNumPatches: 3,
 		},
 	}
 

@@ -125,7 +125,6 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	cp.routes = routes
 
 	cp.informMgr.AddNodeListener(cp.nodeAdded, cp.nodeDeleted, nil)
-	cp.informMgr.Listen()
 
 	lb, err := NewLoadBalancer(clusterNS, kcfg, cp.ownerReference)
 	if err != nil {
