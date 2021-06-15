@@ -8,44 +8,39 @@ Review the comprehensive guide locate at [Deploying a Kubernetes Cluster on vSph
 
 ### Helm requirements
 
-The [Helm Chart for vSphere CPI](https://github.com/helm/charts/tree/master/stable/vsphere-cpi) has been tested and verified working using Helm v.2.16.X and v3.0.0+. It is highly recommended that Helm v3.0.0+ be used when deploying the Helm Chart for vSphere CPI. At any point should you have additional questions regarding Helm, please visit this website for the official [Helm documentation](https://helm.sh/docs/).
+[Helm charts](https://github.com/helm/charts) has been fully deprecated since Nov 13th 2020.
+
+The [Helm Chart for vSphere CPI](https://github.com/helm/charts/tree/master/stable/vsphere-cpi) has been moved to [this repo](https://github.com/kubernetes/cloud-provider-vsphere/tree/master/charts/stable/vsphere-cpi). It has been tested and verified working using Helm v.2.16.X and v3.0.0+. It is highly recommended that Helm v3.0.0+ be used when deploying the Helm Chart for vSphere CPI. At any point should you have additional questions regarding Helm, please visit this website for the official [Helm documentation](https://helm.sh/docs/).
 
 ## Setting up Helm
 
 Before you begin, all outlined steps below are carried out on the master node only.
 
-Download the [latest release](https://github.com/helm/helm/releases) of Helm appropriate for your platform. At the time of writing this Helm quickstart guide, the latest release is [v3.0.1](https://github.com/helm/helm/releases/tag/v3.0.1). It is highly recommended using Helm v3.0.0+ when deploying the Helm Chart for vSphere CPI.
+### Option 1: From the Binary Releases
 
-After the download is complete, unpack and install Helm v3.0.0.
+Download the [latest release](https://github.com/helm/helm/releases) of Helm appropriate for your platform. At the time of writing this Helm quickstart guide, the latest release is [v3.6.0](https://github.com/helm/helm/releases/tag/v3.6.0). It is highly recommended using Helm v3.0.0+ when deploying the Helm Chart for vSphere CPI.
+
+After the download is complete, unpack and install Helm v3.0.0+.
 
 ```bash
-# tar -zxvf helm-v3.0.1-linux-amd64.tgz
+# tar -zxvf helm-v3.6.0-linux-amd64.tgz
 # sudo mv linux-amd64/helm /usr/local/bin/helm
 ```
+
+### Option 2: From Script
+
+```bash
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+See [Install Helm](https://helm.sh/docs/intro/install/) for more options.
 
 Verify that Helm installed successfully by running the following command:
 
 ```bash
-# helm help
-```
-
-For Helm v3.0.0+, we need to add the `stable` charts repo on Helm in order to consume those charts. This can be done by executing the following command:
-
-```bash
-# helm repo add stable https://kubernetes-charts.storage.googleapis.com/
-"stable" has been added to your repositories
-# helm repo update
-Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "stable" chart repository
-Update Complete. ⎈ Happy Helming!⎈
-```
-
-You can verify access to the `stable` repo by search for the Helm chart for vSphere CPI.
-
-```bash
-# helm search repo vsphere-cpi
-NAME                CHART VERSION   APP VERSION     DESCRIPTION
-stable/vsphere-cpi  0.1.2           1.0.0           A Helm chart for vSphere Cloud Provider Interfa...
+helm help
 ```
 
 ### Check that all nodes are tainted
@@ -263,7 +258,8 @@ You may now remove the `vsphere.conf` file created at `/etc/kubernetes/`.
 To uninstall/delete the vsphere-cpi deployment:
 
 ```bash
-# helm delete vsphere-cpi
+# Helm 3
+$ helm uninstall [RELEASE_NAME]
 ```
 
 You can delete the `configMap` and `secret` for the vSphere CPI if they are no longer needed.
