@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -88,10 +89,10 @@ func (p *lbProvider) doCleanupStep(clusterName string, client clientcorev1.Servi
 		}
 	}
 
-	return p.CleanupServices(clusterName, services)
+	return p.CleanupServices(clusterName, services, false)
 }
 
-func (p *lbProvider) CleanupServices(clusterName string, validServices map[types.NamespacedName]corev1.Service) error {
+func (p *lbProvider) CleanupServices(clusterName string, validServices map[types.NamespacedName]corev1.Service, ensureLBServiceDeleted bool) error {
 	ipPoolIds := sets.NewString()
 	for _, name := range p.classes.GetClassNames() {
 		class := p.classes.GetClass(name)
@@ -99,7 +100,7 @@ func (p *lbProvider) CleanupServices(clusterName string, validServices map[types
 	}
 
 	lbs := map[types.NamespacedName]struct{}{}
-	servers, err := p.access.ListVirtualServers(ClusterName)
+	servers, err := p.access.ListVirtualServers(clusterName)
 	if err != nil {
 		return err
 	}
@@ -162,6 +163,14 @@ func (p *lbProvider) CleanupServices(clusterName string, validServices map[types
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	// check for orphan unmanaged load balancer service if there are no virtual servers and flag ensureLBServiceDeleted == true
+	if len(lbs) == 0 && ensureLBServiceDeleted {
+		err = p.removeLoadBalancerServiceIfUnused(clusterName)
+		if err != nil && !isNotFoundError(err) {
+			return errors.Wrap(err, "removeLoadBalancerServiceIfUnused failed")
 		}
 	}
 	return nil
