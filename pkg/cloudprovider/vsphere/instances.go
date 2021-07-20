@@ -19,6 +19,7 @@ package vsphere
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	v1 "k8s.io/api/core/v1"
@@ -130,14 +131,20 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 // InstanceType returns the type of the instance identified by name.
 func (i *instances) InstanceType(ctx context.Context, name types.NodeName) (string, error) {
 	klog.V(4).Info("instances.InstanceType() called")
-	return i.nodeManager.nodeNameMap[string(name)].NodeType, nil
+	if nodeInfo, ok := i.nodeManager.nodeNameMap[string(name)]; ok {
+		return nodeInfo.NodeType, nil
+	}
+	return "", fmt.Errorf("cannot find node with nodeName %s in nodeNameMap", name)
 }
 
 // InstanceTypeByProviderID returns the type of the instance identified by providerID.
 func (i *instances) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
 	klog.V(4).Info("instances.InstanceTypeByProviderID() called")
 	uid := GetUUIDFromProviderID(providerID)
-	return i.nodeManager.nodeUUIDMap[uid].NodeType, nil
+	if nodeInfo, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
+		return nodeInfo.NodeType, nil
+	}
+	return "", fmt.Errorf("cannot find node with providerID %s in nodeUUIDMap", providerID)
 }
 
 // AddSSHKeyToAllInstances is not implemented; it always returns an error.
