@@ -6,10 +6,7 @@ metadata:
   labels:
     app: {{ template "cpi.name" . }}
     vsphere-cpi-infra: ingress
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     component: cloud-controller
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   {{- if .Values.ingress.annotations }}
   annotations:
