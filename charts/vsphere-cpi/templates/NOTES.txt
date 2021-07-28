@@ -1,3 +1,12 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
 The vSphere Cloud Controller Manager API over gRPC exists at the following location:
 
 {{- if not .Values.service.enabled }}
