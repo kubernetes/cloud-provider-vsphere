@@ -5,11 +5,8 @@ metadata:
   labels:
     app: {{ template "cpi.name" . }}
     vsphere-cpi-infra: daemonset
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     component: cloud-controller-manager
     tier: control-plane
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   annotations:
     scheduler.alpha.kubernetes.io/critical-pod: ""
@@ -39,9 +36,12 @@ spec:
         {{- end }}
     spec:
       nodeSelector:
-        node-role.kubernetes.io/master: ""
       {{- if .Values.daemonset.nodeSelector }}
-      {{- toYaml .Values.daemonset.nodeSelector | nindent 8 }}
+      {{- with .Values.daemonset.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- else }}
+        node-role.kubernetes.io/control-plane: "true"
       {{- end }}
       tolerations:
       - key: node.cloudprovider.kubernetes.io/uninitialized
@@ -51,6 +51,9 @@ spec:
         effect: NoSchedule
       - key: node.kubernetes.io/not-ready
         effect: NoSchedule
+        operator: Exists
+      - key: CriticalAddonsOnly
+        effect: NoExecute
         operator: Exists
       {{- if .Values.daemonset.tolerations }}
       {{- toYaml .Values.daemonset.tolerations | nindent 6 }}
