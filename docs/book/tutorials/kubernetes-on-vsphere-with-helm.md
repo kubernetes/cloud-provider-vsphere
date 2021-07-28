@@ -276,7 +276,7 @@ To uninstall/delete the vsphere-cpi deployment:
 
 ```bash
 # Helm 3
-$ helm uninstall vsphere-cpi
+$ helm uninstall [RELEASE_NAME]
 ```
 
 You can delete the `configMap` and `secret` for the vSphere CPI if they are no longer needed.
