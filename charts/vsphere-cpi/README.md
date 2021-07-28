@@ -27,7 +27,7 @@ See [help repo](https://helm.sh/docs/helm/helm_repo/) for command documentation.
 Then to install the chart and by providing vCenter information/credentials, run the following command:
 
 ```bash
-helm install vsphere-cpi vsphere-cpi/vsphere-cpi --namespace kube-system --set config.enabled=true --set config.vcenter=<vCenter IP> --set config.username=<vCenter Username> --set config.password=<vCenter Password> --set config.datacenter=<vCenter Datacenter>
+helm upgrade --install vsphere-cpi vsphere-cpi/vsphere-cpi --namespace kube-system --set config.enabled=true --set config.vcenter=<vCenter IP> --set config.username=<vCenter Username> --set config.password=<vCenter Password> --set config.datacenter=<vCenter Datacenter>
 ```
 
 See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation.
