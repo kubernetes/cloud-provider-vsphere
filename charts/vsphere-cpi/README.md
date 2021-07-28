@@ -8,14 +8,14 @@ This chart deploys all components required to run the external vSphere CPI as de
 
 ## Prerequisites
 
-- Has been tested on Kubernetes 1.13.X+
+- Has been tested on Kubernetes 1.21.X+
 - Assumes your Kubernetes cluster has been configured to use the external cloud provider. Please take a look at configuration guidelines located in the [Kubernetes documentation](https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#running-cloud-controller-manager).
 
 ## Installing the Chart using Helm 3.0+
 
 [The Github project of Helm chart repositories](https://github.com/helm/charts) is now an archive and no longer under active development since Nov 13, 2020. For more information, see the [Helm Charts Deprecation and Archive Notice](https://github.com/helm/charts#%EF%B8%8F-deprecation-and-archive-notice), and [Update](https://helm.sh/blog/charts-repo-deprecation/).
 
-To add the Helm Stable Charts for cloud-provider-vsphere, you can run the following command:
+To add and update the Helm Charts for cloud-provider-vsphere, you can run the following command:
 
 ```bash
 helm repo add vsphere-cpi https://kubernetes.github.io/cloud-provider-vsphere
@@ -27,12 +27,23 @@ See [help repo](https://helm.sh/docs/helm/helm_repo/) for command documentation.
 Then to install the chart and by providing vCenter information/credentials, run the following command:
 
 ```bash
-helm install vsphere-cpi vsphere-cpi/vsphere-cpi --namespace kube-system --set config.enabled=true --set config.vcenter=<vCenter IP> --set config.username=<vCenter Username> --set config.password=<vCenter Password> --set config.datacenter=<vCenter Datacenter>
+helm upgrade --install vsphere-cpi vsphere-cpi/vsphere-cpi --namespace kube-system --set config.enabled=true --set config.vcenter=<vCenter IP> --set config.username=<vCenter Username> --set config.password=<vCenter Password> --set config.datacenter=<vCenter Datacenter>
 ```
+
+Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example:
+
+```bash
+helm install vsphere-cpi -f values.yaml vsphere-cpi/vsphere-cpi
+```
+
+> **Tip**: You can use the default [values.yaml](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/charts/vsphere-cpi/values.yaml) as a guide
 
 See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation.
 
 > **Tip**: List all releases using `helm list --all`
+> It may take a few minutes. Confirm the pods are up:
+> `kubectl get pods --namespace $NAMESPACE`
+> `helm list --namespace $NAMESPACE`
 
 If you want to provide your own `vsphere.conf` and Kubernetes secret `vsphere-cpi` (for example, to handle multple datacenters/vCenters or for using zones), you can learn more about the `vsphere.conf` and `vsphere-cpi` secret by reading the following [documentation](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html) and then running the following command:
 
@@ -65,7 +76,7 @@ To uninstall/delete the `vsphere-cpi` deployment:
 $ helm delete vsphere-cpi --namespace kube-system
 
 # Helm 3
-$ helm uninstall [RELEASE_NAME]
+$ helm uninstall vsphere-cpi
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
@@ -132,3 +143,32 @@ Alternatively, a YAML file that specifies the values for the parameters can be p
 ### Image tags
 
 vSphere CPI offers a multitude of [tags](https://github.com/kubernetes/cloud-provider-vsphere/releases) for the various components used in this chart.
+
+## Developer Releasing Guide
+
+`values.yaml` files for the charts can be found in the `charts/vsphere-cpi` repo.
+
+```bash
+# Add and update helm repos
+helm repo add vsphere-cpi https://kubernetes.github.io/cloud-provider-vsphere
+helm repo update
+
+# Package CPI Chart
+cd charts
+vsphere-cpi
+
+# Debug
+helm upgrade --install vsphere-cpi vsphere-cpi/vsphere-cpi --namespace kube-system --debug
+
+# Update repo index
+cd ..
+helm repo index . --url https://kubernetes.github.io/cloud-provider-vsphere
+
+# Push to master and gh-pages
+git add .
+git commit -m "...."
+git push
+git checkout gh-pages
+git merge master
+git push
+```
