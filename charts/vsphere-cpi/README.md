@@ -155,7 +155,7 @@ helm repo update
 
 # Package CPI Chart
 cd charts
-vsphere-cpi
+helm package vsphere-cpi
 
 # Debug
 helm upgrade --install vsphere-cpi vsphere-cpi/vsphere-cpi --namespace kube-system --debug
