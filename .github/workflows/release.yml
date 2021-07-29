@@ -1,0 +1,41 @@
+name: Release Charts
+
+name: Release Helm Charts
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "charts/**"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # This step uses Github's checkout-action: https://github.com/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      
+      # Configure Git for helm release
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      
+      # Install Helm
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.4.0
+
+      # Run chart-releaser action (https://github.com/helm/chart-releaser-action)
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.2.1
+        with:
+          charts_dir: charts
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-chart-{{ .Version }}"
