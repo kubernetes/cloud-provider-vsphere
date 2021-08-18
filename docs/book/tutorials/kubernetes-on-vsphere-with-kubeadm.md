@@ -1,4 +1,4 @@
-# Deploying a Kubernetes Cluster on vSphere with CSI and CPI
+# Deploying a Kubernetes Cluster on vSphere with CPI
 
 The purpose of this guide is to provide the reader with step by step instructions on how to deploy Kubernetes on vSphere infrastructure. The instructions use `kubeadm`, a tool built to provide best-practice “fast paths” for creating Kubernetes clusters. The reader will also learn how to deploy the Container Storage Interface and Cloud Provider Interface plugins for vSphere specific operations. At the end of this tutorial you will have a fully running K8s on vSphere environment that allows for dynamic provisioning of volumes.
 
@@ -691,19 +691,6 @@ You may now remove the `vsphere.conf` file created at `/etc/kubernetes/`.
 
 Now that the CPI is installed, we can focus on the CSI. Please visit <https://vsphere-csi-driver.sigs.k8s.io/driver-deployment/installation.html> to install vSphere CSI Driver.
 
-## Sample manifests to test CSI driver functionality
-
-The following are some sample manifests that can be used to verify that some provisioning workflows using the vSphere CSI driver are working as expected.
-
-The example provided here will show how to create a stateful containerized application and use the vSphere Client to access the volumes that back your application.
-The following sample workflow shows how to deploy a MongoDB application with one replica.
-
-While performing the workflow tasks, you alternate the roles of a vSphere user and Kubernetes user. The tasks use the following items:
-
-* Storage class YAML file
-* MongoDB service YAML file
-* MongoDB StatefulSet YAML file
-
 ### Create a Storage Policy
 
 The virtual disk (VMDK) that will back your containerized application needs to meet specific storage requirements. As a vSphere user, you create a VM storage policy based on the requirements provided to you by the Kubernetes user.
@@ -927,12 +914,3 @@ Questions? Try the support group
 ```
 
 This makes mongodb-0 the primary node and other two nodes are secondary.
-
-### Verify Cloud Native Storage functionality is working in vSphere
-
-After your application gets deployed, its state is backed by the VMDK file associated with the specified storage policy. As a vSphere administrator, you can review the VMDK that is created for your container volume.
-In this step, we will verify that the Cloud Native Storage feature released with vSphere 6.7U3 is working. To go to the CNS UI, login to the vSphere client, then navigate to Datacenter → Monitor → Cloud Native Storage → Container Volumes and observe that the newly created persistent volumes are present. These should match the `kubectl get pvc` output from earlier. You can also monitor their storage policy compliance status.
-
-![Cloud Native Storage view of the MongoDB Persistent Volumes](https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/images/cns-mongo-pvs-labels.png)
-
-That completes the testing. CSI, CPI and CNS are all now working.
