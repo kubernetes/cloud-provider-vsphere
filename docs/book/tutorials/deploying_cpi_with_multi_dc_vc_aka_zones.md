@@ -1,4 +1,4 @@
-# Deploying the vSphere CPI and CSI in a Multi-vCenter OR Multi-Datacenter Environment using Zones
+# Deploying the vSphere CPI in a Multi-vCenter OR Multi-Datacenter Environment using Zones
 
 This document is designed to quickly get you up and running in a vSphere configuration that consists of multiple vCenter or a multiple Datacenter environment via using zones.
 
@@ -6,9 +6,9 @@ Note: These steps need to be done at initial Kubernetes cluster deployment. It i
 
 ## Prerequisites
 
-This document assumes that you have read and understood the setup documentation for both the vSphere Cloud Provider Interface (also known as the vSphere Cloud Controller Manager - CCM) and  vSphere Container Storage Interface (CSI) driver. This guide will go over the additional zone-based configuration needed to support a multi-vCenter or multi-Datacenter environment by using the previous documentation as a base. If you need to revisit the base CPI and CSI documentation, you can find the documentation links below:
+This document assumes that you have read and understood the setup documentation for both the vSphere Cloud Provider Interface (also known as the vSphere Cloud Controller Manager - CCM). This guide will go over the additional zone-based configuration needed to support a multi-vCenter or multi-Datacenter environment by using the previous documentation as a base. If you need to revisit the base CPI documentation, you can find the documentation links below:
 
-[Deploying Kubernetes Cluster on vSphere with CPI and CSI](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-kubeadm.md)
+[Deploying Kubernetes Cluster on vSphere with CPI](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-kubeadm.md)
 
 ## Why Do We Need to Use Zones in a Multi-vCenter or Multi-Datacenter Environment
 
@@ -23,7 +23,7 @@ There needs to be a mechanism in place to allow end-users to continue to use the
 
 ## Understanding Optimal Zone Configurations
 
-This section outlines some optimal configurations for Kubernetes zones in your vSphere environment/configuration. The implementation for zone support in the CPI and CSI driver are quite flexible but there are some configurations that can take advantage of features in vSphere and thus providing certain benefits. Here are a couple of common deployment scenarios for zones. If you cannot roll out or deploy zones in some of these suggested configurations, it might be worth consulting someone with familiarity with how zones are implemented.
+This section outlines some optimal configurations for Kubernetes zones in your vSphere environment/configuration. The implementation for zone support in the CPI is quite flexible but there are some configurations that can take advantage of features in vSphere and thus providing certain benefits. Here are a couple of common deployment scenarios for zones. If you cannot roll out or deploy zones in some of these suggested configurations, it might be worth consulting someone with familiarity with how zones are implemented.
 
 ### Zones Per Cluster
 
@@ -33,7 +33,7 @@ An ideal configuration is creating a zone per cluster. It follows that datastore
 
 ### Zones Per Datacenter
 
-Zones per datacenter can work as well, but there are some very important design considerations when doing this. If this deployment strategy is taken, it is important to understand that all compute nodes in that zone aka datacenter have access to provision VMDKs from a given shared datastore. The reason for this is CSI driver uses zones in order to target Kubenetes pods or workloads when provisioning external storage. Example diagrams or configurations appear below.
+Zones per datacenter can work as well, but there are some very important design considerations when doing this. If this deployment strategy is taken, it is important to understand that all compute nodes in that zone aka datacenter have access to provision VMDKs from a given shared datastore. Example diagrams or configurations appear below.
 
 ![Datacenter-based Zones](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/datacenterbased.png)
 
@@ -54,22 +54,22 @@ Some important takeaways for implementing zones:
 
 ## Deployment Overview
 
-Steps that will be covered in order to setup zones for the vSphere CPI, vSphere CSI driver, and vSphere environment/configuration:
+Steps that will be covered in order to setup zones for the vSphere CPI and vSphere environment/configuration:
 
 1. Enabling Zones the `vsphere.conf` file
 2. Creating Zones in your vSphere Environment via Tags
 3. Updating your `StorageClass` when using Persistent Storage
 4. Example: Deploying a Kubernetes pod to a Specific Zone using Persistent Storage
 
-## Deploying Zones using the CPI and CSI driver
+## Deploying Zones using the CPI
 
 ### 1. Enabling Zones the `vsphere.conf` file
 
-> ***Note:*** The CSI and CPI drivers have their own vsphere.conf files. The following modifications need to be made in both configurations.
+> ***Note:*** The CPI has its own vsphere.conf files. The following modifications need to be made in both configurations.
 
 The zones implementation depends on 2 sets of vSphere tags to be used on objects, such as datacenters or clusters. The first is a `region` tag and the second is a `zone` tag. vSphere tags are very simply put key/value pairs that can be assigned to objects and instead of using fixed keys to denote a `region` or a `zone`, we give the end-user the ability to come up with their own keys for a `region` and `zone` in the form of vSphere Tag Catagory. It just allows for a level of indirection in case you already have regions and zones setup in your configuration. Once a key/label or vSphere Tag Category is selected for each, create a `labels:` section in the `vsphere.conf` then assign tag names for both `region` and `zone`.
 
-**NOTE:** If you are using CPI version 1.1.0 or earlier, please use the `INI` based cloud configuration as outlined in the [Deploying a Kubernetes Cluster on vSphere with CSI and CPI](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-kubeadm.md) documentation.
+**NOTE:** If you are using CPI version 1.1.0 or earlier, please use the `INI` based cloud configuration as outlined in the [Deploying a Kubernetes Cluster on vSphere with CPI](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/kubernetes-on-vsphere-with-kubeadm.md) documentation.
 
 In the example `vsphere.conf` below, `k8s-region` and `k8s-zone` was selected:
 
@@ -166,11 +166,11 @@ Now let's assign the region and zone tags to each of the datacenters in the vSph
 
 And there you go! All setup with the correct tags.
 
-> **NOTE**: Since the CPI and CSI driver support multiple vCenter Servers, the datacenters in the US and EU could be distinctly different. In that case, the `govc` commands would be identical with the exception of replacing the proper vCenter username, password, and IP address for each command.
+> **NOTE**: Since the CPI supports multiple vCenter Servers, the datacenters in the US and EU could be distinctly different. In that case, the `govc` commands would be identical with the exception of replacing the proper vCenter username, password, and IP address for each command.
 
 ### 3. Updating your `StorageClass` when using Persistent Storage
 
-Now that we have set the regions and zones within the vSphere environment, we can now target a specific region/zone to deploy a Kubernetes workload or pod into. If a persistent volume is required for that given Kubernetes pod, we need to update the `StorageClass` with the `region` and `zone` information that the particular datastore is in. This is what the `StorageClass` YAML might look like:
+Now that we have set the regions and zones within the vSphere environment, we can now target a specific region/zone to deploy a Kubernetes workload or pod into. If a persistent volume is required for that given Kubernetes pod, we need to update the `StorageClass` with the `region` and `zone` information that the particular datastore is in. This is what the `StorageClass` YAML might look like (take CSI as an example):
 
 ```yaml
 kind: StorageClass
@@ -197,7 +197,7 @@ allowedTopologies:
 
 ### 4. Example: Deploying a Kubernetes pod to a Specific Zone using Persistent Storage
 
-Now if one wanted to deploy a Kubernetes pod into a specific `region` and `zone`  also using the persistent volume above, the YAML would look something like this:
+Now if one wants to deploy a Kubernetes pod into a specific `region` and `zone`  also using the persistent volume above, the YAML would look something like this:
 
 ```yaml
 kind: Pod
