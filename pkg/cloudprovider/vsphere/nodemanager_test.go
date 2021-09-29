@@ -294,7 +294,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"20.30.40.50",
@@ -317,13 +317,13 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig: &ccfg.CPIConfig{
 					Nodes: ccfg.Nodes{
-						InternalVMNetworkName: "test_k8s_tenant_c123_internal",
-						ExternalVMNetworkName: "test_k8s_tenant_c123_external",
+						InternalVMNetworkName: "internal_net",
+						ExternalVMNetworkName: "external_net",
 					},
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123_internal",
+						Network: "internal_net",
 						IpAddress: []string{
 							"127.0.0.6",
 							"10.10.1.22",
@@ -331,7 +331,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 						},
 					},
 					{
-						Network: "test_k8s_tenant_c123_external",
+						Network: "external_net",
 						IpAddress: []string{
 							"127.0.0.7",
 							"172.15.108.10",
@@ -352,7 +352,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				cpiConfig:        nil,
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"10.10.1.22",
@@ -385,7 +385,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"fe80::1",
 							"fd00:aaaa::1",
@@ -443,7 +443,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				cpiConfig:        nil,
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"fe80::3",
 							"fd00:cccc::1",
@@ -477,7 +477,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"169.0.1.2",
@@ -503,7 +503,6 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
-			// This seems like undesireable behavior.
 			testName: "BySubnetAndTwoNICs_desiredIPsAfterFirstNIC",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
@@ -515,7 +514,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"169.0.1.2",
@@ -536,8 +535,8 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 			},
 			expectedIPs: []v1.NodeAddress{
-				{Type: "InternalIP", Address: "169.0.1.2"},
-				{Type: "ExternalIP", Address: "169.0.1.2"},
+				{Type: "InternalIP", Address: "10.10.1.22"},
+				{Type: "ExternalIP", Address: "172.15.108.11"},
 			},
 		},
 		{
@@ -552,7 +551,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"169.0.1.2",
@@ -585,7 +584,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"169.0.1.2",
@@ -616,7 +615,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"169.0.1.2",
@@ -647,7 +646,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 						},
@@ -682,7 +681,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 						},
@@ -716,7 +715,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"20.30.40.50",
@@ -743,7 +742,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"20.30.40.50",
@@ -793,23 +792,18 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
-			// Is this desirable behavior? It is going through the fallback behavior.
-			// The inverse of this case (ByNetwork_whenOnlyInternalNetworkIsSet_itReturnsOnlyInternalIP)
-			// has a different behavior, I would at least expect these two
-			// cases to have similar behavior. Note: this isn't because the
-			// InternalVMNetworkName acts diffferently from the
-			// ExternalVMNetworkName, but because of which NIC it is on.
-			testName: "ByNetwork_whenOnlyExternalNetworkIsSet_itReturnsOnlyExternalIP",
+			testName: "ByNetworkName_whenOnlyExternalNetworkIsSet_onlyExternalNetIsSet",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig: &ccfg.CPIConfig{
 					Nodes: ccfg.Nodes{
-						ExternalVMNetworkName: "test_k8s_tenant_c123_external",
+						// TODO: update test net names
+						ExternalVMNetworkName: "external_net",
 					},
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123_internal",
+						Network: "internal_net",
 						IpAddress: []string{
 							"127.0.0.6",
 							"10.10.1.22",
@@ -817,7 +811,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 						},
 					},
 					{
-						Network: "test_k8s_tenant_c123_external",
+						Network: "external_net",
 						IpAddress: []string{
 							"127.0.0.7",
 							"172.15.108.10",
@@ -827,22 +821,21 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 			},
 			expectedIPs: []v1.NodeAddress{
-				{Type: "InternalIP", Address: "10.10.1.22"},
-				{Type: "ExternalIP", Address: "10.10.1.22"},
+				{Type: "ExternalIP", Address: "172.15.108.10"},
 			},
 		},
 		{
-			testName: "ByNetwork_whenOnlyInternalNetworkIsSet_itReturnsOnlyInternalIP",
+			testName: "ByNetworkName_whenOnlyInternalNetworkIsSet_itReturnsOnlyInternalIP",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig: &ccfg.CPIConfig{
 					Nodes: ccfg.Nodes{
-						InternalVMNetworkName: "test_k8s_tenant_c123_internal",
+						InternalVMNetworkName: "internal_net",
 					},
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123_internal",
+						Network: "internal_net",
 						IpAddress: []string{
 							"127.0.0.6",
 							"10.10.1.22",
@@ -850,7 +843,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 						},
 					},
 					{
-						Network: "test_k8s_tenant_c123_external",
+						Network: "external_net",
 						IpAddress: []string{
 							"127.0.0.7",
 							"172.15.108.10",
@@ -875,7 +868,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 				networks: []vimtypes.GuestNicInfo{
 					{
-						Network: "test_k8s_tenant_c123",
+						Network: "net_123abc",
 						IpAddress: []string{
 							"127.0.0.6",
 							"169.0.1.2",
@@ -897,10 +890,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
-			// This seems like undesireable behavior. The IPs that are returned
-			// depend on ordering within the NICs or which NIC they are on.
-			// There is no sensible precedence with the configuration.
-			testName: "BySettingBothNetworkNameAndSubnets_precedenceIsNotObvious",
+			testName: "BySettingBothNetworkNameAndSubnets_SubnetSelectionHasPrecedenceWhenMatchesAreFound",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig: &ccfg.CPIConfig{
@@ -929,8 +919,84 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				},
 			},
 			expectedIPs: []v1.NodeAddress{
-				{Type: "InternalIP", Address: "22.22.22.22"},
+				{Type: "InternalIP", Address: "10.10.1.22"},
 				{Type: "ExternalIP", Address: "172.15.108.11"},
+			},
+		},
+		{
+			testName: "BySettingBothNetworkNameAndSubnets_whenSubnetsMatchNoIPs_itUsesNetworkNameSelection",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "254.10.0.0/16",
+						ExternalNetworkSubnetCIDR: "253.15.0.0/16",
+						InternalVMNetworkName:     "internal_net",
+						ExternalVMNetworkName:     "external_net",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"22.22.22.22",
+							"172.15.108.11",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"33.33.33.33",
+							"10.10.1.22",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "22.22.22.22"},
+				{Type: "ExternalIP", Address: "33.33.33.33"},
+			},
+		},
+		{
+			testName: "ItIgnoresVNICDevices",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "254.10.0.0/16",
+						ExternalNetworkSubnetCIDR: "253.15.0.0/16",
+						InternalVMNetworkName:     "internal_net",
+						ExternalVMNetworkName:     "external_net",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						DeviceConfigId: -1,
+						Network:        "vnic-device",
+						IpAddress: []string{
+							"254.10.1.2",
+							"253.15.2.4",
+						},
+					},
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"22.22.22.22",
+							"172.15.108.11",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"33.33.33.33",
+							"10.10.1.22",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "22.22.22.22"},
+				{Type: "ExternalIP", Address: "33.33.33.33"},
 			},
 		},
 		{
@@ -961,7 +1027,36 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			expectedErrorSubstring: "unable to find suitable IP address for node",
 		},
 		{
-			testName: "ByDefaultSelection_TheSecondNICHasNoIPs",
+			testName: "ByDiscoveringAnUnParsableIP_itIsIgnored",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_123abc",
+						IpAddress: []string{
+							"blarg",
+							"127.0.0.6",
+							"10.10.1.22",
+							"10.10.1.23",
+						},
+					},
+					{
+						Network: "test_another_nic",
+						IpAddress: []string{
+							"127.0.0.7",
+							"172.15.108.11",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "10.10.1.22"},
+				{Type: "ExternalIP", Address: "10.10.1.22"},
+			},
+		},
+		{
+			testName: "ByDefaultSelection_whenTheSecondNICHasNoIPs",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig:        nil,
@@ -984,7 +1079,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
-			testName: "ByDefaultSelection_TheFirstNICHasNoIPs",
+			testName: "ByDefaultSelection_whenTheFirstNICHasNoIPs",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig:        nil,
@@ -1007,7 +1102,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
-			testName: "ByDefaultSelection_TheFirstNICHasNoIPsOfTheDesiredFamily",
+			testName: "ByDefaultSelection_whenTheFirstNICHasNoIPsOfTheDesiredFamily",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig:        nil,
@@ -1057,6 +1152,113 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				{Type: "ExternalIP", Address: "172.15.108.11"},
 			},
 		},
+		{
+			testName: "ByDefaultSelection_whenDualStackIPv4Primary_itReturnsIPv4AddrsFirst",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4", "ipv6"},
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_a",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::1",
+						},
+					},
+					{
+						Network: "net_b",
+						IpAddress: []string{
+							"fd00:cccc::2",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "172.15.108.11"},
+				{Type: "ExternalIP", Address: "172.15.108.11"},
+				{Type: "InternalIP", Address: "fd00:cccc::1"},
+				{Type: "ExternalIP", Address: "fd00:cccc::1"},
+			},
+		},
+		{
+			testName: "ByDefaultSelection_DualStackIPv6Primary_itReturnsIPv6AddrsFirst",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6", "ipv4"},
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_a",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::1",
+						},
+					},
+					{
+						Network: "net_b",
+						IpAddress: []string{
+							"fd00:cccc::2",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd00:cccc::1"},
+				{Type: "ExternalIP", Address: "fd00:cccc::1"},
+				{Type: "InternalIP", Address: "172.15.108.11"},
+				{Type: "ExternalIP", Address: "172.15.108.11"},
+			},
+		},
+		{
+			testName: "ByNetworkName_whenDualStack",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6", "ipv4"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalVMNetworkName: "internal_net",
+						ExternalVMNetworkName: "external_net",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::1",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"fd00:cccc::2",
+							"172.15.108.12",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd00:cccc::1"},
+				{Type: "ExternalIP", Address: "fd00:cccc::2"},
+				{Type: "InternalIP", Address: "172.15.108.11"},
+				{Type: "ExternalIP", Address: "172.15.108.12"},
+			},
+		},
+		{
+			testName: "DualStack_whenNoIPsOfOneFamilyAreDiscovered",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6", "ipv4"},
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"127.0.0.1",
+							"fd00:cccc::1",
+						},
+					},
+				},
+			},
+			expectedErrorSubstring: "unable to find suitable IP address for node",
+		},
 	}
 
 	for _, testcase := range testcases {
@@ -1092,11 +1294,9 @@ func TestDiscoverNodeIPs(t *testing.T) {
 					t.Errorf("failed: expected DiscoverNode to return error containing: %q but was %q", testcase.expectedErrorSubstring, err.Error())
 				}
 				return
-			} else {
-				if err != nil {
-					t.Errorf("Failed DiscoverNode: %s", err)
-					return
-				}
+			} else if err != nil {
+				t.Errorf("Failed DiscoverNode: %s", err)
+				return
 			}
 
 			nodeInfo, ok := nm.nodeNameMap[strings.ToLower(name)]
