@@ -253,7 +253,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		},
 	)
 
-	nonVNICDevices := nonVNICDevices(oVM.Guest.Net)
+	nonVNICDevices := collectNonVNICDevices(oVM.Guest.Net)
 	for _, v := range nonVNICDevices {
 		klog.V(6).Infof("internalVMNetworkName = %s", internalVMNetworkName)
 		klog.V(6).Infof("externalVMNetworkName = %s", externalVMNetworkName)
@@ -333,11 +333,29 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	return nil
 }
 
+// discoverIPs returns a pair of *ipAddrNetworkNames. The first representing
+// the internal network IP and the second being the external network IP.
+//
+// The returned ipAddrNetworkNames will match the given ipFamily.
+//
+// The returned ipAddrNetworkNames will be selected first by attempting to
+// match the given internalNetworkSubnet and externalNetworkSubnet. Subnet
+// matching has the highest precedence.
+//
+// If subnet matches are not found, or if subnets are not provided, then an
+// attempt is made to select ipAddrNetworkNames that match the givent network
+// names. Network name matching has the second highest precedence.
+//
+// If ipAddrNetworkNames are not found by subnet nor network name matching, then
+// the first ipAddrNetworkName of the desired family is returned as both the
+// internal and external matches.
+//
+// If either of these IPs cannot be discovered, nil will be returned instead.
 func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
 	internalNetworkSubnet, externalNetworkSubnet *net.IPNet,
 	internalVMNetworkName, externalVMNetworkName string) (internal *ipAddrNetworkName, external *ipAddrNetworkName) {
 
-	ipFamilyMatches := findMatchesForIPFamily(ipAddrNetworkNames, ipFamily)
+	ipFamilyMatches := collectMatchesForIPFamily(ipAddrNetworkNames, ipFamily)
 
 	var discoveredInternal *ipAddrNetworkName
 	var discoveredExternal *ipAddrNetworkName
@@ -366,18 +384,6 @@ func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
 			}
 		}
 
-		// At least one of the Internal or External addresses has been found.
-		// Minimally the Internal needs to exist for the node to function correctly.
-		// If only one was discovered, will log the warning and continue which will
-		// ultimately be visible to the end user
-		if discoveredInternal != nil || discoveredExternal != nil {
-			if discoveredInternal != nil && discoveredExternal == nil {
-				klog.Warning("Internal address found, but external address not found. Returning what addresses were discovered.")
-			} else if discoveredInternal == nil && discoveredExternal != nil {
-				klog.Warning("External address found, but internal address not found. Returning what addresses were discovered.")
-			}
-		}
-
 		// Neither internal or external addresses were found. This defaults to the legacy
 		// address selection behavior which is to only support a single address and
 		// return the first one found
@@ -386,12 +392,24 @@ func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
 			klog.V(2).Infof("Adding IP: %s", ipFamilyMatches[0].ipAddr)
 			discoveredInternal = ipFamilyMatches[0]
 			discoveredExternal = ipFamilyMatches[0]
+		} else {
+			// At least one of the Internal or External addresses has been found.
+			// Minimally the Internal needs to exist for the node to function correctly.
+			// If only one was discovered, will log the warning and continue which will
+			// ultimately be visible to the end user
+			if discoveredInternal != nil && discoveredExternal == nil {
+				klog.Warning("Internal address found, but external address not found. Returning what addresses were discovered.")
+			} else if discoveredInternal == nil && discoveredExternal != nil {
+				klog.Warning("External address found, but internal address not found. Returning what addresses were discovered.")
+			}
 		}
 	}
 	return discoveredInternal, discoveredExternal
 }
 
-func nonVNICDevices(guestNicInfos []types.GuestNicInfo) []types.GuestNicInfo {
+// collectNonVNICDevices filters out NICs that are virtual NIC devices. The IPs of
+// these NICs should not be added to the node status.
+func collectNonVNICDevices(guestNicInfos []types.GuestNicInfo) []types.GuestNicInfo {
 	var toReturn []types.GuestNicInfo
 	for _, v := range guestNicInfos {
 		if v.DeviceConfigId == -1 {
@@ -403,6 +421,7 @@ func nonVNICDevices(guestNicInfos []types.GuestNicInfo) []types.GuestNicInfo {
 	return toReturn
 }
 
+// toIPAddrNetworkNames maps an array of GuestNicInfo to and array of *ipAddrNetworkName.
 func toIPAddrNetworkNames(guestNicInfos []types.GuestNicInfo) []*ipAddrNetworkName {
 	var candidates []*ipAddrNetworkName
 	for _, v := range guestNicInfos {
@@ -413,6 +432,7 @@ func toIPAddrNetworkNames(guestNicInfos []types.GuestNicInfo) []*ipAddrNetworkNa
 	return candidates
 }
 
+// networkNames maps an array of GuestNicInfo to an array of network name strings
 func networkNames(guestNicInfos []types.GuestNicInfo) []string {
 	var existingNetworkNames []string
 	for _, v := range guestNicInfos {
@@ -421,12 +441,15 @@ func networkNames(guestNicInfos []types.GuestNicInfo) []string {
 	return existingNetworkNames
 }
 
-func findMatchesForIPFamily(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string) []*ipAddrNetworkName {
+// collectMatchesForIPFamily collects all ipAddrNetworkNames that have ips of the
+// desired IP family
+func collectMatchesForIPFamily(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string) []*ipAddrNetworkName {
 	return filter(ipAddrNetworkNames, func(candidate *ipAddrNetworkName) bool {
 		return matchesFamily(candidate.ip(), ipFamily)
 	})
 }
 
+// matchesFamily detects whether a given IP matches the given IP family.
 func matchesFamily(ip net.IP, ipFamily string) bool {
 	if ipFamily == vcfg.IPv6Family {
 		return ip.To4() == nil
@@ -439,6 +462,8 @@ func matchesFamily(ip net.IP, ipFamily string) bool {
 	return false
 }
 
+// filter returns a subset of given ipAddrNetworkNames based on whethe the
+// items in the collection pass the given predicate function.
 func filter(ipAddrNetworkNames []*ipAddrNetworkName, predicate func(*ipAddrNetworkName) bool) []*ipAddrNetworkName {
 	var filtered []*ipAddrNetworkName
 	for _, item := range ipAddrNetworkNames {
@@ -449,6 +474,8 @@ func filter(ipAddrNetworkNames []*ipAddrNetworkName, predicate func(*ipAddrNetwo
 	return filtered
 }
 
+// findSubnetMatch finds the first *ipAddrNetworkName that has an IP in the
+// given network subnet.
 func findSubnetMatch(ipAddrNetworkNames []*ipAddrNetworkName, networkSubnet *net.IPNet) *ipAddrNetworkName {
 	if networkSubnet != nil {
 		subnetMatches := filter(ipAddrNetworkNames, func(candidate *ipAddrNetworkName) bool {
@@ -463,6 +490,8 @@ func findSubnetMatch(ipAddrNetworkNames []*ipAddrNetworkName, networkSubnet *net
 	return nil
 }
 
+// findNetworkNameMatch finds the first *ipAddrNetworkName that matches the
+// given network name, ignoring case.
 func findNetworkNameMatch(ipAddrNetworkNames []*ipAddrNetworkName, networkName string) *ipAddrNetworkName {
 	if networkName != "" {
 		networkNameMatches := filter(ipAddrNetworkNames, func(candidate *ipAddrNetworkName) bool {
@@ -477,6 +506,8 @@ func findNetworkNameMatch(ipAddrNetworkNames []*ipAddrNetworkName, networkName s
 	return nil
 }
 
+// containsCaseInsensitive detects whether a given array of string contains
+// the given string, ignoring case.
 func containsCaseInsensitive(arr []string, str string) bool {
 	for _, a := range arr {
 		if strings.EqualFold(a, str) {
@@ -486,6 +517,9 @@ func containsCaseInsensitive(arr []string, str string) bool {
 	return false
 }
 
+// excludeLocalhostIPs collects ipAddrNetworkNames that have valid IPs, ipv4 or
+// ipv6, that are not localhost IPs. Localhost IPs should not be added to the
+// node status.
 func excludeLocalhostIPs(ipAddrNetworkNames []*ipAddrNetworkName) []*ipAddrNetworkName {
 	return filter(ipAddrNetworkNames, func(i *ipAddrNetworkName) bool {
 		err := ErrOnLocalOnlyIPAddr(i.ipAddr)
