@@ -268,8 +268,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	existingNetworkNames := networkNames(nonVNICDevices)
 	if internalVMNetworkName != "" && externalVMNetworkName != "" {
-		if !containsCaseInsensitive(existingNetworkNames, internalVMNetworkName) &&
-			!containsCaseInsensitive(existingNetworkNames, externalVMNetworkName) {
+		if !ArrayContainsCaseInsensitive(existingNetworkNames, internalVMNetworkName) &&
+			!ArrayContainsCaseInsensitive(existingNetworkNames, externalVMNetworkName) {
 			return fmt.Errorf("unable to find suitable IP address for node")
 		}
 	}
@@ -504,17 +504,6 @@ func findNetworkNameMatch(ipAddrNetworkNames []*ipAddrNetworkName, networkName s
 		return nil
 	}
 	return nil
-}
-
-// containsCaseInsensitive detects whether a given array of string contains
-// the given string, ignoring case.
-func containsCaseInsensitive(arr []string, str string) bool {
-	for _, a := range arr {
-		if strings.EqualFold(a, str) {
-			return true
-		}
-	}
-	return false
 }
 
 // excludeLocalhostIPs collects ipAddrNetworkNames that have valid IPs, ipv4 or

@@ -105,3 +105,43 @@ func TestUUIDConvertAndRevert(t *testing.T) {
 		t.Errorf("Failed to revert UUID")
 	}
 }
+
+func TestArrayContainsCaseInsensitive(t *testing.T) {
+	arr := []string{"First", "second", "THIRD"}
+
+	if !ArrayContainsCaseInsensitive(arr, "First") {
+		t.Errorf("Failed to find First")
+	}
+
+	if !ArrayContainsCaseInsensitive(arr, "firsT") {
+		t.Errorf("Failed to find firsT")
+	}
+
+	if ArrayContainsCaseInsensitive(arr, "firs") {
+		t.Errorf("Found firs")
+	}
+
+	if !ArrayContainsCaseInsensitive(arr, "second") {
+		t.Errorf("Failed to find second")
+	}
+
+	if !ArrayContainsCaseInsensitive(arr, "Second") {
+		t.Errorf("Failed to find Second")
+	}
+
+	if ArrayContainsCaseInsensitive(arr, "SecondInLine") {
+		t.Errorf("Found SecondInLine")
+	}
+
+	if !ArrayContainsCaseInsensitive(arr, "THIRD") {
+		t.Errorf("Failed to find THIRD")
+	}
+
+	if !ArrayContainsCaseInsensitive(arr, "third") {
+		t.Errorf("Failed to find third")
+	}
+
+	if ArrayContainsCaseInsensitive(arr, "ThirdMakesACrowd") {
+		t.Errorf("Found ThirdMakesACrowd")
+	}
+}

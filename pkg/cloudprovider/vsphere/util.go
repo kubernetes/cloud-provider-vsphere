@@ -82,3 +82,14 @@ func ErrOnLocalOnlyIPAddr(addr string) error {
 	}
 	return nil
 }
+
+// ArrayContainsCaseInsensitive detects whether a given array of string contains
+// the given string, ignoring case.
+func ArrayContainsCaseInsensitive(arr []string, str string) bool {
+	for _, a := range arr {
+		if strings.EqualFold(a, str) {
+			return true
+		}
+	}
+	return false
+}
