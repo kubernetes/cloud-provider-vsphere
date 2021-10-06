@@ -18,10 +18,12 @@ package vsphere
 
 import (
 	"context"
+	"net"
 	"strings"
 	"testing"
 
 	"github.com/vmware/govmomi/simulator"
+	"github.com/vmware/govmomi/vim25/types"
 	vimtypes "github.com/vmware/govmomi/vim25/types"
 	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 
@@ -1321,5 +1323,238 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCollectNonVNICDevices(t *testing.T) {
+	guestNicInfos := []types.GuestNicInfo{
+		{DeviceConfigId: 10},
+		{DeviceConfigId: -1},
+	}
+
+	returnedGuestNicInfos := collectNonVNICDevices(guestNicInfos)
+
+	if len(returnedGuestNicInfos) != 1 {
+		t.Errorf("failed: expected one GuestNicInfo, got %d", len(returnedGuestNicInfos))
+	}
+
+	if returnedGuestNicInfos[0].DeviceConfigId != 10 {
+		t.Errorf("failed: expected GuestNicInfo.DeviceConfigId to equal 10 but was %d", returnedGuestNicInfos[0].DeviceConfigId)
+	}
+}
+
+func TestToIPAddrNetworkNames(t *testing.T) {
+	guestNicInfos := []types.GuestNicInfo{
+		{Network: "internal_net", IpAddress: []string{"192.168.1.1", "fd00:1:4::1"}},
+		{Network: "external_net", IpAddress: []string{"10.10.50.12", "fd00:100:64::1"}},
+	}
+
+	actual := toIPAddrNetworkNames(guestNicInfos)
+
+	if len(actual) != 4 {
+		t.Errorf("failed: expected four returned ipAddrNetworkNames, got: %d", len(actual))
+	}
+
+	if actual[0].networkName != "internal_net" || actual[0].ipAddr != "192.168.1.1" {
+		t.Errorf("failed: expected the first entry to have a networkName of \"internal_net\" and a ipAddr of \"192.168.1.1\", but got: %s %s", actual[0].networkName, actual[0].ipAddr)
+	}
+
+	if actual[1].networkName != "internal_net" || actual[1].ipAddr != "fd00:1:4::1" {
+		t.Errorf("failed: expected the first entry to have a networkName of \"internal_net\" and a ipAddr of \"fd00:1:4::1\", but got: %s %s", actual[1].networkName, actual[1].ipAddr)
+	}
+
+	if actual[2].networkName != "external_net" || actual[2].ipAddr != "10.10.50.12" {
+		t.Errorf("failed: expected the first entry to have a networkName of \"external_net\" and a ipAddr of \"10.10.50.12\", but got: %s %s", actual[2].networkName, actual[2].ipAddr)
+	}
+
+	if actual[3].networkName != "external_net" || actual[3].ipAddr != "fd00:100:64::1" {
+		t.Errorf("failed: expected the first entry to have a networkName of \"external_net\" and a ipAddr of \"fd00:100:64::1\", but got: %s %s", actual[3].networkName, actual[3].ipAddr)
+	}
+}
+
+func TestToNetworkNames(t *testing.T) {
+	guestNicInfos := []types.GuestNicInfo{
+		{Network: "internal_net"},
+		{Network: "external_net"},
+	}
+
+	actual := toNetworkNames(guestNicInfos)
+
+	if len(actual) != 2 {
+		t.Errorf("failed: expected two returned network names: %d", len(actual))
+	}
+
+	if actual[0] != "internal_net" {
+		t.Errorf("failed: expected the first entry to equal of \"internal_net\", but got: %s ", actual[0])
+	}
+
+	if actual[1] != "external_net" {
+		t.Errorf("failed: expected the first entry to equal of \"external_net\", but got: %s ", actual[1])
+	}
+}
+
+func TestCollectMatchesForIPFamily(t *testing.T) {
+	ipAddrNetworkNames := []*ipAddrNetworkName{
+		{ipAddr: "192.168.1.1"},
+		{ipAddr: "fd00:100:64::1"},
+	}
+
+	ipv4IPAddrs := collectMatchesForIPFamily(ipAddrNetworkNames, "ipv4")
+
+	if len(ipv4IPAddrs) != 1 {
+		t.Errorf("failed: expected one ipv4 match, but got: %d", len(ipv4IPAddrs))
+	}
+
+	if ipv4IPAddrs[0].ipAddr != "192.168.1.1" {
+		t.Errorf("failed: expected ipAddr to equal \"192.168.1.1\", but got: %s", ipv4IPAddrs[0].ipAddr)
+	}
+
+	ipv6IPAddrs := collectMatchesForIPFamily(ipAddrNetworkNames, "ipv6")
+
+	if len(ipv6IPAddrs) != 1 {
+		t.Errorf("failed: expected one ipv6 match, but got: %d", len(ipv4IPAddrs))
+	}
+
+	if ipv6IPAddrs[0].ipAddr != "fd00:100:64::1" {
+		t.Errorf("failed: expected ipAddr to equal \"fd00:100:64::1\", but got: %s", ipv6IPAddrs[0].ipAddr)
+	}
+}
+
+func TestMatchesFamily(t *testing.T) {
+	if !matchesFamily(net.ParseIP("192.168.1.1"), "ipv4") {
+		t.Errorf("failed: expected 192.168.1.1 to match ipFamily ipv4, but it did not")
+	}
+
+	if matchesFamily(net.ParseIP("192.168.1.1"), "ipv6") {
+		t.Errorf("failed: expected 192.168.1.1 not to match ipFamily ipv6, but it did")
+	}
+
+	if !matchesFamily(net.ParseIP("fd00:1::1"), "ipv6") {
+		t.Errorf("failed: expected fd00:1::1to match ipFamily ipv6, but it did not")
+	}
+
+	if matchesFamily(net.ParseIP("fd00:1::1"), "ipv4") {
+		t.Errorf("failed: expected fd00:1::1 not to match ipFamily ipv4, but it did")
+	}
+
+	if matchesFamily(net.ParseIP("garbage"), "ipv6") {
+		t.Errorf("failed: expected garbage not to match ipFamily ipv6, but it did")
+	}
+
+	if matchesFamily(net.ParseIP("garbage"), "ipv4") {
+		t.Errorf("failed: expected garbage not to match ipFamily ipv4, but it did")
+	}
+
+	if matchesFamily(net.ParseIP("fd00:1::1"), "ipv7") {
+		t.Errorf("failed: expected fd00:1::1 not to match ipFamily ipv7, but it did")
+	}
+
+	if matchesFamily(net.ParseIP("192.168.1.1"), "ipv7") {
+		t.Errorf("failed: expected 192.168.1.1 not to match ipFamily ipv7, but it did")
+	}
+}
+
+func TestFilter(t *testing.T) {
+	ipAddrNetworkNames := []*ipAddrNetworkName{
+		{networkName: "foo"},
+		{networkName: "bar"},
+	}
+
+	actual := filter(ipAddrNetworkNames, func(n *ipAddrNetworkName) bool {
+		return n.networkName == "foo"
+	})
+
+	if len(actual) != 1 {
+		t.Errorf("failed: expected one ipAddrNetworkName, but got: %d", len(actual))
+	}
+
+	if actual[0].networkName != "foo" {
+		t.Errorf("failed: expected filtered network name to be \"foo\", but got %s", actual[0].networkName)
+	}
+}
+
+func TestFindSubnetMatch(t *testing.T) {
+	ipAddrNetworkNames := []*ipAddrNetworkName{
+		{ipAddr: "192.168.1.1"},
+		{ipAddr: "10.10.1.2"},
+		{ipAddr: "10.10.1.3"},
+	}
+
+	_, ipNet, err := net.ParseCIDR("10.10.0.0/16")
+	if err != nil {
+		t.Errorf("failed to parse CIDR")
+	}
+
+	actual := findSubnetMatch(ipAddrNetworkNames, ipNet)
+
+	if actual.ipAddr != "10.10.1.2" {
+		t.Errorf("failed: expected ipAddr to equal 10.10.1.2, but was %s", actual.ipAddr)
+	}
+
+	ipAddrNetworkNames = []*ipAddrNetworkName{
+		{ipAddr: "fc11::1"},
+		{ipAddr: "fd00:100:64::1"},
+		{ipAddr: "fd00:100:64::1"},
+	}
+
+	_, ipNet, err = net.ParseCIDR("fd00:100:64::/64")
+	if err != nil {
+		t.Errorf("failed to parse CIDR")
+	}
+
+	actual = findSubnetMatch(ipAddrNetworkNames, ipNet)
+
+	if actual.ipAddr != "fd00:100:64::1" {
+		t.Errorf("failed: expected ipAddr to equal fd00:100:64::1, but was %s", actual.ipAddr)
+	}
+}
+
+func TestFindNetworkNameMatch(t *testing.T) {
+	ipAddrNetworkNames := []*ipAddrNetworkName{
+		{networkName: "foo", ipAddr: "::1"},
+		{networkName: "bar", ipAddr: "::1"},
+		{networkName: "bar", ipAddr: "192.168.1.1"},
+	}
+
+	match := findNetworkNameMatch(ipAddrNetworkNames, "bar")
+
+	if match.networkName != "bar" || match.ipAddr != "::1" {
+		t.Errorf("failed: expected a match of name \"bar\" with an ipAddr of \"::1\", but got: %s %s", match.networkName, match.ipAddr)
+	}
+}
+
+func TestExcludeLocalhostIPs(t *testing.T) {
+	ipAddrNetworkNames := []*ipAddrNetworkName{
+		//doesn't parse
+		{ipAddr: "garbage"},
+		//unspecified
+		{ipAddr: "0.0.0.0"},
+		{ipAddr: "::"},
+		//link local multicast
+		{ipAddr: "224.0.0.1"},
+		{ipAddr: "ff02::1"},
+		// link local unicast
+		{ipAddr: "169.254.0.1"},
+		{ipAddr: "fe80::1"},
+		// loopback
+		{ipAddr: "127.0.0.1"},
+		{ipAddr: "::1"},
+
+		{ipAddr: "192.168.1.1"},
+		{ipAddr: "fd00:100:64::1"},
+	}
+
+	actual := excludeLocalhostIPs(ipAddrNetworkNames)
+
+	if len(actual) != 2 {
+		t.Errorf("failure: expected non localhosts matches to have len 2, but was %d", len(actual))
+	}
+
+	if actual[0].ipAddr != "192.168.1.1" {
+		t.Errorf("failure: expected ipAddr to equal 192.168.1.1, but was %s", actual[0].ipAddr)
+	}
+
+	if actual[1].ipAddr != "fd00:100:64::1" {
+		t.Errorf("failure: expected ipAddr to equal fd00:100:64::1, but was %s", actual[1].ipAddr)
 	}
 }

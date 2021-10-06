@@ -266,7 +266,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		}
 	}
 
-	existingNetworkNames := networkNames(nonVNICDevices)
+	existingNetworkNames := toNetworkNames(nonVNICDevices)
 	if internalVMNetworkName != "" && externalVMNetworkName != "" {
 		if !ArrayContainsCaseInsensitive(existingNetworkNames, internalVMNetworkName) &&
 			!ArrayContainsCaseInsensitive(existingNetworkNames, externalVMNetworkName) {
@@ -432,8 +432,8 @@ func toIPAddrNetworkNames(guestNicInfos []types.GuestNicInfo) []*ipAddrNetworkNa
 	return candidates
 }
 
-// networkNames maps an array of GuestNicInfo to an array of network name strings
-func networkNames(guestNicInfos []types.GuestNicInfo) []string {
+// toNetworkNames maps an array of GuestNicInfo to an array of network name strings
+func toNetworkNames(guestNicInfos []types.GuestNicInfo) []string {
 	var existingNetworkNames []string
 	for _, v := range guestNicInfos {
 		existingNetworkNames = append(existingNetworkNames, v.Network)
@@ -452,7 +452,7 @@ func collectMatchesForIPFamily(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily
 // matchesFamily detects whether a given IP matches the given IP family.
 func matchesFamily(ip net.IP, ipFamily string) bool {
 	if ipFamily == vcfg.IPv6Family {
-		return ip.To4() == nil
+		return ip.To4() == nil && ip.To16() != nil
 	}
 
 	if ipFamily == vcfg.IPv4Family {
@@ -462,7 +462,7 @@ func matchesFamily(ip net.IP, ipFamily string) bool {
 	return false
 }
 
-// filter returns a subset of given ipAddrNetworkNames based on whethe the
+// filter returns a subset of given ipAddrNetworkNames based on whether the
 // items in the collection pass the given predicate function.
 func filter(ipAddrNetworkNames []*ipAddrNetworkName, predicate func(*ipAddrNetworkName) bool) []*ipAddrNetworkName {
 	var filtered []*ipAddrNetworkName
