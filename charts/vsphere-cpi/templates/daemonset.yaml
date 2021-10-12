@@ -82,10 +82,7 @@ spec:
           - name: VSPHERE_API_DISABLE
             value: "true"
           - name: VSPHERE_API_BINDING
-            valueFrom:
-              configMapKeyRef:
-                name: {{ template "cpi.fullname" . }}
-                key: api.binding
+            value: {{ template "api.binding" . }}
         ports:
         - containerPort: {{ .Values.service.endpointPort }}
           protocol: TCP
