@@ -33,6 +33,7 @@ import (
 	klog "k8s.io/klog/v2"
 
 	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/types"
 )
 
 // Errors
@@ -172,6 +173,15 @@ func returnIPsFromSpecificFamily(family string, ips []string) []string {
 	return matching
 }
 
+type ipAddrNetworkName struct {
+	ipAddr      string
+	networkName string
+}
+
+func (c *ipAddrNetworkName) ip() net.IP {
+	return net.ParseIP(c.ipAddr)
+}
+
 // DiscoverNode finds a node's VM using the specified search value and search
 // type.
 func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
@@ -205,9 +215,9 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	}
 	vcInstance := nm.connectionManager.VsphereInstanceMap[tenantRef]
 
-	ipFamily := []string{vcfg.DefaultIPFamily}
+	ipFamilies := []string{vcfg.DefaultIPFamily}
 	if vcInstance != nil {
-		ipFamily = vcInstance.Cfg.IPFamilyPriority
+		ipFamilies = vcInstance.Cfg.IPFamilyPriority
 	} else {
 		klog.Warningf("Unable to find vcInstance for %s. Defaulting to ipv4.", tenantRef)
 	}
@@ -234,10 +244,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		externalVMNetworkName = nm.cfg.Nodes.ExternalVMNetworkName
 	}
 
-	foundInternal := false
-	foundExternal := false
 	addrs := []v1.NodeAddress{}
-
 	klog.V(2).Infof("Adding Hostname: %s", oVM.Guest.HostName)
 	v1helper.AddToNodeAddresses(&addrs,
 		v1.NodeAddress{
@@ -246,12 +253,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		},
 	)
 
-	for _, v := range oVM.Guest.Net {
-		if v.DeviceConfigId == -1 {
-			klog.V(4).Info("Skipping device because not a vNIC")
-			continue
-		}
-
+	nonVNICDevices := collectNonVNICDevices(oVM.Guest.Net)
+	for _, v := range nonVNICDevices {
 		klog.V(6).Infof("internalVMNetworkName = %s", internalVMNetworkName)
 		klog.V(6).Infof("externalVMNetworkName = %s", externalVMNetworkName)
 		klog.V(6).Infof("v.Network = %s", v.Network)
@@ -260,106 +263,50 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 			(externalVMNetworkName != "" && !strings.EqualFold(externalVMNetworkName, v.Network)) {
 			klog.V(4).Infof("Skipping device because vNIC Network=%s doesn't match internal=%s or external=%s network names",
 				v.Network, internalVMNetworkName, externalVMNetworkName)
-			continue
-		}
-
-		// Only return a single IP address based on the preference of IPFamily
-		// Must break out of loop in the event of ipv6,ipv4 where the NIC does
-		// contain a valid IPv6 and IPV4 address
-		for _, family := range ipFamily {
-
-			ips := returnIPsFromSpecificFamily(family, v.IpAddress)
-
-			for _, ip := range ips {
-				parsedIP := net.ParseIP(ip)
-				if parsedIP == nil {
-					return fmt.Errorf("can't parse IP: %s", ip)
-				}
-
-				// prioritize address masking over networkname
-				if !foundInternal && internalNetworkSubnet != nil && internalNetworkSubnet.Contains(parsedIP) {
-					klog.V(2).Infof("Adding Internal IP by AddressMatching: %s", ip)
-					v1helper.AddToNodeAddresses(&addrs,
-						v1.NodeAddress{
-							Type:    v1.NodeInternalIP,
-							Address: ip,
-						},
-					)
-					foundInternal = true
-				}
-				if !foundExternal && externalNetworkSubnet != nil && externalNetworkSubnet.Contains(parsedIP) {
-					klog.V(2).Infof("Adding External IP by AddressMatching: %s", ip)
-					v1helper.AddToNodeAddresses(&addrs,
-						v1.NodeAddress{
-							Type:    v1.NodeExternalIP,
-							Address: ip,
-						},
-					)
-					foundExternal = true
-				}
-
-				// then use network name
-				if !foundInternal && internalVMNetworkName != "" && strings.EqualFold(internalVMNetworkName, v.Network) {
-					klog.V(2).Infof("Adding Internal IP by NetworkName: %s", ip)
-					v1helper.AddToNodeAddresses(&addrs,
-						v1.NodeAddress{
-							Type:    v1.NodeInternalIP,
-							Address: ip,
-						},
-					)
-					foundInternal = true
-				}
-				if !foundExternal && externalVMNetworkName != "" && strings.EqualFold(externalVMNetworkName, v.Network) {
-					klog.V(2).Infof("Adding External IP by NetworkName: %s", ip)
-					v1helper.AddToNodeAddresses(&addrs,
-						v1.NodeAddress{
-							Type:    v1.NodeExternalIP,
-							Address: ip,
-						},
-					)
-					foundExternal = true
-				}
-			}
-
-			// At least one of the Internal or External addresses has been found.
-			// Minimally the Internal needs to exist for the node to function correctly.
-			// If only one was discovered, will log the warning and continue which will
-			// ultimately be visible to the end user
-			if foundInternal || foundExternal {
-				if foundInternal && !foundExternal {
-					klog.Warning("Internal address found, but external address not found. Returning what addresses were discovered.")
-				} else if !foundInternal && foundExternal {
-					klog.Warning("External address found, but internal address not found. Returning what addresses were discovered.")
-				}
-				break
-			}
-
-			// Neither internal or external addresses were found. This defaults to the old
-			// address selection behavior which is we only support a single address and we
-			// return the first one found
-			klog.V(5).Info("Default address selection. Single NIC, Single IP Address")
-			for _, ip := range ips {
-				klog.V(2).Infof("Adding IP: %s", ip)
-				v1helper.AddToNodeAddresses(&addrs,
-					v1.NodeAddress{
-						Type:    v1.NodeInternalIP,
-						Address: ip,
-					},
-					v1.NodeAddress{
-						Type:    v1.NodeExternalIP,
-						Address: ip,
-					},
-				)
-				foundInternal = true
-				foundExternal = true
-				break
-			}
 		}
 	}
 
-	if len(oVM.Guest.Net) > 0 {
-		if !foundInternal && !foundExternal {
-			return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
+	existingNetworkNames := toNetworkNames(nonVNICDevices)
+	if internalVMNetworkName != "" && externalVMNetworkName != "" {
+		if !ArrayContainsCaseInsensitive(existingNetworkNames, internalVMNetworkName) &&
+			!ArrayContainsCaseInsensitive(existingNetworkNames, externalVMNetworkName) {
+			return fmt.Errorf("unable to find suitable IP address for node")
+		}
+	}
+
+	ipAddrNetworkNames := toIPAddrNetworkNames(nonVNICDevices)
+	nonLocalhostIPs := excludeLocalhostIPs(ipAddrNetworkNames)
+
+	for _, ipFamily := range ipFamilies {
+		klog.V(6).Infof("ipFamily: %q nonLocalhostIPs: %q", ipFamily, nonLocalhostIPs)
+		discoveredInternal, discoveredExternal := discoverIPs(
+			nonLocalhostIPs,
+			ipFamily,
+			internalNetworkSubnet,
+			externalNetworkSubnet,
+			internalVMNetworkName,
+			externalVMNetworkName,
+		)
+
+		klog.V(6).Infof("ipFamily: %q discovered Internal: %q discoveredExternal: %q",
+			ipFamily, discoveredInternal, discoveredExternal)
+
+		if discoveredInternal != nil {
+			v1helper.AddToNodeAddresses(&addrs,
+				v1.NodeAddress{Type: v1.NodeInternalIP, Address: discoveredInternal.ipAddr},
+			)
+		}
+
+		if discoveredExternal != nil {
+			v1helper.AddToNodeAddresses(&addrs,
+				v1.NodeAddress{Type: v1.NodeExternalIP, Address: discoveredExternal.ipAddr},
+			)
+		}
+
+		if len(oVM.Guest.Net) > 0 {
+			if discoveredInternal == nil && discoveredExternal == nil {
+				return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamilies)
+			}
 		}
 	}
 
@@ -384,6 +331,192 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	nm.addNodeInfo(nodeInfo)
 
 	return nil
+}
+
+// discoverIPs returns a pair of *ipAddrNetworkNames. The first representing
+// the internal network IP and the second being the external network IP.
+//
+// The returned ipAddrNetworkNames will match the given ipFamily.
+//
+// The returned ipAddrNetworkNames will be selected first by attempting to
+// match the given internalNetworkSubnet and externalNetworkSubnet. Subnet
+// matching has the highest precedence.
+//
+// If subnet matches are not found, or if subnets are not provided, then an
+// attempt is made to select ipAddrNetworkNames that match the givent network
+// names. Network name matching has the second highest precedence.
+//
+// If ipAddrNetworkNames are not found by subnet nor network name matching, then
+// the first ipAddrNetworkName of the desired family is returned as both the
+// internal and external matches.
+//
+// If either of these IPs cannot be discovered, nil will be returned instead.
+func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
+	internalNetworkSubnet, externalNetworkSubnet *net.IPNet,
+	internalVMNetworkName, externalVMNetworkName string) (internal *ipAddrNetworkName, external *ipAddrNetworkName) {
+
+	ipFamilyMatches := collectMatchesForIPFamily(ipAddrNetworkNames, ipFamily)
+
+	var discoveredInternal *ipAddrNetworkName
+	var discoveredExternal *ipAddrNetworkName
+
+	if len(ipFamilyMatches) != 0 {
+		discoveredInternal = findSubnetMatch(ipFamilyMatches, internalNetworkSubnet)
+		if discoveredInternal != nil {
+			klog.V(2).Infof("Adding Internal IP by AddressMatching: %s", discoveredInternal.ipAddr)
+		}
+		discoveredExternal = findSubnetMatch(ipFamilyMatches, externalNetworkSubnet)
+		if discoveredExternal != nil {
+			klog.V(2).Infof("Adding External IP by AddressMatching: %s", discoveredExternal.ipAddr)
+		}
+
+		if discoveredInternal == nil && internalVMNetworkName != "" {
+			discoveredInternal = findNetworkNameMatch(ipFamilyMatches, internalVMNetworkName)
+			if discoveredInternal != nil {
+				klog.V(2).Infof("Adding Internal IP by NetworkName: %s", discoveredInternal.ipAddr)
+			}
+		}
+
+		if discoveredExternal == nil && externalVMNetworkName != "" {
+			discoveredExternal = findNetworkNameMatch(ipFamilyMatches, externalVMNetworkName)
+			if discoveredExternal != nil {
+				klog.V(2).Infof("Adding External IP by NetworkName: %s", discoveredExternal.ipAddr)
+			}
+		}
+
+		// Neither internal or external addresses were found. This defaults to the legacy
+		// address selection behavior which is to only support a single address and
+		// return the first one found
+		if discoveredInternal == nil && discoveredExternal == nil {
+			klog.V(5).Info("Default address selection. Single NIC, Single IP Address")
+			klog.V(2).Infof("Adding IP: %s", ipFamilyMatches[0].ipAddr)
+			discoveredInternal = ipFamilyMatches[0]
+			discoveredExternal = ipFamilyMatches[0]
+		} else {
+			// At least one of the Internal or External addresses has been found.
+			// Minimally the Internal needs to exist for the node to function correctly.
+			// If only one was discovered, will log the warning and continue which will
+			// ultimately be visible to the end user
+			if discoveredInternal != nil && discoveredExternal == nil {
+				klog.Warning("Internal address found, but external address not found. Returning what addresses were discovered.")
+			} else if discoveredInternal == nil && discoveredExternal != nil {
+				klog.Warning("External address found, but internal address not found. Returning what addresses were discovered.")
+			}
+		}
+	}
+	return discoveredInternal, discoveredExternal
+}
+
+// collectNonVNICDevices filters out NICs that are virtual NIC devices. The IPs of
+// these NICs should not be added to the node status.
+func collectNonVNICDevices(guestNicInfos []types.GuestNicInfo) []types.GuestNicInfo {
+	var toReturn []types.GuestNicInfo
+	for _, v := range guestNicInfos {
+		if v.DeviceConfigId == -1 {
+			klog.V(4).Info("Skipping device because not a vNIC")
+			continue
+		}
+		toReturn = append(toReturn, v)
+	}
+	return toReturn
+}
+
+// toIPAddrNetworkNames maps an array of GuestNicInfo to and array of *ipAddrNetworkName.
+func toIPAddrNetworkNames(guestNicInfos []types.GuestNicInfo) []*ipAddrNetworkName {
+	var candidates []*ipAddrNetworkName
+	for _, v := range guestNicInfos {
+		for _, ip := range v.IpAddress {
+			candidates = append(candidates, &ipAddrNetworkName{ipAddr: ip, networkName: v.Network})
+		}
+	}
+	return candidates
+}
+
+// toNetworkNames maps an array of GuestNicInfo to an array of network name strings
+func toNetworkNames(guestNicInfos []types.GuestNicInfo) []string {
+	var existingNetworkNames []string
+	for _, v := range guestNicInfos {
+		existingNetworkNames = append(existingNetworkNames, v.Network)
+	}
+	return existingNetworkNames
+}
+
+// collectMatchesForIPFamily collects all ipAddrNetworkNames that have ips of the
+// desired IP family
+func collectMatchesForIPFamily(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string) []*ipAddrNetworkName {
+	return filter(ipAddrNetworkNames, func(candidate *ipAddrNetworkName) bool {
+		return matchesFamily(candidate.ip(), ipFamily)
+	})
+}
+
+// matchesFamily detects whether a given IP matches the given IP family.
+func matchesFamily(ip net.IP, ipFamily string) bool {
+	if ipFamily == vcfg.IPv6Family {
+		return ip.To4() == nil && ip.To16() != nil
+	}
+
+	if ipFamily == vcfg.IPv4Family {
+		return ip.To4() != nil
+	}
+
+	return false
+}
+
+// filter returns a subset of given ipAddrNetworkNames based on whether the
+// items in the collection pass the given predicate function.
+func filter(ipAddrNetworkNames []*ipAddrNetworkName, predicate func(*ipAddrNetworkName) bool) []*ipAddrNetworkName {
+	var filtered []*ipAddrNetworkName
+	for _, item := range ipAddrNetworkNames {
+		if predicate(item) {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
+}
+
+// findSubnetMatch finds the first *ipAddrNetworkName that has an IP in the
+// given network subnet.
+func findSubnetMatch(ipAddrNetworkNames []*ipAddrNetworkName, networkSubnet *net.IPNet) *ipAddrNetworkName {
+	if networkSubnet != nil {
+		subnetMatches := filter(ipAddrNetworkNames, func(candidate *ipAddrNetworkName) bool {
+			return networkSubnet.Contains(candidate.ip())
+		})
+
+		if len(subnetMatches) > 0 {
+			return subnetMatches[0]
+		}
+		return nil
+	}
+	return nil
+}
+
+// findNetworkNameMatch finds the first *ipAddrNetworkName that matches the
+// given network name, ignoring case.
+func findNetworkNameMatch(ipAddrNetworkNames []*ipAddrNetworkName, networkName string) *ipAddrNetworkName {
+	if networkName != "" {
+		networkNameMatches := filter(ipAddrNetworkNames, func(candidate *ipAddrNetworkName) bool {
+			return strings.EqualFold(networkName, candidate.networkName)
+		})
+
+		if len(networkNameMatches) > 0 {
+			return networkNameMatches[0]
+		}
+		return nil
+	}
+	return nil
+}
+
+// excludeLocalhostIPs collects ipAddrNetworkNames that have valid IPs, ipv4 or
+// ipv6, that are not localhost IPs. Localhost IPs should not be added to the
+// node status.
+func excludeLocalhostIPs(ipAddrNetworkNames []*ipAddrNetworkName) []*ipAddrNetworkName {
+	return filter(ipAddrNetworkNames, func(i *ipAddrNetworkName) bool {
+		err := ErrOnLocalOnlyIPAddr(i.ipAddr)
+		if err != nil {
+			klog.V(4).Infof("IP is local only or there was an error. ip=%q err=%v", i.ipAddr, err)
+		}
+		return err == nil
+	})
 }
 
 // GetNode gets the NodeInfo by UUID
