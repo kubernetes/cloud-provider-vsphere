@@ -50,7 +50,7 @@ serviceAccount:
 daemonset:
   annotations: {}
   image: gcr.io/cloud-provider-vsphere/cpi/release/manager
-  tag: v1.22.1
+  tag: v1.22.2
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
