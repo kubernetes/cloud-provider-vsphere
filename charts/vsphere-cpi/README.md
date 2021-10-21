@@ -8,7 +8,7 @@ This chart deploys all components required to run the external vSphere CPI as de
 
 ## Prerequisites
 
-- Has been tested on Kubernetes 1.21.X+
+- Has been tested on Kubernetes 1.22.X+
 - Assumes your Kubernetes cluster has been configured to use the external cloud provider. Please take a look at configuration guidelines located in the [Kubernetes documentation](https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#running-cloud-controller-manager).
 
 ## Installing the Chart using Helm 3.0+
