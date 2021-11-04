@@ -35,7 +35,7 @@ import (
 var (
 	// ErrNotFound is returned by NodeAddresses, NodeAddressesByProviderID,
 	// and InstanceID when a node cannot be found.
-	ErrNodeNotFound = errors.New("Node not found")
+	ErrNodeNotFound = errors.New("node not found")
 )
 
 func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
@@ -51,12 +51,6 @@ var _ cloudprovider.Instances = &instances{}
 // considered.
 func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) ([]v1.NodeAddress, error) {
 	klog.V(4).Info("instances.NodeAddresses() called with ", string(nodeName))
-
-	// Check if node has been discovered already
-	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
-		klog.V(2).Info("instances.NodeAddresses() CACHED with ", string(nodeName))
-		return node.NodeAddresses, nil
-	}
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName); err == nil {
 		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
@@ -77,12 +71,7 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID string) ([]v1.NodeAddress, error) {
 	klog.V(4).Info("instances.NodeAddressesByProviderID() called with ", providerID)
 
-	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
-	if node, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
-		klog.V(2).Info("instances.NodeAddressesByProviderID() CACHED with ", uid)
-		return node.NodeAddresses, nil
-	}
 
 	if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err == nil {
 		klog.V(2).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
@@ -194,7 +183,7 @@ func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
 	if _, ok := i.nodeManager.nodeUUIDMap[uid]; !ok {
-		// IF the uuid is not cached, we end up here
+		// if the uuid is not cached, we end up here
 		klog.V(2).Info("instances.InstanceShutdownByProviderID() NOT CACHED")
 		if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err != nil {
 			klog.V(4).Info("instances.InstanceShutdownByProviderID() NOT FOUND with ", uid)

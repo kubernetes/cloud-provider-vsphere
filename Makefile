@@ -334,4 +334,5 @@ squash:
 docker-image:
 	docker build \
 	-f cluster/images/controller-manager/Dockerfile \
-	-t "$(IMAGE):$(BRANCH_NAME)" . \
+	-t "$(IMAGE):$(BRANCH_NAME)" \
+	--build-arg "VERSION=${VERSION}" . \
