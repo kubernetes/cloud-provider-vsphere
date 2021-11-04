@@ -28,6 +28,7 @@ type LoadBalancerConfigINI struct {
 	Size             string `gcfg:"size"`
 	LBServiceID      string `gcfg:"lb-service-id"`
 	Tier1GatewayPath string `gcfg:"tier1-gateway-path"`
+	SnatDisabled     bool   `gcfg:"snat-disabled"`
 	RawTags          string `gcfg:"tags"`
 	AdditionalTags   map[string]string
 }

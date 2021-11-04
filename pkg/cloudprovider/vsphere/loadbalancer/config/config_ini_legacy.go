@@ -49,6 +49,7 @@ func (lbc *LBConfigINI) CreateConfig() *LBConfig {
 	cfg.LoadBalancer.Size = lbc.LoadBalancer.Size
 	cfg.LoadBalancer.LBServiceID = lbc.LoadBalancer.LBServiceID
 	cfg.LoadBalancer.Tier1GatewayPath = lbc.LoadBalancer.Tier1GatewayPath
+	cfg.LoadBalancer.SnatDisabled = lbc.LoadBalancer.SnatDisabled
 	cfg.LoadBalancer.AdditionalTags = lbc.LoadBalancer.AdditionalTags
 
 	//LoadBalancerClass

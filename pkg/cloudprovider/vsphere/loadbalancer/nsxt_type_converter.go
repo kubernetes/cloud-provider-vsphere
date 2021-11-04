@@ -47,6 +47,19 @@ func (c *nsxtTypeConverter) createLBSnatAutoMap() (*data.StructValue, error) {
 	return dataValue.(*data.StructValue), nil
 }
 
+func (c *nsxtTypeConverter) createLBSnatDisabled() (*data.StructValue, error) {
+	entry := model.LBSnatDisabled{
+		Type_: model.LBSnatDisabled__TYPE_IDENTIFIER,
+	}
+
+	dataValue, errs := c.ConvertToVapi(entry, model.LBSnatDisabledBindingType())
+	if errs != nil {
+		return nil, errs[0]
+	}
+
+	return dataValue.(*data.StructValue), nil
+}
+
 func (c *nsxtTypeConverter) convertLBTCPMonitorProfileToStructValue(monitor model.LBTcpMonitorProfile) (*data.StructValue, error) {
 	dataValue, errs := c.ConvertToVapi(monitor, model.LBTcpMonitorProfileBindingType())
 	if errs != nil {

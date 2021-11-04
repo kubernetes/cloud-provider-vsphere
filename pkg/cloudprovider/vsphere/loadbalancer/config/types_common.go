@@ -28,6 +28,7 @@ type LoadBalancerConfig struct {
 	Size             string
 	LBServiceID      string
 	Tier1GatewayPath string
+	SnatDisabled     bool
 	AdditionalTags   map[string]string
 }
 

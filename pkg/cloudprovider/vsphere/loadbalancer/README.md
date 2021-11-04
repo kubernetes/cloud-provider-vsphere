@@ -186,6 +186,7 @@ the load balancer classes. The following attributes are supported:
 |`size`|Size of load balancer service (`SMALL`,`MEDIUM`,`LARGE`,`XLARGE`)|
 |`lbServiceId`|service id of the load balancer service to use (for unmanaged mode)|
 |`tier1GatewayPath`|policy path for the tier1 gateway|
+|`snatDisabled`|Set to true if want to preserve client IP (for inline mode)|
 |`tags`|JSON map with name/value pairs used for creating additional tags for the generated NSX-T elements|
 
 If the tag key `owner` is given it overwrites the default owner
