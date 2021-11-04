@@ -36,9 +36,6 @@ var (
 	// ErrNotFound is returned by NodeAddresses, NodeAddressesByProviderID,
 	// and InstanceID when a node cannot be found.
 	ErrNodeNotFound = errors.New("Node not found")
-
-	// ErrNodeUUIDEmpty is returned by InstanceID when UUID of a node is empty.
-	ErrNodeUUIDEmpty = errors.New("Node UUID is empty")
 )
 
 func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
@@ -114,10 +111,6 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 	// Check if node has been discovered already
 	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
 		klog.V(2).Info("instances.InstanceID() CACHED with ", string(nodeName))
-		if node.UUID == "" {
-			klog.Errorf("UUID of node %s is empty", string(nodeName))
-			return "", ErrNodeUUIDEmpty
-		}
 		return node.UUID, nil
 	}
 

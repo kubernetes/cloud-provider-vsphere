@@ -193,6 +193,10 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return err
 	}
 
+	if vmDI.UUID == "" {
+		return errors.New("Discovered VM UUID is empty")
+	}
+
 	var oVM mo.VirtualMachine
 	err = vmDI.VM.Properties(ctx, vmDI.VM.Reference(), []string{"guest", "summary"}, &oVM)
 	if err != nil {
@@ -312,7 +316,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	klog.V(2).Infof("Found node %s as vm=%+v in vc=%s and datacenter=%s",
 		nodeID, vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name())
-	klog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", oVM.Summary.Config.Uuid)
+	klog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", vmDI.UUID)
 
 	os := "unknown"
 	if g, ok := GuestOSLookup[oVM.Summary.Config.GuestId]; ok {
