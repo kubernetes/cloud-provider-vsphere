@@ -194,7 +194,7 @@ func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
 	if _, ok := i.nodeManager.nodeUUIDMap[uid]; !ok {
-		// IF the uuid is not cached, we end up here
+		// if the uuid is not cached, we end up here
 		klog.V(2).Info("instances.InstanceShutdownByProviderID() NOT CACHED")
 		if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err != nil {
 			klog.V(4).Info("instances.InstanceShutdownByProviderID() NOT FOUND with ", uid)
