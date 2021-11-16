@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/vmware/govmomi/simulator"
-	"github.com/vmware/govmomi/vim25/types"
 	vimtypes "github.com/vmware/govmomi/vim25/types"
 	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 
@@ -505,6 +504,165 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
+			testName: "ByMultipleSubnets_dualstack_itSelectsBothIPv4andIPv6Addrs",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4", "ipv6"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "10.10.0.0/16,fd00:cccc::/64",
+						ExternalNetworkSubnetCIDR: "172.15.0.0/16,fd00:dddd::/64",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_foo",
+						IpAddress: []string{
+							"127.0.0.6",
+							"169.0.1.2",
+						},
+					},
+					{
+						Network: "net_bar",
+						IpAddress: []string{
+							"10.10.1.22",
+							"fd00:dddd::11",
+						},
+					},
+					{
+						Network: "net_baz",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::22",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "10.10.1.22"},
+				{Type: "ExternalIP", Address: "172.15.108.11"},
+				{Type: "InternalIP", Address: "fd00:cccc::22"},
+				{Type: "ExternalIP", Address: "fd00:dddd::11"},
+			},
+		},
+		{
+			testName: "ByMultipleSubnets_dualstack_WhenNoIPsOfFamilyMatchAnySubnets_itFallsThroughToDefaultSelection",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4", "ipv6"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "10.10.0.0/16,fd00:ffff::/64",
+						ExternalNetworkSubnetCIDR: "172.15.0.0/16,fd00:eeee::/64",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_foo",
+						IpAddress: []string{
+							"127.0.0.6",
+							"169.0.1.2",
+						},
+					},
+					{
+						Network: "net_bar",
+						IpAddress: []string{
+							"10.10.1.22",
+							"fd00:dddd::11",
+						},
+					},
+					{
+						Network: "net_baz",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::22",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "10.10.1.22"},
+				{Type: "ExternalIP", Address: "172.15.108.11"},
+				{Type: "InternalIP", Address: "fd00:dddd::11"},
+				{Type: "ExternalIP", Address: "fd00:dddd::11"},
+			},
+		},
+		{
+			testName: "ByMultipleSubnets_dualstack_WhenNoIPsOfFamilyMatchesInternalOrExternalSubnets_itUsesSubnetSelectionAndOmitsTheIPThatHasNoMatch",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4", "ipv6"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "10.10.0.0/16,fd00:ffff::/64",
+						ExternalNetworkSubnetCIDR: "172.15.0.0/16,fd00:dddd::/64",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_foo",
+						IpAddress: []string{
+							"127.0.0.6",
+							"169.0.1.2",
+						},
+					},
+					{
+						Network: "net_bar",
+						IpAddress: []string{
+							"10.10.1.22",
+							"fd00:dddd::11",
+						},
+					},
+					{
+						Network: "net_baz",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::22",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "10.10.1.22"},
+				{Type: "ExternalIP", Address: "172.15.108.11"},
+				{Type: "ExternalIP", Address: "fd00:dddd::11"},
+			},
+		},
+		{
+			testName: "ByMultipleSubnets",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "170.12.0.0/16,10.10.0.0/16",
+						ExternalNetworkSubnetCIDR: "172.15.0.0/16",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_123abc",
+						IpAddress: []string{
+							"127.0.0.6",
+							"169.0.1.2",
+						},
+					},
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"10.10.1.22",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"172.15.108.11",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "10.10.1.22"},
+				{Type: "ExternalIP", Address: "172.15.108.11"},
+			},
+		},
+		{
 			testName: "BySubnetAndTwoNICs_desiredIPsAfterFirstNIC",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
@@ -762,7 +920,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 		},
 
 		{
-			testName: "BySubnet_selectsIgnoringCase",
+			testName: "ByNetworkName_selectsIgnoringCase",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv4"},
 				cpiConfig: &ccfg.CPIConfig{
@@ -1327,7 +1485,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 }
 
 func TestCollectNonVNICDevices(t *testing.T) {
-	guestNicInfos := []types.GuestNicInfo{
+	guestNicInfos := []vimtypes.GuestNicInfo{
 		{DeviceConfigId: 10},
 		{DeviceConfigId: -1},
 	}
@@ -1344,7 +1502,7 @@ func TestCollectNonVNICDevices(t *testing.T) {
 }
 
 func TestToIPAddrNetworkNames(t *testing.T) {
-	guestNicInfos := []types.GuestNicInfo{
+	guestNicInfos := []vimtypes.GuestNicInfo{
 		{Network: "internal_net", IpAddress: []string{"192.168.1.1", "fd00:1:4::1"}},
 		{Network: "external_net", IpAddress: []string{"10.10.50.12", "fd00:100:64::1"}},
 	}
@@ -1373,7 +1531,7 @@ func TestToIPAddrNetworkNames(t *testing.T) {
 }
 
 func TestToNetworkNames(t *testing.T) {
-	guestNicInfos := []types.GuestNicInfo{
+	guestNicInfos := []vimtypes.GuestNicInfo{
 		{Network: "internal_net"},
 		{Network: "external_net"},
 	}
@@ -1480,12 +1638,16 @@ func TestFindSubnetMatch(t *testing.T) {
 		{ipAddr: "10.10.1.3"},
 	}
 
-	_, ipNet, err := net.ParseCIDR("10.10.0.0/16")
+	_, ipNetA, err := net.ParseCIDR("10.11.0.0/16")
+	if err != nil {
+		t.Errorf("failed to parse CIDR")
+	}
+	_, ipNetB, err := net.ParseCIDR("10.10.0.0/16")
 	if err != nil {
 		t.Errorf("failed to parse CIDR")
 	}
 
-	actual := findSubnetMatch(ipAddrNetworkNames, ipNet)
+	actual := findSubnetMatch(ipAddrNetworkNames, []*net.IPNet{ipNetA, ipNetB})
 
 	if actual.ipAddr != "10.10.1.2" {
 		t.Errorf("failed: expected ipAddr to equal 10.10.1.2, but was %s", actual.ipAddr)
@@ -1494,18 +1656,57 @@ func TestFindSubnetMatch(t *testing.T) {
 	ipAddrNetworkNames = []*ipAddrNetworkName{
 		{ipAddr: "fc11::1"},
 		{ipAddr: "fd00:100:64::1"},
-		{ipAddr: "fd00:100:64::1"},
+		{ipAddr: "fd00:100:64::2"},
 	}
 
-	_, ipNet, err = net.ParseCIDR("fd00:100:64::/64")
+	_, ipNet, err := net.ParseCIDR("fd00:100:64::/64")
 	if err != nil {
 		t.Errorf("failed to parse CIDR")
 	}
 
-	actual = findSubnetMatch(ipAddrNetworkNames, ipNet)
+	actual = findSubnetMatch(ipAddrNetworkNames, []*net.IPNet{ipNet})
 
 	if actual.ipAddr != "fd00:100:64::1" {
 		t.Errorf("failed: expected ipAddr to equal fd00:100:64::1, but was %s", actual.ipAddr)
+	}
+
+	ipAddrNetworkNames = []*ipAddrNetworkName{
+		{ipAddr: "fc11::1"},
+		{ipAddr: "fd00:101:64::2"},
+		{ipAddr: "fd00:100:64::1"},
+		{ipAddr: "fd00:100:64::2"},
+	}
+
+	_, ipNet1, err := net.ParseCIDR("fd00:100:64::/64")
+	if err != nil {
+		t.Errorf("failed to parse CIDR")
+	}
+
+	_, ipNet2, err := net.ParseCIDR("fd00:101:64::/64")
+	if err != nil {
+		t.Errorf("failed to parse CIDR")
+	}
+
+	actual = findSubnetMatch(ipAddrNetworkNames, []*net.IPNet{ipNet1, ipNet2})
+
+	if actual.ipAddr != "fd00:100:64::1" {
+		t.Errorf("failed: expected ipAddr to equal fd00:100:64::1, but was %s", actual.ipAddr)
+	}
+}
+
+func TestFindFirst(t *testing.T) {
+	ipAddrNetworkNames := []*ipAddrNetworkName{
+		{networkName: "foo", ipAddr: "::1"},
+		{networkName: "bar", ipAddr: "::2"},
+		{networkName: "baz", ipAddr: "::3"},
+	}
+
+	actual := findFirst(ipAddrNetworkNames, func(i *ipAddrNetworkName) bool {
+		return i.networkName == "bar"
+	})
+
+	if actual.networkName != "bar" {
+		t.Errorf("failed: expected ipAddr to have name 'bar', but was %s", actual.networkName)
 	}
 }
 
