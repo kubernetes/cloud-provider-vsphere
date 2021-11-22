@@ -29,6 +29,10 @@ Version matrix:
 | v1.19.X | v1.19.X | release-1.19 |
 | v1.18.X | v1.18.X | release-1.18 |
 
+Our current support policy is that when a new Kubernetes release comes out, we will bump our k8s dependencies to the new version and cut a new release for CPI, e.g. CPI v1.22.x was released after k8s v1.22 comes out.
+
+The latest CPI version is ![GitHub release (latest SemVer including pre-releases](https://img.shields.io/github/v/release/kubernetes/cloud-provider-vsphere?include_prereleases). The recommended way to upgrade CPI can be found on [this page](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/releases/README.md).
+
 ## Quickstart
 
 Get started with Cloud controller manager for vSphere with Kubeadm with this [quickstart](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html).
