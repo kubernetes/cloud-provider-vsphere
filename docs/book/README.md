@@ -4,7 +4,7 @@ This is documentation for the [Kubernetes vSphere Cloud Provider](https://github
 
 ## Introduction
 
-This documentation provides information about running Kubernetes on vSphere and specifically focuses on the Container Storage Interface (CSI) and Cloud Provider Interface (CPI), previously called Cloud Control Manager (CCM). This documentation covers key concepts, features, known issues, installation requirements, and offers sample procedures to run Kubernetes clusters on vSphere. Note that you can continue running Kubernetes clusters on vSphere without enabling the cloud provider integration. However, if you do not use the Cloud Provider Interface, your Kubernetes clusters will not have integration with the underlying infrastructure.
+This documentation provides information about running Kubernetes on vSphere and specifically focuses on the Cloud Provider Interface (CPI), previously called Cloud Control Manager (CCM). This documentation covers key concepts, features, known issues, installation requirements, and offers sample procedures to run Kubernetes clusters on vSphere. Note that you can continue running Kubernetes clusters on vSphere without enabling the cloud provider integration. However, if you do not use the Cloud Provider Interface, your Kubernetes clusters will not have integration with the underlying infrastructure.
 
 ## History
 
@@ -14,6 +14,8 @@ The in-tree provider for vSphere is called the vSphere Cloud Provider (VCP). The
 
 This document covers both the in-tree and out-of-tree vSphere integrations for Kubernetes. For Kubernetes clusters on vSphere, both in-tree and out-of-tree modes of operation work. However, the out-of-tree vSphere cloud provider is recommended as future releases of Kubernetes will remove support for all in-tree cloud providers. Also, the in-tree VCP only has community support, unless support is provided by a managed Kubernetes offering.
 
+If you are looking for more information about the Container Storage Interface (CSI), please refer to [Kubernetes Container Storage Interface (CSI) Documentation](https://kubernetes-csi.github.io/docs/).
+
 ## Summary
 
 * [Concepts](concepts.md)
@@ -21,10 +23,9 @@ This document covers both the in-tree and out-of-tree vSphere integrations for K
   * [In-tree vs Out-of-Tree](concepts/in_tree_vs_out_of_tree.md)
   * [Overview of the VCP](concepts/vcp_overview.md)
   * [Overview of the CPI](concepts/cpi_overview.md)
-  * [Overview of the CSI](concepts/csi_overview.md)
+  * [Overview of the CSI](https://github.com/container-storage-interface/spec/blob/master/spec.md)
 * [Glossary](glossary.md)
   * [Cloud Provider Interface (CPI)](cloud_provider_interface.md)
-  * [Container Storage Interface (CSI)](container_storage_interface.md)
 * [Known Issues](known_issues.md)
 
 ## Tutorials
@@ -32,7 +33,7 @@ This document covers both the in-tree and out-of-tree vSphere integrations for K
 ### vSphere 6.7U3 tutorials
 
 * [Deploying a new K8s cluster with CPI and CSI on vSphere 6.7U3 with kubeadm](./tutorials/kubernetes-on-vsphere-with-kubeadm.md)
-* [Deploying CPI and CSI with Zones Topology](./tutorials/deploying_cpi_and_csi_with_multi_dc_vc_aka_zones.md)
+* [Deploying CPI with Zones Topology](./tutorials/deploying_cpi_with_multi_dc_vc_aka_zones.md)
 
 ### Earlier tutorials
 
