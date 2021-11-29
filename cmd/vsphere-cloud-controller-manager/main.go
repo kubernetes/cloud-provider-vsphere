@@ -27,7 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/component-base/version/verflag"
 	klog "k8s.io/klog/v2"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -74,7 +74,8 @@ func main() {
 
 			c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List())
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
+				// explicitly ignore the error by Fprintf, exiting anyway
+				_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 				os.Exit(1)
 			}
 
@@ -83,7 +84,9 @@ func main() {
 			// Default to the vsphere cloud provider if not set
 			cloudProviderFlag := cmd.Flags().Lookup("cloud-provider")
 			if cloudProviderFlag.Value.String() == "" {
-				cloudProviderFlag.Value.Set(vsphere.RegisteredProviderName)
+				if err := cloudProviderFlag.Value.Set(vsphere.RegisteredProviderName); err != nil {
+					klog.Fatalf("cannot set RegisteredProviderName to %s: %v", vsphere.RegisteredProviderName, err)
+				}
 			}
 
 			cloudProvider := cloudProviderFlag.Value.String()
@@ -92,11 +95,24 @@ func main() {
 			}
 
 			completedConfig := c.Complete()
-			cloud := cloudInitializer(completedConfig, cloudProvider)
+
+			cloud := initializeCloud(completedConfig, cloudProvider)
 			controllerInitializers = app.ConstructControllerInitializers(app.DefaultInitFuncConstructors, completedConfig, cloud)
 
-			if err := app.Run(completedConfig, cloud, controllerInitializers, wait.NeverStop); err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
+			// initialize a notifier for cloud config update
+			cloudConfig := completedConfig.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile
+			klog.Infof("initialize notifier on configmap update %s\n", cloudConfig)
+			watch, stop, err := initializeWatch(completedConfig, cloudConfig)
+			if err != nil {
+				klog.Fatalf("fail to initialize watch on config map %s: %v\n", cloudConfig, err)
+			}
+			defer func(watch *fsnotify.Watcher) {
+				_ = watch.Close() // ignore explicitly when the watch closes
+			}(watch)
+
+			if err := app.Run(completedConfig, cloud, controllerInitializers, stop); err != nil {
+				// explicitly ignore the error by Fprintf, exiting anyway due to app error
+				_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 				os.Exit(1)
 			}
 		},
@@ -122,12 +138,16 @@ func main() {
 	usageFmt := "Usage:\n  %s\n"
 	cols, _, _ := term.TerminalSize(command.OutOrStdout())
 	command.SetUsageFunc(func(cmd *cobra.Command) error {
-		fmt.Fprintf(cmd.OutOrStderr(), usageFmt, cmd.UseLine())
+		if _, err := fmt.Fprintf(cmd.OutOrStderr(), usageFmt, cmd.UseLine()); err != nil {
+			return err
+		}
 		cliflag.PrintSections(cmd.OutOrStderr(), namedFlagSets, cols)
 		return nil
 	})
 	command.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		fmt.Fprintf(cmd.OutOrStdout(), "%s\n\n"+usageFmt, cmd.Long, cmd.UseLine())
+		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\n\n"+usageFmt, cmd.Long, cmd.UseLine()); err != nil {
+			return
+		}
 		cliflag.PrintSections(cmd.OutOrStdout(), namedFlagSets, cols)
 	})
 
@@ -148,7 +168,9 @@ func main() {
 		// Set cloud-provider flag to vsphere
 		case "cloud-provider":
 			cloudProviderFlag = &flag.Value
-			flag.Value.Set(vsphere.RegisteredProviderName)
+			if err := flag.Value.Set(vsphere.RegisteredProviderName); err != nil {
+				klog.Fatalf("cannot set RegisteredProviderName to %s: %v", vsphere.RegisteredProviderName, err)
+			}
 			flag.DefValue = vsphere.RegisteredProviderName
 		case "cluster-name":
 			clusterNameFlag = &flag.Value
@@ -187,12 +209,38 @@ func main() {
 	}
 
 	if err := command.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		// ignore error by Fprintf, exit anyway due to cmd execute error
+		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func cloudInitializer(config *appconfig.CompletedConfig, cloudProvider string) cloudprovider.Interface {
+// set up a filesystem watcher for the cloud config mount
+// reboot the app whenever there is an update via the returned stopCh
+func initializeWatch(_ *appconfig.CompletedConfig, cloudConfigPath string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
+	stopCh = make(chan struct{})
+	watch, err = fsnotify.NewWatcher()
+	if err != nil {
+		klog.Fatalln("fail to setup config watcher")
+	}
+	go func() {
+		for {
+			select {
+			case err := <-watch.Errors:
+				klog.Warningf("watcher receives err: %v\n", err)
+			case event := <-watch.Events:
+				klog.Fatalf("config map %s has been updated, restarting pod, received event %v\n", cloudConfigPath, event)
+				stopCh <- struct{}{}
+			}
+		}
+	}()
+	if err := watch.Add(cloudConfigPath); err != nil {
+		klog.Fatalf("fail to watch cloud config file %s\n", cloudConfigPath)
+	}
+	return
+}
+
+func initializeCloud(config *appconfig.CompletedConfig, cloudProvider string) cloudprovider.Interface {
 	cloudConfig := config.ComponentConfig.KubeCloudShared.CloudProvider
 
 	// initialize cloud provider with the cloud provider name and config file provided
