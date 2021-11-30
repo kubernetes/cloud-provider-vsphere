@@ -37,6 +37,7 @@ type LoadBalancerConfigYAML struct {
 	Size             string            `yaml:"size"`
 	LBServiceID      string            `yaml:"lbServiceId"`
 	Tier1GatewayPath string            `yaml:"tier1GatewayPath"`
+	SnatDisabled     bool              `yaml:"snatDisabled"`
 	AdditionalTags   map[string]string `yaml:"tags"`
 
 	// this struct use to inherit from LoadBalancerClassConfigYAML, but the YAML parser

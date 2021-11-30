@@ -18,6 +18,8 @@ package config
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 /*
@@ -34,6 +36,7 @@ lb-service-id = 4711
 tier1-gateway-path = 1234
 tcp-app-profile-name = default-tcp-lb-app-profile
 udp-app-profile-name = default-udp-lb-app-profile
+snat-disabled = false
 tags = {\"tag1\": \"value1\", \"tag2\": \"value 2\"}
 
 [LoadBalancerClass "public"]
@@ -61,6 +64,7 @@ udp-app-profile-name = udp2
 	assertEquals("LoadBalancer.tcpAppProfileName", config.LoadBalancer.TCPAppProfileName, "default-tcp-lb-app-profile")
 	assertEquals("LoadBalancer.udpAppProfileName", config.LoadBalancer.UDPAppProfileName, "default-udp-lb-app-profile")
 	assertEquals("LoadBalancer.size", config.LoadBalancer.Size, "MEDIUM")
+	assert.Equal(t, false, config.LoadBalancer.SnatDisabled)
 	if len(config.LoadBalancerClass) != 2 {
 		t.Errorf("expected two LoadBalancerClass subsections, but got %d", len(config.LoadBalancerClass))
 	}
@@ -80,6 +84,7 @@ size = MEDIUM
 tier1-gateway-path = 1234
 tcp-app-profile-path = infra/xxx/tcp1234
 udp-app-profile-path = infra/xxx/udp1234
+snat-disabled = false
 `
 	config, err := ReadRawConfigINI([]byte(contents))
 	if err != nil {
@@ -96,4 +101,5 @@ udp-app-profile-path = infra/xxx/udp1234
 	assertEquals("LoadBalancer.tier1-gateway-path", config.LoadBalancer.Tier1GatewayPath, "1234")
 	assertEquals("LoadBalancer.tcp-app-profile-path", config.LoadBalancer.TCPAppProfilePath, "infra/xxx/tcp1234")
 	assertEquals("LoadBalancer.udp-app-profile-path", config.LoadBalancer.UDPAppProfilePath, "infra/xxx/udp1234")
+	assert.Equal(t, false, config.LoadBalancer.SnatDisabled)
 }

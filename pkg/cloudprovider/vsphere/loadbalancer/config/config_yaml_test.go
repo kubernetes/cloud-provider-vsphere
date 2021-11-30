@@ -18,6 +18,8 @@ package config
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 /*
@@ -34,6 +36,7 @@ loadBalancer:
   tier1GatewayPath: 1234
   tcpAppProfileName: default-tcp-lb-app-profile
   udpAppProfileName: default-udp-lb-app-profile
+  snatDisabled: false
   tags:
     tag1: value1
     tag2: value 2
@@ -63,6 +66,7 @@ loadBalancerClass:
 	assertEquals("loadBalancer.tcpAppProfileName", config.LoadBalancer.TCPAppProfileName, "default-tcp-lb-app-profile")
 	assertEquals("loadBalancer.udpAppProfileName", config.LoadBalancer.UDPAppProfileName, "default-udp-lb-app-profile")
 	assertEquals("loadBalancer.size", config.LoadBalancer.Size, "MEDIUM")
+	assert.Equal(t, false, config.LoadBalancer.SnatDisabled)
 	if len(config.LoadBalancerClass) != 2 {
 		t.Errorf("expected two LoadBalancerClass subsections, but got %d", len(config.LoadBalancerClass))
 	}
@@ -82,6 +86,7 @@ loadBalancer:
   tier1GatewayPath: 1234
   tcpAppProfilePath: infra/xxx/tcp1234
   udpAppProfilePath: infra/xxx/udp1234
+  snatDisabled: false
 `
 	config, err := ReadRawConfigYAML([]byte(contents))
 	if err != nil {
@@ -98,4 +103,5 @@ loadBalancer:
 	assertEquals("loadBalancer.tier1GatewayPath", config.LoadBalancer.Tier1GatewayPath, "1234")
 	assertEquals("loadBalancer.tcpAppProfilePath", config.LoadBalancer.TCPAppProfilePath, "infra/xxx/tcp1234")
 	assertEquals("loadBalancer.udpAppProfilePath", config.LoadBalancer.UDPAppProfilePath, "infra/xxx/udp1234")
+	assert.Equal(t, false, config.LoadBalancer.SnatDisabled)
 }

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/vmware/vsphere-automation-sdk-go/runtime/data"
 	"github.com/vmware/vsphere-automation-sdk-go/services/nsxt/model"
 
 	corev1 "k8s.io/api/core/v1"
@@ -273,9 +274,18 @@ func (a *access) DeleteVirtualServer(id string) error {
 }
 
 func (a *access) CreatePool(clusterName string, objectName types.NamespacedName, mapping Mapping, members []model.LBPoolMember, activeMonitorPaths []string) (*model.LBPool, error) {
-	snatTranslation, err := newNsxtTypeConverter().createLBSnatAutoMap()
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating pool failed on preparing LBSnatAutoMap failed")
+	var snatTranslation *data.StructValue
+	var err error
+	if a.config.LoadBalancer.SnatDisabled {
+		snatTranslation, err = newNsxtTypeConverter().createLBSnatDisabled()
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating pool failed on preparing LBSnatDisabled failed")
+		}
+	} else {
+		snatTranslation, err = newNsxtTypeConverter().createLBSnatAutoMap()
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating pool failed on preparing LBSnatAutoMap failed")
+		}
 	}
 	pool := model.LBPool{
 		Description:        strptr(fmt.Sprintf("pool for cluster %s, service %s created by %s", clusterName, objectName, AppName)),
