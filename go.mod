@@ -3,6 +3,7 @@ module k8s.io/cloud-provider-vsphere
 go 1.16
 
 require (
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.2
