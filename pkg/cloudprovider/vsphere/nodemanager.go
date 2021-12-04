@@ -44,7 +44,7 @@ var (
 
 	// ErrDatacenterNotFound is returned when the configured datacenter cannot
 	// be found.
-	ErrDatacenterNotFound = errors.New("Datacenter not found")
+	ErrDatacenterNotFound = errors.New("datacenter not found")
 
 	// ErrVMNotFound is returned when the specified VM cannot be found.
 	ErrVMNotFound = errors.New("VM not found")
@@ -104,6 +104,19 @@ func (nm *NodeManager) removeNode(uuid string, node *v1.Node) {
 	klog.V(4).Info("removeNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	delete(nm.nodeRegUUIDMap, uuid)
 	nm.nodeRegInfoLock.Unlock()
+
+	nm.nodeInfoLock.Lock()
+	klog.V(4).Info("removeNode from UUID and Name cache. NodeName: ", node.GetName(), ", UID: ", uuid)
+	// in case of a race condition that node with same name create happens before delete event,
+	// delete the node based on uuid
+	name := nm.getNodeNameByUUID(uuid)
+	if name != "" {
+		delete(nm.nodeNameMap, name)
+	} else {
+		klog.V(4).Info("node name: ", node.GetName(), " has a different uuid. Skip deleting this node from cache.")
+	}
+	delete(nm.nodeUUIDMap, uuid)
+	nm.nodeInfoLock.Unlock()
 }
 
 func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, searchBy cm.FindVM) (*cm.VMDiscoveryInfo, error) {
@@ -194,7 +207,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	}
 
 	if vmDI.UUID == "" {
-		return errors.New("Discovered VM UUID is empty")
+		return errors.New("discovered VM UUID is empty")
 	}
 
 	var oVM mo.VirtualMachine
@@ -689,4 +702,14 @@ func (nm *NodeManager) FindNodeInfo(UUID string) (*NodeInfo, error) {
 
 	klog.V(4).Infof("FindNodeInfo( %s ) FOUND", UUIDlower)
 	return nodeInfo, nil
+}
+
+func (nm *NodeManager) getNodeNameByUUID(UUID string) string {
+	for k, v := range nm.nodeNameMap {
+		if v.UUID == UUID {
+			return k
+		}
+
+	}
+	return ""
 }
