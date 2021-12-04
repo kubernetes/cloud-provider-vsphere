@@ -34,7 +34,7 @@ import (
 var (
 	// ErrNotFound is returned by NodeAddresses, NodeAddressesByProviderID,
 	// and InstanceID when a node cannot be found.
-	ErrNodeNotFound = errors.New("Node not found")
+	ErrNodeNotFound = errors.New("node not found")
 )
 
 func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
