@@ -51,12 +51,6 @@ var _ cloudprovider.Instances = &instances{}
 func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) ([]v1.NodeAddress, error) {
 	klog.V(4).Info("instances.NodeAddresses() called with ", string(nodeName))
 
-	// Check if node has been discovered already
-	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
-		klog.V(2).Info("instances.NodeAddresses() CACHED with ", string(nodeName))
-		return node.NodeAddresses, nil
-	}
-
 	if err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName); err == nil {
 		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
 			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
@@ -76,12 +70,7 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID string) ([]v1.NodeAddress, error) {
 	klog.V(4).Info("instances.NodeAddressesByProviderID() called with ", providerID)
 
-	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
-	if node, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
-		klog.V(2).Info("instances.NodeAddressesByProviderID() CACHED with ", uid)
-		return node.NodeAddresses, nil
-	}
 
 	if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err == nil {
 		klog.V(2).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
