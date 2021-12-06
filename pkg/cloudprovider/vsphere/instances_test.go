@@ -80,7 +80,7 @@ func TestInstance(t *testing.T) {
 	instances := newInstances(&nm.NodeManager)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	name := vm.Name
+	name := strings.ToLower(vm.Name)
 	vm.Guest.HostName = name
 	vm.Guest.Net = []vimtypes.GuestNicInfo{
 		{
