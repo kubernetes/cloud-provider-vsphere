@@ -98,4 +98,4 @@ spec:
       volumes:
         - name: vsphere-config-volume
           configMap:
-            name: cloud-config
+            name: {{ if .Values.config.enabled }}{{- .Values.config.name }}{{- else }}cloud-config{{- end }}
