@@ -38,3 +38,7 @@ If you are looking for more information about the Container Storage Interface (C
 ### Earlier tutorials
 
 * [Deploying K8s with vSphere Cloud Provider (in-tree) using kubeadm (deprecated)](./tutorials/k8s-vcp-on-vsphere-with-kubeadm.md)
+
+## Developer Guide
+
+* [Release guide for CPI](./tutorials/make_a_new_cpi_release.md)
