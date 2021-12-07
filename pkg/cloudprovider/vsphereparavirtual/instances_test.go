@@ -21,22 +21,17 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
-
-	"github.com/stretchr/testify/assert"
-
+	"k8s.io/cloud-provider-vsphere/pkg/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
-	"k8s.io/apimachinery/pkg/types"
-
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
-
-	"k8s.io/cloud-provider-vsphere/pkg/util"
 )
 
 var (
@@ -136,6 +131,12 @@ func TestInstanceID(t *testing.T) {
 			testVM:             createTestVM(string(testVMName), "bogus", testVMUUID),
 			expectedInstanceID: "",
 			expectedErr:        cloudprovider.InstanceNotFound,
+		},
+		{
+			name:               "cannot find virtualmachine with empty bios uuid",
+			testVM:             createTestVM(string(testVMName), testClusterNameSpace, ""),
+			expectedInstanceID: "",
+			expectedErr:        errBiosUUIDEmpty,
 		},
 	}
 
