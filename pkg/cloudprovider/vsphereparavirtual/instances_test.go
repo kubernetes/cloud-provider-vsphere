@@ -137,6 +137,12 @@ func TestInstanceID(t *testing.T) {
 			expectedInstanceID: "",
 			expectedErr:        cloudprovider.InstanceNotFound,
 		},
+		{
+			name:               "cannot find virtualmachine with empty bios uuid",
+			testVM:             createTestVM(string(testVMName), testClusterNameSpace, ""),
+			expectedInstanceID: "",
+			expectedErr:        errBiosUUIDEmpty,
+		},
 	}
 
 	for _, testCase := range testCases {
