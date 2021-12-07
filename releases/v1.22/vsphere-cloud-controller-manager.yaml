@@ -234,7 +234,7 @@ spec:
       serviceAccountName: cloud-controller-manager
       containers:
         - name: vsphere-cloud-controller-manager
-          image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.22.2
+          image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.22.4
           args:
             - --cloud-provider=vsphere
             - --v=2
