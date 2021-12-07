@@ -11,7 +11,7 @@ We recommend upgrading and downgrading of CPI dependencies using `go get`, which
 For example, to upgrade a dependency to the latest version:
 
 ```shell
-$ go get k8s.io/cloud-provider/app@v0.22.1
+go get k8s.io/cloud-provider/app@v0.22.1
 ```
 
 Remember to update `version` value in the [Dockerfile for image building](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/cluster/images/controller-manager/Dockerfile#L36).
@@ -23,7 +23,7 @@ Sample PR: [Bump k8s dependencies to 1.22 and go to 1.16](https://github.com/kub
 Before we release a new version, we should always make sure we've fully tested CPI. To build a docker image for testing, you can run:
 
 ```shell
-$ make docker-image IMAGE=<image_name>
+make docker-image IMAGE=<image_name>
 ```
 
 ## Create a sample release YAML
@@ -47,4 +47,4 @@ Now we can open up the [release page](https://github.com/kubernetes/cloud-provid
 
 Press `Publish Release` to publish the release from the existing tag. As soon as you publish the release on GitHub, we can see it under the release tab, which was previously showing just the tag names.
 
-Please go to https://prow.k8s.io/view/gs/kubernetes-jenkins/logs/post-cloud-provider-vsphere-release/ to check the release logs and make sure new image is published in `gcr.io/cloud-provider-vsphere/cpi/release/manager` with the correct version tag.
+Please go to [post-release-pipeline](https://prow.k8s.io/view/gs/kubernetes-jenkins/logs/post-cloud-provider-vsphere-release/) to check the release logs and make sure new image is published in `gcr.io/cloud-provider-vsphere/cpi/release/manager` with the correct version tag.
