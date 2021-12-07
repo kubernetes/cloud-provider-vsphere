@@ -18,6 +18,7 @@ package vsphereparavirtual
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -55,6 +56,10 @@ var DiscoverNodeBackoff = wait.Backoff{
 	Duration: 50 * time.Millisecond,
 	Jitter:   1.0,
 }
+
+var (
+	errBiosUUIDEmpty = errors.New("discovered Bios UUID is empty")
+)
 
 func checkError(err error) bool {
 	return err != nil
@@ -195,6 +200,10 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 	if vm == nil {
 		klog.V(4).Info("instances.InstanceID() InstanceNotFound ", nodeName)
 		return "", cloudprovider.InstanceNotFound
+	}
+
+	if vm.Status.BiosUUID == "" {
+		return "", errBiosUUIDEmpty
 	}
 
 	klog.V(4).Infof("instances.InstanceID() called to get vm: %v uuid: %v", nodeName, vm.Status.BiosUUID)
