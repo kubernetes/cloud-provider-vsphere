@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: vsphere-cloud-config
+  name: {{ .Values.config.name | default "cloud-config" }}
   labels:
     app: {{ template "cpi.name" . }}
     vsphere-cpi-infra: cloud-config
@@ -16,7 +16,7 @@ data:
       # set insecure-flag to true if the vCenter uses a self-signed cert
       insecureFlag: true
       # settings for using k8s secret
-      secretName: vsphere-cloud-secret
+      secretName: {{ .Values.config.secret.name }}
       secretNamespace: {{ .Release.Namespace }}
 
     # vcenter section

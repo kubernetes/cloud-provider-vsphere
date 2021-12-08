@@ -1,6 +1,6 @@
 # Default values for vSphere CPI.
 # This is a YAML-formatted file.
-# vSohere CPI values are grouped by component
+# vSphere CPI values are grouped by component
 
 global:
   config:
@@ -8,12 +8,20 @@ global:
 
 config:
   enabled: false
+  name: vsphere-cloud-config
   vcenter: "vcenter.local"
   username: "user"
   password: "pass"
   datacenter: "dc"
   region: "k8s-region"
   zone: "k8s-zone"
+
+  secret:
+    # Specifies whether Secret should be created from config values
+    create: true
+    # The name of the Secret referred to in the vsphere-cloud-config ConfigMap
+    # If your Kubernetes platform provides this secret, set create to false and adjust the secret name
+    name: vsphere-cloud-secret
 
 ## Specify if a Pod Security Policy for kube-state-metrics must be created
 ## Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/
