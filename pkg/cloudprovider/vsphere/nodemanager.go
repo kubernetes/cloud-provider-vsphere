@@ -167,25 +167,6 @@ func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, 
 	return nil, err
 }
 
-func returnIPsFromSpecificFamily(family string, ips []string) []string {
-	var matching []string
-
-	for _, ip := range ips {
-		if err := ErrOnLocalOnlyIPAddr(ip); err != nil {
-			klog.V(4).Infof("IP is local only or there was an error. ip=%q err=%v", ip, err)
-			continue
-		}
-
-		if strings.EqualFold(family, vcfg.IPv6Family) && net.ParseIP(ip).To4() == nil {
-			matching = append(matching, ip)
-		} else if strings.EqualFold(family, vcfg.IPv4Family) && net.ParseIP(ip).To4() != nil {
-			matching = append(matching, ip)
-		}
-	}
-
-	return matching
-}
-
 type ipAddrNetworkName struct {
 	ipAddr      string
 	networkName string
