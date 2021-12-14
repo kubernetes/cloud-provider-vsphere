@@ -17,7 +17,8 @@ require (
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.2.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.2.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.3.0
-	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
+	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
+	golang.org/x/tools v0.1.8 // indirect
 	google.golang.org/grpc v1.38.0
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/warnings.v0 v0.1.2 // indirect
