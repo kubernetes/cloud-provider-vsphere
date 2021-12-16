@@ -33,4 +33,5 @@ type VSphereParavirtual struct {
 	loadBalancer   cloudprovider.LoadBalancer
 	instances      cloudprovider.Instances
 	routes         RoutesProvider
+	zones          cloudprovider.Zones
 }
