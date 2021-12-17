@@ -38,6 +38,11 @@ type Nodes struct {
 	// only have a single IP address assigned to it.
 	InternalVMNetworkName string
 	ExternalVMNetworkName string
+	// IP addresses in these subnet ranges will be excluded when selecting
+	// the IP address from the VirtualMachine's VM for use in the
+	// status.addresses fields.
+	ExcludeInternalNetworkSubnetCIDR string
+	ExcludeExternalNetworkSubnetCIDR string
 }
 
 // CPIConfig is used to read and store information (related only to the CPI) from the cloud configuration file

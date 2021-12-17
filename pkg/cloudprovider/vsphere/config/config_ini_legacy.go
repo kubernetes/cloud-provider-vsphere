@@ -35,10 +35,12 @@ func (cci *CPIConfigINI) CreateConfig() *CPIConfig {
 	cfg := &CPIConfig{
 		*cci.CommonConfigINI.CreateConfig(),
 		Nodes{
-			InternalNetworkSubnetCIDR: cci.Nodes.InternalNetworkSubnetCIDR,
-			ExternalNetworkSubnetCIDR: cci.Nodes.ExternalNetworkSubnetCIDR,
-			InternalVMNetworkName:     cci.Nodes.InternalVMNetworkName,
-			ExternalVMNetworkName:     cci.Nodes.ExternalVMNetworkName,
+			InternalNetworkSubnetCIDR:        cci.Nodes.InternalNetworkSubnetCIDR,
+			ExternalNetworkSubnetCIDR:        cci.Nodes.ExternalNetworkSubnetCIDR,
+			InternalVMNetworkName:            cci.Nodes.InternalVMNetworkName,
+			ExternalVMNetworkName:            cci.Nodes.ExternalVMNetworkName,
+			ExcludeInternalNetworkSubnetCIDR: cci.Nodes.ExcludeInternalNetworkSubnetCIDR,
+			ExcludeExternalNetworkSubnetCIDR: cci.Nodes.ExcludeExternalNetworkSubnetCIDR,
 		},
 	}
 
