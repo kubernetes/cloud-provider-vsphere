@@ -386,19 +386,19 @@ func TestCreateOrUpdateVMService(t *testing.T) {
 func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 	testCases := []struct {
 		name        string
-		getFunc     func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error
+		getFunc     func(ctx context.Context, key client.ObjectKey, obj client.Object) error
 		expectedErr error
 	}{
 		{
 			name: "failed to create VirtualMachineService",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 				return fmt.Errorf("failed to get VirtualMachineService")
 			},
 			expectedErr: ErrGetVMService,
 		},
 		{
 			name: "when VMService does not exist",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 				return apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
 			},
 			expectedErr: ErrVMServiceIPNotFound,
@@ -419,7 +419,7 @@ func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 func TestCreateOrUpdateVMService_RedefineCreateFunc(t *testing.T) {
 	testK8sService, vms, fcw := initTest()
 	// Redefine Create in the client to return an error
-	fcw.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	fcw.CreateFunc = func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 		return fmt.Errorf("failed to create VirtualMachineService")
 	}
 	_, err := vms.CreateOrUpdate(context.Background(), testK8sService, testClustername)

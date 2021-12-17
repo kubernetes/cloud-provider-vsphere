@@ -181,7 +181,7 @@ func TestUpdateLoadBalancer(t *testing.T) {
 
 			if testCase.expectErr {
 				// Ensure that the client Update call returns an error on update
-				fcw.UpdateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+				fcw.UpdateFunc = func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 					return fmt.Errorf("Some undefined update error")
 				}
 				err = lb.UpdateLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
@@ -205,7 +205,7 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
 		},
 	}
-	fcw.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	fcw.CreateFunc = func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 		vms := &vmopv1alpha1.VirtualMachineService{
 			Status: vmopv1alpha1.VirtualMachineServiceStatus{
 				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
@@ -231,7 +231,7 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 func TestEnsureLoadBalancer(t *testing.T) {
 	testCases := []struct {
 		name       string
-		createFunc func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error
+		createFunc func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 		expectErr  error
 	}{
 		{
@@ -240,7 +240,7 @@ func TestEnsureLoadBalancer(t *testing.T) {
 		},
 		{
 			name: "when VMService creation failed",
-			createFunc: func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+			createFunc: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 				return fmt.Errorf(vmservice.ErrCreateVMService.Error())
 			},
 			expectErr: vmservice.ErrCreateVMService,
@@ -276,7 +276,7 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 		},
 	}
 	// Ensure that the client Create call returns a VMService with a valid IP
-	fcw.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	fcw.CreateFunc = func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 		vms := &vmopv1alpha1.VirtualMachineService{
 			Status: vmopv1alpha1.VirtualMachineServiceStatus{
 				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
@@ -324,18 +324,18 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 	testCases := []struct {
 		name       string
-		deleteFunc func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error
+		deleteFunc func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
 		expectErr  string
 	}{
 		{
 			name: "should ignore not found error",
-			deleteFunc: func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+			deleteFunc: func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 				return apierrors.NewNotFound(vmopv1alpha1.Resource("virtualmachineservice"), testClustername)
 			},
 		},
 		{
 			name: "should return error",
-			deleteFunc: func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+			deleteFunc: func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 				return fmt.Errorf("an error occurred while deleting load balancer")
 			},
 			expectErr: "an error occurred while deleting load balancer",

@@ -4,6 +4,9 @@
 # Ignore the build output.
 /.build
 
+# Ignore tooling binaries.
+/hack/tools/bin
+
 # Ignore the environment variable and Prow configuration files at
 # the root of the project.
 /config.env
@@ -28,7 +31,6 @@
 *.sublime-workspace
 *.swp
 .idea
-.DS_Store
 
 # OSX leaves these everywhere on SMB shares
 ._*
@@ -149,6 +151,7 @@ zz_generated.openapi.go
 /.make/
 # Just in time generated data in the source, should never be committed
 /test/e2e/generated/bindata.go
+/test/e2e/data
 
 # This file used by some vendor repos (e.g. github.com/go-openapi/...) to store secret variables and should not be ignored
 !\.drone\.sec
@@ -158,6 +161,10 @@ zz_generated.openapi.go
 
 /bazel-*
 *.pyc
+
+# Output artifacts & logs from e2e
+/_e2e-logs/
+/_e2e_artifacts/
 
 # binaries
 /vsphere-cloud-controller-manager

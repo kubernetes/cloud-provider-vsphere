@@ -19,7 +19,9 @@ package util
 import (
 	"context"
 
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,11 +29,21 @@ import (
 type FakeClientWrapper struct {
 	fakeClient client.Client
 	// Set these functions if you want to override the default fakeClient behavior
-	GetFunc    func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error
-	CreateFunc func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error
-	UpdateFunc func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error
-	DeleteFunc func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error
-	ListFunc   func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error
+	GetFunc    func(ctx context.Context, key client.ObjectKey, obj client.Object) error
+	CreateFunc func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
+	UpdateFunc func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
+	DeleteFunc func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
+	ListFunc   func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error
+}
+
+// Scheme invokes the fakeClient's Scheme
+func (w *FakeClientWrapper) Scheme() *runtime.Scheme {
+	return w.fakeClient.Scheme()
+}
+
+// RESTMapper invokes the fakeClient's RESTMapper
+func (w *FakeClientWrapper) RESTMapper() meta.RESTMapper {
+	return w.fakeClient.RESTMapper()
 }
 
 // NewFakeClientWrapper creates a FakeClientWrapper
@@ -42,7 +54,7 @@ func NewFakeClientWrapper(fakeClient client.Client) *FakeClientWrapper {
 }
 
 // Get retrieves an obj for the given object key from the Kubernetes Cluster.
-func (w *FakeClientWrapper) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+func (w *FakeClientWrapper) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 	if w.GetFunc != nil {
 		return w.GetFunc(ctx, key, obj)
 	}
@@ -50,7 +62,7 @@ func (w *FakeClientWrapper) Get(ctx context.Context, key client.ObjectKey, obj r
 }
 
 // List retrieves list of objects for a given namespace and list options.
-func (w *FakeClientWrapper) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+func (w *FakeClientWrapper) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
 	if w.ListFunc != nil {
 		return w.ListFunc(ctx, list, opts...)
 	}
@@ -58,7 +70,7 @@ func (w *FakeClientWrapper) List(ctx context.Context, list runtime.Object, opts 
 }
 
 // Create saves the object obj in the Kubernetes cluster.
-func (w *FakeClientWrapper) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+func (w *FakeClientWrapper) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 	if w.CreateFunc != nil {
 		return w.CreateFunc(ctx, obj, opts...)
 	}
@@ -66,7 +78,7 @@ func (w *FakeClientWrapper) Create(ctx context.Context, obj runtime.Object, opts
 }
 
 // Delete deletes the given obj from Kubernetes cluster.
-func (w *FakeClientWrapper) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+func (w *FakeClientWrapper) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	if w.DeleteFunc != nil {
 		return w.DeleteFunc(ctx, obj, opts...)
 	}
@@ -74,7 +86,7 @@ func (w *FakeClientWrapper) Delete(ctx context.Context, obj runtime.Object, opts
 }
 
 // Update updates the given obj in the Kubernetes cluster.
-func (w *FakeClientWrapper) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+func (w *FakeClientWrapper) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 	if w.UpdateFunc != nil {
 		return w.UpdateFunc(ctx, obj, opts...)
 	}
@@ -82,12 +94,12 @@ func (w *FakeClientWrapper) Update(ctx context.Context, obj runtime.Object, opts
 }
 
 // Patch patches the given obj in the Kubernetes cluster.
-func (w *FakeClientWrapper) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (w *FakeClientWrapper) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	return w.fakeClient.Patch(ctx, obj, patch, opts...)
 }
 
 // DeleteAllOf deletes all objects of the given type matching the given options.
-func (w *FakeClientWrapper) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
+func (w *FakeClientWrapper) DeleteAllOf(ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption) error {
 	return w.fakeClient.DeleteAllOf(ctx, obj, opts...)
 }
 

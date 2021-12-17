@@ -93,6 +93,14 @@ build build-bins: $(CCM_BIN)
 build-with-docker:
 	hack/make.sh
 
+# Tooling binaries for e2e
+TOOLS_DIR := $(abspath hack/tools)
+TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
+GINKGO := $(TOOLS_BIN_DIR)/ginkgo
+KIND := $(TOOLS_BIN_DIR)/kind
+TOOLING_BINARIES := $(GINKGO) $(KIND)
+E2E_DIR := $(abspath test/e2e)
+
 ################################################################################
 ##                                   DIST                                     ##
 ################################################################################
@@ -204,7 +212,7 @@ endif # ifndef X_BUILD_DISABLED
 ##                                 TESTING                                    ##
 ################################################################################
 ifndef PKGS_WITH_TESTS
-export PKGS_WITH_TESTS := $(sort $(shell find . -name "*_test.go" -type f -exec dirname \{\} \;))
+export PKGS_WITH_TESTS := $(sort $(shell find ./pkg -name "*_test.go" -type f -exec dirname \{\} \;))
 endif
 TEST_FLAGS ?= -v
 .PHONY: unit build-unit-tests
@@ -224,6 +232,15 @@ build-tests: build-unit-tests
 .PHONY: cover
 cover: TEST_FLAGS += -cover
 cover: test
+
+tools: $(TOOLING_BINARIES) ## Build tooling binaries
+.PHONY: $(TOOLING_BINARIES)
+$(TOOLING_BINARIES):
+	make -C $(TOOLS_DIR) $(@F)
+
+.PHONY: test-e2e
+test-e2e:
+	make -C $(E2E_DIR) run
 
 .PHONY: integration-test
 integration-test: | $(DOCKER_SOCK)
