@@ -37,6 +37,11 @@ type NodesINI struct {
 	// only have a single IP address assigned to it.
 	InternalVMNetworkName string `gcfg:"internal-vm-network-name"`
 	ExternalVMNetworkName string `gcfg:"external-vm-network-name"`
+	// IP addresses in these subnet ranges will be excluded when selecting
+	// the IP address from the VirtualMachine's VM for use in the
+	// status.addresses fields.
+	ExcludeInternalNetworkSubnetCIDR string `gcfg:"exclude-internal-network-subnet-cidr"`
+	ExcludeExternalNetworkSubnetCIDR string `gcfg:"exclude-external-network-subnet-cidr"`
 }
 
 // CPIConfigINI is the INI representation

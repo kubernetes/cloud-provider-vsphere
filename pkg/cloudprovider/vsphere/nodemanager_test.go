@@ -1183,6 +1183,42 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
+			testName: "ByDefaultSelection_itDoesNotSelectIPsFromtheExclusionCIDRList",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4", "ipv6"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						ExcludeInternalNetworkSubnetCIDR: "172.15.108.11/32,fd00:cccc::1/128,fd00:cccc::2/128",
+						ExcludeExternalNetworkSubnetCIDR: "172.15.108.11/32,172.15.108.12/32,fd00:cccc::1/128",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "net_a",
+						IpAddress: []string{
+							"172.15.108.11",
+							"172.15.108.12",
+							"172.15.108.13",
+							"fd00:cccc::1",
+						},
+					},
+					{
+						Network: "net_b",
+						IpAddress: []string{
+							"fd00:cccc::2",
+							"fd00:cccc::3",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "172.15.108.12"},
+				{Type: "ExternalIP", Address: "172.15.108.13"},
+				{Type: "InternalIP", Address: "fd00:cccc::3"},
+				{Type: "ExternalIP", Address: "fd00:cccc::2"},
+			},
+		},
+		{
 			testName: "ByDefaultSelection_DualStackIPv6Primary_itReturnsIPv6AddrsFirst",
 			setup: testSetup{
 				ipFamilyPriority: []string{"ipv6", "ipv4"},
@@ -1243,6 +1279,223 @@ func TestDiscoverNodeIPs(t *testing.T) {
 				{Type: "InternalIP", Address: "172.15.108.11"},
 				{Type: "ExternalIP", Address: "172.15.108.12"},
 			},
+		},
+		{
+			testName: "BySubnet_itDoesNotSelectIPsFromtheExclusionCIDRList",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4", "ipv6"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "172.15.0.0/16",
+						ExternalNetworkSubnetCIDR: "fd01:cccc::0/32",
+
+						ExcludeInternalNetworkSubnetCIDR: "172.15.108.11/32,fd00:cccc::1/128,fd00:cccc::2/128",
+						ExcludeExternalNetworkSubnetCIDR: "173.15.108.11/32,173.15.108.12/32,fd01:cccc::1/128",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"172.15.108.11",
+							"172.15.108.12",
+							"172.15.108.13",
+							"fd00:cccc::1",
+							"fd00:cccc::2",
+							"fd00:cccc::3",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"173.15.108.11",
+							"173.15.108.12",
+							"173.15.108.13",
+							"fd01:cccc::1",
+							"fd01:cccc::2",
+							"fd01:cccc::3",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "172.15.108.12"},
+				{Type: "ExternalIP", Address: "fd01:cccc::2"},
+			},
+		},
+		{
+			testName: "BySubnet_ipv4_itDoesNotSelectIPsFromtheExclusionCIDRList",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "172.15.0.0/16",
+						ExternalNetworkSubnetCIDR: "173.15.0.0/16",
+
+						ExcludeInternalNetworkSubnetCIDR: "172.15.108.11/32,fd00:cccc::1/128,fd00:cccc::2/128",
+						ExcludeExternalNetworkSubnetCIDR: "173.15.108.11/32,173.15.108.12/32,fd01:cccc::1/128",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"172.15.108.11",
+							"172.15.108.12",
+							"172.15.108.13",
+							"fd00:cccc::1",
+							"fd00:cccc::2",
+							"fd00:cccc::3",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"173.15.108.11",
+							"173.15.108.12",
+							"173.15.108.13",
+							"fd01:cccc::1",
+							"fd01:cccc::2",
+							"fd01:cccc::3",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "172.15.108.12"},
+				{Type: "ExternalIP", Address: "173.15.108.13"},
+			},
+		},
+		{
+			testName: "BySubnet_ipv6_itDoesNotSelectIPsFromtheExclusionCIDRList",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "fd00:cccc::0/32",
+						ExternalNetworkSubnetCIDR: "fd01:cccc::0/32",
+
+						ExcludeInternalNetworkSubnetCIDR: "172.15.108.11/32,fd00:cccc::1/128,fd00:cccc::2/128",
+						ExcludeExternalNetworkSubnetCIDR: "173.15.108.11/32,173.15.108.12/32,fd01:cccc::1/128",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"172.15.108.11",
+							"172.15.108.12",
+							"172.15.108.13",
+							"fd00:cccc::1",
+							"fd00:cccc::2",
+							"fd00:cccc::3",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"173.15.108.11",
+							"173.15.108.12",
+							"173.15.108.13",
+							"fd01:cccc::1",
+							"fd01:cccc::2",
+							"fd01:cccc::3",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd00:cccc::3"},
+				{Type: "ExternalIP", Address: "fd01:cccc::2"},
+			},
+		},
+		{
+			testName: "ByNetworkName_itDoesNotSelectIPsFromtheExclusionCIDRList",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4", "ipv6"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalVMNetworkName:            "internal_net",
+						ExternalVMNetworkName:            "external_net",
+						ExcludeInternalNetworkSubnetCIDR: "172.15.108.11/32,fd00:cccc::1/128,fd00:cccc::2/128",
+						ExcludeExternalNetworkSubnetCIDR: "173.15.108.11/32,173.15.108.12/32,fd01:cccc::1/128",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"172.15.108.11",
+							"172.15.108.12",
+							"172.15.108.13",
+							"fd00:cccc::1",
+							"fd00:cccc::2",
+							"fd00:cccc::3",
+						},
+					},
+					{
+						Network: "external_net",
+						IpAddress: []string{
+							"173.15.108.11",
+							"173.15.108.12",
+							"173.15.108.13",
+							"fd01:cccc::1",
+							"fd01:cccc::2",
+							"fd01:cccc::3",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "172.15.108.12"},
+				{Type: "ExternalIP", Address: "173.15.108.13"},
+				{Type: "InternalIP", Address: "fd00:cccc::3"},
+				{Type: "ExternalIP", Address: "fd01:cccc::2"},
+			},
+		},
+		{
+			testName: "Dualstack_ExcludingSubnets_whenNoIPv4AddrIsDiscovered",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6", "ipv4"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						ExcludeInternalNetworkSubnetCIDR: "172.15.108.11/8",
+						ExcludeExternalNetworkSubnetCIDR: "172.15.108.11/8",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::1",
+						},
+					},
+				},
+			},
+			expectedErrorSubstring: "unable to find suitable IP address for node",
+		},
+		{
+			testName: "Dualstack_ExcludingSubnets_whenNoIPv6AddrIsDiscovered",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6", "ipv4"},
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						ExcludeInternalNetworkSubnetCIDR: "fd00:cccc::1/16",
+						ExcludeExternalNetworkSubnetCIDR: "fd00:cccc::1/16",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"172.15.108.11",
+							"fd00:cccc::1",
+						},
+					},
+				},
+			},
+			expectedErrorSubstring: "unable to find suitable IP address for node",
 		},
 		{
 			testName: "DualStack_whenNoIPsOfOneFamilyAreDiscovered",

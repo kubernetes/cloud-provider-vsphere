@@ -47,9 +47,17 @@ Here's the entire cloud config spec using example values:
 [Labels]
   region = k8s-region
   zone = k8s-zone
+
+[Nodes]
+  internal-network-subnet-cidr = "192.0.2.0/24"
+  external-network-subnet-cidr = "198.51.100.0/24"
+  internal-vm-network-name = "Internal K8s Traffic"
+  external-vm-network-name = "External/Outbound Traffic"
+  exclude-internal-network-subnet-cidr = "192.0.2.0/24,fe80::1/128"
+  exclude-external-network-subnet-cidr = "192.1.2.0/24,fe80::2/128"
 ```
 
-There are 3 sections in the cloud config file, let's break down the fields in each section:
+There are 4 sections in the cloud config file, let's break down the fields in each section:
 
 ### Global
 
@@ -169,6 +177,61 @@ on your Nodes and PersistentVolumes based on the value of the tags specified her
   # If the tag exists, the zones topology label `failure-domain.beta.kubernetes.io/zone` with the associated value
   # will be applied to Nodes and PVs.
   zone = k8s-zone
+```
+
+### Nodes
+
+The Nodes section defines the way that the Node IPs are selected from the
+addresses assigned to the Node in kube-api.
+
+Addresses in the optional `exclude-internal-network-subnet-cidr` and optional
+`exclude-external-network-subnet-cidr` are removed from consideration for any
+match before any selection happens.
+
+If provided, the `internal-network-subnet-cidr` and
+`external-network-subnet-cidr` matching will be attempted first. Addresses that
+fall within each of the provided CIDRs will be selected.
+
+If provided, and the subnet matching method does not select a matching address,
+the `internal-vm-network-name` and `external-vm-network-name` matching will be
+attempted. Addresses belonging to networks that match the name in vSphere will
+be selected.
+
+If these methods are unsuccessful at selecting an address, or if these other
+configurations were not provided, default selection will select the first
+address that is not a Localhost address.
+
+```bash
+[Nodes]
+  # If set, the vSphere cloud provider will select the first address that falls
+  # within the provided subnet and assign that value to the Internal network for
+  # the node.
+  internal-network-subnet-cidr = "192.0.2.0/24"
+
+  # If set, the vSphere cloud provider will select the first address that falls
+  # within the provided subnet and assign that value to the External network for
+  # the node.
+  external-network-subnet-cidr = "198.51.100.0/24"
+
+  # If set, the vSphere cloud provider will select the first address found in
+  # the VM network matching the provided name and assign that value to the
+  # Internal network for the node.
+  internal-vm-network-name = "Internal K8s Traffic"
+
+  # If set, the vSphere cloud provider will select the first address found in
+  # the VM network matching the provided name and assign that value to the
+  # External network for the node.
+  external-vm-network-name = "External/Outbound Traffic"
+
+  # If set, the vSphere cloud provider will never select addresses for the
+  # Internal network that fall within the provided subnet ranges. This
+  # configuration has the highest precedence. See notes above for details.
+  exclude-internal-network-subnet-cidr = "192.0.2.0/24,fe80::1/128"
+
+  # If set, the vSphere cloud provider will never select addresses for the
+  # External network that fall within the provided subnet ranges. This
+  # configuration has the highest precedence. See notes above for details.
+  exclude-external-network-subnet-cidr = "192.1.2.0/24,fe80::2/128"
 ```
 
 ### Storing vCenter Credentials in a Kubernetes Secret

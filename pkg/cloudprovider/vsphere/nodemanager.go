@@ -241,6 +241,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	var internalNetworkSubnet *net.IPNet
 	var externalNetworkSubnet *net.IPNet
+	var excludeInternalNetworkSubnets []*net.IPNet
+	var excludeExternalNetworkSubnets []*net.IPNet
 	var internalVMNetworkName string
 	var externalVMNetworkName string
 
@@ -256,6 +258,14 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 			if err != nil {
 				return err
 			}
+		}
+		excludeInternalNetworkSubnets, err = parseCIDRs(nm.cfg.Nodes.ExcludeInternalNetworkSubnetCIDR)
+		if err != nil {
+			return err
+		}
+		excludeExternalNetworkSubnets, err = parseCIDRs(nm.cfg.Nodes.ExcludeExternalNetworkSubnetCIDR)
+		if err != nil {
+			return err
 		}
 		internalVMNetworkName = nm.cfg.Nodes.InternalVMNetworkName
 		externalVMNetworkName = nm.cfg.Nodes.ExternalVMNetworkName
@@ -301,6 +311,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 			ipFamily,
 			internalNetworkSubnet,
 			externalNetworkSubnet,
+			excludeInternalNetworkSubnets,
+			excludeExternalNetworkSubnets,
 			internalVMNetworkName,
 			externalVMNetworkName,
 		)
@@ -355,12 +367,17 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 //
 // The returned ipAddrNetworkNames will match the given ipFamily.
 //
+// ipAddrNetworkNames that are contained in the excludeInternalNetworkSubnets
+// will never be returned as an internal address, and similarly addresses
+// contained in the exludedExternalNetworkSubnets will never be returned
+// as an external address - no matter the method of discovery described below.
+//
 // The returned ipAddrNetworkNames will be selected first by attempting to
 // match the given internalNetworkSubnet and externalNetworkSubnet. Subnet
 // matching has the highest precedence.
 //
 // If subnet matches are not found, or if subnets are not provided, then an
-// attempt is made to select ipAddrNetworkNames that match the givent network
+// attempt is made to select ipAddrNetworkNames that match the given network
 // names. Network name matching has the second highest precedence.
 //
 // If ipAddrNetworkNames are not found by subnet nor network name matching, then
@@ -370,6 +387,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 // If either of these IPs cannot be discovered, nil will be returned instead.
 func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
 	internalNetworkSubnet, externalNetworkSubnet *net.IPNet,
+	excludeInternalNetworkSubnets, excludeExternalNetworkSubnets []*net.IPNet,
 	internalVMNetworkName, externalVMNetworkName string) (internal *ipAddrNetworkName, external *ipAddrNetworkName) {
 
 	ipFamilyMatches := collectMatchesForIPFamily(ipAddrNetworkNames, ipFamily)
@@ -377,25 +395,28 @@ func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
 	var discoveredInternal *ipAddrNetworkName
 	var discoveredExternal *ipAddrNetworkName
 
-	if len(ipFamilyMatches) != 0 {
-		discoveredInternal = findSubnetMatch(ipFamilyMatches, internalNetworkSubnet)
+	filteredInternalMatches := filterSubnetExclusions(ipFamilyMatches, excludeInternalNetworkSubnets)
+	filteredExternalMatches := filterSubnetExclusions(ipFamilyMatches, excludeExternalNetworkSubnets)
+
+	if len(filteredInternalMatches) > 0 || len(filteredExternalMatches) > 0 {
+		discoveredInternal = findSubnetMatch(filteredInternalMatches, internalNetworkSubnet)
 		if discoveredInternal != nil {
 			klog.V(2).Infof("Adding Internal IP by AddressMatching: %s", discoveredInternal.ipAddr)
 		}
-		discoveredExternal = findSubnetMatch(ipFamilyMatches, externalNetworkSubnet)
+		discoveredExternal = findSubnetMatch(filteredExternalMatches, externalNetworkSubnet)
 		if discoveredExternal != nil {
 			klog.V(2).Infof("Adding External IP by AddressMatching: %s", discoveredExternal.ipAddr)
 		}
 
 		if discoveredInternal == nil && internalVMNetworkName != "" {
-			discoveredInternal = findNetworkNameMatch(ipFamilyMatches, internalVMNetworkName)
+			discoveredInternal = findNetworkNameMatch(filteredInternalMatches, internalVMNetworkName)
 			if discoveredInternal != nil {
 				klog.V(2).Infof("Adding Internal IP by NetworkName: %s", discoveredInternal.ipAddr)
 			}
 		}
 
 		if discoveredExternal == nil && externalVMNetworkName != "" {
-			discoveredExternal = findNetworkNameMatch(ipFamilyMatches, externalVMNetworkName)
+			discoveredExternal = findNetworkNameMatch(filteredExternalMatches, externalVMNetworkName)
 			if discoveredExternal != nil {
 				klog.V(2).Infof("Adding External IP by NetworkName: %s", discoveredExternal.ipAddr)
 			}
@@ -405,10 +426,16 @@ func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
 		// address selection behavior which is to only support a single address and
 		// return the first one found
 		if discoveredInternal == nil && discoveredExternal == nil {
-			klog.V(5).Info("Default address selection. Single NIC, Single IP Address")
-			klog.V(2).Infof("Adding IP: %s", ipFamilyMatches[0].ipAddr)
-			discoveredInternal = ipFamilyMatches[0]
-			discoveredExternal = ipFamilyMatches[0]
+			klog.V(5).Info("Default address selection.")
+			if len(filteredInternalMatches) > 0 {
+				klog.V(2).Infof("Adding Internal IP: %s", filteredInternalMatches[0].ipAddr)
+				discoveredInternal = filteredInternalMatches[0]
+			}
+
+			if len(filteredExternalMatches) > 0 {
+				klog.V(2).Infof("Adding External IP: %s", filteredExternalMatches[0].ipAddr)
+				discoveredExternal = filteredExternalMatches[0]
+			}
 		} else {
 			// At least one of the Internal or External addresses has been found.
 			// Minimally the Internal needs to exist for the node to function correctly.
@@ -436,6 +463,24 @@ func collectNonVNICDevices(guestNicInfos []types.GuestNicInfo) []types.GuestNicI
 		toReturn = append(toReturn, v)
 	}
 	return toReturn
+}
+
+// parseCIDRs converts a comma delimited string of CIDRs to
+// a slice of IPNet pointers.
+func parseCIDRs(cidrsString string) ([]*net.IPNet, error) {
+	if cidrsString != "" {
+		cidrStringSlice := strings.Split(cidrsString, ",")
+		subnets := make([]*net.IPNet, len(cidrStringSlice))
+		for i, cidrString := range cidrStringSlice {
+			_, ipNet, err := net.ParseCIDR(cidrString)
+			if err != nil {
+				return nil, err
+			}
+			subnets[i] = ipNet
+		}
+		return subnets, nil
+	}
+	return nil, nil
 }
 
 // toIPAddrNetworkNames maps an array of GuestNicInfo to and array of *ipAddrNetworkName.
@@ -533,6 +578,18 @@ func excludeLocalhostIPs(ipAddrNetworkNames []*ipAddrNetworkName) []*ipAddrNetwo
 			klog.V(4).Infof("IP is local only or there was an error. ip=%q err=%v", i.ipAddr, err)
 		}
 		return err == nil
+	})
+}
+
+func filterSubnetExclusions(ipAddrNetworkNames []*ipAddrNetworkName, exlusionSubnets []*net.IPNet) []*ipAddrNetworkName {
+	return filter(ipAddrNetworkNames, func(i *ipAddrNetworkName) bool {
+		for _, exlusionSubnet := range exlusionSubnets {
+			if exlusionSubnet.Contains(i.ip()) {
+				klog.V(4).Infof("IP is excluded %q because it is contained in exlusion subnet %q", i.ipAddr, exlusionSubnet.String())
+				return false
+			}
+		}
+		return true
 	})
 }
 

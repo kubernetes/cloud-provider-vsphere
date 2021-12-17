@@ -36,10 +36,12 @@ func (ccy *CPIConfigYAML) CreateConfig() *CPIConfig {
 	cfg := &CPIConfig{
 		*ccy.CommonConfigYAML.CreateConfig(),
 		Nodes{
-			InternalNetworkSubnetCIDR: ccy.Nodes.InternalNetworkSubnetCIDR,
-			ExternalNetworkSubnetCIDR: ccy.Nodes.ExternalNetworkSubnetCIDR,
-			InternalVMNetworkName:     ccy.Nodes.InternalVMNetworkName,
-			ExternalVMNetworkName:     ccy.Nodes.ExternalVMNetworkName,
+			InternalNetworkSubnetCIDR:        ccy.Nodes.InternalNetworkSubnetCIDR,
+			ExternalNetworkSubnetCIDR:        ccy.Nodes.ExternalNetworkSubnetCIDR,
+			InternalVMNetworkName:            ccy.Nodes.InternalVMNetworkName,
+			ExternalVMNetworkName:            ccy.Nodes.ExternalVMNetworkName,
+			ExcludeInternalNetworkSubnetCIDR: ccy.Nodes.ExcludeInternalNetworkSubnetCIDR,
+			ExcludeExternalNetworkSubnetCIDR: ccy.Nodes.ExcludeExternalNetworkSubnetCIDR,
 		},
 	}
 
