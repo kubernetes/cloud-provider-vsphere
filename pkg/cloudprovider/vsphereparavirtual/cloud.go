@@ -146,6 +146,12 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 		}
 	}
 
+	zones, err := NewZones(clusterNS, kcfg)
+	if err != nil {
+		klog.Errorf("Failed to init Zones: %v", err)
+	}
+	cp.zones = zones
+
 	cp.informMgr.Listen()
 	klog.V(0).Info("Initing vSphere Paravirtual Cloud Provider Succeeded")
 }
@@ -174,7 +180,7 @@ func (cp *VSphereParavirtual) InstancesV2() (cloudprovider.InstancesV2, bool) {
 // is supported, false otherwise.
 func (cp *VSphereParavirtual) Zones() (cloudprovider.Zones, bool) {
 	klog.V(1).Info("Enabling Zones interface on vsphere paravirtual cloud provider")
-	return nil, false
+	return cp.zones, true
 }
 
 // Clusters returns a clusters interface.  Also returns true if the interface
