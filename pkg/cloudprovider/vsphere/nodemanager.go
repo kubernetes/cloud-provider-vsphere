@@ -344,22 +344,22 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 //
 // The returned ipAddrNetworkNames will match the given ipFamily.
 //
+// ipAddrNetworkNames that are contained in the excludeInternalNetworkSubnets
+// will never be returned as an internal address, and similarly addresses
+// contained in the exludedExternalNetworkSubnets will never be returned
+// as an external address - no matter the method of discovery described below.
+//
 // The returned ipAddrNetworkNames will be selected first by attempting to
 // match the given internalNetworkSubnets and externalNetworkSubnets. Subnet
 // matching has the highest precedence.
 //
 // If subnet matches are not found, or if subnets are not provided, then an
-// attempt is made to select ipAddrNetworkNames that match the givent network
+// attempt is made to select ipAddrNetworkNames that match the given network
 // names. Network name matching has the second highest precedence.
 //
 // If ipAddrNetworkNames are not found by subnet nor network name matching, then
 // the first ipAddrNetworkName of the desired family is returned as both the
 // internal and external matches.
-//
-// ipAddrNetworkNames that are contained in the excludeInternalNetworkSubnets
-// will never be returned as an internal address, and similarly addresses
-// contained in the exludedExternalNetworkSubnets will never be returned
-// as an external address - no matter the method of disovery described above.
 //
 // If either of these IPs cannot be discovered, nil will be returned instead.
 func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
