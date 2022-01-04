@@ -52,6 +52,21 @@ internal-vm-network-name = "Internal K8s Traffic"
 external-vm-network-name = "External/Outbound Traffic"
 `
 
+const excludeSubnetINIConfig = `
+[Global]
+server = 0.0.0.0
+port = 443
+user = user
+password = password
+insecure-flag = true
+datacenters = us-west
+ca-file = /some/path/to/a/ca.pem
+
+[Nodes]
+exclude-internal-network-subnet-cidr = "192.0.2.0/24,fe80::1/128"
+exclude-external-network-subnet-cidr = "192.1.2.0/24,fe80::2/128"
+`
+
 func TestReadINIConfigSubnetCidr(t *testing.T) {
 	_, err := ReadCPIConfigINI(nil)
 	if err == nil {
@@ -92,5 +107,20 @@ func TestReadINIConfigNetworkName(t *testing.T) {
 
 	if cfg.Nodes.ExternalVMNetworkName != "External/Outbound Traffic" {
 		t.Errorf("incorrect internal vm network name: %s", cfg.Nodes.ExternalVMNetworkName)
+	}
+}
+
+func TestReadINIConfigExcludeSubnetCidr(t *testing.T) {
+	cfg, err := ReadCPIConfigINI([]byte(excludeSubnetINIConfig))
+	if err != nil {
+		t.Fatalf("Should succeed when a valid config is provided: %s", err)
+	}
+
+	if cfg.Nodes.ExcludeInternalNetworkSubnetCIDR != "192.0.2.0/24,fe80::1/128" {
+		t.Errorf("incorrect exclude internal network subnet cidrs: %s", cfg.Nodes.ExcludeInternalNetworkSubnetCIDR)
+	}
+
+	if cfg.Nodes.ExcludeExternalNetworkSubnetCIDR != "192.1.2.0/24,fe80::2/128" {
+		t.Errorf("incorrect exclude external network subnet cidrs: %s", cfg.Nodes.ExcludeExternalNetworkSubnetCIDR)
 	}
 }
