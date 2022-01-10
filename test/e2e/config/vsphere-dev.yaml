@@ -141,7 +141,7 @@ providers:
           - sourcePath: "../data/infrastructure-vsphere/capi-upgrades/v1alpha4/cluster-template.yaml"
 
 variables:
-  KUBERNETES_VERSION: "v1.22.3"
+  KUBERNETES_VERSION: "1.23.0-alpha.1"
   CNI: "./data/cni/calico/calico.yaml"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CONTROL_PLANE_MACHINE_COUNT: 1

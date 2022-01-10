@@ -23,13 +23,14 @@ Version matrix:
 
 | Kubernetes Version | vSphere Cloud Provider Release Version | Cloud Provider Branch |
 | ----------- | ----------- | ----------- |
+| v1.23.X | v1.23.X | release-1.23 |
 | v1.22.X | v1.22.X | release-1.22 |
 | v1.21.X | v1.21.X | release-1.21 |
 | v1.20.X | v1.20.X | release-1.20 |
 | v1.19.X | v1.19.X | release-1.19 |
 | v1.18.X | v1.18.X | release-1.18 |
 
-Our current support policy is that when a new Kubernetes release comes out, we will bump our k8s dependencies to the new version and cut a new release for CPI, e.g. CPI v1.22.x was released after k8s v1.22 comes out.
+Our current support policy is that when a new Kubernetes release comes out, we will bump our k8s dependencies to the new version and cut a new release for CPI, e.g. CPI v1.23.x was released after k8s v1.23 comes out.
 
 The latest CPI version is ![GitHub release (latest SemVer including pre-releases](https://img.shields.io/github/v/release/kubernetes/cloud-provider-vsphere?include_prereleases). The recommended way to upgrade CPI can be found on [this page](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/releases/README.md).
 
