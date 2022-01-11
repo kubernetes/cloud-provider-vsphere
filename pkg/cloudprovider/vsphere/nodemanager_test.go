@@ -31,6 +31,7 @@ import (
 
 	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
+	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
 func TestRegUnregNode(t *testing.T) {
@@ -125,6 +126,37 @@ func TestDiscoverNodeByName(t *testing.T) {
 	}
 	if len(nm.nodeUUIDMap) != 1 {
 		t.Errorf("Failed: nodeUUIDMap should be a length of  1")
+	}
+}
+
+func TestDiscoverNodeByNameWithNamesClash(t *testing.T) {
+	const vmHostname = "foo.foo.foo"
+	cfg, ok := configFromEnvOrSim(true)
+	defer ok()
+
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	defer connMgr.Logout()
+
+	nm := newNodeManager(nil, connMgr)
+
+	vms := simulator.Map.All("VirtualMachine")
+	vmOne := vms[0].(*simulator.VirtualMachine)
+	vmOne.Guest.HostName = vmHostname
+	vmTwo := vms[1].(*simulator.VirtualMachine)
+	vmTwo.Guest.HostName = vmHostname
+
+	err := connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
+	if err != nil {
+		t.Errorf("Failed to Connect to vSphere: %s", err)
+	}
+
+	err = nm.DiscoverNode(vmHostname, cm.FindVMByName)
+	if err == nil {
+		t.Errorf("MiltipleVMFound error expected")
+	}
+
+	if err != vclib.ErrMultipleVMsFound {
+		t.Errorf("ErrMultipleVMsFound expected, another error occured: %s", err)
 	}
 }
 
