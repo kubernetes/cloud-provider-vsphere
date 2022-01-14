@@ -98,16 +98,20 @@ func (dc *Datacenter) GetVMByIP(ctx context.Context, ipAddy string) (*VirtualMac
 func (dc *Datacenter) GetVMByDNSName(ctx context.Context, dnsName string) (*VirtualMachine, error) {
 	s := object.NewSearchIndex(dc.Client())
 	dnsName = strings.ToLower(strings.TrimSpace(dnsName))
-	svm, err := s.FindByDnsName(ctx, dc.Datacenter, dnsName, true)
+	svms, err := s.FindAllByDnsName(ctx, dc.Datacenter, dnsName, true)
 	if err != nil {
 		klog.Errorf("Failed to find VM by DNS Name. VM DNS Name: %s, err: %+v", dnsName, err)
 		return nil, err
 	}
-	if svm == nil {
+	if len(svms) == 0 {
 		klog.Errorf("Unable to find VM by DNS Name. VM DNS Name: %s", dnsName)
 		return nil, ErrNoVMFound
 	}
-	virtualMachine := VirtualMachine{svm.(*object.VirtualMachine), dc}
+	if len(svms) > 1 {
+		klog.Errorf("Multiple vms found VM by DNS Name. DNS Name: %s", dnsName)
+		return nil, ErrMultipleVMsFound
+	}
+	virtualMachine := VirtualMachine{svms[0].(*object.VirtualMachine), dc}
 	return &virtualMachine, nil
 }
 
