@@ -41,7 +41,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- else }}
-        node-role.kubernetes.io/control-plane: "true"
+        node-role.kubernetes.io/control-plane: ""
       {{- end }}
       tolerations:
       - key: node.cloudprovider.kubernetes.io/uninitialized
