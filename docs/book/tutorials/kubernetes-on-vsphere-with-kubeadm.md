@@ -556,7 +556,7 @@ In the example `vsphere.conf` above, there are two configured [Kubernetes secret
 
 An example [Secrets YAML](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/manifests/controller-manager/vccm-secret.yaml) can be used for reference when creating your own `secrets`. If the example secret YAML is used, update the secret name to use a `<unique secret name>`, the vCenter IP address in the keys of `stringData`, and the `username` and `password` for each key.
 
-The secret for the vCenter at `1.1.1.1` might look like the following:
+The secret for the vCenter at `10.0.0.1` might look like the following:
 
 ```yaml
 apiVersion: v1
