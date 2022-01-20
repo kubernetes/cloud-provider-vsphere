@@ -57,6 +57,22 @@ nodes:
   externalVmNetworkName: External/Outbound Traffic
 `
 
+const excludeSubnetCidrYAMLConfig = `
+global:
+  server: 0.0.0.0
+  port: 443
+  user: user
+  password: password
+  insecureFlag: true
+  datacenters:
+    - us-west
+  caFile: /some/path/to/a/ca.pem
+
+nodes:
+  excludeInternalNetworkSubnetCidr: "192.0.2.0/24,fe80::1/128"
+  excludeExternalNetworkSubnetCidr: "192.1.2.0/24,fe80::2/128"
+`
+
 func TestReadYAMLConfigSubnetCidr(t *testing.T) {
 	_, err := ReadCPIConfigYAML(nil)
 	if err == nil {
@@ -97,5 +113,20 @@ func TestReadYAMLConfigNetworkName(t *testing.T) {
 
 	if cfg.Nodes.ExternalVMNetworkName != "External/Outbound Traffic" {
 		t.Errorf("incorrect internal vm network name: %s", cfg.Nodes.ExternalVMNetworkName)
+	}
+}
+
+func TestReadYAMLConfigExcludeSubnetCidr(t *testing.T) {
+	cfg, err := ReadCPIConfigYAML([]byte(excludeSubnetCidrYAMLConfig))
+	if err != nil {
+		t.Fatalf("Should succeed when a valid config is provided: %s", err)
+	}
+
+	if cfg.Nodes.ExcludeInternalNetworkSubnetCIDR != "192.0.2.0/24,fe80::1/128" {
+		t.Errorf("incorrect exclude internal network subnet cidrs: %s", cfg.Nodes.ExcludeInternalNetworkSubnetCIDR)
+	}
+
+	if cfg.Nodes.ExcludeExternalNetworkSubnetCIDR != "192.1.2.0/24,fe80::2/128" {
+		t.Errorf("incorrect exclude external network subnet cidrs: %s", cfg.Nodes.ExcludeExternalNetworkSubnetCIDR)
 	}
 }

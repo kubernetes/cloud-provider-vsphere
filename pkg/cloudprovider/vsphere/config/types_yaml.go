@@ -41,6 +41,11 @@ type NodesYAML struct {
 	// only have a single IP address assigned to it.
 	InternalVMNetworkName string `yaml:"internalVmNetworkName"`
 	ExternalVMNetworkName string `yaml:"externalVmNetworkName"`
+	// IP addresses in these subnet ranges will be excluded when selecting
+	// the IP address from the VirtualMachine's VM for use in the
+	// status.addresses fields.
+	ExcludeInternalNetworkSubnetCIDR string `yaml:"excludeInternalNetworkSubnetCidr"`
+	ExcludeExternalNetworkSubnetCIDR string `yaml:"excludeExternalNetworkSubnetCidr"`
 }
 
 // CPIConfigYAML is the YAML representation
