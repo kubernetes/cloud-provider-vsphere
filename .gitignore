@@ -161,3 +161,7 @@ zz_generated.openapi.go
 
 # binaries
 /vsphere-cloud-controller-manager
+
+# Output of the go coverage tool
+*.out
+coverage.*
