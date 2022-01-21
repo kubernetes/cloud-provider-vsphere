@@ -221,9 +221,11 @@ build-unit-tests:
 test: unit
 build-tests: build-unit-tests
 
-.PHONY: cover
-cover: TEST_FLAGS += -cover
-cover: test
+.PHONY: test-cover
+test-cover:  ## Run tests with code coverage and code generate reports
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out -o coverage.txt
+	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: integration-test
 integration-test: | $(DOCKER_SOCK)
