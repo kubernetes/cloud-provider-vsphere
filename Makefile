@@ -229,9 +229,11 @@ build-unit-tests:
 test: unit
 build-tests: build-unit-tests
 
-.PHONY: cover
-cover: TEST_FLAGS += -cover
-cover: test
+.PHONY: test-cover
+test-cover:  ## Run tests with code coverage and code generate reports
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out -o coverage.txt
+	go tool cover -html=coverage.out -o coverage.html
 
 tools: $(TOOLING_BINARIES) ## Build tooling binaries
 .PHONY: $(TOOLING_BINARIES)
