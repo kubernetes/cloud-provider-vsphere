@@ -8,7 +8,7 @@ Note that YAML files from [manifests/controller-manager repo](https://github.com
 
 ## Example workflow
 
-In this tutorial, we will be installing the latest version of cloud provider vsphere(v1.22.4).
+In this tutorial, we will be installing the latest version of cloud provider vsphere(v1.22.5).
 
 ### Step 1: find the kubernetes major version you are using
 
