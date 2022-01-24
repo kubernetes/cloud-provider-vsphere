@@ -201,6 +201,7 @@ spec:
         effect: NoSchedule
         operator: Exists
       serviceAccountName: cloud-controller-manager
+      priorityClassName: system-node-critical
       containers:
         - name: vsphere-cloud-controller-manager
           image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.2.1
