@@ -232,6 +232,7 @@ spec:
       securityContext:
         runAsUser: 1001
       serviceAccountName: cloud-controller-manager
+      priorityClassName: system-node-critical
       containers:
         - name: vsphere-cloud-controller-manager
           image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.22.3
