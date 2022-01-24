@@ -66,6 +66,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       hostNetwork: true
       dnsPolicy: {{ .Values.daemonset.dnsPolicy }}
+      priorityClassName: system-node-critical
       containers:
       - name: {{ template "cpi.name" . }}
         image: {{ .Values.daemonset.image }}:{{ .Values.daemonset.tag }}
