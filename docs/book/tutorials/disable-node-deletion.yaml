@@ -202,8 +202,6 @@ metadata:
     component: cloud-controller-manager
     tier: control-plane
   namespace: kube-system
-  annotations:
-    scheduler.alpha.kubernetes.io/critical-pod: ""
 spec:
   selector:
     matchLabels:
@@ -232,6 +230,7 @@ spec:
       securityContext:
         runAsUser: 1001
       serviceAccountName: cloud-controller-manager
+      priorityClassName: system-node-critical
       containers:
         - name: vsphere-cloud-controller-manager
           image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.22.2
