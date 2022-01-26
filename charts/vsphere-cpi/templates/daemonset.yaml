@@ -9,7 +9,6 @@ metadata:
     tier: control-plane
   namespace: {{ .Release.Namespace }}
   annotations:
-    scheduler.alpha.kubernetes.io/critical-pod: ""
     {{- if .Values.daemonset.annotations }}
     {{- toYaml .Values.daemonset.annotations | nindent 4 }}
     {{- end }}
