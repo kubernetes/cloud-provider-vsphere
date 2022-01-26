@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2021 The Kubernetes Authors.
 
@@ -22,12 +24,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
