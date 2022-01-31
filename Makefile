@@ -208,10 +208,15 @@ export PKGS_WITH_TESTS := $(sort $(shell find . -name "*_test.go" -type f -exec 
 endif
 TEST_FLAGS ?= -v
 .PHONY: unit build-unit-tests
+KUBE_BUILDER_VERSION = 2.3.1
+KUBE_BUILDER = kubebuilder_${KUBE_BUILDER_VERSION}_${GOOS}_${GOARCH}
+KUBE_BUILDER_DIR = "/usr/local/kubebuilder/$(KUBE_BUILDER)"
 unit unit-test:
-	curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.1/kubebuilder_2.3.1_${GOOS}_${GOARCH}.tar.gz | tar -xz -C /tmp/
-	mv /tmp/kubebuilder_2.3.1_${GOOS}_${GOARCH} /usr/local/kubebuilder
-	export PATH=$PATH:/usr/local/kubebuilder/bin
+	@if [ ! -d $(KUBE_BUILDER_DIR) ]; then \
+	curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${KUBE_BUILDER_VERSION}/${KUBE_BUILDER}.tar.gz | tar -xz -C /tmp/ ;\
+	mv /tmp/${KUBE_BUILDER} /usr/local/kubebuilder; \
+	export PATH=$PATH:/usr/local/kubebuilder/bin; \
+	fi
 	env -u VSPHERE_SERVER -u VSPHERE_PASSWORD -u VSPHERE_USER go test $(TEST_FLAGS) -tags=unit $(PKGS_WITH_TESTS)
 build-unit-tests:
 	$(foreach pkg,$(PKGS_WITH_TESTS),go test $(TEST_FLAGS) -c -tags=unit $(pkg); )
@@ -221,9 +226,11 @@ build-unit-tests:
 test: unit
 build-tests: build-unit-tests
 
-.PHONY: cover
-cover: TEST_FLAGS += -cover
-cover: test
+.PHONY: test-cover
+test-cover: TEST_FLAGS += -coverprofile=coverage.out ## Run tests with code coverage and code generate reports
+test-cover: test
+	go tool cover -func=coverage.out -o coverage.txt
+	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: integration-test
 integration-test: | $(DOCKER_SOCK)
