@@ -39,9 +39,9 @@ import (
 
 const (
 	// ClusterSelectorKey expects key/value pair {ClusterSelectorKey: <cluster name>} for target nodes: ClusterSelectorKey
-	ClusterSelectorKey = "capw.vmware.com/cluster.name"
+	ClusterSelectorKey = "capv.vmware.com/cluster.name"
 	// NodeSelectorKey expects key/value pair {NodeSelectorKey: NodeRole} for target nodes: NodeSelectorKey
-	NodeSelectorKey = "capw.vmware.com/cluster.role"
+	NodeSelectorKey = "capv.vmware.com/cluster.role"
 
 	// NodeRole is set by capw, we are targeting worker vms
 	NodeRole = "node"
