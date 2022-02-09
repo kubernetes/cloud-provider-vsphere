@@ -226,6 +226,11 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return errors.New("VM Guest hostname is empty")
 	}
 
+	if len(oVM.Guest.Net) == 0 {
+		klog.V(4).Infof("oVM.Guest.Net is empty, skipping node discovery. This could be cauesd by vmtool not reporting correct IP address")
+		return errors.New("VM GuestNicInfo is empty")
+	}
+
 	tenantRef := vmDI.VcServer
 	if vmDI.TenantRef != "" {
 		tenantRef = vmDI.TenantRef
@@ -304,6 +309,12 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	ipAddrNetworkNames := toIPAddrNetworkNames(nonVNICDevices)
 	nonLocalhostIPs := excludeLocalhostIPs(ipAddrNetworkNames)
 
+	if len(nonLocalhostIPs) == 0 {
+		klog.V(4).Infof("nonLocalhostIPs is empty")
+		klog.V(4).Infof("oVM.Guest.Net=%v", oVM.Guest.Net)
+		return fmt.Errorf("unable to find suitable IP address for node after filtering out localhost IPs")
+	}
+
 	for _, ipFamily := range ipFamilies {
 		klog.V(6).Infof("ipFamily: %q nonLocalhostIPs: %q", ipFamily, nonLocalhostIPs)
 		discoveredInternal, discoveredExternal := discoverIPs(
@@ -334,6 +345,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 		if len(oVM.Guest.Net) > 0 {
 			if discoveredInternal == nil && discoveredExternal == nil {
+				klog.V(4).Infof("oVM.Guest.Net=%v", oVM.Guest.Net)
 				return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamilies)
 			}
 		}
