@@ -1,6 +1,6 @@
 # Known Issues
 
-## VMTools Nice/Device Filtering
+## VMTools Nic/Device Filtering
 
 A number of [CNI](https://github.com/containernetworking/cni) implementations (such Calico, Antrea, and etc) introduce networking artifacts that interfere with the normal operation of vSphere's internal reporting for network/device interfaces. To address this issue, an `exclude-nics` filter for VMTools needs to be applied in order to prevent these artifacts from getting reported to vSphere and causing problems with network/device associations to vNICs on virtual machines.
 
