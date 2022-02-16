@@ -36,6 +36,7 @@ func (nci *NsxtConfigINI) CreateConfig() *Config {
 	cfg.Password = nci.NSXT.Password
 	cfg.Host = nci.NSXT.Host
 	cfg.InsecureFlag = nci.NSXT.InsecureFlag
+	cfg.RemoteAuth = nci.NSXT.RemoteAuth
 	cfg.VMCAccessToken = nci.NSXT.VMCAccessToken
 	cfg.VMCAuthHost = nci.NSXT.VMCAuthHost
 	cfg.ClientAuthCertFile = nci.NSXT.ClientAuthCertFile
