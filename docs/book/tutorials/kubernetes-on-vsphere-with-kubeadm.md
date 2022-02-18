@@ -600,7 +600,7 @@ stringData:
 
 ### Zones and Regions for Pod and Volume Placement - CPI
 
-Kubernetes allows you to place Pods and Persistent Volumes on specific parts of the underlying infrastructure, e.g. different DataCenters or different vCenters, using the concept of Zones and Regions. However, to use placement controls, the required configuration steps needs to be put in place at Kubernetes deployment time, and require additional settings in the vSphere.conf of both the CPI and CSI. For more information on how to implement zones/regions support, [there is a zones/regions tutorial on how to do it here](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/docs/book/tutorials/deploying_cpi_and_csi_with_multi_dc_vc_aka_zones.md).
+Kubernetes allows you to place Pods and Persistent Volumes on specific parts of the underlying infrastructure, e.g. different DataCenters or different vCenters, using the concept of Zones and Regions. However, to use placement controls, the required configuration steps needs to be put in place at Kubernetes deployment time, and require additional settings in the vSphere.conf of both the CPI and CSI. For more information on how to implement zones/regions support, [there is a zones/regions tutorial on how to do it here](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/deploying_cpi_with_multi_dc_vc_aka_zones.html).
 
 If you are not interested in K8s object placement, this section can be ignored, and you can proceed with the remaining CPI setup steps.
 
