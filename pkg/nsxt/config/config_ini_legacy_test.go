@@ -152,7 +152,7 @@ func TestINIValidateSecretConfig(t *testing.T) {
 	}
 }
 
-func TestReadINIConfig(t *testing.T) {
+func TestReadRawConfigINI(t *testing.T) {
 	contents := `
 [NSXT]
 user = admin
@@ -191,4 +191,45 @@ secret-namespace = secret-ns
 	assertEquals("NSXT.ca-file", config.NSXT.CAFile, "ca-file")
 	assertEquals("NSXT.secret-name", config.NSXT.SecretName, "secret-name")
 	assertEquals("NSXT.secret-namespace", config.NSXT.SecretNamespace, "secret-ns")
+}
+
+func TestReadConfigINI(t *testing.T) {
+	contents := `
+[NSXT]
+user = admin
+password = secret
+host = nsxt-server
+insecure-flag = true
+remote-auth = true
+vmc-access-token = vmc-token
+vmc-auth-host = vmc-host
+client-auth-cert-file = client-cert-file
+client-auth-key-file = client-key-file
+ca-file = ca-file
+secret-name = secret-name
+secret-namespace = secret-ns
+	`
+	config, err := ReadConfigINI([]byte(contents))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	assertEquals := func(name, left, right string) {
+		if left != right {
+			t.Errorf("%s %s != %s", name, left, right)
+		}
+	}
+	assertEquals("NSXT.user", config.User, "admin")
+	assertEquals("NSXT.password", config.Password, "secret")
+	assertEquals("NSXT.host", config.Host, "nsxt-server")
+	assert.Equal(t, true, config.InsecureFlag)
+	assert.Equal(t, true, config.RemoteAuth)
+	assertEquals("NSXT.vmc-access-token", config.VMCAccessToken, "vmc-token")
+	assertEquals("NSXT.vmc-auth-host", config.VMCAuthHost, "vmc-host")
+	assertEquals("NSXT.client-auth-cert-file", config.ClientAuthCertFile, "client-cert-file")
+	assertEquals("NSXT.client-auth-key-file", config.ClientAuthKeyFile, "client-key-file")
+	assertEquals("NSXT.ca-file", config.CAFile, "ca-file")
+	assertEquals("NSXT.secret-name", config.SecretName, "secret-name")
+	assertEquals("NSXT.secret-namespace", config.SecretNamespace, "secret-ns")
 }
