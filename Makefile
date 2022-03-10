@@ -226,6 +226,7 @@ unit unit-test:
 	export PATH=$PATH:/usr/local/kubebuilder/bin; \
 	fi
 	env -u VSPHERE_SERVER -u VSPHERE_PASSWORD -u VSPHERE_USER go test $(TEST_FLAGS) -tags=unit $(PKGS_WITH_TESTS)
+
 build-unit-tests:
 	$(foreach pkg,$(PKGS_WITH_TESTS),go test $(TEST_FLAGS) -c -tags=unit $(pkg); )
 
