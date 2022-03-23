@@ -199,6 +199,11 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return errors.New("VM Guest hostname is empty")
 	}
 
+	if len(oVM.Guest.Net) == 0 {
+		klog.V(4).Infof("oVM.Guest.Net is empty, skipping node discovery. This could be cauesd by vmtool not reporting correct IP address")
+		return errors.New("VM GuestNicInfo is empty")
+	}
+
 	tenantRef := vmDI.VcServer
 	if vmDI.TenantRef != "" {
 		tenantRef = vmDI.TenantRef
@@ -359,6 +364,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	if len(oVM.Guest.Net) > 0 {
 		if !foundInternal && !foundExternal {
+			klog.V(4).Infof("oVM.Guest.Net=%v", oVM.Guest.Net)
 			return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
 		}
 	}
