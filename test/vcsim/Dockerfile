@@ -22,8 +22,8 @@ ENV LC_ALL=C.UTF-8
 
 # Copy the vCenter simulator and govc binaries.
 COPY --from=builder /go/src/github.com/vmware/govmomi/govc/govc \
-                    /go/src/github.com/vmware/govmomi/vcsim/vcsim \
-                    /usr/local/bin/
+    /go/src/github.com/vmware/govmomi/vcsim/vcsim \
+    /usr/local/bin/
 
 # Set the working directory.
 WORKDIR /

@@ -22,7 +22,8 @@ set -o pipefail
 # script is located.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-go get golang.org/x/lint/golint
+go mod download golang.org/x/lint
+go install golang.org/x/lint/golint
 
 CMD=$(go list -f \{\{\.Target\}\} golang.org/x/lint/golint)
 
