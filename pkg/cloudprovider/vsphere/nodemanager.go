@@ -43,7 +43,7 @@ var (
 
 	// ErrDatacenterNotFound is returned when the configured datacenter cannot
 	// be found.
-	ErrDatacenterNotFound = errors.New("Datacenter not found")
+	ErrDatacenterNotFound = errors.New("datacenter not found")
 
 	// ErrVMNotFound is returned when the specified VM cannot be found.
 	ErrVMNotFound = errors.New("VM not found")
@@ -103,6 +103,19 @@ func (nm *NodeManager) removeNode(uuid string, node *v1.Node) {
 	klog.V(4).Info("removeNode NodeName: ", node.GetName(), ", UID: ", uuid)
 	delete(nm.nodeRegUUIDMap, uuid)
 	nm.nodeRegInfoLock.Unlock()
+
+	nm.nodeInfoLock.Lock()
+	klog.V(4).Info("removeNode from UUID and Name cache. NodeName: ", node.GetName(), ", UID: ", uuid)
+	// in case of a race condition that node with same name create happens before delete event,
+	// delete the node based on uuid
+	name := nm.getNodeNameByUUID(uuid)
+	if name != "" {
+		delete(nm.nodeNameMap, name)
+	} else {
+		klog.V(4).Info("node name: ", node.GetName(), " has a different uuid. Skip deleting this node from cache.")
+	}
+	delete(nm.nodeUUIDMap, uuid)
+	nm.nodeInfoLock.Unlock()
 }
 
 func (nm *NodeManager) shakeOutNodeIDLookup(ctx context.Context, nodeID string, searchBy cm.FindVM) (*cm.VMDiscoveryInfo, error) {
@@ -183,6 +196,10 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return err
 	}
 
+	if vmDI.UUID == "" {
+		return errors.New("discovered VM UUID is empty")
+	}
+
 	var oVM mo.VirtualMachine
 	err = vmDI.VM.Properties(ctx, vmDI.VM.Reference(), []string{"guest", "summary"}, &oVM)
 	if err != nil {
@@ -197,6 +214,11 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	if oVM.Guest.HostName == "" {
 		return errors.New("VM Guest hostname is empty")
+	}
+
+	if len(oVM.Guest.Net) == 0 {
+		klog.V(4).Infof("oVM.Guest.Net is empty, skipping node discovery. This could be cauesd by vmtool not reporting correct IP address")
+		return errors.New("VM GuestNicInfo is empty")
 	}
 
 	tenantRef := vmDI.VcServer
@@ -359,6 +381,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 
 	if len(oVM.Guest.Net) > 0 {
 		if !foundInternal && !foundExternal {
+			klog.V(4).Infof("oVM.Guest.Net=%v", oVM.Guest.Net)
 			return fmt.Errorf("unable to find suitable IP address for node %s with IP family %s", nodeID, ipFamily)
 		}
 	}
@@ -534,4 +557,14 @@ func (nm *NodeManager) FindNodeInfo(UUID string) (*NodeInfo, error) {
 
 	klog.V(4).Infof("FindNodeInfo( %s ) FOUND", UUIDlower)
 	return nodeInfo, nil
+}
+
+func (nm *NodeManager) getNodeNameByUUID(UUID string) string {
+	for k, v := range nm.nodeNameMap {
+		if v.UUID == UUID {
+			return k
+		}
+
+	}
+	return ""
 }

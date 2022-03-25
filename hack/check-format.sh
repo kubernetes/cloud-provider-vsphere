@@ -42,6 +42,7 @@ rm -f "${out}" && touch "${out}"
 
 # Run goimports on all the sources.
 go get golang.org/x/tools/cmd/goimports
+go install golang.org/x/tools/cmd/goimports
 cmd=$(go list -f \{\{\.Target\}\} golang.org/x/tools/cmd/goimports)
 flags="-e -w"
 [ -z "${PROW_JOB_ID-}" ] || flags="-d ${flags}"
