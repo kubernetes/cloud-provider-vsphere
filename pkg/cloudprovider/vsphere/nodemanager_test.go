@@ -1514,6 +1514,15 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 			expectedErrorSubstring: "unable to find suitable IP address for node",
 		},
+		{
+			testName: "whenVCreturnsEmptyGuestNicInfo",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				cpiConfig:        nil,
+				networks:         []vimtypes.GuestNicInfo{},
+			},
+			expectedErrorSubstring: "VM GuestNicInfo is empty",
+		},
 	}
 
 	for _, testcase := range testcases {
