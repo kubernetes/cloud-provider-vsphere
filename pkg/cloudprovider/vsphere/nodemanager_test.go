@@ -193,6 +193,34 @@ func TestDiscoverNodeWithMultiIFByName(t *testing.T) {
 	}
 }
 
+func TestDiscoverNodeWithEmptyGuestNicInfo(t *testing.T) {
+	cfg, ok := configFromEnvOrSim(true)
+	defer ok()
+
+	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	defer connMgr.Logout()
+
+	nm := newNodeManager(nil, connMgr)
+
+	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
+	vm.Guest.Net = []vimtypes.GuestNicInfo{}
+	name := vm.Name
+
+	err := connMgr.Connect(context.Background(), connMgr.VsphereInstanceMap[cfg.Global.VCenterIP])
+	if err != nil {
+		t.Errorf("Failed to Connect to vSphere: %s", err)
+	}
+
+	err = nm.DiscoverNode(name, cm.FindVMByName)
+	if err == nil {
+		t.Errorf("Expected error when discover node")
+	}
+	if err.Error() != "VM GuestNicInfo is empty" {
+		t.Errorf("Unexpected error: %v", err)
+	}
+}
+
 func TestExport(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
