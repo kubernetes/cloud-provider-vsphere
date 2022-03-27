@@ -81,7 +81,12 @@ func TestDatastoreAndClusters(t *testing.T) {
 		objs = append(objs, stores[i].Reference())
 	}
 
-	_, err = pod.MoveInto(ctx, objs)
+	task, err := pod.MoveInto(ctx, objs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = task.Wait(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
