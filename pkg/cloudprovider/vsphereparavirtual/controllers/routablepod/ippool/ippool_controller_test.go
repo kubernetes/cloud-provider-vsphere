@@ -148,16 +148,16 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 			c, cs := newController()
 
 			if _, err := c.ippoolclientset.NsxV1alpha1().IPPools(testClusterNS).Create(context.Background(), &testIPPool, metav1.CreateOptions{}); err != nil {
-				t.Errorf("failed to create test ippool %s: %w", testIPPool.Name, err)
+				t.Errorf("failed to create test ippool %s: %v", testIPPool.Name, err)
 			}
 
 			if err := c.processIPPoolCreateOrUpdate(&testIPPool); err != nil {
-				t.Errorf("failed to processIPPoolCreateOrUpdate %v: %w", testIPPool, err)
+				t.Errorf("failed to processIPPoolCreateOrUpdate %v: %v", testIPPool, err)
 			}
 
 			for _, n := range tc.nodes {
 				if _, err := c.kubeclientset.CoreV1().Nodes().Create(context.Background(), &n, metav1.CreateOptions{}); err != nil {
-					t.Errorf("failed to create test node %s: %w", n.Name, err)
+					t.Errorf("failed to create test node %s: %v", n.Name, err)
 				}
 			}
 

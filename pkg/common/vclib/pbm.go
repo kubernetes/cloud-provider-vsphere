@@ -63,7 +63,7 @@ func (pbmClient *PbmClient) IsDatastoreCompatible(ctx context.Context, storagePo
 		klog.Errorf("Error occurred for CheckRequirements call. err %+v", err)
 		return false, "", err
 	}
-	if compatibilityResult != nil && len(compatibilityResult) > 0 {
+	if len(compatibilityResult) > 0 {
 		compatibleHubs := compatibilityResult.CompatibleDatastores()
 		if len(compatibleHubs) > 0 {
 			return true, "", nil
