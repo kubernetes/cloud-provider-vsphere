@@ -131,12 +131,12 @@ func TestProcessNodeCreateOrUpdate(t *testing.T) {
 			// create nodes and run process processNodeCreateOrUpdate
 			for _, n := range tc.nodes {
 				if err := ippc.processNodeCreateOrUpdate(&n); err != nil {
-					t.Errorf("failed to create test node %s: %w", n.Name, err)
+					t.Errorf("failed to create test node %s: %v", n.Name, err)
 				}
 			}
 			for _, n := range tc.nodesUpdate {
 				if err := ippc.processNodeCreateOrUpdate(&n); err != nil {
-					t.Errorf("failed to create test node %s: %w", n.Name, err)
+					t.Errorf("failed to create test node %s: %v", n.Name, err)
 				}
 			}
 
@@ -231,14 +231,14 @@ func TestProcessNodeDelete(t *testing.T) {
 			if tc.ippoolExist {
 				// pre create test nodes
 				if _, err := createIPPool(ippcs, tc.nodes); err != nil {
-					t.Errorf("failed to create ippool %w", err)
+					t.Errorf("failed to create ippool %v", err)
 				}
 			}
 
 			// delete node
 			for _, n := range tc.nodesToBeDeleted {
 				if err := ippc.processNodeDelete(n.Name); err != nil {
-					t.Errorf("failed to create test node %s: %w", n.Name, err)
+					t.Errorf("failed to create test node %s: %v", n.Name, err)
 				}
 			}
 
