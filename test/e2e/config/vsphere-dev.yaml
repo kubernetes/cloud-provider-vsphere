@@ -25,8 +25,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v0.3.23 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.23/core-components.yaml"
+    - name: v0.3.25 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
+      value: "http://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/core-components.yaml"
       type: "url"
       contract: v1alpha3
       replacements:
@@ -34,8 +34,8 @@ providers:
           new: "imagePullPolicy: IfNotPresent"
       files:
         - sourcePath: "../data/shared/metadata.yaml"
-    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/core-components.yaml"
+    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/core-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -56,8 +56,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v0.3.23 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.23/bootstrap-components.yaml"
+    - name: v0.3.25 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/bootstrap-components.yaml"
       type: "url"
       contract: v1alpha3
       replacements:
@@ -65,8 +65,8 @@ providers:
           new: "imagePullPolicy: IfNotPresent"
       files:
         - sourcePath: "../data/shared/metadata.yaml"
-    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/bootstrap-components.yaml"
+    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/bootstrap-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -87,8 +87,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v0.3.23 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.23/control-plane-components.yaml"
+    - name: v0.3.25 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/control-plane-components.yaml"
       type: "url"
       contract: v1alpha3
       replacements:
@@ -96,8 +96,8 @@ providers:
           new: "imagePullPolicy: IfNotPresent"
       files:
         - sourcePath: "../data/shared/metadata.yaml"
-    - name: v0.4.4 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.4/control-plane-components.yaml"
+    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/control-plane-components.yaml"
       type: "url"
       contract: v1alpha4
       replacements:
@@ -118,8 +118,8 @@ providers:
   - name: vsphere
     type: InfrastructureProvider
     versions:
-      - name: v0.7.10
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.7.10/infrastructure-components.yaml
+      - name: v0.7.12
+        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.7.12/infrastructure-components.yaml
         type: url
         contract: v1alpha3
         replacements:
@@ -129,20 +129,29 @@ providers:
           # TODO: v1a3 cluster-template includes WORKLOAD_CONTROL_PLANE_ENDPOINT_IP
           - sourcePath: "../data/metadata.yaml"
           - sourcePath: "../data/infrastructure-vsphere/capi-upgrades/v1alpha3/cluster-template.yaml"
-      - name: v0.8.1
+      - name: v0.8.2
         type: url
         contract: v1alpha4
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.8.1/infrastructure-components.yaml
+        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.8.2/infrastructure-components.yaml
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
         files:
           - sourcePath: "../data/metadata.yaml"
           - sourcePath: "../data/infrastructure-vsphere/capi-upgrades/v1alpha4/cluster-template.yaml"
+      - name: v1.0.1
+        value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.0.1/infrastructure-components.yaml"
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/metadata.yaml"
 
 variables:
   KUBERNETES_VERSION: "1.23.0"
   CNI: "./data/cni/calico/calico.yaml"
+  INIT_WITH_BINARY_V1ALPHA3: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/clusterctl-{OS}-{ARCH}"
+  INIT_WITH_BINARY_V1ALPHA4: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/clusterctl-{OS}-{ARCH}"
+  INIT_WITH_KUBERNETES_VERSION: "v1.20.1"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CONTROL_PLANE_MACHINE_COUNT: 1
   WORKER_MACHINE_COUNT: 1
@@ -155,7 +164,7 @@ variables:
   VSPHERE_FOLDER: "rp0"
   VSPHERE_NETWORK: "VM Network"
   VSPHERE_RESOURCE_POOL: "ResourcePool"
-  VSPHERE_TEMPLATE: "ubuntu-2004-kube-v1.21.2"
+  VSPHERE_TEMPLATE: "ubuntu-1804-kube-v1.20.1"
   # Also following variables are required but it is recommended to use env variables to avoid disclosure of sensitive data
   # VSPHERE_SSH_AUTHORIZED_KEY:
   # VSPHERE_USERNAME:
