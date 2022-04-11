@@ -49,7 +49,7 @@ $(E2E_DATA_DIR): $(TMP_CAPV_DIR)
 	cp $(TMP_CAPV_DIR)/metadata.yaml $(E2E_DATA_DIR)
 
 run: $(TOOLING_BINARIES) $(E2E_DATA_DIR)
-	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" --e2e.skip-resource-cleanup=false
+	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" --e2e.skip-resource-cleanup=true
 
 clean:
 	rm -rf $(E2E_DATA_DIR) $(TMP_CAPV_DIR)

@@ -247,6 +247,15 @@ $(TOOLING_BINARIES):
 
 .PHONY: test-e2e
 test-e2e:
+ifndef VSPHERE_SERVER
+	$(error VSPHERE_SERVER is undefined)
+endif
+ifndef VSPHERE_USERNAME
+	$(error VSPHERE_USERNAME is undefined)
+endif
+ifndef VSPHERE_PASSWORD
+	$(error VSPHERE_PASSWORD is undefined)
+endif
 	make -C $(E2E_DIR) run
 
 .PHONY: integration-test
