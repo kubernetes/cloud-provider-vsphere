@@ -2,10 +2,10 @@ apiVersion: v1
 entries:
   vsphere-cpi:
   - apiVersion: v2
-    appVersion: 1.22.2
-    created: "2021-07-28T14:36:52.229812-07:00"
+    appVersion: 1.23.0
+    created: "2022-04-11T15:33:13.249362-07:00"
     description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
-    digest: db24dcbcbdb250809c313912ea7bfc50fbf5b2a99ee0cc3bbd799cdf0db726ac
+    digest: 6225ebbcaca99065277138e54172a5196c625e84fc882a29b7da38d1d6107717
     home: https://github.com/kubernetes/cloud-provider-vsphere
     icon: https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/vmware_logo.png
     keywords:
@@ -18,6 +18,6 @@ entries:
     sources:
     - https://github.com/kubernetes/cloud-provider-vsphere
     urls:
-    - https://kubernetes.github.io/cloud-provider-vsphere/charts/vsphere-cpi-1.0.0.tgz
-    version: 1.0.0
-generated: "2021-07-28T14:36:52.22876-07:00"
+    - https://kubernetes.github.io/cloud-provider-vsphere/charts/vsphere-cpi-1.23.0.tgz
+    version: 1.23.0
+generated: "2022-04-11T15:33:13.247674-07:00"
