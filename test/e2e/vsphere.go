@@ -18,85 +18,49 @@ package e2e
 
 import (
 	"context"
-	"errors"
 	"net/url"
+	"os"
+	"time"
 
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
+	"github.com/vmware/govmomi/session/keepalive"
 	"github.com/vmware/govmomi/vim25/soap"
-
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
-var ErrFieldNotFound = errors.New("field not found in the e2e config")
-
-type VSphereClient interface {
-}
-
-// vSphere specific client for e2e testing
-type vSphereTestClient struct {
-	Config     *vSphereClientConfig
+// VSphereTestClient defines a VSphere client for e2e testing
+type VSphereTestClient struct {
 	Client     *govmomi.Client
 	Finder     *find.Finder
 	Datacenter *object.Datacenter
 }
 
-// configurations for VSphereClient
-type vSphereClientConfig struct {
-	username   string
-	password   string
-	server     string
-	datacenter string
-}
+// initVSphereTestClient creates an VSphereTestClient when config is provided
+func initVSphereTestClient(ctx context.Context) (*VSphereTestClient, error) {
+	server := os.Getenv("VSPHERE_SERVER")
+	username := os.Getenv("VSPHERE_USERNAME")
+	password := os.Getenv("VSPHERE_PASSWORD")
+	datacenter := os.Getenv("VSPHERE_DATACENTER")
 
-// NewVSphereClientConfigFromE2E extracts a vSphereClientConfig from the cluster-api e2e config
-func NewVSphereClientConfigFromE2E(e *clusterctl.E2EConfig) (*vSphereClientConfig, error) {
-	server, ok := e.Variables["VSPHERE_SERVER"]
-	if !ok {
-		return nil, ErrFieldNotFound
-	}
-	username, ok := e.Variables["VSPHERE_USERNAME"]
-	if !ok {
-		return nil, ErrFieldNotFound
-	}
-	password, ok := e.Variables["VSPHERE_PASSWORD"]
-	if !ok {
-		return nil, ErrFieldNotFound
-	}
-	datacenter, ok := e.Variables["VSPHERE_DATACENTER"]
-	if !ok {
-		return nil, ErrFieldNotFound
-	}
-	return &vSphereClientConfig{
-		username:   username,
-		password:   password,
-		server:     server,
-		datacenter: datacenter,
-	}, nil
-}
-
-// CreateVSphereTestClient creates an vSphereTestClient when config is provided
-func CreateVSphereTestClient(ctx context.Context, e2eConfig *clusterctl.E2EConfig) (VSphereClient, error) {
-	config, err := NewVSphereClientConfigFromE2E(e2eConfig)
+	serverURL, err := soap.ParseURL(server)
 	if err != nil {
 		return nil, err
 	}
-	serverURL, err := soap.ParseURL(config.server)
-	if err != nil {
-		return nil, err
-	}
-	serverURL.User = url.UserPassword(config.username, config.password)
+	serverURL.User = url.UserPassword(username, password)
 
 	client, err := govmomi.NewClient(ctx, serverURL, true)
 	if err != nil {
 		return nil, err
 	}
+	// To keep the session from timing out until the test suite finishes
+	client.RoundTripper = keepalive.NewHandlerSOAP(client.RoundTripper, 1*time.Minute, nil)
 
 	finder := find.NewFinder(client.Client)
-	datacenter, err := finder.DatacenterOrDefault(ctx, config.datacenter)
+	dc, err := finder.DatacenterOrDefault(ctx, datacenter)
 	if err != nil {
 		return nil, err
 	}
-	return vSphereTestClient{Config: config, Client: client, Finder: finder, Datacenter: datacenter}, nil
+	finder.SetDatacenter(dc)
+	return &VSphereTestClient{Client: client, Finder: finder, Datacenter: dc}, nil
 }

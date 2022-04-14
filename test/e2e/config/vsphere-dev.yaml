@@ -157,19 +157,12 @@ variables:
   WORKER_MACHINE_COUNT: 1
   IP_FAMILY: "IPv4"
   # Following CAPV variables should be set before testing
-  VSPHERE_SERVER: "vcenter.vmware.com"
-  VSPHERE_DATACENTER: "dc0"
   VSPHERE_DATASTORE: "WorkloadDatastore"
   VSPHERE_STORAGE_POLICY: "Cluster API vSphere Storage Policy"
   VSPHERE_FOLDER: "rp0"
   VSPHERE_NETWORK: "VM Network"
   VSPHERE_RESOURCE_POOL: "ResourcePool"
-  VSPHERE_TEMPLATE: "ubuntu-1804-kube-v1.20.1"
-  # Also following variables are required but it is recommended to use env variables to avoid disclosure of sensitive data
-  # VSPHERE_SSH_AUTHORIZED_KEY:
-  # VSPHERE_USERNAME:
-  # VSPHERE_PASSWORD:
-
+  VSPHERE_TEMPLATE: "ubuntu-2004-kube-v1.21.2"
 intervals:
   default/wait-controllers: ["5m", "10s"]
   default/wait-cluster: ["5m", "10s"]

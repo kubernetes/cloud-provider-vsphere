@@ -21,13 +21,13 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"sigs.k8s.io/cluster-api/test/e2e"
 	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -68,7 +68,7 @@ var (
 	err error
 
 	e2eConfig            *clusterctl.E2EConfig
-	vsphere              VSphereClient
+	vsphere              *VSphereTestClient
 	clusterctlConfigPath string // path to the clusterctl config file
 
 	provider   bootstrap.ClusterProvider
@@ -97,6 +97,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	})
 
 	Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder) //nolint:gosec
+
 	By("ensure clusterctl config", func() {
 		if clusterctlConfig == "" {
 			clusterctlConfigPath = createClusterctlLocalRepository(e2eConfig, filepath.Join(artifactFolder, "repository"))
@@ -106,7 +107,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	})
 
 	By("init vSphere session", func() {
-		vsphere, err = CreateVSphereTestClient(ctx, e2eConfig)
+		vsphere, err = initVSphereTestClient(ctx)
 		Expect(err).Should(BeNil())
 		Expect(vsphere).NotTo(BeNil())
 	})
