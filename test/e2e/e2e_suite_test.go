@@ -22,21 +22,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/cluster-api/util"
 	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/kube"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 // Test Suite flags
@@ -174,39 +171,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		klog.Infof("Created workload cluster %s\n", workloadName)
 	})
 
-	By("Install vsphere-cpi helm chart", func() {
-		actionConfig := new(action.Configuration)
-		releaseNamespace := "kube-system"
-		err := actionConfig.Init(kube.GetConfig(kubeconfig, "", releaseNamespace), releaseNamespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {})
-		Expect(err).NotTo(HaveOccurred())
-
-		chart, err := loader.Load(chartFolder)
-		Expect(err).NotTo(HaveOccurred())
-
-		install := action.NewInstall(actionConfig)
-		install.ReleaseName = "vsphere-cpi-e2e"
-		install.Namespace = releaseNamespace
-		install.DryRun = false
-
-		values := map[string]interface{}{
-			"config": map[string]interface{}{
-				"enabled":    "true",
-				"name":       "cloud-config",
-				"vcenter":    os.Getenv("VSPHERE_SERVER"),
-				"username":   os.Getenv("VSPHERE_USERNAME"),
-				"password":   os.Getenv("VSPHERE_PASSWORD"),
-				"datacenter": os.Getenv("VSPHERE_DATACENTER"),
-			},
-			"daemonset": map[string]interface{}{
-				"image": "gcr.io/cloud-provider-vsphere/cpi/release/manager",
-				"tag":   "dev",
-			},
-		}
-		release, err := install.Run(chart, values)
-		Expect(err).NotTo(HaveOccurred(), "Cannot install vsphere-cpi helm chart")
-		klog.Infof("Installed %s helm chart in namespace %s\n", release.Name, release.Namespace)
-	})
-
 	return []byte(
 		strings.Join([]string{
 			artifactFolder,
@@ -225,7 +189,7 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 			framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
 				Client:    proxy.GetClient(),
 				Namespace: "default",
-			})
+			}, e2eConfig.GetIntervals(proxy.GetName(), "wait-delete-cluster")...)
 			klog.Infof("Deleted workload cluster %s/%s\n", workloadResult.Cluster.Namespace, workloadResult.Cluster.Name)
 		})
 		By("Tear down the bootstrap cluster", func() {

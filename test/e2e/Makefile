@@ -48,14 +48,12 @@ $(TMP_CAPV_DIR):
 	git clone -b $(E2E_DATA_CAPV_VER) https://github.com/kubernetes-sigs/cluster-api-provider-vsphere.git $(TMP_CAPV_DIR)
 
 $(E2E_DATA_DIR): $(TMP_CAPV_DIR)
-	cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
+	$(MAKE) -C $(TMP_CAPV_DIR) e2e-templates && cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
 	cp $(TMP_CAPV_DIR)/metadata.yaml $(E2E_DATA_DIR)
-	wget https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.0.1/cluster-template.yaml \
- 		-P $(E2E_DATA_DIR)/infrastructure-vsphere
 
 run: $(TOOLING_BINARIES) $(E2E_DATA_DIR)
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false
 
 clean:
 	rm -rf $(E2E_DATA_DIR) $(TMP_CAPV_DIR)

@@ -135,8 +135,10 @@ providers:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
         files:
-          - sourcePath: "../data/metadata.yaml"
+          # Add a cluster template
           - sourcePath: "../data/infrastructure-vsphere/cluster-template.yaml"
+          - sourcePath: "../data/infrastructure-vsphere/cluster-template-remote-management.yaml"
+          - sourcePath: "../data/metadata.yaml"
 
 variables:
   KUBERNETES_VERSION: "v1.20.1"
