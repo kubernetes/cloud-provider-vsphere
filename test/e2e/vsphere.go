@@ -19,7 +19,6 @@ package e2e
 import (
 	"context"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/vmware/govmomi"
@@ -27,6 +26,7 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/session/keepalive"
 	"github.com/vmware/govmomi/vim25/soap"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
 // VSphereTestClient defines a VSphere client for e2e testing
@@ -37,11 +37,11 @@ type VSphereTestClient struct {
 }
 
 // initVSphereTestClient creates an VSphereTestClient when config is provided
-func initVSphereTestClient(ctx context.Context) (*VSphereTestClient, error) {
-	server := os.Getenv("VSPHERE_SERVER")
-	username := os.Getenv("VSPHERE_USERNAME")
-	password := os.Getenv("VSPHERE_PASSWORD")
-	datacenter := os.Getenv("VSPHERE_DATACENTER")
+func initVSphereTestClient(ctx context.Context, e2eConfig *clusterctl.E2EConfig) (*VSphereTestClient, error) {
+	server := e2eConfig.GetVariable("VSPHERE_SERVER")
+	username := e2eConfig.GetVariable("VSPHERE_USERNAME")
+	password := e2eConfig.GetVariable("VSPHERE_PASSWORD")
+	datacenter := e2eConfig.GetVariable("VSPHERE_DATACENTER")
 
 	serverURL, err := soap.ParseURL(server)
 	if err != nil {
