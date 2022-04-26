@@ -245,8 +245,11 @@ tools: $(TOOLING_BINARIES) ## Build tooling binaries
 $(TOOLING_BINARIES):
 	make -C $(TOOLS_DIR) $(@F)
 
-.PHONY: test-e2e
-test-e2e:
+.PHONY: e2e
+e2e:
+	docker build \
+		-f cluster/images/controller-manager/Dockerfile \
+		-t "gcr.io/cloud-provider-vsphere/cpi/release/manager:dev" .
 ifndef VSPHERE_SERVER
 	$(error VSPHERE_SERVER is undefined)
 endif

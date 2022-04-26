@@ -19,18 +19,21 @@ package e2e
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/cluster-api/test/e2e"
 	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 // Test Suite flags
@@ -40,6 +43,9 @@ var (
 
 	// artifactFolder is the folder to store e2e test artifacts.
 	artifactFolder string
+
+	// chartFolder is the folder to store vsphere-cpi chart for testing
+	chartFolder string
 
 	// clusterctlConfig is the file which tests will use as a clusterctl config.
 	// If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.
@@ -56,6 +62,7 @@ func init() {
 	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.StringVar(&clusterctlConfig, "e2e.clusterctl-config", "", "file which tests will use as a clusterctl config. If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.")
+	flag.StringVar(&chartFolder, "e2e.chart-folder", "", "folder where the helm chart for e2e should be stored")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false,
 		"if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
@@ -74,6 +81,9 @@ var (
 	provider   bootstrap.ClusterProvider
 	proxy      framework.ClusterProxy
 	kubeconfig string
+
+	workloadName   string
+	workloadResult *clusterctl.ApplyClusterTemplateAndWaitResult
 )
 
 func defaultScheme() *runtime.Scheme {
@@ -90,7 +100,7 @@ func TestE2E(t *testing.T) {
 
 // Create a kind cluster that shared across all the tests
 var _ = SynchronizedBeforeSuite(func() []byte {
-	By("load e2e config file", func() {
+	By("Load e2e config file", func() {
 		Expect(configPath).To(BeAnExistingFile(), "invalid test suite argument. e2e.config should be an existing file.")
 		e2eConfig = clusterctl.LoadE2EConfig(ctx, clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
 		Expect(e2eConfig).NotTo(BeNil(), "cannot load e2e config file from ", configPath)
@@ -98,7 +108,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder) //nolint:gosec
 
-	By("ensure clusterctl config", func() {
+	By("Ensure clusterctl config", func() {
 		if clusterctlConfig == "" {
 			clusterctlConfigPath = createClusterctlLocalRepository(e2eConfig, filepath.Join(artifactFolder, "repository"))
 		} else {
@@ -106,13 +116,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		}
 	})
 
-	By("init vSphere session", func() {
+	By("Init vSphere session", func() {
 		vsphere, err = initVSphereTestClient(ctx)
 		Expect(err).Should(BeNil())
 		Expect(vsphere).NotTo(BeNil())
 	})
 
-	By("setup bootstrap cluster", func() {
+	By("Setup bootstrap cluster", func() {
 		provider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 			Name:               e2eConfig.ManagementClusterName,
 			RequiresDockerSock: e2eConfig.HasDockerProvider(),
@@ -128,13 +138,37 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		Expect(proxy).NotTo(BeNil())
 	})
 
-	By("initialize bootstrap cluster", func() {
+	By("Initialize bootstrap cluster", func() {
 		clusterctl.InitManagementClusterAndWatchControllerLogs(ctx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
 			ClusterProxy:            proxy,
 			ClusterctlConfigPath:    clusterctlConfigPath,
 			LogFolder:               filepath.Join(artifactFolder, "clusters", proxy.GetName()),
 			InfrastructureProviders: e2eConfig.InfrastructureProviders(),
 		}, e2eConfig.GetIntervals(proxy.GetName(), "wait-controllers")...)
+	})
+
+	By("Create a workload cluster", func() {
+		workloadName = fmt.Sprintf("%s-%s", "workload", util.RandomString(6))
+		workloadResult = new(clusterctl.ApplyClusterTemplateAndWaitResult)
+		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+			ClusterProxy: proxy,
+			ConfigCluster: clusterctl.ConfigClusterInput{
+				LogFolder:                filepath.Join(artifactFolder, "clusters", proxy.GetName()),
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				KubeconfigPath:           proxy.GetKubeconfigPath(),
+				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+				ClusterName:              workloadName,
+				Namespace:                "default",
+				KubernetesVersion:        e2eConfig.GetVariable("INIT_WITH_KUBERNETES_VERSION"),
+				ControlPlaneMachineCount: e2eConfig.GetInt64PtrVariable("CONTROL_PLANE_MACHINE_COUNT"),
+				WorkerMachineCount:       e2eConfig.GetInt64PtrVariable("WORKER_MACHINE_COUNT"),
+				Flavor:                   clusterctl.DefaultFlavor,
+			},
+			WaitForClusterIntervals:      e2eConfig.GetIntervals(proxy.GetName(), "wait-cluster"),
+			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(proxy.GetName(), "wait-control-plane"),
+			WaitForMachineDeployments:    e2eConfig.GetIntervals(proxy.GetName(), "wait-worker-nodes"),
+		}, workloadResult)
+		klog.Infof("Created workload cluster %s\n", workloadName)
 	})
 
 	return []byte(
@@ -151,7 +185,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	// after all parallel test cases finish
 	if !skipCleanup {
-		By("tear down the bootstrap cluster", func() {
+		By("Tear down the workload cluster", func() {
+			framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
+				Client:    proxy.GetClient(),
+				Namespace: "default",
+			}, e2eConfig.GetIntervals(proxy.GetName(), "wait-delete-cluster")...)
+			klog.Infof("Deleted workload cluster %s/%s\n", workloadResult.Cluster.Namespace, workloadResult.Cluster.Name)
+		})
+		By("Tear down the bootstrap cluster", func() {
 			Expect(provider).NotTo(BeNil())
 			Expect(proxy).NotTo(BeNil())
 

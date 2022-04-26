@@ -54,13 +54,13 @@ RUN /google-cloud-sdk/bin/gcloud components update
 ##                               KIND STAGE                                   ##
 ################################################################################
 FROM ${GOLANG_IMAGE} as kind
-RUN cd / && GO111MODULE="on" go get -u sigs.k8s.io/kind@v0.3.0
+RUN cd / && GO111MODULE="on" go get -u sigs.k8s.io/kind@v0.11.1
 
 ################################################################################
 ##                               MAIN STAGE                                   ##
 ################################################################################
 FROM ${GOLANG_IMAGE}
-LABEL "maintainer" "Andrew Kutz <akutz@vmware.com>"
+LABEL "maintainer"="Andrew Kutz <akutz@vmware.com>"
 
 ################################################################################
 ##                            CONFIGURE LOCALE                                ##
@@ -114,10 +114,11 @@ RUN apt-get update && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/*
 
 # Add the Docker apt-repository
-RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "${ID}")/gpg | apt-key add - && \
-    add-apt-repository \
-      "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "${ID}") \
-      $(lsb_release -cs) stable"
+RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "${ID}")/gpg | \
+    gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+      $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # Install Docker
 # TODO(bentheelder): the `sed` is a bit of a hack, look into alternatives.
@@ -128,7 +129,7 @@ RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "${ID
 # TODO(benthelder): update docker version. This is pinned because of
 # https://github.com/kubernetes/test-infra/issues/6187
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends docker-ce=18.06.* && \
+    apt-get install -y --no-install-recommends docker-ce=5:20.10.* && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
     sed -i 's/cgroupfs_mount$/#cgroupfs_mount\n/' /etc/init.d/docker
 
