@@ -6,19 +6,7 @@
 # - vsphere
 
 images:
-  - name: gcr.io/k8s-staging-cluster-api/cluster-api-controller-amd64:v1.0.0
-    loadBehavior: tryLoad
-  - name: gcr.io/k8s-staging-cluster-api/kubeadm-bootstrap-controller-amd64:v1.0.0
-    loadBehavior: tryLoad
-  - name: gcr.io/k8s-staging-cluster-api/kubeadm-control-plane-controller-amd64:v1.0.0
-    loadBehavior: tryLoad
-  - name: gcr.io/cluster-api-provider-vsphere/release/manager:v1.0.1
-    loadBehavior: tryLoad
-  - name: quay.io/jetstack/cert-manager-cainjector:v0.16.1
-    loadBehavior: tryLoad
-  - name: quay.io/jetstack/cert-manager-webhook:v0.16.1
-    loadBehavior: tryLoad
-  - name: quay.io/jetstack/cert-manager-controller:v0.16.1
+  - name: gcr.io/cloud-provider-vsphere/cpi/release/manager:dev
     loadBehavior: tryLoad
 
 providers:
@@ -130,9 +118,9 @@ providers:
           - sourcePath: "../data/metadata.yaml"
           - sourcePath: "../data/infrastructure-vsphere/capi-upgrades/v1alpha3/cluster-template.yaml"
       - name: v0.8.2
+        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.8.2/infrastructure-components.yaml
         type: url
         contract: v1alpha4
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.8.2/infrastructure-components.yaml
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -140,29 +128,42 @@ providers:
           - sourcePath: "../data/metadata.yaml"
           - sourcePath: "../data/infrastructure-vsphere/capi-upgrades/v1alpha4/cluster-template.yaml"
       - name: v1.0.1
-        value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.0.1/infrastructure-components.yaml"
+        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.0.1/infrastructure-components.yaml
         type: url
         contract: v1beta1
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
         files:
+          # Add a cluster template
+          - sourcePath: "../data/infrastructure-vsphere/cluster-template.yaml"
+          - sourcePath: "../data/infrastructure-vsphere/cluster-template-remote-management.yaml"
           - sourcePath: "../data/metadata.yaml"
 
 variables:
   KUBERNETES_VERSION: "1.23.0"
   CNI: "./data/cni/calico/calico.yaml"
-  INIT_WITH_BINARY_V1ALPHA3: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/clusterctl-{OS}-{ARCH}"
-  INIT_WITH_BINARY_V1ALPHA4: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/clusterctl-{OS}-{ARCH}"
-  INIT_WITH_KUBERNETES_VERSION: "v1.20.1"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CONTROL_PLANE_MACHINE_COUNT: 1
   WORKER_MACHINE_COUNT: 1
   IP_FAMILY: "IPv4"
+  CLUSTER_CLASS_NAME: "quick-start"
   # Following CAPV variables should be set before testing
+  VSPHERE_TLS_THUMBPRINT: "9E:7F:01:3B:13:CF:B2:93:16:2C:31:6A:03:6A:D1:5D:C7:79:D8:DE"
+  VSPHERE_DATACENTER:  "SDDC-Datacenter"
+  VSPHERE_FOLDER: "clusterapi"
+  VSPHERE_RESOURCE_POOL: "clusterapi"
   VSPHERE_DATASTORE: "WorkloadDatastore"
   VSPHERE_STORAGE_POLICY: "Cluster API vSphere Storage Policy"
-  VSPHERE_FOLDER: "rp0"
-  VSPHERE_NETWORK: "VM Network"
-  VSPHERE_RESOURCE_POOL: "ResourcePool"
-  VSPHERE_TEMPLATE: "ubuntu-2004-kube-v1.21.2"
+  VSPHERE_NETWORK: "sddc-cgw-network-6"
+  VSPHERE_TEMPLATE: "ubuntu-1804-kube-v1.20.1"
+  INIT_WITH_BINARY_V1ALPHA3: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/clusterctl-{OS}-{ARCH}"
+  INIT_WITH_BINARY_V1ALPHA4: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/clusterctl-{OS}-{ARCH}"
+  INIT_WITH_KUBERNETES_VERSION: "v1.20.1"
+  VSPHERE_INSECURE_CSI: "true"
+  KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
+  NODE_DRAIN_TIMEOUT: "60s"
+  CLUSTER_TOPOLOGY: "true"
 intervals:
   default/wait-controllers: ["5m", "10s"]
   default/wait-cluster: ["5m", "10s"]
