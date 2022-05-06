@@ -13,6 +13,7 @@
 # limitations under the License.
 
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
+VERSION := $(shell git describe --dirty --always 2>/dev/null)
 
 TMP_DIR := /tmp
 TMP_CAPV_DIR := $(TMP_DIR)/capv
@@ -27,10 +28,13 @@ TOOLING_BINARIES := $(GINKGO) $(KIND)
 # E2E_ARTIFACTS is the folder to store e2e test artifacts
 E2E_ARTIFACTS ?= $(REPO_ROOT)/_e2e_artifacts
 
-# E2E_CONF_FILE is the configuration file for e2e testing
-E2E_CONF_FILE ?= ${REPO_ROOT}/test/e2e/config/vsphere-dev.yaml
+# E2E_CONF_FILE is the configuration file for E2E CI
+E2E_CONF_FILE ?= ${REPO_ROOT}/test/e2e/config/vsphere-ci.yaml
 
-# E2E_CHART is the vsphere-cpi helm chart for e2e testing
+# E2E_CONF_FILE is the configuration file for E2E development
+E2E_CONF_FILE_DEV ?= ${REPO_ROOT}/test/e2e/config/vsphere-dev.yaml
+
+# E2E_CHART is the vsphere-cpi helm chart for E2E CI
 E2E_CHART ?= ${REPO_ROOT}/charts/vsphere-cpi
 
 # E2E_DATA_DIR contains provider manifests needed to create the bootsrap cluster, required by the E2E_CONF_FILE
@@ -51,9 +55,18 @@ $(E2E_DATA_DIR): $(TMP_CAPV_DIR)
 	$(MAKE) -C $(TMP_CAPV_DIR) e2e-templates && cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
 	cp $(TMP_CAPV_DIR)/metadata.yaml $(E2E_DATA_DIR)
 
-run: $(TOOLING_BINARIES) $(E2E_DATA_DIR)
+push-ccm-image:
+	../../hack/release.sh -p -t pr
+
+run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
+		--e2e.version="$(VERSION)"
+
+dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
+	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
+		--e2e.version="$(VERSION)"
 
 clean:
 	rm -rf $(E2E_DATA_DIR) $(TMP_CAPV_DIR)
