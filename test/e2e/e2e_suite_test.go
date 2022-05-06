@@ -18,8 +18,11 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	restclient "k8s.io/client-go/rest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,7 +30,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/kube"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -51,6 +60,9 @@ var (
 	// If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.
 	clusterctlConfig string
 
+	// version is the cloud-controller-manager version to be tested, for example, v1.22.3-76-g6f4fa01
+	version string
+
 	// useExistingCluster instructs the test to use the current cluster instead of creating a new one (default discovery rules apply).
 	useExistingCluster bool
 
@@ -58,11 +70,29 @@ var (
 	skipCleanup bool
 )
 
+var (
+	// kubeconfig for the workload cluster
+	workloadKubeconfigNamespace                    = "default"
+	workloadKubeconfig                             = "/tmp/wl.kubeconfig"
+	workloadKubeconfigSecret                       = corev1.Secret{}
+	workloadRestConfig          *restclient.Config = nil
+	workloadClientset           *kubernetes.Clientset
+
+	// helm install configurations
+	namespace = "default"
+	release   = "vsphere-cpi-e2e"
+	image     = "gcr.io/cloud-provider-vsphere/cpi/pr/manager"
+
+	// helm install expectation
+	daemonsetName = "vsphere-cpi"
+)
+
 func init() {
 	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.StringVar(&clusterctlConfig, "e2e.clusterctl-config", "", "file which tests will use as a clusterctl config. If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.")
 	flag.StringVar(&chartFolder, "e2e.chart-folder", "", "folder where the helm chart for e2e should be stored")
+	flag.StringVar(&version, "e2e.version", "dev", "the cloud-controller-manager version to be tested, for example, v1.22.3-76-g6f4fa01")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false,
 		"if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
@@ -117,7 +147,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	})
 
 	By("Init vSphere session", func() {
-		vsphere, err = initVSphereTestClient(ctx)
+		vsphere, err = initVSphereTestClient(ctx, e2eConfig)
 		Expect(err).Should(BeNil())
 		Expect(vsphere).NotTo(BeNil())
 	})
@@ -171,6 +201,38 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		klog.Infof("Created workload cluster %s\n", workloadName)
 	})
 
+	By("Grab workload cluster kubeconfig", func() {
+		err := proxy.GetClient().Get(ctx, types.NamespacedName{
+			Namespace: workloadKubeconfigNamespace,
+			Name:      workloadName + "-kubeconfig",
+		}, &workloadKubeconfigSecret)
+		if err != nil {
+			Fail("Cannot retrieve workload cluster kubeconfig")
+		}
+		err = writeSecretKubeconfigToFile(&workloadKubeconfigSecret, "value", workloadKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
+		workloadRestConfig, err = clientcmd.BuildConfigFromFlags("", workloadKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
+		workloadClientset, err = kubernetes.NewForConfig(workloadRestConfig)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	By("Install helm on workload cluster", func() {
+		actionConfig := new(action.Configuration)
+		err = actionConfig.Init(kube.GetConfig(workloadKubeconfig, "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {})
+		Expect(err).NotTo(HaveOccurred())
+
+		chart, err := loader.Load(chartFolder)
+		Expect(err).NotTo(HaveOccurred())
+
+		install := newCPIInstallFromConfig(actionConfig)
+		values := newCPIInstallValues()
+
+		release, err := install.Run(chart, values)
+		Expect(err).NotTo(HaveOccurred(), "Cannot install vsphere-cpi helm chart")
+		klog.Infof("Installed %s helm chart in namespace %s\n", release.Name, release.Namespace)
+	})
+
 	return []byte(
 		strings.Join([]string{
 			artifactFolder,
@@ -202,6 +264,7 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 	}
 })
 
+// createClusterctlLocalRepository ensures a repository for `config` is created at path repositoryFolder
 func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFolder string) string {
 	createRepositoryInput := clusterctl.CreateRepositoryInput{
 		E2EConfig:        config,
@@ -218,4 +281,45 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 	clusterctlConfig := clusterctl.CreateRepository(ctx, createRepositoryInput)
 	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
 	return clusterctlConfig
+}
+
+// writeSecretKubeconfigToFile dumps the kubeconfig from secret to a file
+func writeSecretKubeconfigToFile(secret *corev1.Secret, key string, file string) error {
+	if secret == nil {
+		return errors.New("secret is nil")
+	}
+	val, exists := secret.Data[key]
+	klog.Infof("workload kubeconfig:\n%s\n", val)
+	if !exists {
+		return errors.New("key does not exist in the secret")
+	}
+	return os.WriteFile(file, val, 0644)
+}
+
+// newCPIInstallFromConfig returns an `Install` object, given the configurations, for the CPI chart installation
+func newCPIInstallFromConfig(config *action.Configuration) *action.Install {
+	install := action.NewInstall(config)
+	install.ReleaseName = release
+	install.Namespace = namespace
+	install.DryRun = false
+	return install
+}
+
+// newCPIInstallValues returns the values to helm-install the CPI chart
+func newCPIInstallValues() map[string]interface{} {
+	values := map[string]interface{}{
+		"config": map[string]interface{}{
+			"enabled":    "true",
+			"name":       "cloud-config",
+			"vcenter":    e2eConfig.GetVariable("VSPHERE_SERVER"),
+			"username":   e2eConfig.GetVariable("VSPHERE_USERNAME"),
+			"password":   e2eConfig.GetVariable("VSPHERE_PASSWORD"),
+			"datacenter": e2eConfig.GetVariable("VSPHERE_DATACENTER"),
+		},
+		"daemonset": map[string]interface{}{
+			"image": image,
+			"tag":   version,
+		},
+	}
+	return values
 }

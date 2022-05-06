@@ -5,10 +5,6 @@
 # - control-plane kubeadm
 # - vsphere
 
-images:
-  - name: gcr.io/cloud-provider-vsphere/cpi/release/manager:dev
-    loadBehavior: tryLoad
-
 providers:
   - name: cluster-api
     type: CoreProvider

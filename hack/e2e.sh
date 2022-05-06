@@ -30,10 +30,7 @@ on_exit() {
   # kill the VPN
   docker kill vpn
 
-  # logout of gcloud
-  if [ "${AUTH}" ]; then
-    gcloud auth revoke
-  fi
+  # no need to revoke credentials as it is GCE-provided
 }
 
 trap on_exit EXIT
@@ -42,7 +39,6 @@ function login() {
   # If GCR_KEY_FILE is set, use that service account to login
   if [ "${GCR_KEY_FILE}" ]; then
     gcloud auth activate-service-account --key-file "${GCR_KEY_FILE}" || fatal "unable to login"
-    AUTH=1
   fi
 }
 
