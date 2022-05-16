@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/session/keepalive"
+	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25/soap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
@@ -32,6 +34,7 @@ import (
 // VSphereTestClient defines a VSphere client for e2e testing
 type VSphereTestClient struct {
 	Client     *govmomi.Client
+	Manager    *view.Manager
 	Finder     *find.Finder
 	Datacenter *object.Datacenter
 }
@@ -62,5 +65,10 @@ func initVSphereTestClient(ctx context.Context, e2eConfig *clusterctl.E2EConfig)
 		return nil, err
 	}
 	finder.SetDatacenter(dc)
-	return &VSphereTestClient{Client: client, Finder: finder, Datacenter: dc}, nil
+
+	manager := view.NewManager(client.Client)
+	if manager == nil {
+		return nil, errors.New("fail to get the vSphere manager")
+	}
+	return &VSphereTestClient{Client: client, Finder: finder, Datacenter: dc, Manager: manager}, nil
 }

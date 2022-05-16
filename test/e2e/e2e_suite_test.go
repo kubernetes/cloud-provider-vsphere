@@ -21,8 +21,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
-	restclient "k8s.io/client-go/rest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,9 +31,13 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/kube"
+	helmrelease "helm.sh/helm/v3/pkg/release"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/test/e2e"
@@ -79,7 +81,7 @@ var (
 	workloadClientset           *kubernetes.Clientset
 
 	// helm install configurations
-	namespace = "default"
+	namespace = "kube-system"
 	release   = "vsphere-cpi-e2e"
 	image     = "gcr.io/cloud-provider-vsphere/cpi/pr/manager"
 
@@ -188,7 +190,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 				KubeconfigPath:           proxy.GetKubeconfigPath(),
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
 				ClusterName:              workloadName,
-				Namespace:                "default",
+				Namespace:                workloadKubeconfigNamespace,
 				KubernetesVersion:        e2eConfig.GetVariable("INIT_WITH_KUBERNETES_VERSION"),
 				ControlPlaneMachineCount: e2eConfig.GetInt64PtrVariable("CONTROL_PLANE_MACHINE_COUNT"),
 				WorkerMachineCount:       e2eConfig.GetInt64PtrVariable("WORKER_MACHINE_COUNT"),
@@ -217,7 +219,20 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	By("Install helm on workload cluster", func() {
+	By("Wait for workload cluster to come up", func() {
+		Eventually(func() error {
+			_, err := workloadClientset.ServerVersion()
+			return err
+		}).Should(BeNil())
+	})
+
+	By("Remove old vsphere-cpi", func() {
+		Eventually(func() error {
+			return removeOldCPI(workloadClientset)
+		}).Should(BeNil())
+	})
+
+	By("Install new vsphere-cpi with helm on workload cluster", func() {
 		actionConfig := new(action.Configuration)
 		err = actionConfig.Init(kube.GetConfig(workloadKubeconfig, "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {})
 		Expect(err).NotTo(HaveOccurred())
@@ -228,8 +243,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		install := newCPIInstallFromConfig(actionConfig)
 		values := newCPIInstallValues()
 
-		release, err := install.Run(chart, values)
-		Expect(err).NotTo(HaveOccurred(), "Cannot install vsphere-cpi helm chart")
+		var release *helmrelease.Release
+		Eventually(func() error {
+			release, err = install.Run(chart, values)
+			return err
+		}).ShouldNot(HaveOccurred(), "Cannot install vsphere-cpi helm chart")
 		klog.Infof("Installed %s helm chart in namespace %s\n", release.Name, release.Namespace)
 	})
 
@@ -296,6 +314,20 @@ func writeSecretKubeconfigToFile(secret *corev1.Secret, key string, file string)
 	return os.WriteFile(file, val, 0644)
 }
 
+// removeOldCPI removes the old vsphere-cpi instance before installing a build version using helm
+func removeOldCPI(clientset *kubernetes.Clientset) error {
+	if err := clientset.AppsV1().DaemonSets(namespace).Delete(ctx, "vsphere-cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.CoreV1().ServiceAccounts(namespace).Delete(ctx, "cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.RbacV1().RoleBindings(namespace).Delete(ctx, "servicecatalog.k8s.io:apiserver-authentication-reader", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	return nil
+}
+
 // newCPIInstallFromConfig returns an `Install` object, given the configurations, for the CPI chart installation
 func newCPIInstallFromConfig(config *action.Configuration) *action.Install {
 	install := action.NewInstall(config)
@@ -319,6 +351,9 @@ func newCPIInstallValues() map[string]interface{} {
 		"daemonset": map[string]interface{}{
 			"image": image,
 			"tag":   version,
+		},
+		"securityContext": map[string]interface{}{
+			"enabled": "false",
 		},
 	}
 	return values
