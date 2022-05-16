@@ -18,12 +18,25 @@ package e2e
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// findVSphereCPIDaemonsetInList searches a daemonset with name vsphere-cpi in the daemon list
+func findVSphereCPIDaemonsetInList(daemonList *appsv1.DaemonSetList) (*appsv1.DaemonSet, error) {
+	for _, d := range daemonList.Items {
+		if d.Name == daemonsetName {
+			return &d, nil
+		}
+	}
+	return nil, errors.New("CPI daemon set with name vsphere-cpi not found")
+}
 
 /*
 	CPI should be installable from the helm chart. Its daemon set will eventually
@@ -40,16 +53,29 @@ var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 			if len(daemonList.Items) == 0 {
 				return errors.New("CPI daemon list is empty")
 			}
-			daemon := daemonList.Items[0]
-			if daemon.Name != daemonsetName {
-				return errors.New("CPI daemon set name is not vsphere-cpi, instead " + daemon.Name)
-			}
+			daemon, err := findVSphereCPIDaemonsetInList(daemonList)
 
 			By("CPI daemon should be running")
 			if daemon.Status.NumberReady != daemon.Status.DesiredNumberScheduled {
 				return errors.New("CPI number ready not equal to the desired number to schedule")
 			}
 			return nil
-		}, 20*time.Second).Should(BeNil())
+		}, 2*time.Minute, 5*time.Second).Should(BeNil())
+	})
+
+	It("should have all CPI pods in the running state", func() {
+		Eventually(func() error {
+			pods, err := workloadClientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			for _, pod := range pods.Items {
+				if strings.HasPrefix(pod.Name, daemonsetName) {
+					Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+					for _, containerStatus := range pod.Status.ContainerStatuses {
+						Expect(containerStatus.Ready).To(BeTrue())
+					}
+				}
+			}
+			return nil
+		}).Should(Succeed())
 	})
 })
