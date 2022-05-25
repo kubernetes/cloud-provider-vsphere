@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -229,7 +230,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	By("Remove old vsphere-cpi", func() {
 		Eventually(func() error {
 			return removeOldCPI(workloadClientset)
-		}).Should(BeNil())
+		}, 2*time.Minute).Should(BeNil())
 	})
 
 	By("Install new vsphere-cpi with helm on workload cluster", func() {
@@ -347,6 +348,8 @@ func newCPIInstallValues() map[string]interface{} {
 			"username":   e2eConfig.GetVariable("VSPHERE_USERNAME"),
 			"password":   e2eConfig.GetVariable("VSPHERE_PASSWORD"),
 			"datacenter": e2eConfig.GetVariable("VSPHERE_DATACENTER"),
+			"region":     "",
+			"zone":       "",
 		},
 		"daemonset": map[string]interface{}{
 			"image": image,
