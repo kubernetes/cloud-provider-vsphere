@@ -32,16 +32,10 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
 )
 
-// GRPCServer describes an object that can start a gRPC server.
-type GRPCServer interface {
-	Start()
-}
-
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
 	// input (aka configs) and output (aka interfaces)
-	cfg    *ccfg.CPIConfig
-	server GRPCServer
+	cfg *ccfg.CPIConfig
 
 	/*
 		Interfaces start
