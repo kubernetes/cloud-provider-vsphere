@@ -25,7 +25,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
-	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
@@ -584,98 +583,6 @@ func filterSubnetExclusions(ipAddrNetworkNames []*ipAddrNetworkName, exlusionSub
 		}
 		return true
 	})
-}
-
-// GetNode gets the NodeInfo by UUID
-func (nm *NodeManager) GetNode(UUID string, node *pb.Node) error {
-	nodeInfo, err := nm.FindNodeInfo(UUID)
-	if err != nil {
-		klog.Errorf("GetNode failed err=%s", err)
-		return err
-	}
-
-	node.Vcenter = nodeInfo.vcServer
-	node.Datacenter = nodeInfo.dataCenter.Name()
-	node.Name = nodeInfo.NodeName
-	node.Dnsnames = make([]string, 0)
-	node.Addresses = make([]string, 0)
-	node.Uuid = nodeInfo.UUID
-
-	for _, address := range nodeInfo.NodeAddresses {
-		switch address.Type {
-		case v1.NodeExternalIP:
-			node.Addresses = append(node.Addresses, address.Address)
-		case v1.NodeHostName:
-			node.Dnsnames = append(node.Dnsnames, address.Address)
-		default:
-			klog.Warning("Unknown/unsupported address type:", address.Type)
-		}
-	}
-
-	return nil
-}
-
-// ExportNodes transforms the NodeInfoList to []*pb.Node
-func (nm *NodeManager) ExportNodes(vcenter string, datacenter string, nodeList *[]*pb.Node) error {
-	nm.nodeInfoLock.Lock()
-	defer nm.nodeInfoLock.Unlock()
-
-	if vcenter != "" && datacenter != "" {
-		dc, err := nm.FindDatacenterInfoInVCList(vcenter, datacenter)
-		if err != nil {
-			return err
-		}
-
-		nm.datacenterToNodeList(dc.vmList, nodeList)
-	} else if vcenter != "" {
-		if nm.vcList[vcenter] == nil {
-			return ErrVCenterNotFound
-		}
-
-		for _, dc := range nm.vcList[vcenter].dcList {
-			nm.datacenterToNodeList(dc.vmList, nodeList)
-		}
-	} else {
-		for _, vc := range nm.vcList {
-			for _, dc := range vc.dcList {
-				nm.datacenterToNodeList(dc.vmList, nodeList)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (nm *NodeManager) datacenterToNodeList(vmList map[string]*NodeInfo, nodeList *[]*pb.Node) {
-	for UUID, node := range vmList {
-
-		// is VM currently active? if not, skip
-		UUIDlower := strings.ToLower(UUID)
-		if nm.nodeRegUUIDMap[UUIDlower] == nil {
-			klog.V(4).Infof("Node with UUID=%s not active. Skipping.", UUIDlower)
-			continue
-		}
-
-		pbNode := &pb.Node{
-			Vcenter:    node.vcServer,
-			Datacenter: node.dataCenter.Name(),
-			Name:       node.NodeName,
-			Dnsnames:   make([]string, 0),
-			Addresses:  make([]string, 0),
-			Uuid:       node.UUID,
-		}
-		for _, address := range node.NodeAddresses {
-			switch address.Type {
-			case v1.NodeExternalIP:
-				pbNode.Addresses = append(pbNode.Addresses, address.Address)
-			case v1.NodeHostName:
-				pbNode.Dnsnames = append(pbNode.Dnsnames, address.Address)
-			default:
-				klog.Warning("Unknown/unsupported address type:", address.Type)
-			}
-		}
-		*nodeList = append(*nodeList, pbNode)
-	}
 }
 
 // AddNodeInfoToVCList creates a relational mapping from VC -> DC -> VM/Node

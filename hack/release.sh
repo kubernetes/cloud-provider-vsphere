@@ -127,13 +127,21 @@ function login() {
   fi
 }
 
+function docker_tag_exists() {
+    curl --silent -f -lSL "https://index.docker.io/v1/repositories/$1/tags/$2" > /dev/null
+}
+
 function push_images() {
   [ "${CPI_IMAGE_NAME}" ] || fatal "CPI_IMAGE_NAME not set"
 
   login
 
-  echo "pushing ${CPI_IMAGE_NAME}:${VERSION}"
-  docker push "${CPI_IMAGE_NAME}":"${VERSION}"
+  if docker_tag_exists "${CPI_IMAGE_NAME}" "${VERSION}"; then
+    echo "${CPI_IMAGE_NAME}:${VERSION} already exists, skip pushing"
+  else
+    echo "pushing ${CPI_IMAGE_NAME}:${VERSION}"
+    docker push "${CPI_IMAGE_NAME}":"${VERSION}"
+  fi
 }
 
 function build_ccm_bin() {
