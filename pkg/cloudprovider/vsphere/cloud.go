@@ -35,7 +35,6 @@ import (
 	lcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route"
 	rcfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route/config"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/server"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	"k8s.io/cloud-provider-vsphere/pkg/nsxt"
@@ -121,13 +120,6 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 
 		// if running secrets, init them
 		connMgr.InitializeSecretLister()
-
-		if !vs.cfg.Global.APIDisable {
-			klog.V(1).Info("Starting the API Server")
-			vs.server.Start()
-		} else {
-			klog.V(1).Info("API Server is disabled")
-		}
 	} else {
 		klog.Errorf("Kubernetes Client Init Failed: %v", err)
 	}
@@ -247,7 +239,6 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 		routes:           routes,
 		instances:        newInstances(nm),
 		zones:            newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
-		server:           server.NewServer(cfg.Global.APIBinding, nm),
 	}
 	return &vs, nil
 }
