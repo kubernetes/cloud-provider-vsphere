@@ -78,11 +78,6 @@ spec:
           - --{{ $key }}{{ if $value }}={{ $value }}{{ end }}
           {{- end }}
         {{- if .Values.service.enabled }}
-        env:
-          - name: VSPHERE_API_DISABLE
-            value: "true"
-          - name: VSPHERE_API_BINDING
-            value: {{ template "api.binding" . }}
         ports:
         - containerPort: {{ .Values.service.endpointPort }}
           protocol: TCP

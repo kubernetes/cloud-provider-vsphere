@@ -29,7 +29,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	pb "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/proto"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
@@ -192,57 +191,6 @@ func TestDiscoverNodeWithMultiIFByName(t *testing.T) {
 	} else {
 		t.Errorf("failed: %v not found", name)
 	}
-}
-
-func TestExport(t *testing.T) {
-	cfg, ok := configFromEnvOrSim(true)
-	defer ok()
-
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
-	defer connMgr.Logout()
-
-	nm := newNodeManager(nil, connMgr)
-
-	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
-	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
-	vm.Guest.Net = []vimtypes.GuestNicInfo{
-		{
-			Network:   "foo-bar",
-			IpAddress: []string{"10.0.0.1"},
-		},
-	}
-	name := vm.Name
-	UUID := vm.Config.Uuid
-	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
-
-	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Status: v1.NodeStatus{
-			NodeInfo: v1.NodeSystemInfo{
-				SystemUUID: k8sUUID,
-			},
-		},
-	}
-
-	nm.RegisterNode(node)
-
-	nodeList := make([]*pb.Node, 0)
-	_ = nm.ExportNodes("", "", &nodeList)
-
-	found := false
-	for _, node := range nodeList {
-		if node.Uuid == UUID {
-			found = true
-		}
-	}
-
-	if !found {
-		t.Errorf("Node was not converted to protobuf")
-	}
-
-	nm.UnregisterNode(node)
 }
 
 func TestDiscoverNodeIPs(t *testing.T) {
