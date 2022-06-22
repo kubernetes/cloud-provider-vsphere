@@ -58,7 +58,7 @@ serviceAccount:
 daemonset:
   annotations: {}
   image: gcr.io/cloud-provider-vsphere/cpi/release/manager
-  tag: v1.22.2
+  tag: v1.23.1
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
@@ -84,18 +84,6 @@ daemonset:
   nodeSelector: {}
   ## Allows for the default tolerations to be replaced with user-defined ones
   tolerations: []
-
-# Service configuration
-service:
-  enabled: false
-  annotations: {}
-  type: ClusterIP
-  # List of IP ranges that are allowed to access the load balancer (if supported)
-  loadBalancerSourceRanges: []
-  # endpointPort: externally accessible port for UI and API
-  endpointPort: 43001
-  # targetPort: the internal port the UI and API are exposed on
-  targetPort: 43001
 
 # Ingress configuration
 ingress:
