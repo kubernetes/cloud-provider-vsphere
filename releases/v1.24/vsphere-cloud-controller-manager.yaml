@@ -216,12 +216,15 @@ spec:
         tier: control-plane
     spec:
       nodeSelector:
-        node-role.kubernetes.io/master: ""
+        node-role.kubernetes.io/control-plane: ""
       tolerations:
         - key: node.cloudprovider.kubernetes.io/uninitialized
           value: "true"
           effect: NoSchedule
         - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+          operator: Exists
+        - key: node-role.kubernetes.io/control-plane
           effect: NoSchedule
           operator: Exists
         - key: node.kubernetes.io/not-ready
@@ -238,9 +241,6 @@ spec:
             - --cloud-provider=vsphere
             - --v=2
             - --cloud-config=/etc/cloud/vsphere.conf
-          env:
-          - name: SKIP_NODE_DELETION
-            value: true
           volumeMounts:
             - mountPath: /etc/cloud
               name: vsphere-config-volume
