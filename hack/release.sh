@@ -154,10 +154,14 @@ function sha_sum() {
 function push_ccm_bin() {
   local bucket="vsphere-cpi-${BUILD_RELEASE_TYPE}"
 
-  sha_sum ".build/bin/vsphere-cloud-controller-manager.linux_amd64"
-  echo "copying ccm version ${VERSION} to ${bucket}"
-  gsutil cp ".build/bin/vsphere-cloud-controller-manager.linux_amd64" "gs://${bucket}/${VERSION}/bin/linux/amd64/vsphere-cloud-controller-manager"
-  gsutil cp ".build/bin/vsphere-cloud-controller-manager.linux_amd64.sha256" "gs://${bucket}/${VERSION}/bin/linux/amd64/vsphere-cloud-controller-manager.sha256"
+  if gsutil -q stat "gs://${bucket}/${VERSION}/bin/linux/amd64/vsphere-cloud-controller-manager"; then
+    echo "gs://${bucket}/${VERSION}/bin/linux/amd64/vsphere-cloud-controller-manager exists, skip pushing"
+  else
+    sha_sum ".build/bin/vsphere-cloud-controller-manager.linux_amd64"
+    echo "copying ccm version ${VERSION} to ${bucket}"
+    gsutil cp ".build/bin/vsphere-cloud-controller-manager.linux_amd64" "gs://${bucket}/${VERSION}/bin/linux/amd64/vsphere-cloud-controller-manager"
+    gsutil cp ".build/bin/vsphere-cloud-controller-manager.linux_amd64.sha256" "gs://${bucket}/${VERSION}/bin/linux/amd64/vsphere-cloud-controller-manager.sha256"
+  fi
 }
 
 # Start of main script
