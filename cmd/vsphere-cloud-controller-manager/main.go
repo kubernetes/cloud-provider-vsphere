@@ -66,56 +66,8 @@ func main() {
 
 	var controllerInitializers map[string]app.InitFunc
 	command := &cobra.Command{
-		Use:  "vsphere-cloud-controller-manager",
-		Long: `vsphere-cloud-controller-manager manages vSphere cloud resources for a Kubernetes cluster.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			verflag.PrintAndExitIfRequested()
-			cliflag.PrintFlags(cmd.Flags())
-
-			c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List())
-			if err != nil {
-				// explicitly ignore the error by Fprintf, exiting anyway
-				_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
-				os.Exit(1)
-			}
-
-			klog.Infof("vsphere-cloud-controller-manager version: %s", version)
-
-			// Default to the vsphere cloud provider if not set
-			cloudProviderFlag := cmd.Flags().Lookup("cloud-provider")
-			if cloudProviderFlag.Value.String() == "" {
-				if err := cloudProviderFlag.Value.Set(vsphere.RegisteredProviderName); err != nil {
-					klog.Fatalf("cannot set RegisteredProviderName to %s: %v", vsphere.RegisteredProviderName, err)
-				}
-			}
-
-			cloudProvider := cloudProviderFlag.Value.String()
-			if cloudProvider != vsphere.RegisteredProviderName && cloudProvider != vsphereparavirtual.RegisteredProviderName {
-				klog.Fatalf("unknown cloud provider %s, only 'vsphere' and 'vsphere-paravirtual' are supported", cloudProvider)
-			}
-
-			completedConfig := c.Complete()
-
-			cloud := initializeCloud(completedConfig, cloudProvider)
-			controllerInitializers = app.ConstructControllerInitializers(app.DefaultInitFuncConstructors, completedConfig, cloud)
-
-			// initialize a notifier for cloud config update
-			cloudConfig := completedConfig.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile
-			klog.Infof("initialize notifier on configmap update %s\n", cloudConfig)
-			watch, stop, err := initializeWatch(completedConfig, cloudConfig)
-			if err != nil {
-				klog.Fatalf("fail to initialize watch on config map %s: %v\n", cloudConfig, err)
-			}
-			defer func(watch *fsnotify.Watcher) {
-				_ = watch.Close() // ignore explicitly when the watch closes
-			}(watch)
-
-			if err := app.Run(completedConfig, cloud, controllerInitializers, stop); err != nil {
-				// explicitly ignore the error by Fprintf, exiting anyway due to app error
-				_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
-				os.Exit(1)
-			}
-		},
+		Use:  AppName,
+		Long: fmt.Sprintf("%s manages vSphere cloud resources for a Kubernetes cluster.", AppName),
 		Args: func(cmd *cobra.Command, args []string) error {
 			for _, arg := range args {
 				if len(arg) > 0 {
@@ -187,8 +139,55 @@ func main() {
 		}
 	})
 
-	command.Use = AppName
-	innerRun := command.Run
+	innerRun := func(cmd *cobra.Command, args []string) {
+		verflag.PrintAndExitIfRequested()
+		cliflag.PrintFlags(cmd.Flags())
+
+		c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List())
+		if err != nil {
+			// explicitly ignore the error by Fprintf, exiting anyway
+			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
+
+		klog.Infof("%s version: %s", AppName, version)
+
+		// Default to the vsphere cloud provider if not set
+		cloudProviderFlag := cmd.Flags().Lookup("cloud-provider")
+		if cloudProviderFlag.Value.String() == "" {
+			if err := cloudProviderFlag.Value.Set(vsphere.RegisteredProviderName); err != nil {
+				klog.Fatalf("cannot set RegisteredProviderName to %s: %v", vsphere.RegisteredProviderName, err)
+			}
+		}
+
+		cloudProvider := cloudProviderFlag.Value.String()
+		if cloudProvider != vsphere.RegisteredProviderName && cloudProvider != vsphereparavirtual.RegisteredProviderName {
+			klog.Fatalf("unknown cloud provider %s, only 'vsphere' and 'vsphere-paravirtual' are supported", cloudProvider)
+		}
+
+		completedConfig := c.Complete()
+
+		cloud := initializeCloud(completedConfig, cloudProvider)
+		controllerInitializers = app.ConstructControllerInitializers(app.DefaultInitFuncConstructors, completedConfig, cloud)
+
+		// initialize a notifier for cloud config update
+		cloudConfig := completedConfig.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile
+		klog.Infof("initialize notifier on configmap update %s\n", cloudConfig)
+		watch, stop, err := initializeWatch(completedConfig, cloudConfig)
+		if err != nil {
+			klog.Fatalf("fail to initialize watch on config map %s: %v\n", cloudConfig, err)
+		}
+		defer func(watch *fsnotify.Watcher) {
+			_ = watch.Close() // ignore explicitly when the watch closes
+		}(watch)
+
+		if err := app.Run(completedConfig, cloud, controllerInitializers, stop); err != nil {
+			// explicitly ignore the error by Fprintf, exiting anyway due to app error
+			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	command.Run = func(cmd *cobra.Command, args []string) {
 		if versionFlag != nil && (*versionFlag).String() != "false" {
 			fmt.Printf("%s %s\n", AppName, version)
@@ -199,10 +198,7 @@ func main() {
 			vsphereparavirtual.ClusterName = (*clusterNameFlag).String()
 		}
 		// if route controller is enabled in vsphereparavirtual cloud provider, set routeEnabled to true
-		if controllersFlag != nil &&
-			!strings.Contains((*controllersFlag).String(), "-route") &&
-			(strings.Contains((*controllersFlag).String(), "route") || strings.Contains((*controllersFlag).String(), "*")) &&
-			vsphereparavirtual.RegisteredProviderName == (*cloudProviderFlag).String() {
+		if shouldEnableRouteController(controllersFlag, cloudProviderFlag) {
 			vsphereparavirtual.RouteEnabled = true
 		}
 		innerRun(cmd, args)
@@ -213,6 +209,15 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// shouldEnableRouteController decides whether it should enable the routable pod controller
+// returns true if CPI is running under paravirtual mode and flag value contains `route`
+func shouldEnableRouteController(controllersFlag, cloudProviderFlag *pflag.Value) bool {
+	return controllersFlag != nil &&
+		!strings.Contains((*controllersFlag).String(), "-route") &&
+		(strings.Contains((*controllersFlag).String(), "route") || strings.Contains((*controllersFlag).String(), "*")) &&
+		vsphereparavirtual.RegisteredProviderName == (*cloudProviderFlag).String()
 }
 
 // set up a filesystem watcher for the cloud config mount
