@@ -154,7 +154,7 @@ func TestYAMLValidateSecretConfig(t *testing.T) {
 	}
 }
 
-func TestReadYAMLConfig(t *testing.T) {
+func TestReadRawConfigYAML(t *testing.T) {
 	contents := `
 nsxt:
   user: admin
@@ -193,4 +193,45 @@ nsxt:
 	assertEquals("NSXT.caFile", config.NSXT.CAFile, "ca-file")
 	assertEquals("NSXT.secretName", config.NSXT.SecretName, "secret-name")
 	assertEquals("NSXT.secretNamespace", config.NSXT.SecretNamespace, "secret-ns")
+}
+
+func TestReadConfigYAML(t *testing.T) {
+	contents := `
+nsxt:
+  user: admin
+  password: secret
+  host: nsxt-server
+  insecureFlag: true
+  remoteAuth: true
+  vmcAccessToken: vmc-token
+  vmcAuthHost: vmc-host
+  clientAuthCertFile: client-cert-file
+  clientAuthKeyFile: client-key-file
+  caFile: ca-file
+  secretName: secret-name
+  secretNamespace: secret-ns
+`
+	config, err := ReadConfigYAML([]byte(contents))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	assertEquals := func(name, left, right string) {
+		if left != right {
+			t.Errorf("%s %s != %s", name, left, right)
+		}
+	}
+	assertEquals("NSXT.user", config.User, "admin")
+	assertEquals("NSXT.password", config.Password, "secret")
+	assertEquals("NSXT.host", config.Host, "nsxt-server")
+	assert.Equal(t, true, config.InsecureFlag)
+	assert.Equal(t, true, config.RemoteAuth)
+	assertEquals("NSXT.vmcAccessToken", config.VMCAccessToken, "vmc-token")
+	assertEquals("NSXT.vmcAuthHost", config.VMCAuthHost, "vmc-host")
+	assertEquals("NSXT.clientAuthCertFile", config.ClientAuthCertFile, "client-cert-file")
+	assertEquals("NSXT.clientAuthKeyFile", config.ClientAuthKeyFile, "client-key-file")
+	assertEquals("NSXT.caFile", config.CAFile, "ca-file")
+	assertEquals("NSXT.secretName", config.SecretName, "secret-name")
+	assertEquals("NSXT.secretNamespace", config.SecretNamespace, "secret-ns")
 }
