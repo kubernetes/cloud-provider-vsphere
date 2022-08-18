@@ -192,6 +192,7 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 	if len(data) == 0 {
 		return ErrCredentialMissing
 	}
+	unknownKeys := map[string][]byte{}
 	for credentialKey, credentialValue := range data {
 		if strings.HasSuffix(credentialKey, "password") {
 			vcServer := strings.Split(credentialKey, ".password")[0]
@@ -206,10 +207,88 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 			}
 			config[vcServer].User = string(credentialValue)
 		} else {
-			klog.Errorf("Unknown secret key %s", credentialKey)
-			return ErrUnknownSecretKey
+			unknownKeys[credentialKey] = credentialValue
 		}
 	}
+
+	// Attempt to parse server/username/password from keys in the
+	// alternative format. Iterate leftover key/values, looking for
+	// entries that look like this:
+	//   server_a: fd01::1
+	//   username_a: vcenter-user
+	//   password_a: vcenter-pass
+	// This alternative format is needed because IPv6 addresses have colons,
+	// making the original Secret format unusable.
+	potentialAltFormatKeys := unknownKeys
+	for credentialKey := range potentialAltFormatKeys {
+		if strings.HasPrefix(credentialKey, serverPrefix) {
+			parts := strings.Split(credentialKey, serverPrefix)
+			if parts[1] != "" {
+				serverKeySuffix := parts[1]
+				passwordKey := passwordPrefix + serverKeySuffix
+				usernameKey := usernamePrefix + serverKeySuffix
+				serverKey := serverPrefix + serverKeySuffix
+
+				var serverName, password, username []byte
+				var ok bool
+				serverName = data[serverKey]
+				if _, ok := config[string(serverName)]; !ok {
+					config[string(serverName)] = &Credential{}
+				}
+
+				if username, ok = data[usernameKey]; !ok {
+					klog.Errorf("%s is missing for server %s", usernameKey, serverName)
+					return ErrCredentialMissing
+				}
+				config[string(serverName)].User = string(username)
+
+				if password, ok = data[passwordKey]; !ok {
+					klog.Errorf("%s is missing for server %s", passwordKey, serverName)
+					return ErrCredentialMissing
+				}
+				config[string(serverName)].Password = string(password)
+
+				delete(unknownKeys, passwordKey)
+				delete(unknownKeys, usernameKey)
+				delete(unknownKeys, serverKey)
+			} else {
+				klog.Error("server secret key missing suffix")
+				return ErrUnknownSecretKey
+			}
+		}
+	}
+
+	// Return errors if there are incomplete secret sets found. Return an error
+	// when a username or password was found but no server address was found.
+	// Return an error if username or password keys have no identifier suffix.
+	for credentialKey := range unknownKeys {
+		if strings.HasPrefix(credentialKey, usernamePrefix) {
+			parts := strings.Split(credentialKey, usernamePrefix)
+			if parts[1] == "" {
+				klog.Errorf("Found username key with no suffix identifier.")
+				return ErrUnknownSecretKey
+			}
+			identifier := parts[1]
+			klog.Errorf("Found username key \"%s\" without a matching \"%s\" identifier", credentialKey, serverPrefix+identifier)
+			return ErrIncompleteCredentialSet
+		}
+		if strings.HasPrefix(credentialKey, passwordPrefix) {
+			parts := strings.Split(credentialKey, passwordPrefix)
+			if parts[1] == "" {
+				klog.Errorf("Found password key with no suffix identifier.")
+				return ErrUnknownSecretKey
+			}
+			identifier := parts[1]
+			klog.Errorf("Found password key \"%s\" without a matching \"%s\" identifier", credentialKey, serverPrefix+identifier)
+			return ErrIncompleteCredentialSet
+		}
+	}
+
+	for credentialKey := range unknownKeys {
+		klog.Errorf("Unknown secret key %s", credentialKey)
+		return ErrUnknownSecretKey
+	}
+
 	for vcServer, credential := range config {
 		if credential.User == "" || credential.Password == "" {
 			klog.Errorf("Username/Password is missing for server %s", vcServer)

@@ -40,6 +40,16 @@ stringData:
   10.0.0.1.password: "<ENTER_YOUR_VCENTER_PASSWORD>"
   1.2.3.4.username: "<ENTER_YOUR_VCENTER_USERNAME>"
   1.2.3.4.password: "<ENTER_YOUR_VCENTER_PASSWORD>"
+
+  # NOTE: the following entries show an alternative format.
+  # This format is amenable to IPv6 addresses. the server_{id}, username_{id},
+  # and password_{id} require common id suffixes per server.
+  server_prod:   fd00::1
+  username_prod: "<ENTER_YOUR_VCENTER_USERNAME>"
+  password_prod: "<ENTER_YOUR_VCENTER_PASSWORD>"
+  server_test:   1.2.3.5
+  username_test: "<ENTER_YOUR_VCENTER_USERNAME>"
+  password_test: "<ENTER_YOUR_VCENTER_PASSWORD>"
 ---
 apiVersion: v1
 kind: ConfigMap
