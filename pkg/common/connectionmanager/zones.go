@@ -36,7 +36,7 @@ import (
 	vclib "k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
-//Well-known keys for k/v maps
+// Well-known keys for k/v maps
 const (
 
 	// ZoneLabel is the label for zones.

@@ -132,9 +132,9 @@ func (connMgr *ConnectionManager) createManagersPerTenant(secretName string, sec
 
 // Connect connects to vCenter with existing credentials
 // If credentials are invalid:
-// 		1. It will fetch credentials from credentialManager
-//      2. Update the credentials
-//		3. Connects again to vCenter with fetched credentials
+//  1. It will fetch credentials from credentialManager
+//  2. Update the credentials
+//  3. Connects again to vCenter with fetched credentials
 func (connMgr *ConnectionManager) Connect(ctx context.Context, vcInstance *VSphereInstance) error {
 	connMgr.Lock()
 	defer connMgr.Unlock()
