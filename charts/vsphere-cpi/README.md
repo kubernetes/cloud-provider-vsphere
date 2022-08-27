@@ -124,14 +124,6 @@ The following table lists the configurable parameters of the vSphere CPI chart a
 | `daemonset.podLabels`                    | Labels for CPI pod                  |  nil                                   |
 | `daemonset.nodeSelector`                 | User-defined node selectors         |  nil                                   |
 | `daemonset.tolerations`                  | User-defined tolerations            |  nil                                   |
-| `service.enabled`                        | Enabled the CPI API endpoint        |  false                                 |
-| `service.annotations`                    | Annotations for API service         |  nil                                   |
-| `service.type`                           | Service type                        |  ClusterIP                             |
-| `service.loadBalancerSourceRanges`       | list of IP CIDRs allowed access     | `[]`                                   |
-| `service.endpointPort`                   | External accessible port            |  43001                                 |
-| `service.targetPort`                     | Internal API port                   |  43001                                 |
-| `ingress.enabled`                        | Allow external traffic access       |  false                                 |
-| `ingress.annotations`                    | Annotations for Ingress             |  nil                                   |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` using Helm v3.X. For example,
 
