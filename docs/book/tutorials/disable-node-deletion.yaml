@@ -233,7 +233,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
         - name: vsphere-cloud-controller-manager
-          image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.24.0
+          image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.24.1
           args:
             - --cloud-provider=vsphere
             - --v=2
