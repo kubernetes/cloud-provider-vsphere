@@ -45,7 +45,7 @@ func GetUUIDFromProviderID(providerID string) string {
 // Endian Safe : https://www.dmtf.org/standards/smbios/
 //
 //	8   -  4 -  4 - 4  -    12
-
+//
 // K8s:    56492e42-22ad-3911-6d72-59cc8f26bc90
 // VMware: 422e4956-ad22-1139-6d72-59cc8f26bc90
 func ConvertK8sUUIDtoNormal(k8sUUID string) string {
