@@ -270,7 +270,7 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 	return vmService, nil
 }
 
-//Delete deletes the vmservice mapped to the given lb type of service
+// Delete deletes the vmservice mapped to the given lb type of service
 func (s *vmService) Delete(ctx context.Context, service *v1.Service, clusterName string) error {
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to delete VirtualMachineService")
