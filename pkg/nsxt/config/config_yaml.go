@@ -37,6 +37,7 @@ func (ncy *NsxtConfigYAML) CreateConfig() *Config {
 	cfg.Password = ncy.NSXT.Password
 	cfg.Host = ncy.NSXT.Host
 	cfg.InsecureFlag = ncy.NSXT.InsecureFlag
+	cfg.RemoteAuth = ncy.NSXT.RemoteAuth
 	cfg.VMCAccessToken = ncy.NSXT.VMCAccessToken
 	cfg.VMCAuthHost = ncy.NSXT.VMCAuthHost
 	cfg.ClientAuthCertFile = ncy.NSXT.ClientAuthCertFile
