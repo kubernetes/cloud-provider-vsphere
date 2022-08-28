@@ -38,6 +38,7 @@ import (
 )
 
 // localhostCert was generated from crypto/tls/generate_cert.go with the following command:
+//
 //     go run generate_cert.go  --rsa-bits 512 --host 127.0.0.1,::1,example.com --ca --start-date "Jan 1 00:00:00 1970" --duration=1000000h
 var localhostCert = `-----BEGIN CERTIFICATE-----
 MIIBjzCCATmgAwIBAgIRAKpi2WmTcFrVjxrl5n5YDUEwDQYJKoZIhvcNAQELBQAw

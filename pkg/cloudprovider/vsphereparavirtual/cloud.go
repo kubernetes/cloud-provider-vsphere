@@ -171,7 +171,8 @@ func (cp *VSphereParavirtual) Instances() (cloudprovider.Instances, bool) {
 }
 
 // InstancesV2 returns an implementation of cloudprovider.InstancesV2.
-//  TODO: implement this for v1.20
+//
+//	TODO: implement this for v1.20
 func (cp *VSphereParavirtual) InstancesV2() (cloudprovider.InstancesV2, bool) {
 	return nil, false
 }
