@@ -127,16 +127,14 @@ function login() {
   fi
 }
 
-function docker_tag_exists() {
-    curl --silent -f -lSL "https://index.docker.io/v1/repositories/$1/tags/$2" > /dev/null
-}
-
 function push_images() {
   [ "${CPI_IMAGE_NAME}" ] || fatal "CPI_IMAGE_NAME not set"
 
   login
 
-  if docker_tag_exists "${CPI_IMAGE_NAME}" "${VERSION}"; then
+  existing_tags=$(gcloud container images list-tags --filter="tags:${VERSION}" --format=json "${CPI_IMAGE_NAME}")
+
+  if [[ "$existing_tags" != "[]" ]]; then
     echo "${CPI_IMAGE_NAME}:${VERSION} already exists, skip pushing"
   else
     echo "pushing ${CPI_IMAGE_NAME}:${VERSION}"

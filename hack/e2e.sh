@@ -24,8 +24,8 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 on_exit() {
   # release IPClaim
   echo "Releasing IP claims"
-  kubectl --kubeconfig="${KUBECONFIG}" delete ipclaim "${IPCLAIM_NAME}" || true
-  kubectl --kubeconfig="${KUBECONFIG}" delete ipclaim "${WORKLOAD_IPCLAIM_NAME}" || true
+  kubectl --kubeconfig="${KUBECONFIG}" delete "$(append_api_group ipclaim)" "${IPCLAIM_NAME}" || true
+  kubectl --kubeconfig="${KUBECONFIG}" delete "$(append_api_group ipclaim)" "${WORKLOAD_IPCLAIM_NAME}" || true
 
   # kill the VPN
   docker kill vpn
@@ -60,6 +60,11 @@ docker logs vpn
 # Sleep to allow vpn container to start running
 sleep 30
 
+function append_api_group() {
+  resource=$1
+  echo "${resource}.ipam.metal3.io"
+}
+
 # Retrieve an IP to be used as the kube-vip IP
 KUBECONFIG="/root/ipam-conf/capv-services.conf"
 
@@ -67,8 +72,8 @@ function acquire_ip_for_management_cluster_cp() {
   IPCLAIM_NAME="ip-claim-$(openssl rand -hex 20)"
   sed "s/IPCLAIM_NAME/${IPCLAIM_NAME}/" "${REPO_ROOT}/hack/ipclaim-template.yaml" | kubectl --kubeconfig=${KUBECONFIG} create -f -
 
-  IPADDRESS_NAME=$(kubectl --kubeconfig=${KUBECONFIG} get ipclaim "${IPCLAIM_NAME}" -o=jsonpath='{@.status.address.name}')
-  CONTROL_PLANE_ENDPOINT_IP=$(kubectl --kubeconfig=${KUBECONFIG} get ipaddresses "${IPADDRESS_NAME}" -o=jsonpath='{@.spec.address}')
+  IPADDRESS_NAME=$(kubectl --kubeconfig=${KUBECONFIG} get "$(append_api_group ipclaim)" "${IPCLAIM_NAME}" -o=jsonpath='{@.status.address.name}')
+  CONTROL_PLANE_ENDPOINT_IP=$(kubectl --kubeconfig=${KUBECONFIG} get "$(append_api_group ipaddresses)" "${IPADDRESS_NAME}" -o=jsonpath='{@.spec.address}')
   export CONTROL_PLANE_ENDPOINT_IP
   echo "Acquired Control Plane IP: $CONTROL_PLANE_ENDPOINT_IP"
 }
@@ -77,8 +82,8 @@ function acquire_ip_for_workload_cluster_cp() {
   WORKLOAD_IPCLAIM_NAME="workload-ip-claim-$(openssl rand -hex 20)"
   sed "s/IPCLAIM_NAME/${WORKLOAD_IPCLAIM_NAME}/" "${REPO_ROOT}/hack/ipclaim-template.yaml" | kubectl --kubeconfig=${KUBECONFIG} create -f -
 
-  WORKLOAD_IPADDRESS_NAME=$(kubectl --kubeconfig=${KUBECONFIG} get ipclaim "${WORKLOAD_IPCLAIM_NAME}" -o=jsonpath='{@.status.address.name}')
-  WORKLOAD_CONTROL_PLANE_ENDPOINT_IP=$(kubectl --kubeconfig=${KUBECONFIG} get ipaddresses "${WORKLOAD_IPADDRESS_NAME}" -o=jsonpath='{@.spec.address}')
+  WORKLOAD_IPADDRESS_NAME=$(kubectl --kubeconfig=${KUBECONFIG} get "$(append_api_group ipclaim)" "${WORKLOAD_IPCLAIM_NAME}" -o=jsonpath='{@.status.address.name}')
+  WORKLOAD_CONTROL_PLANE_ENDPOINT_IP=$(kubectl --kubeconfig=${KUBECONFIG} get "$(append_api_group ipaddresses)" "${WORKLOAD_IPADDRESS_NAME}" -o=jsonpath='{@.spec.address}')
   export WORKLOAD_CONTROL_PLANE_ENDPOINT_IP
   echo "Acquired Workload Cluster Control Plane IP: $WORKLOAD_CONTROL_PLANE_ENDPOINT_IP"
 }
