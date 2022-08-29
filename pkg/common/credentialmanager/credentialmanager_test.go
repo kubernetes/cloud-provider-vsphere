@@ -35,6 +35,7 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 		testPassword        = "password"
 		testServer          = "0.0.0.0"
 		testServer2         = "0.0.1.1"
+		testIPv6Server      = "fd01::1"
 		testUserServer2     = "user1"
 		testPasswordServer2 = "password1"
 		testIncorrectServer = "1.1.1.1"
@@ -84,6 +85,18 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 			testServer + "." + passwordKey:  []byte(testPassword),
 			testServer2 + "." + userKey:     []byte(testUserServer2),
 			testServer2 + "." + passwordKey: []byte(testPasswordServer2),
+		},
+	}
+
+	ipv6CompatSecret := &corev1.Secret{
+		ObjectMeta: metaObj,
+		Data: map[string][]byte{
+			userKey + "_0":     []byte(testUser),
+			passwordKey + "_0": []byte(testPassword),
+			"server_0":         []byte(testServer),
+			userKey + "_1":     []byte(testUserServer2),
+			passwordKey + "_1": []byte(testPasswordServer2),
+			"server_1":         []byte(testIPv6Server),
 		},
 	}
 
@@ -181,6 +194,25 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 				},
 			},
 		},
+		{
+			testName: "GetCredential for alternative IPv6 server address compatable format",
+			ops:      []string{addSecretOp, getCredentialsOp},
+			expectedValues: []interface{}{
+				OpSecretTest{
+					secret: ipv6CompatSecret,
+				},
+				GetCredentialsTest{
+					server:   testServer,
+					username: testUser,
+					password: testPassword,
+				},
+				GetCredentialsTest{
+					server:   testIPv6Server,
+					username: testUserServer2,
+					password: testPasswordServer2,
+				},
+			},
+		},
 	}
 
 	informerFactory := informers.NewSharedInformerFactory(client, 0)
@@ -251,6 +283,7 @@ func TestParseSecretConfig(t *testing.T) {
 		testUsername = "Admin"
 		testPassword = "Password"
 		testIP       = "10.20.30.40"
+		testIPv6     = "fd01::1"
 	)
 	var testcases = []struct {
 		testName      string
@@ -311,6 +344,114 @@ func TestParseSecretConfig(t *testing.T) {
 				"10.20.30.40": []byte(testUsername),
 			},
 			config:        nil,
+			expectedError: ErrUnknownSecretKey,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret",
+			data: map[string][]byte{
+				"username_0":   []byte(testUsername),
+				"password_0":   []byte(testPassword),
+				"server_0":     []byte(testIPv6),
+				"username_foo": []byte(testUsername + "foo"),
+				"password_foo": []byte(testPassword + "foo"),
+				"server_foo":   []byte(testIP),
+			},
+			config: map[string]*Credential{
+				testIPv6: {
+					User:     testUsername,
+					Password: testPassword,
+				},
+				testIP: {
+					User:     testUsername + "foo",
+					Password: testPassword + "foo",
+				},
+			},
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: missing password",
+			data: map[string][]byte{
+				"username_0": []byte(testUsername),
+				"server_0":   []byte(testIPv6),
+			},
+			expectedError: ErrCredentialMissing,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: missing username",
+			data: map[string][]byte{
+				"password_0": []byte(testPassword),
+				"server_0":   []byte(testIPv6),
+			},
+			expectedError: ErrCredentialMissing,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: password with no matching server",
+			data: map[string][]byte{
+				"username_0": []byte(testUsername),
+				"password_0": []byte(testPassword),
+				"server_0":   []byte(testIPv6),
+				"password_1": []byte(testPassword),
+			},
+			expectedError: ErrIncompleteCredentialSet,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: username with no matching server",
+			data: map[string][]byte{
+				"username_0": []byte(testUsername),
+				"password_0": []byte(testPassword),
+				"server_0":   []byte(testIPv6),
+				"username_1": []byte(testPassword),
+			},
+			expectedError: ErrIncompleteCredentialSet,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: missing suffixes",
+			data: map[string][]byte{
+				"username_": []byte(testUsername),
+				"password_": []byte(testPassword),
+				"server_":   []byte(testIPv6),
+			},
+			expectedError: ErrUnknownSecretKey,
+		},
+		{
+			testName: "Mixing legacy and Alternative IPv6 compatible secret",
+			data: map[string][]byte{
+				"10.20.30.40.username": []byte(testUsername),
+				"10.20.30.40.password": []byte(testPassword),
+				"username_0":           []byte(testUsername + "alt"),
+				"password_0":           []byte(testPassword + "alt"),
+				"server_0":             []byte(testIPv6),
+			},
+			config: map[string]*Credential{
+				testIP: {
+					User:     testUsername,
+					Password: testPassword,
+				},
+				testIPv6: {
+					User:     testUsername + "alt",
+					Password: testPassword + "alt",
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: server key missing suffix",
+			data: map[string][]byte{
+				"username_": []byte(testUsername),
+			},
+			expectedError: ErrUnknownSecretKey,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: username missing suffix",
+			data: map[string][]byte{
+				"username_": []byte(testUsername),
+			},
+			expectedError: ErrUnknownSecretKey,
+		},
+		{
+			testName: "Alternative IPv6 compatible secret: password missing suffix",
+			data: map[string][]byte{
+				"password_": []byte(testPassword),
+			},
 			expectedError: ErrUnknownSecretKey,
 		},
 	}
