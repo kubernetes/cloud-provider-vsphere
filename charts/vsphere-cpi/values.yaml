@@ -58,7 +58,7 @@ serviceAccount:
 daemonset:
   annotations: {}
   image: gcr.io/cloud-provider-vsphere/cpi/release/manager
-  tag: v1.24.0
+  tag: v1.24.1
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
