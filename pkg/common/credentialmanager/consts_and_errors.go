@@ -20,6 +20,12 @@ import (
 	"errors"
 )
 
+const (
+	usernamePrefix = "username_"
+	passwordPrefix = "password_"
+	serverPrefix   = "server_"
+)
+
 // Errors
 var (
 	// ErrCredentialsNotFound is returned when no credentials are configured.
@@ -30,4 +36,7 @@ var (
 
 	// ErrUnknownSecretKey is returned when the supplied key does not return a secret.
 	ErrUnknownSecretKey = errors.New("Unknown secret key")
+
+	// ErrIncompleteCredentialSet is returned when the credentials do not contain all required values
+	ErrIncompleteCredentialSet = errors.New("Credentials did not have all required values")
 )
