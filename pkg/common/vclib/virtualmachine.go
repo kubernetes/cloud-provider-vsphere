@@ -430,6 +430,7 @@ func (vm *VirtualMachine) RenewVM(client *vim25.Client) VirtualMachine {
 	return VirtualMachine{VirtualMachine: newVM, Datacenter: &dc}
 }
 
+// Exists chech whether VM exist by searching by managed object reference
 func (vm *VirtualMachine) Exists(ctx context.Context) (bool, error) {
 	vmMoList, err := vm.Datacenter.GetVMMoList(ctx, []*VirtualMachine{vm}, []string{"summary.runtime.powerState"})
 	if err != nil {
@@ -439,7 +440,6 @@ func (vm *VirtualMachine) Exists(ctx context.Context) (bool, error) {
 	// We check for VMs which are still available in vcenter and has not been terminated/removed from
 	// disk and hence we consider PoweredOn,PoweredOff and Suspended as alive states.
 	aliveStates := []types.VirtualMachinePowerState{
-
 		types.VirtualMachinePowerStatePoweredOff,
 		types.VirtualMachinePowerStatePoweredOn,
 		types.VirtualMachinePowerStateSuspended,
