@@ -172,6 +172,23 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 		return false, err
 	}
 
+	// try fetch the VM using the managed object reference and check the VM state
+	if _, ok := i.nodeManager.nodeUUIDMap[uid]; !ok {
+		klog.V(2).Infof("instances.InstanceExistsByProviderID() NOT CACHED for node uid %q", uid)
+		return false, nil
+	}
+
+	exist, err := i.nodeManager.nodeUUIDMap[uid].vm.Exists(ctx)
+	if err != nil {
+		klog.V(2).Infof("instances.InstanceExistsByProviderID() check for node uid '%q' by using vm-id '%q' failed", uid, i.nodeManager.nodeUUIDMap[uid].vm.Reference())
+		return false, err
+	}
+
+	if exist {
+		klog.V(2).Infof("instances.InstanceExistsByProviderID() found node uid '%q' by using vm-id '%q'", uid, i.nodeManager.nodeUUIDMap[uid].vm.Reference())
+		return true, nil
+	}
+
 	klog.V(4).Info("instances.InstanceExistsByProviderID() NOT FOUND with ", uid, ". Signaling deletion.")
 	return false, nil
 }
