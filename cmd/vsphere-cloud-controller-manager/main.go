@@ -20,6 +20,7 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	goflag "flag"
 	"fmt"
 	"math/rand"
@@ -130,6 +131,12 @@ func main() {
 	namedFlagSets := ccmOptions.Flags(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List())
 	verflag.AddFlags(namedFlagSets.FlagSet("global"))
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), command.Name())
+
+	if flag.CommandLine.Lookup("is-legacy-paravirtual") != nil {
+		// hoist this flag from the global flagset to preserve the commandline until
+		// the legcay paravirtual mode is removed.
+		globalflag.Register(namedFlagSets.FlagSet("generic"), "is-legacy-paravirtual")
+	}
 
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)

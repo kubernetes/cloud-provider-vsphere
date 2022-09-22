@@ -25,7 +25,6 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +41,11 @@ const (
 	ClusterSelectorKey = "capv.vmware.com/cluster.name"
 	// NodeSelectorKey expects key/value pair {NodeSelectorKey: NodeRole} for target nodes: NodeSelectorKey
 	NodeSelectorKey = "capv.vmware.com/cluster.role"
+
+	// LegacyClusterSelectorKey expects key/value pair {LegacyClusterSelectorKey: <cluster name>} for target nodes: LegacyClusterSelectorKey
+	LegacyClusterSelectorKey = "capw.vmware.com/cluster.name"
+	// LegacyNodeSelectorKey expects key/value pair {LegacyNodeSelectorKey: NodeRole} for target nodes: LegacyNodeSelectorKey
+	LegacyNodeSelectorKey = "capw.vmware.com/cluster.role"
 
 	// NodeRole is set by capw, we are targeting worker vms
 	NodeRole = "node"
@@ -75,6 +79,12 @@ var (
 	ErrDeleteVMService     = errors.New("failed to delete VirtualMachineService")
 	ErrVMServiceIPNotFound = errors.New("VirtualMachineService IP not found")
 	ErrNodePortNotFound    = errors.New("NodePort not found")
+)
+
+var (
+	// IsLegacy indicates whether legacy paravirtual mode is enabled
+	// Default to false
+	IsLegacy bool
 )
 
 // GetVmopClient gets a vm-operator-api client
@@ -312,6 +322,13 @@ func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string
 		// When service has spec.LoadBalancerSourceRanges specified,
 		// pass it to the corresponding VirtualMachineService
 		LoadBalancerSourceRanges: service.Spec.LoadBalancerSourceRanges,
+	}
+
+	if IsLegacy {
+		vmServiceSpec.Selector = map[string]string{
+			LegacyClusterSelectorKey: clusterName,
+			LegacyNodeSelectorKey:    NodeRole,
+		}
 	}
 
 	label := map[string]string{
