@@ -20,6 +20,7 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	goflag "flag"
 	"fmt"
 	"math/rand"
@@ -131,6 +132,12 @@ func main() {
 	verflag.AddFlags(namedFlagSets.FlagSet("global"))
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), command.Name())
 
+	if flag.CommandLine.Lookup("is-legacy-paravirtual") != nil {
+		// hoist this flag from the global flagset to preserve the commandline until
+		// the legcay paravirtual mode is removed.
+		globalflag.Register(namedFlagSets.FlagSet("generic"), "is-legacy-paravirtual")
+	}
+
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)
 	}
@@ -229,8 +236,12 @@ func initializeWatch(_ *appconfig.CompletedConfig, cloudConfigPath string) (watc
 			case err := <-watch.Errors:
 				klog.Warningf("watcher receives err: %v\n", err)
 			case event := <-watch.Events:
-				klog.Fatalf("config map %s has been updated, restarting pod, received event %v\n", cloudConfigPath, event)
-				stopCh <- struct{}{}
+				if event.Op != fsnotify.Chmod {
+					klog.Fatalf("config map %s has been updated, restarting pod, received event %v\n", cloudConfigPath, event)
+					stopCh <- struct{}{}
+				} else {
+					klog.V(5).Infof("watcher receives %s on the cloud config\n", event.Op.String())
+				}
 			}
 		}
 	}()
