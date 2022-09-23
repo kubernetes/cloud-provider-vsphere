@@ -149,8 +149,9 @@ helm repo add vsphere-cpi https://kubernetes.github.io/cloud-provider-vsphere
 helm repo update
 
 # Package CPI Chart
+VERSION=1.24.2
 cd charts
-helm package vsphere-cpi
+helm package vsphere-cpi --version $VERSION --app-version $VERSION
 
 # Debug by installing local helm manifest
 helm upgrade --install vsphere-cpi vsphere-cpi --namespace kube-system --debug
@@ -158,6 +159,8 @@ helm upgrade --install vsphere-cpi vsphere-cpi --namespace kube-system --debug
 # Update repo index
 cd ..
 helm repo index . --url https://kubernetes.github.io/cloud-provider-vsphere
+
+# Need to modify the path to the github release path
 
 # Push to master and gh-pages
 git add .
