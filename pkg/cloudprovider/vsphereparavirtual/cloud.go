@@ -18,6 +18,7 @@ package vsphereparavirtual
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -29,6 +30,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
 	cpcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
@@ -79,6 +81,8 @@ func init() {
 
 		return newVSphereParavirtual(&cfg)
 	})
+
+	flag.BoolVar(&vmservice.IsLegacy, "is-legacy-paravirtual", false, "If true, machine label selector will start with capw.vmware.com. By default, it's false, machine label selector will start with capv.vmware.com.")
 }
 
 // Creates new Controller node interface and returns
