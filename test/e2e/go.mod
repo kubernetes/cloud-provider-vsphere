@@ -1,6 +1,6 @@
 module k8s.io/cloud-provider-vsphere/test/e2e
 
-go 1.17
+go 1.18
 
 require (
 	github.com/onsi/ginkgo v1.16.5
