@@ -124,5 +124,5 @@ require (
 replace (
 	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega => github.com/onsi/gomega v1.11.0
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.1.3
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.2
 )
