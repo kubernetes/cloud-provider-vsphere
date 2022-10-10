@@ -408,19 +408,19 @@ func TestCreateOrUpdateVMService(t *testing.T) {
 func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 	testCases := []struct {
 		name        string
-		getFunc     func(ctx context.Context, key client.ObjectKey, obj client.Object) error
+		getFunc     func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
 		expectedErr error
 	}{
 		{
 			name: "failed to create VirtualMachineService",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 				return fmt.Errorf("failed to get VirtualMachineService")
 			},
 			expectedErr: ErrGetVMService,
 		},
 		{
 			name: "when VMService does not exist",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 				return apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
 			},
 			expectedErr: ErrVMServiceIPNotFound,

@@ -1,6 +1,6 @@
 module tools
 
-go 1.16
+go 1.18
 
 require (
 	github.com/onsi/ginkgo v1.16.4
