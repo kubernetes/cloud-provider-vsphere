@@ -58,7 +58,7 @@ serviceAccount:
 daemonset:
   annotations: {}
   image: gcr.io/cloud-provider-vsphere/cpi/release/manager
-  tag: v1.24.2
+  tag: v1.25.0
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
@@ -80,7 +80,5 @@ daemonset:
   ## Additional pod labels
   ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
   podLabels: {}
-  ## Allows for the default selector to be replaced with user-defined ones
-  nodeSelector: {}
   ## Allows for the default tolerations to be replaced with user-defined ones
   tolerations: []
