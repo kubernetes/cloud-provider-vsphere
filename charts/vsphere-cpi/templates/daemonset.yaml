@@ -34,14 +34,6 @@ spec:
         {{- toYaml .Values.daemonset.podLabels | nindent 8 }}
         {{- end }}
     spec:
-      nodeSelector:
-      {{- if .Values.daemonset.nodeSelector }}
-      {{- with .Values.daemonset.nodeSelector }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- else }}
-        node-role.kubernetes.io/control-plane: "true"
-      {{- end }}
       tolerations:
       - key: node.cloudprovider.kubernetes.io/uninitialized
         value: "true"
@@ -93,3 +85,13 @@ spec:
         - name: vsphere-config-volume
           configMap:
             name: {{ if .Values.config.enabled }}{{- .Values.config.name }}{{- else }}cloud-config{{- end }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+            - matchExpressions:
+              - key: node-role.kubernetes.io/master
+                operator: Exists
