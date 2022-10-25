@@ -199,13 +199,13 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
-			config[vcServer].Password = string(credentialValue)
+			config[vcServer].Password = strings.Split(string(credentialValue), "\n")[0]
 		} else if strings.HasSuffix(credentialKey, "username") {
 			vcServer := strings.Split(credentialKey, ".username")[0]
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
-			config[vcServer].User = string(credentialValue)
+			config[vcServer].User = strings.Split(string(credentialValue), "\n")[0]
 		} else {
 			unknownKeys[credentialKey] = credentialValue
 		}
