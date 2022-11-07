@@ -199,13 +199,13 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
-			config[vcServer].Password = strings.Split(string(credentialValue), "\n")[0]
+			config[vcServer].Password = strings.TrimSuffix(string(credentialValue), "\n")
 		} else if strings.HasSuffix(credentialKey, "username") {
 			vcServer := strings.Split(credentialKey, ".username")[0]
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
-			config[vcServer].User = strings.Split(string(credentialValue), "\n")[0]
+			config[vcServer].User = strings.TrimSuffix(string(credentialValue), "\n")
 		} else {
 			unknownKeys[credentialKey] = credentialValue
 		}
@@ -241,13 +241,11 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 					return ErrCredentialMissing
 				}
 				config[string(serverName)].User = string(username)
-
 				if password, ok = data[passwordKey]; !ok {
 					klog.Errorf("%s is missing for server %s", passwordKey, serverName)
 					return ErrCredentialMissing
 				}
 				config[string(serverName)].Password = string(password)
-
 				delete(unknownKeys, passwordKey)
 				delete(unknownKeys, usernameKey)
 				delete(unknownKeys, serverKey)
