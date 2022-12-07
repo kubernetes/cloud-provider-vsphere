@@ -58,8 +58,6 @@ func NewConnectionManager(cfg *vcfg.Config, informMgr *k8s.InformerManager, clie
 		return connMgr
 	}
 
-
-
 	klog.V(2).Info("Initializing generic CO")
 	credMgr := cm.NewCredentialManager("", "", "", nil)
 	connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
