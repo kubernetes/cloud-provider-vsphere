@@ -306,6 +306,20 @@ func TestParseSecretConfig(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			testName: "Valid username and password with suffix '\\n'(Load from files in SecretDirectory)",
+			data: map[string][]byte{
+				"10.20.30.40.username": []byte(testUsername + "\n"),
+				"10.20.30.40.password": []byte(testPassword + "\n"),
+			},
+			config: map[string]*Credential{
+				testIP: {
+					User:     testUsername,
+					Password: testPassword,
+				},
+			},
+			expectedError: nil,
+		},
+		{
 			testName: "Invalid username key with valid password key",
 			data: map[string][]byte{
 				"10.20.30.40.usernam":  []byte(testUsername),
