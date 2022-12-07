@@ -3,7 +3,7 @@
 ################################################################################
 # The golang image is used to create the project's module and build caches
 # and is also the image on which this image is based.
-ARG GOLANG_IMAGE=golang:1.16.7
+ARG GOLANG_IMAGE=golang:1.17.13
 
 # The image from which the Terraform project used to turn up a K8s cluster is
 # copied, as well as several programs.
@@ -77,18 +77,18 @@ ENV LANG=en_US.UTF-8 LC_ALL=C.UTF-8
 #   * https://github.com/kubernetes/test-infra/blob/master/images/bootstrap/Dockerfile
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      ca-certificates \
-      curl \
-      git \
-      jq \
-      locales \
-      mercurial \
-      python3 \
-      python3-pip \
-      ruby \
-      tar \
-      unzip \
-      zip && \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    locales \
+    mercurial \
+    python3 \
+    python3-pip \
+    ruby \
+    tar \
+    unzip \
+    zip && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
     pip3 install setuptools wheel --upgrade && \
     pip3 install awscli --upgrade && \
@@ -105,19 +105,19 @@ RUN apt-get update && \
 # for another image someday.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      gnupg2 \
-      software-properties-common \
-      lsb-release && \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg2 \
+    software-properties-common \
+    lsb-release && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/*
 
 # Add the Docker apt-repository
 RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "${ID}")/gpg | apt-key add - && \
     add-apt-repository \
-      "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "${ID}") \
-      $(lsb_release -cs) stable"
+    "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "${ID}") \
+    $(lsb_release -cs) stable"
 
 # Install Docker
 # TODO(bentheelder): the `sed` is a bit of a hack, look into alternatives.
