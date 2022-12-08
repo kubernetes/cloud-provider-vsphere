@@ -42,19 +42,18 @@ func NewConnectionManager(cfg *vcfg.Config, informMgr *k8s.InformerManager, clie
 		informerManagers:   make(map[string]*k8s.InformerManager),
 	}
 
+	if cfg.Global.SecretsDirectory != "" {
+		klog.V(2).Info("Initializing for generic CO with secrets")
+		credMgr, _ := connMgr.createManagersPerTenant("", "", cfg.Global.SecretsDirectory, nil)
+		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
+
+		return connMgr
+	}
 	if informMgr != nil {
 		klog.V(2).Info("Initializing with K8s SecretLister")
 		credMgr := cm.NewCredentialManager(cfg.Global.SecretName, cfg.Global.SecretNamespace, "", informMgr.GetSecretLister())
 		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
 		connMgr.informerManagers[vcfg.DefaultCredentialManager] = informMgr
-
-		return connMgr
-	}
-
-	if cfg.Global.SecretsDirectory != "" {
-		klog.V(2).Info("Initializing for generic CO with secrets")
-		credMgr, _ := connMgr.createManagersPerTenant("", "", cfg.Global.SecretsDirectory, nil)
-		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
 
 		return connMgr
 	}

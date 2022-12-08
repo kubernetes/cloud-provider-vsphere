@@ -569,6 +569,23 @@ stringData:
   10.0.0.1.password: "password"
 ```
 
+This is a second Secret example, this time showing an alternative format. This alternative format allows for IPv6 server addresses. This format requires server_{id}, username_{id} and password_{id} entries, where the entries have a common suffix per server:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cpi-engineering-secret
+  namespace: kube-system
+stringData:
+  server_prod: fd01::102
+  username_prod: "administrator@vsphere.local"
+  password_prod: "password"
+  server_test: 10.0.0.2
+  username_test: "developer@vsphere.local"
+  password_test: "sekret"
+```
+
 Then to create the secret, run the following command replacing the name of the YAML file with the one you have used:
 
 ```bash
