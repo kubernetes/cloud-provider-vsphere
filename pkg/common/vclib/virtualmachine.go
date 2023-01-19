@@ -434,6 +434,10 @@ func (vm *VirtualMachine) RenewVM(client *vim25.Client) VirtualMachine {
 func (vm *VirtualMachine) Exists(ctx context.Context) (bool, error) {
 	vmMoList, err := vm.Datacenter.GetVMMoList(ctx, []*VirtualMachine{vm}, []string{"summary.runtime.powerState"})
 	if err != nil {
+		if IsManagedObjectNotFoundError(err) {
+			klog.Errorf("VM's ManagedObject is not found, assume it's already deleted, err: +%v", err)
+			return false, nil
+		}
 		klog.Errorf("Failed to get VM Managed object with property summary. err: +%v", err)
 		return false, err
 	}
