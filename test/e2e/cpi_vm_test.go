@@ -145,11 +145,11 @@ func WaitForVMPowerState(name string, targetState types.VirtualMachinePowerState
 }
 
 /*
-	Restart a worker node, then assert that the external, internal IP and
-	the provider ID for the node should not change.
+Restart a worker node, then assert that the external, internal IP and
+the provider ID for the node should not change.
 
-	Delete the worker machine object in the boostrap cluster, after a while CAPV should create a new machine
-	associated with a new VM. The new node should have correct info.
+Delete the worker machine object in the boostrap cluster, after a while CAPV should create a new machine
+associated with a new VM. The new node should have correct info.
 */
 var _ = Describe("Restarting and recreating VMs", func() {
 
@@ -264,6 +264,54 @@ var _ = Describe("Restarting and recreating VMs", func() {
 			err := deleteWorkerMachine(workerNode.Name)
 			Expect(err).To(BeNil(), "cannot delete machine object")
 		})
+
+		By("Eventually original node will be gone")
+		Eventually(func() bool {
+			_, err = getWorkerNode()
+			return err != nil && err.Error() == "worker node not found"
+		}, 5*time.Minute, 5*time.Second).Should(BeTrue())
+
+		By("Eventually new node will be created")
+		var newExternalIP, newInternalIP string
+		Eventually(func() error {
+			if workerNode, err = getWorkerNode(); err != nil {
+				return err
+			}
+			if newExternalIP, err = getExternalIPFromNode(workerNode); err != nil {
+				return err
+			}
+			if newInternalIP, err = getInternalIPFromNode(workerNode); err != nil {
+				return err
+			}
+			return nil
+		}, 10*time.Minute, 5*time.Second).Should(Succeed())
+
+		By("New node will be created with correct info, different from old one")
+		Expect(newExternalIP).ToNot(BeEmpty())
+		Expect(newInternalIP).ToNot(BeEmpty())
+		Expect(getProviderIDFromNode(workerNode)).ToNot(BeEmpty())
+
+		Expect(workerNode.Name).ToNot(Equal(originalWorkerNodeName), "name still the same")
+		Expect(getProviderIDFromNode(workerNode)).ToNot(Equal(providerID), "providerID still the same")
+	})
+
+	It("should result in new node when deleting VM from VC", func() {
+
+		Eventually(func() bool {
+			workerNode, err = getWorkerNode()
+			if err != nil {
+				return false
+			}
+			return DoesNodeHasReadiness(workerNode, corev1.ConditionTrue)
+		}, 10*time.Minute).Should(BeTrue())
+
+		By("Read the providerID of VM")
+		providerID := getProviderIDFromNode(workerNode)
+
+		By("Delete machine object")
+		task, err := workerVM.Destroy(ctx)
+		err = task.Wait(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power on")
 
 		By("Eventually original node will be gone")
 		Eventually(func() bool {
