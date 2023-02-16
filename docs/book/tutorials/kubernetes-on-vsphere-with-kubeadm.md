@@ -45,13 +45,13 @@ quay.io/k8scsi/csi-provisioner:v1.2.2
 quay.io/k8scsi/csi-attacher:v1.1.1
 quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
 quay.io/k8scsi/livenessprobe:v1.1.0
-k8s.gcr.io/kube-apiserver:v1.14.2
-k8s.gcr.io/kube-controller-manager:v1.14.2
-k8s.gcr.io/kube-scheduler:v1.14.2
-k8s.gcr.io/kube-proxy:v1.14.2
-k8s.gcr.io/pause:3.1
-k8s.gcr.io/etcd:3.3.10
-k8s.gcr.io/coredns:1.3.1
+registry.k8s.io/kube-apiserver:v1.14.2
+registry.k8s.io/kube-controller-manager:v1.14.2
+registry.k8s.io/kube-scheduler:v1.14.2
+registry.k8s.io/kube-proxy:v1.14.2
+registry.k8s.io/pause:3.1
+registry.k8s.io/etcd:3.3.10
+registry.k8s.io/coredns:1.3.1
 ```
 
 ### Tools
@@ -303,11 +303,11 @@ networking:
   podSubnet: "10.244.0.0/16"
 etcd:
   local:
-    imageRepository: "k8s.gcr.io"
+    imageRepository: "registry.k8s.io"
     imageTag: "3.3.10"
 dns:
   type: "CoreDNS"
-  imageRepository: "k8s.gcr.io"
+  imageRepository: "registry.k8s.io"
   imageTag: "1.5.0"
 EOF
 ```
