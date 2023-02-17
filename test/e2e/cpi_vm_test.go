@@ -150,8 +150,10 @@ the provider ID for the node should not change.
 
 Delete the worker machine object in the boostrap cluster, after a while CAPV should create a new machine
 associated with a new VM. The new node should have correct info.
+
+Delete the VM from VC API, the node should be gone as well
 */
-var _ = Describe("Restarting and recreating VMs", func() {
+var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 	var originalWorkerNodeName string
 	var workerNode *corev1.Node
@@ -305,41 +307,24 @@ var _ = Describe("Restarting and recreating VMs", func() {
 			return DoesNodeHasReadiness(workerNode, corev1.ConditionTrue)
 		}, 10*time.Minute).Should(BeTrue())
 
-		By("Read the providerID of VM")
-		providerID := getProviderIDFromNode(workerNode)
+		By("Powering off machine object")
+		task, err := workerVM.PowerOff(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot power off vm")
 
-		By("Delete machine object")
-		task, err := workerVM.Destroy(ctx)
 		err = task.Wait(ctx)
-		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power on")
+		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power off")
+
+		By("Delete VM fron VC")
+		task, err = workerVM.Destroy(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot destroy vm")
+
+		err = task.Wait(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to destroy")
 
 		By("Eventually original node will be gone")
 		Eventually(func() bool {
 			_, err = getWorkerNode()
 			return err != nil && err.Error() == "worker node not found"
 		}, 5*time.Minute, 5*time.Second).Should(BeTrue())
-
-		By("Eventually new node will be created")
-		var newExternalIP, newInternalIP string
-		Eventually(func() error {
-			if workerNode, err = getWorkerNode(); err != nil {
-				return err
-			}
-			if newExternalIP, err = getExternalIPFromNode(workerNode); err != nil {
-				return err
-			}
-			if newInternalIP, err = getInternalIPFromNode(workerNode); err != nil {
-				return err
-			}
-			return nil
-		}, 10*time.Minute, 5*time.Second).Should(Succeed())
-
-		By("New node will be created with correct info, different from old one")
-		Expect(newExternalIP).ToNot(BeEmpty())
-		Expect(newInternalIP).ToNot(BeEmpty())
-		Expect(getProviderIDFromNode(workerNode)).ToNot(BeEmpty())
-
-		Expect(workerNode.Name).ToNot(Equal(originalWorkerNodeName), "name still the same")
-		Expect(getProviderIDFromNode(workerNode)).ToNot(Equal(providerID), "providerID still the same")
 	})
 })
