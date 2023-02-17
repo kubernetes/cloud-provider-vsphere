@@ -198,13 +198,13 @@ Firstly, verify that connectivity to the required `gcr.io` registries is working
 
 ```sh
 $ sudo kubeadm config images pull
-[config/images] Pulled k8s.gcr.io/kube-apiserver:v1.14.2
-[config/images] Pulled k8s.gcr.io/kube-controller-manager:v1.14.2
-[config/images] Pulled k8s.gcr.io/kube-scheduler:v1.14.2
-[config/images] Pulled k8s.gcr.io/kube-proxy:v1.14.2
-[config/images] Pulled k8s.gcr.io/pause:3.1
-[config/images] Pulled k8s.gcr.io/etcd:3.3.10
-[config/images] Pulled k8s.gcr.io/coredns:1.3.1
+[config/images] Pulled registry.k8s.io/kube-apiserver:v1.14.2
+[config/images] Pulled registry.k8s.io/kube-controller-manager:v1.14.2
+[config/images] Pulled registry.k8s.io/kube-scheduler:v1.14.2
+[config/images] Pulled registry.k8s.io/kube-proxy:v1.14.2
+[config/images] Pulled registry.k8s.io/pause:3.1
+[config/images] Pulled registry.k8s.io/etcd:3.3.10
+[config/images] Pulled registry.k8s.io/coredns:1.3.1
 ```
 
 ### On the master node(s) (part b)
