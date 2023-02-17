@@ -150,8 +150,10 @@ the provider ID for the node should not change.
 
 Delete the worker machine object in the boostrap cluster, after a while CAPV should create a new machine
 associated with a new VM. The new node should have correct info.
+
+Delete the VM from VC API, the node should be gone as well
 */
-var _ = Describe("Restarting and recreating VMs", func() {
+var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 	var originalWorkerNodeName string
 	var workerNode *corev1.Node
@@ -308,10 +310,19 @@ var _ = Describe("Restarting and recreating VMs", func() {
 		By("Read the providerID of VM")
 		providerID := getProviderIDFromNode(workerNode)
 
-		By("Delete machine object")
-		task, err := workerVM.Destroy(ctx)
+		By("Powering off machine object")
+		task, err := workerVM.PowerOff(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot power off vm")
+
 		err = task.Wait(ctx)
-		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power on")
+		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power off")
+
+		By("Delete machine object")
+		task, err = workerVM.Destroy(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot destroy vm")
+
+		err = task.Wait(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to destroy")
 
 		By("Eventually original node will be gone")
 		Eventually(func() bool {
