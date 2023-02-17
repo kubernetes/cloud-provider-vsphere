@@ -66,8 +66,8 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	model.Service.ServeMux.Handle(path, handler)
 
 	// vAPI simulator
-	path, handler = vapi.New(s.URL, nil)
-	model.Service.ServeMux.Handle(path, handler)
+	vapiPath, handler := vapi.New(s.URL, nil)
+	model.Service.ServeMux.Handle(vapiPath[0], handler)
 
 	// Lookup Service simulator
 	model.Service.RegisterSDK(lookup.New())

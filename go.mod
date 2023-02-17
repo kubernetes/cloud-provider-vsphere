@@ -5,14 +5,14 @@ go 1.19
 require (
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/vmware-tanzu/vm-operator-api v0.1.4-0.20201118171008-5ca641b0e126
-	github.com/vmware/govmomi v0.27.3
+	github.com/vmware/govmomi v0.30.2
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.2.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.2.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.3.0
@@ -63,7 +63,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kr/pretty v0.2.1 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
