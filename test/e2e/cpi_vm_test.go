@@ -145,13 +145,15 @@ func WaitForVMPowerState(name string, targetState types.VirtualMachinePowerState
 }
 
 /*
-	Restart a worker node, then assert that the external, internal IP and
-	the provider ID for the node should not change.
+Restart a worker node, then assert that the external, internal IP and
+the provider ID for the node should not change.
 
-	Delete the worker machine object in the boostrap cluster, after a while CAPV should create a new machine
-	associated with a new VM. The new node should have correct info.
+Delete the worker machine object in the boostrap cluster, after a while CAPV should create a new machine
+associated with a new VM. The new node should have correct info.
+
+Delete the VM from VC API, the node should be gone as well
 */
-var _ = Describe("Restarting and recreating VMs", func() {
+var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 	var originalWorkerNodeName string
 	var workerNode *corev1.Node
@@ -293,5 +295,36 @@ var _ = Describe("Restarting and recreating VMs", func() {
 
 		Expect(workerNode.Name).ToNot(Equal(originalWorkerNodeName), "name still the same")
 		Expect(getProviderIDFromNode(workerNode)).ToNot(Equal(providerID), "providerID still the same")
+	})
+
+	It("should result in new node when deleting VM from VC", func() {
+
+		Eventually(func() bool {
+			workerNode, err = getWorkerNode()
+			if err != nil {
+				return false
+			}
+			return DoesNodeHasReadiness(workerNode, corev1.ConditionTrue)
+		}, 10*time.Minute).Should(BeTrue())
+
+		By("Powering off machine object")
+		task, err := workerVM.PowerOff(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot power off vm")
+
+		err = task.Wait(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power off")
+
+		By("Delete VM fron VC")
+		task, err = workerVM.Destroy(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot destroy vm")
+
+		err = task.Wait(ctx)
+		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to destroy")
+
+		By("Eventually original node will be gone")
+		Eventually(func() bool {
+			_, err = getWorkerNode()
+			return err != nil && err.Error() == "worker node not found"
+		}, 5*time.Minute, 5*time.Second).Should(BeTrue())
 	})
 })
