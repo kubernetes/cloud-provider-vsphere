@@ -245,8 +245,8 @@ tools: $(TOOLING_BINARIES) ## Build tooling binaries
 $(TOOLING_BINARIES):
 	make -C $(TOOLS_DIR) $(@F)
 
-.PHONY: test-e2e
-test-e2e:
+.PHONY: e2e
+e2e:
 	make -C $(E2E_DIR) run
 
 .PHONY: integration-test
