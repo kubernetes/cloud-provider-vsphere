@@ -107,3 +107,8 @@ func (w *FakeClientWrapper) DeleteAllOf(ctx context.Context, obj client.Object, 
 func (w *FakeClientWrapper) Status() client.StatusWriter {
 	return w.fakeClient.Status()
 }
+
+// SubResource returns a SubResourceClient for the resource.
+func (w *FakeClientWrapper) SubResource(subResource string) client.SubResourceClient {
+	return w.fakeClient.SubResource(subResource)
+}
