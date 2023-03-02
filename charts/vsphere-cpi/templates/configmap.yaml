@@ -13,8 +13,12 @@ data:
     # Global properties in this section will be used for all specified vCenters unless overriden in VirtualCenter section.
     global:
       port: 443
+      {{- if .Values.config.tlsThumbprint }}
+      tlsThumbprint: {{- .Values.config.tlsThumbprint }}
+      {{- else }}
       # set insecure-flag to true if the vCenter uses a self-signed cert
       insecureFlag: true
+      {{- end }}
       # settings for using k8s secret
       secretName: {{ .Values.config.secret.name }}
       secretNamespace: {{ .Release.Namespace }}

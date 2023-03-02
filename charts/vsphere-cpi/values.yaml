@@ -15,6 +15,7 @@ config:
   datacenter: "dc"
   region: "k8s-region"
   zone: "k8s-zone"
+  tlsThumbprint: ""
 
   secret:
     # Specifies whether Secret should be created from config values
@@ -58,7 +59,7 @@ serviceAccount:
 daemonset:
   annotations: {}
   image: gcr.io/cloud-provider-vsphere/cpi/release/manager
-  tag: v1.25.0
+  tag: v1.26.0
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
