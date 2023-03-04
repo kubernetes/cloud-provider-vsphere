@@ -2,8 +2,27 @@ apiVersion: v1
 entries:
   vsphere-cpi:
   - apiVersion: v2
+    appVersion: 1.24.4
+    created: "2023-03-03T13:36:45.853773-08:00"
+    description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
+    digest: cb07593cddfb431a5beaac9bcdc77c90f286c7875ce51d9b04b9a5d74e558653
+    home: https://github.com/kubernetes/cloud-provider-vsphere
+    icon: https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/vmware_logo.png
+    keywords:
+    - vsphere
+    - vmware
+    - cloud
+    - provider
+    - cpi
+    name: vsphere-cpi
+    sources:
+    - https://github.com/kubernetes/cloud-provider-vsphere
+    urls:
+    - https://kubernetes.github.io/cloud-provider-vsphere/charts/vsphere-cpi-1.24.4.tgz
+    version: 1.24.4
+  - apiVersion: v2
     appVersion: 1.24.2
-    created: "2022-09-23T14:57:24.196241-07:00"
+    created: "2023-03-03T13:36:45.852473-08:00"
     description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
     digest: d0bfaf8a081128f9477b8d8ff00079f8506d4aa2ea899f55511d06400179b159
     home: https://github.com/kubernetes/cloud-provider-vsphere
@@ -18,11 +37,11 @@ entries:
     sources:
     - https://github.com/kubernetes/cloud-provider-vsphere
     urls:
-    - https://github.com/kubernetes/cloud-provider-vsphere/releases/download/vsphere-cpi-chart-1.24.2/charts/vsphere-cpi-1.24.2.tgz
+    - https://kubernetes.github.io/cloud-provider-vsphere/charts/vsphere-cpi-1.24.2.tgz
     version: 1.24.2
   - apiVersion: v2
     appVersion: 1.24.1
-    created: "2022-09-23T14:57:24.194759-07:00"
+    created: "2023-03-03T13:36:45.85138-08:00"
     description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
     digest: 6e9dec3e4c6aaeed0d7f95aa2beade986d5a0a2261509b11479ceb1a51312096
     home: https://github.com/kubernetes/cloud-provider-vsphere
@@ -39,4 +58,4 @@ entries:
     urls:
     - https://kubernetes.github.io/cloud-provider-vsphere/charts/vsphere-cpi-1.24.1.tgz
     version: 1.24.1
-generated: "2022-09-23T14:57:24.192074-07:00"
+generated: "2023-03-03T13:36:45.848893-08:00"
