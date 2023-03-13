@@ -25,10 +25,8 @@ data:
 
     # vcenter section
     vcenter:
-      {{ .Values.config.vcenter }}:
+      {{ .Values.config.vcenter | default .Values.global.config.vcenter }}:
         server: {{ .Values.config.vcenter | default .Values.global.config.vcenter }}
-        user: {{ .Values.config.username | default .Values.global.config.username }}
-        password: {{ .Values.config.password | default .Values.global.config.password }}
         datacenters:
           - {{ .Values.config.datacenter | default .Values.global.config.datacenter }}
 
