@@ -1,6 +1,6 @@
 {{- if .Values.config.enabled | default .Values.global.config.enabled -}}
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: {{ .Values.config.name | default "cloud-config" }}
   labels:
@@ -8,7 +8,7 @@ metadata:
     vsphere-cpi-infra: cloud-config
     component: cloud-controller-manager
   namespace: {{ .Release.Namespace }}
-data:
+stringData:
   vsphere.conf: |
     # Global properties in this section will be used for all specified vCenters unless overriden in VirtualCenter section.
     global:

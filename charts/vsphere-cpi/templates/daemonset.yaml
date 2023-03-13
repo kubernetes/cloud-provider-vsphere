@@ -83,8 +83,8 @@ spec:
         {{- end }}
       volumes:
         - name: vsphere-config-volume
-          configMap:
-            name: {{ if .Values.config.enabled }}{{- .Values.config.name }}{{- else }}cloud-config{{- end }}
+          secret:
+            secretName: {{ if .Values.config.enabled }}{{- .Values.config.name }}{{- else }}cloud-config{{- end }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
