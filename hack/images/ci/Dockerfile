@@ -3,7 +3,7 @@
 ################################################################################
 # The golang image is used to create the project's module and build caches
 # and is also the image on which this image is based.
-ARG GOLANG_IMAGE=golang:1.17.5
+ARG GOLANG_IMAGE=golang:1.20.2
 
 # The image from which the Terraform project used to turn up a K8s cluster is
 # copied, as well as several programs.
@@ -77,18 +77,18 @@ ENV LANG=en_US.UTF-8 LC_ALL=C.UTF-8
 #   * https://github.com/kubernetes/test-infra/blob/master/images/bootstrap/Dockerfile
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      ca-certificates \
-      curl \
-      git \
-      jq \
-      locales \
-      mercurial \
-      python3 \
-      python3-pip \
-      ruby \
-      tar \
-      unzip \
-      zip && \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    locales \
+    mercurial \
+    python3 \
+    python3-pip \
+    ruby \
+    tar \
+    unzip \
+    zip && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
     pip3 install setuptools wheel --upgrade && \
     pip3 install awscli --upgrade && \
@@ -105,20 +105,20 @@ RUN apt-get update && \
 # for another image someday.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      gnupg2 \
-      software-properties-common \
-      lsb-release && \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg2 \
+    software-properties-common \
+    lsb-release && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/*
 
 # Add the Docker apt-repository
 RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "${ID}")/gpg | \
     gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
     echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
-      $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # Install Docker
 # TODO(bentheelder): the `sed` is a bit of a hack, look into alternatives.

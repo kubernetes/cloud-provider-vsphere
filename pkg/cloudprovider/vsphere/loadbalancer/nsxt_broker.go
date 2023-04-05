@@ -78,7 +78,7 @@ type nsxtBroker struct {
 // NewNsxtBroker creates a new NsxtBroker using the configuration
 func NewNsxtBroker(connector client.Connector) (NsxtBroker, error) {
 	// perform API call to check connector
-	_, err := infra.NewDefaultLbMonitorProfilesClient(connector).List(nil, nil, nil, nil, nil, nil)
+	_, err := infra.NewLbMonitorProfilesClient(connector).List(nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Connection to NSX-T API failed. Please check your connection settings.")
 	}
@@ -88,14 +88,14 @@ func NewNsxtBroker(connector client.Connector) (NsxtBroker, error) {
 // NewNsxtBrokerFromConnector creates a new NsxtBroker to the real API
 func NewNsxtBrokerFromConnector(connector client.Connector) NsxtBroker {
 	return &nsxtBroker{
-		lbServicesClient:        infra.NewDefaultLbServicesClient(connector),
-		lbVirtServersClient:     infra.NewDefaultLbVirtualServersClient(connector),
-		lbPoolsClient:           infra.NewDefaultLbPoolsClient(connector),
-		ipPoolsClient:           infra.NewDefaultIpPoolsClient(connector),
-		ipAllocationsClient:     ip_pools.NewDefaultIpAllocationsClient(connector),
-		lbAppProfilesClient:     infra.NewDefaultLbAppProfilesClient(connector),
-		lbMonitorProfilesClient: infra.NewDefaultLbMonitorProfilesClient(connector),
-		realizedEntitiesClient:  realized_state.NewDefaultRealizedEntitiesClient(connector),
+		lbServicesClient:        infra.NewLbServicesClient(connector),
+		lbVirtServersClient:     infra.NewLbVirtualServersClient(connector),
+		lbPoolsClient:           infra.NewLbPoolsClient(connector),
+		ipPoolsClient:           infra.NewIpPoolsClient(connector),
+		ipAllocationsClient:     ip_pools.NewIpAllocationsClient(connector),
+		lbAppProfilesClient:     infra.NewLbAppProfilesClient(connector),
+		lbMonitorProfilesClient: infra.NewLbMonitorProfilesClient(connector),
+		realizedEntitiesClient:  realized_state.NewRealizedEntitiesClient(connector),
 	}
 }
 
