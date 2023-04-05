@@ -145,7 +145,7 @@ variables:
   IP_FAMILY: "IPv4"
   CLUSTER_CLASS_NAME: "quick-start"
   # Following CAPV variables should be set before testing
-  VSPHERE_TLS_THUMBPRINT: "AA:70:F9:CF:5A:5F:CF:6C:81:15:E0:A1:88:B9:E9:2B:DC:19:0E:D0"
+  VSPHERE_TLS_THUMBPRINT: "18:EC:35:60:54:68:92:F6:F8:92:3E:4D:11:A1:0D:13:9C:E9:3E:B6"
   VSPHERE_DATACENTER:  "SDDC-Datacenter"
   VSPHERE_FOLDER: "clusterapi"
   VSPHERE_RESOURCE_POOL: "clusterapi"
