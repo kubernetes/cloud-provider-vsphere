@@ -31,7 +31,6 @@ require (
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 // indirect
 	github.com/beevik/etree v1.1.0 // indirect
@@ -75,6 +74,7 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.7 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.7 // indirect
@@ -126,6 +126,6 @@ require (
 replace (
 	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega => github.com/onsi/gomega v1.11.0
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.2
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.2
 )
