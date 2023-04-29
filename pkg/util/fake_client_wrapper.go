@@ -29,7 +29,7 @@ import (
 type FakeClientWrapper struct {
 	fakeClient client.Client
 	// Set these functions if you want to override the default fakeClient behavior
-	GetFunc    func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
+	GetFunc    func(ctx context.Context, key client.ObjectKey, obj client.Object) error
 	CreateFunc func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 	UpdateFunc func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
 	DeleteFunc func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
@@ -54,11 +54,11 @@ func NewFakeClientWrapper(fakeClient client.Client) *FakeClientWrapper {
 }
 
 // Get retrieves an obj for the given object key from the Kubernetes Cluster.
-func (w *FakeClientWrapper) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (w *FakeClientWrapper) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 	if w.GetFunc != nil {
-		return w.GetFunc(ctx, key, obj, opts...)
+		return w.GetFunc(ctx, key, obj)
 	}
-	return w.fakeClient.Get(ctx, key, obj, opts...)
+	return w.fakeClient.Get(ctx, key, obj)
 }
 
 // List retrieves list of objects for a given namespace and list options.
@@ -106,9 +106,4 @@ func (w *FakeClientWrapper) DeleteAllOf(ctx context.Context, obj client.Object, 
 // Status returns a StatusWriter which knows how to update status subresource of a Kubernetes object.
 func (w *FakeClientWrapper) Status() client.StatusWriter {
 	return w.fakeClient.Status()
-}
-
-// SubResource returns a SubResourceClient for the resource.
-func (w *FakeClientWrapper) SubResource(subResource string) client.SubResourceClient {
-	return w.fakeClient.SubResource(subResource)
 }
