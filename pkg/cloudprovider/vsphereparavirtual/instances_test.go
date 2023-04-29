@@ -166,7 +166,7 @@ func TestInstanceIDThrowsErr(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			instance, fcw := initTest(testCase.testVM)
-			fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+			fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 				return fmt.Errorf("Internal error getting VMs")
 			}
 
@@ -399,7 +399,7 @@ func TestNodeAddressesInternalErr(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			instance, fcw := initTest(testCase.testVM)
-			fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+			fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 				return fmt.Errorf("Internal error getting VMs")
 			}
 
