@@ -29,7 +29,7 @@ import (
 type FakeClientWrapper struct {
 	fakeClient client.Client
 	// Set these functions if you want to override the default fakeClient behavior
-	GetFunc    func(ctx context.Context, key client.ObjectKey, obj client.Object) error
+	GetFunc    func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
 	CreateFunc func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 	UpdateFunc func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
 	DeleteFunc func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
@@ -54,11 +54,11 @@ func NewFakeClientWrapper(fakeClient client.Client) *FakeClientWrapper {
 }
 
 // Get retrieves an obj for the given object key from the Kubernetes Cluster.
-func (w *FakeClientWrapper) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+func (w *FakeClientWrapper) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	if w.GetFunc != nil {
-		return w.GetFunc(ctx, key, obj)
+		return w.GetFunc(ctx, key, obj, opts...)
 	}
-	return w.fakeClient.Get(ctx, key, obj)
+	return w.fakeClient.Get(ctx, key, obj, opts...)
 }
 
 // List retrieves list of objects for a given namespace and list options.
