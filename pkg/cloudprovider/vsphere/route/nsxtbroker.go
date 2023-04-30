@@ -39,15 +39,15 @@ type nsxtBroker struct {
 	// TODO: will add tier0 static routes client
 	tier1StaticRoutesClient tier_1s.StaticRoutesClient
 	realizedEntitiesClient  realized_state.RealizedEntitiesClient
-	queryClient             *search.DefaultQueryClient
+	queryClient             search.QueryClient
 }
 
 // NewNsxtBroker creates a new NsxtBroker to the NSXT API
 func NewNsxtBroker(connector client.Connector) (NsxtBroker, error) {
 	return &nsxtBroker{
-		tier1StaticRoutesClient: tier_1s.NewDefaultStaticRoutesClient(connector),
-		realizedEntitiesClient:  realized_state.NewDefaultRealizedEntitiesClient(connector),
-		queryClient:             search.NewDefaultQueryClient(connector),
+		tier1StaticRoutesClient: tier_1s.NewStaticRoutesClient(connector),
+		realizedEntitiesClient:  realized_state.NewRealizedEntitiesClient(connector),
+		queryClient:             search.NewQueryClient(connector),
 	}, nil
 }
 

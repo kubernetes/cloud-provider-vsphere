@@ -300,7 +300,6 @@ github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d/go.mod h1:sJBsCZ4ayReDTBIg8b9dl28c5xFWyhBTVRp3pOg5EKY=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
-github.com/gorilla/mux v1.7.4/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
@@ -517,12 +516,12 @@ github.com/vmware-tanzu/vm-operator-api v0.1.4-0.20201118171008-5ca641b0e126/go.
 github.com/vmware/govmomi v0.27.3 h1:gwHHxKbMTNJON/3WPK3EsqZyQznTdHJAyRYPRSLm6R8=
 github.com/vmware/govmomi v0.27.3/go.mod h1:daTuJEcQosNMXYJOeku0qdBJP9SOLLWB3Mqz8THtv6o=
 github.com/vmware/vmw-guestinfo v0.0.0-20170707015358-25eff159a728/go.mod h1:x9oS4Wk2s2u4tS29nEaDLdzvuHdB19CvSGJjPgkZJNk=
-github.com/vmware/vsphere-automation-sdk-go/lib v0.2.0 h1:noiASkafwxvCmmCtZK0f1pt06R8c+Fkt9TcZW7xpYy0=
-github.com/vmware/vsphere-automation-sdk-go/lib v0.2.0/go.mod h1://FsAiCrr+T/Eq2Uxtq8UPVPbZWV7iLIvvXK17rsIxE=
-github.com/vmware/vsphere-automation-sdk-go/runtime v0.2.0 h1:AM5AK9cyiJWFIfxrh1U/kuRFh+A2pymCEGiXqAkPzzw=
-github.com/vmware/vsphere-automation-sdk-go/runtime v0.2.0/go.mod h1:M6pTKDrJrPlVG++lboLRf0bDYc3TJ2fsR+KOoWXfCns=
-github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.3.0 h1:Ekf0/umhKdr4N0oURDFlkhZHVm6w0eXzbsn6yc/vL+4=
-github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.3.0/go.mod h1:k9tf91B5Ah7gkaM2s+Z6nATmn6gKmgt8AqJ8RUiKLfo=
+github.com/vmware/vsphere-automation-sdk-go/lib v0.4.0 h1:H341o+0k6BfcehXvCK9w+G/Yx8GgjrWam91ANlsVrE4=
+github.com/vmware/vsphere-automation-sdk-go/lib v0.4.0/go.mod h1:o0p10EpvLFXbws63s9vV66+OQwalnXJPNgl+BvPz5PY=
+github.com/vmware/vsphere-automation-sdk-go/runtime v0.4.0 h1:SJI34JDj28bZyTI93kCTdklXHaxJUnR+ebkMQ8eWfgA=
+github.com/vmware/vsphere-automation-sdk-go/runtime v0.4.0/go.mod h1:GqC85noyNzapJN4vIAO9jJ1EKVo3+jCW4/2VTaMvuSg=
+github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.9.0 h1:P3d7ha+DggRzmg8mDRLxHFvG+9fv7Pz8CfVq02EsOMQ=
+github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.9.0/go.mod h1:bRwsoZpMvmP4GZXWvNDEuvlNe1xLfTtGT+pig2vuH38=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5Qo6v2eYzo7kUS51QINcR5jNpbZS8=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
@@ -694,6 +693,7 @@ golang.org/x/net v0.0.0-20210226172049-e18ecbb05110/go.mod h1:m0MpNAwzfU5UDzcl9v
 golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4/go.mod h1:RBQZq4jEuRlivfhVLdyRGr576XBO4/greRjx4P4O3yc=
 golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4/go.mod h1:p54w0d4576C0XHj96bSt6lcn1PtDYWL6XObtHCRCNQM=
 golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
+golang.org/x/net v0.0.0-20210510120150-4163338589ed/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20210525063256-abc453219eb5/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20210825183410-e898025ed96a/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
