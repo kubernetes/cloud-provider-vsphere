@@ -394,7 +394,6 @@ func nicerVapiErrorData(errorMsg string, apiErrorDataValue *data.StructValue, me
 	}
 
 	var typeConverter = bindings.NewTypeConverter()
-	typeConverter.SetMode(bindings.REST)
 	rawData, err := typeConverter.ConvertToGolang(apiErrorDataValue, model.ApiErrorBindingType())
 
 	if err != nil {
