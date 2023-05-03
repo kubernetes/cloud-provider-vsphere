@@ -30,7 +30,6 @@ type nsxtTypeConverter struct {
 
 func newNsxtTypeConverter() *nsxtTypeConverter {
 	converter := bindings.NewTypeConverter()
-	converter.SetMode(bindings.REST)
 	return &nsxtTypeConverter{TypeConverter: *converter}
 }
 
