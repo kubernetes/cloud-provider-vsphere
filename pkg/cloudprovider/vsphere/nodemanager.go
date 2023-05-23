@@ -18,11 +18,14 @@ package vsphere
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 
+	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -48,6 +51,15 @@ var (
 	// ErrVMNotFound is returned when the specified VM cannot be found.
 	ErrVMNotFound = errors.New("VM not found")
 )
+
+type cloudInitConfig struct {
+	Network struct {
+		Ethernets map[string]struct {
+			Name      string   `yaml:"set-name"`
+			Addresses []string `yaml:"addresses"`
+		} `yaml:"ethernets"`
+	} `yaml:"network"`
+}
 
 func newNodeManager(cfg *ccfg.CPIConfig, cm *cm.ConnectionManager) *NodeManager {
 	return &NodeManager{
@@ -191,7 +203,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	}
 
 	var oVM mo.VirtualMachine
-	err = vmDI.VM.Properties(ctx, vmDI.VM.Reference(), []string{"guest", "summary"}, &oVM)
+	err = vmDI.VM.Properties(ctx, vmDI.VM.Reference(), []string{"guest", "summary", "config"}, &oVM)
 	if err != nil {
 		klog.Errorf("Error collecting properties for vm=%+v in vc=%s and datacenter=%s: %v",
 			vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name(), err)
@@ -291,10 +303,17 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		return fmt.Errorf("unable to find suitable IP address for node after filtering out localhost IPs")
 	}
 
+	sortedNonLocalhostIPs, err := sortStaticallyConfiguredAddressesFirst(oVM.Config.ExtraConfig, nonLocalhostIPs)
+	if err != nil {
+		klog.Errorf("Error sorting statically configured addresses for vm=%+v in vc=%s and datacenter=%s: %v",
+			vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name(), err)
+		return err
+	}
+
 	for _, ipFamily := range ipFamilies {
-		klog.V(6).Infof("ipFamily: %q nonLocalhostIPs: %q", ipFamily, nonLocalhostIPs)
+		klog.V(6).Infof("ipFamily: %q nonLocalhostIPs: %q", ipFamily, sortedNonLocalhostIPs)
 		discoveredInternal, discoveredExternal := discoverIPs(
-			nonLocalhostIPs,
+			sortedNonLocalhostIPs,
 			ipFamily,
 			internalNetworkSubnets,
 			externalNetworkSubnets,
@@ -651,4 +670,60 @@ func (nm *NodeManager) getNodeNameByUUID(UUID string) string {
 
 	}
 	return ""
+}
+
+func guestInfoMetadata(extraConfig []types.BaseOptionValue) (string, string) {
+	var guestInfo, encoding string
+	for _, option := range extraConfig {
+		value := option.GetOptionValue()
+		switch value.Key {
+		case "guestinfo.metadata":
+			guestInfo, _ = value.Value.(string)
+		case "guestinfo.metadata.encoding":
+			encoding, _ = value.Value.(string)
+		}
+	}
+	return guestInfo, encoding
+}
+
+// sortStaticallyConfiguredAddressesFirst prefers addresses that are from the
+// guestInfo but only if they are on a NIC already. It preserves the order in which
+// the addresses appear in the guestInfo. For addresses not found in the guestInfo,
+// it preserves the order in which they appear in nonlocalhostIPs.
+func sortStaticallyConfiguredAddressesFirst(extraConfig []types.BaseOptionValue, nonLocalhostIPs []*ipAddrNetworkName) ([]*ipAddrNetworkName, error) {
+	guestInfo, encoding := guestInfoMetadata(extraConfig)
+
+	if guestInfo != "" && encoding == "base64" {
+		value, err := base64.StdEncoding.DecodeString(guestInfo)
+		if err != nil {
+			return nil, err
+		}
+
+		guestInfo := &cloudInitConfig{}
+		err = yaml.Unmarshal(value, guestInfo)
+		if err != nil {
+			return nil, err
+		}
+
+		// Map of guestInfo IP -> index that describes the order they appear in the guestInfo
+		guestInfoAddresses := make(map[string]int)
+		for _, eth := range guestInfo.Network.Ethernets {
+			for _, address := range eth.Addresses {
+				ip := net.ParseIP(strings.Split(address, "/")[0])
+				guestInfoAddresses[ip.String()] = len(guestInfoAddresses)
+			}
+		}
+
+		// Sort nonlocalhostIPs by the following comparator for two IP addresses: a and b
+		// if a is statically configured, but b is not then a should be prioritized before b
+		// if b is statically configured, but a is not then a should not be prioritized before b
+		// if a and b are both statically configured, then use the index from the guest info
+		sort.SliceStable(nonLocalhostIPs, func(i, j int) bool {
+			aIndex, aFound := guestInfoAddresses[nonLocalhostIPs[i].ipAddr]
+			bIndex, bFound := guestInfoAddresses[nonLocalhostIPs[j].ipAddr]
+
+			return aFound && !bFound || aFound && bFound && aIndex < bIndex
+		})
+	}
+	return nonLocalhostIPs, nil
 }
