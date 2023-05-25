@@ -15,7 +15,7 @@ config:
   datacenter: "dc"
   region: "k8s-region"
   zone: "k8s-zone"
-  tlsThumbprint: ""
+  thumbprint: ""
 
   secret:
     # Specifies whether Secret should be created from config values
