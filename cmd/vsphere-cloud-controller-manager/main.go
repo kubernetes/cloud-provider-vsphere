@@ -80,7 +80,7 @@ func main() {
 	}
 
 	fs := command.Flags()
-	namedFlagSets := ccmOptions.Flags(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List())
+	namedFlagSets := ccmOptions.Flags(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List(), app.AllWebhooks, app.DisabledByDefaultWebhooks)
 	verflag.AddFlags(namedFlagSets.FlagSet("global"))
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), command.Name())
 
@@ -150,7 +150,7 @@ func main() {
 		verflag.PrintAndExitIfRequested()
 		cliflag.PrintFlags(cmd.Flags())
 
-		c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List())
+		c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List(), app.AllWebhooks, app.DisabledByDefaultWebhooks)
 		if err != nil {
 			// explicitly ignore the error by Fprintf, exiting anyway
 			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -176,6 +176,8 @@ func main() {
 
 		cloud := initializeCloud(completedConfig, cloudProvider)
 		controllerInitializers = app.ConstructControllerInitializers(app.DefaultInitFuncConstructors, completedConfig, cloud)
+		webhookConfig := make(map[string]app.WebhookConfig)
+		webhookHandlers := app.NewWebhookHandlers(webhookConfig, completedConfig, cloud)
 
 		// initialize a notifier for cloud config update
 		cloudConfig := completedConfig.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile
@@ -188,7 +190,7 @@ func main() {
 			_ = watch.Close() // ignore explicitly when the watch closes
 		}(watch)
 
-		if err := app.Run(completedConfig, cloud, controllerInitializers, stop); err != nil {
+		if err := app.Run(completedConfig, cloud, controllerInitializers, webhookHandlers, stop); err != nil {
 			// explicitly ignore the error by Fprintf, exiting anyway due to app error
 			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
