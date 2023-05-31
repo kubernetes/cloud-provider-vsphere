@@ -18,6 +18,8 @@ package vsphere
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"net"
 	"strings"
 	"testing"
@@ -230,6 +232,7 @@ func TestDiscoverNodeIPs(t *testing.T) {
 		ipFamilyPriority []string
 		cpiConfig        *ccfg.CPIConfig
 		networks         []vimtypes.GuestNicInfo
+		guestinfo        string
 	}
 	testcases := []struct {
 		testName               string
@@ -1543,6 +1546,235 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 			expectedErrorSubstring: "unable to find suitable IP address for node",
 		},
+		{
+			testName: "IPv6_guestInfoWithDHCP",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6"},
+				guestinfo:        guestInfoWithIPv6DHCP(),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"fe80::1",
+							"fd01:1234::1",
+							"fd01:cccc::1",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd01:1234::1"},
+				{Type: "ExternalIP", Address: "fd01:1234::1"},
+			},
+		},
+		{
+			testName: "StaticAddresses_IPv6_usesStaticAddressForExternalInternal",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6"},
+				guestinfo:        guestInfoWithAddresses("fd01:cccc::1/128"),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"fe80::1",
+							"fd01:1234::1",
+							"fd01:cccc::1",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd01:cccc::1"},
+				{Type: "ExternalIP", Address: "fd01:cccc::1"},
+			},
+		},
+		{
+			testName: "StaticAddresses_IPv4_usesStaticAddressForExternalInternal",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				guestinfo:        guestInfoWithAddresses("192.168.1.12/64"),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"192.168.1.10",
+							"192.168.1.12",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "192.168.1.12"},
+				{Type: "ExternalIP", Address: "192.168.1.12"},
+			},
+		},
+		{
+			testName: "StaticAddresses_prioritizesOrderFromAddresses",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				guestinfo:        guestInfoWithAddresses("192.168.1.12/64,192.168.1.10/64"),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"192.168.1.10",
+							"192.168.1.12",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "192.168.1.12"},
+				{Type: "ExternalIP", Address: "192.168.1.12"},
+			},
+		},
+		{
+			testName: "StaticAddresses_usesTheStaticAddressInTheNetworkCIDR",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				guestinfo:        guestInfoWithAddresses("10.10.10.10/64,192.168.1.12/64"),
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalNetworkSubnetCIDR: "192.168.0.0/16",
+						ExternalNetworkSubnetCIDR: "192.168.0.0/16",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"192.168.1.10",
+							"192.168.1.12",
+							"10.10.10.10",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "192.168.1.12"},
+				{Type: "ExternalIP", Address: "192.168.1.12"},
+			},
+		},
+		{
+			testName: "StaticAddresses_ignoresStaticAddressWhenWithinExcludeCIDR",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				guestinfo:        guestInfoWithAddresses("192.168.1.12/64,10.10.10.10/64"),
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						ExcludeInternalNetworkSubnetCIDR: "192.168.0.0/16",
+						ExcludeExternalNetworkSubnetCIDR: "192.168.0.0/16",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"192.168.1.10",
+							"192.168.1.12",
+							"10.10.10.10",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "10.10.10.10"},
+				{Type: "ExternalIP", Address: "10.10.10.10"},
+			},
+		},
+		{
+			testName: "StaticAddresses_usesTheStaticAddressInTheConfiguredNetworkName",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				guestinfo:        guestInfoWithAddresses("192.168.1.8/64,192.168.1.12/64,10.10.10.10/64"),
+				cpiConfig: &ccfg.CPIConfig{
+					Nodes: ccfg.Nodes{
+						InternalVMNetworkName: "VM Network",
+						ExternalVMNetworkName: "VM Network",
+					},
+				},
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "internal_net",
+						IpAddress: []string{
+							"192.168.1.8",
+						},
+					},
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"192.168.1.10",
+							"192.168.1.12",
+							"10.10.10.10",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "192.168.1.12"},
+				{Type: "ExternalIP", Address: "192.168.1.12"},
+			},
+		},
+		{
+			testName: "StaticAddresses_addressesAreNotAssignedToTheNIC",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv4"},
+				guestinfo:        guestInfoWithAddresses("192.168.1.12/64,10.10.10.10/64"),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"192.168.1.8",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "192.168.1.8"},
+				{Type: "ExternalIP", Address: "192.168.1.8"},
+			},
+		},
+		{
+			testName: "StaticAddresses_IPv6_handlesShorthandVsLonghandAddrs",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6"},
+				guestinfo:        guestInfoWithAddresses("fd01:1:2:2919:abba:0000:0000:401/128"),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"fd00::1",
+							"fd01:1:2:2919:abba::401",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd01:1:2:2919:abba::401"},
+				{Type: "ExternalIP", Address: "fd01:1:2:2919:abba::401"},
+			},
+		},
+		{
+			testName: "StaticAddresses_errorsOnInvalidGuestInfoFormat",
+			setup: testSetup{
+				guestinfo: "not-valid-yaml this should error",
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"192.168.1.10",
+						},
+					},
+				},
+			},
+			expectedErrorSubstring: "cannot unmarshal",
+		},
 	}
 
 	for _, testcase := range testcases {
@@ -1559,6 +1791,18 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 			vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
 			vm.Guest.Net = testcase.setup.networks
+			if testcase.setup.guestinfo != "" {
+				vm.Config.ExtraConfig = []vimtypes.BaseOptionValue{
+					&vimtypes.OptionValue{
+						Key:   "guestinfo.metadata",
+						Value: base64.StdEncoding.EncodeToString([]byte(testcase.setup.guestinfo)),
+					},
+					&vimtypes.OptionValue{
+						Key:   "guestinfo.metadata.encoding",
+						Value: "base64",
+					},
+				}
+			}
 
 			name := vm.Name
 
@@ -1882,4 +2126,42 @@ func TestExcludeLocalhostIPs(t *testing.T) {
 	if actual[1].ipAddr != "fd00:100:64::1" {
 		t.Errorf("failure: expected ipAddr to equal fd00:100:64::1, but was %s", actual[1].ipAddr)
 	}
+}
+
+func guestInfoWithIPv6DHCP() string {
+	return `instance-id: "tkg-mgmt-vc"
+local-hostname: "tkg-mgmt-vc"
+wait-on-network:
+  ipv4: false
+  ipv6: false
+network:
+  version: 2
+  ethernets:
+    id0:
+      match:
+        macaddress: "00:11:22"
+      set-name: "eth0"
+      wakeonlan: true
+      dhcp4: false
+      dhcp6: true`
+}
+
+func guestInfoWithAddresses(addresses string) string {
+	return fmt.Sprintf(`instance-id: "tkg-mgmt-vc"
+local-hostname: "tkg-mgmt-vc"
+wait-on-network:
+  ipv4: false
+  ipv6: false
+network:
+  version: 2
+  ethernets:
+    id0:
+      addresses: [%s]
+      match:
+        macaddress: "00:11:22"
+      set-name: "eth0"
+      wakeonlan: true
+      dhcp4: false
+      dhcp6: false`,
+		addresses)
 }
