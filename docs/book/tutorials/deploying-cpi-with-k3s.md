@@ -4,7 +4,7 @@ This document is designed to show you how to integrate k3s with cloud provider v
 
 When running with a cloud-controller-manager, it is expected to pass the node provider ID to a CCM as `<provider>://<id>`, in our case, `vsphere://1234567`. However, k3s passes it as `k3s://<hostname>`, which makes vsphere CCM not be able to find the node.
 
-We only support `vsphere` as the provider name that is used for constructing **providerID** for both [vsphere](https://github.com/kubernetes/cloud-provider-vsphere/blob/v1.25.2/pkg/cloudprovider/vsphere/cloud.go#L51) and [vsphere-paravirtual](https://github.com/kubernetes/cloud-provider-vsphere/blob/v1.25.2/pkg/cloudprovider/vsphereparavirtual/cloud.go#L42).
+We only support `vsphere` as the provider name that is used for constructing **providerID** for both [vsphere](https://github.com/kubernetes/cloud-provider-vsphere/blob/v1.25.3/pkg/cloudprovider/vsphere/cloud.go#L51) and [vsphere-paravirtual](https://github.com/kubernetes/cloud-provider-vsphere/blob/v1.25.3/pkg/cloudprovider/vsphereparavirtual/cloud.go#L42).
 
 ## How to integrate k3s with cloud provider vsphere
 

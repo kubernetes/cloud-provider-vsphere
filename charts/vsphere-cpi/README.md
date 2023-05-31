@@ -149,7 +149,7 @@ helm repo add vsphere-cpi https://kubernetes.github.io/cloud-provider-vsphere
 helm repo update
 
 # Package CPI Chart
-VERSION=1.25.2
+VERSION=1.25.3
 cd charts
 helm package vsphere-cpi --version $VERSION --app-version $VERSION
 
