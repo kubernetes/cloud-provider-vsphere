@@ -31,6 +31,10 @@ import (
 	klog "k8s.io/klog/v2"
 )
 
+const (
+	userAgentName = "k8s-cloud-provider-vsphere"
+)
+
 // VSphereConnection contains information for connecting to vCenter
 type VSphereConnection struct {
 	Client            *vim25.Client
@@ -177,6 +181,7 @@ func (connection *VSphereConnection) NewClient(ctx context.Context) (*vim25.Clie
 		klog.Errorf("Failed to create new client. err: %+v", err)
 		return nil, err
 	}
+	client.UserAgent = userAgentName
 	err = connection.login(ctx, client)
 	if err != nil {
 		return nil, err
