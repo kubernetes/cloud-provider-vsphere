@@ -19,6 +19,8 @@ package util
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -111,4 +113,14 @@ func (w *FakeClientWrapper) Status() client.StatusWriter {
 // SubResource returns a SubResourceClient for the resource.
 func (w *FakeClientWrapper) SubResource(subResource string) client.SubResourceClient {
 	return w.fakeClient.SubResource(subResource)
+}
+
+// GroupVersionKindFor returns the GroupVersionKind for the given object.
+func (w *FakeClientWrapper) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+	return w.fakeClient.GroupVersionKindFor(obj)
+}
+
+// IsObjectNamespaced returns true if the GroupVersionKind of the object is namespaced.
+func (w *FakeClientWrapper) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+	return w.fakeClient.IsObjectNamespaced(obj)
 }
