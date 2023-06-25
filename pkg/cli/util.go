@@ -18,7 +18,6 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -31,7 +30,7 @@ func ReadContent(path string) (string, error) {
 		}
 		return "", err
 	}
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}

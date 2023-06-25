@@ -18,7 +18,6 @@ package vsphereparavirtual
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net"
 	"os"
 
@@ -60,7 +59,7 @@ type SupervisorEndpoint struct {
 
 func readOwnerRef(path string) (*metav1.OwnerReference, error) {
 	ownerRef := &metav1.OwnerReference{}
-	d, err := ioutil.ReadFile(path)
+	d, err := os.ReadFile(path)
 	if err != nil {
 		return ownerRef, errors.Wrapf(err, "Failed Reading OwnerReference Config file %s", path)
 	}
@@ -96,7 +95,7 @@ func readSupervisorConfig() (*SupervisorEndpoint, error) {
 
 func getNameSpace(svConfigPath string) (string, error) {
 	namespaceFile := svConfigPath + "/" + SupervisorClusterAccessNamespaceFile
-	namespace, err := ioutil.ReadFile(namespaceFile)
+	namespace, err := os.ReadFile(namespaceFile)
 	if err != nil {
 		klog.Errorf("Failed to read namespace from %s: %v", namespaceFile, err)
 		return "", err
@@ -112,7 +111,7 @@ func getRestConfig(svConfigPath string) (*rest.Config, error) {
 	}
 
 	tokenFile := svConfigPath + "/" + SupervisorClusterAccessTokenFile
-	token, err := ioutil.ReadFile(tokenFile)
+	token, err := os.ReadFile(tokenFile)
 
 	if err != nil {
 		klog.Errorf("Failed to read token from %s: %v", tokenFile, err)
@@ -120,7 +119,7 @@ func getRestConfig(svConfigPath string) (*rest.Config, error) {
 	}
 
 	rootCAFile := svConfigPath + "/" + SupervisorClusterAccessCAFile
-	rootCA, err := ioutil.ReadFile(rootCAFile)
+	rootCA, err := os.ReadFile(rootCAFile)
 
 	if err != nil {
 		klog.Errorf("Failed to read ca cert from %s: %v", rootCAFile, err)
