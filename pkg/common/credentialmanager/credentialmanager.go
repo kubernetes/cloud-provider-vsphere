@@ -17,8 +17,8 @@ limitations under the License.
 package credentialmanager
 
 import (
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -109,22 +109,21 @@ func (credentialManager *CredentialManager) updateCredentialsMapFile() error {
 	//take the mounted secrets in the form of files and make it looks like we
 	//parsed it from a k8s secret so we can reuse the SecretCache.parseSecret() func
 	data := make(map[string][]byte)
-
-	files, err := ioutil.ReadDir(credentialManager.SecretsDirectory)
+	entries, err := os.ReadDir(credentialManager.SecretsDirectory)
 	if err != nil {
 		credentialManager.secretsDirectoryParsed = true
 		klog.Warningf("Failed to find secrets directory %s. error: %q", credentialManager.SecretsDirectory, err)
 		return err
 	}
 
-	for _, f := range files {
+	for _, f := range entries {
 		if f.IsDir() {
 			klog.Warningf("Skipping parse of directory: %s", f.Name())
 			continue
 		}
 
 		fullFilePath := credentialManager.SecretsDirectory + "/" + f.Name()
-		contents, err := ioutil.ReadFile(fullFilePath)
+		contents, err := os.ReadFile(fullFilePath)
 		if err != nil {
 			klog.Warningf("Cannot read  file %s. error: %q", fullFilePath, err)
 			continue
