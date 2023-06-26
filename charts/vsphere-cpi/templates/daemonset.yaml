@@ -1,3 +1,9 @@
+{{- $config := .Values.config -}}
+{{- if .Values.global -}}
+{{- if .Values.global.config -}}
+{{- $config = mergeOverwrite (deepCopy .Values.config) .Values.global.config -}}
+{{- end -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -85,7 +91,7 @@ spec:
       volumes:
         - name: vsphere-config-volume
           configMap:
-            name: {{ if .Values.config.enabled }}{{- .Values.config.name }}{{- else }}cloud-config{{- end }}
+            name: {{ if $config.enabled }}{{- $config.name }}{{- else }}cloud-config{{- end }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
