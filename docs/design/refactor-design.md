@@ -1,11 +1,11 @@
 # vSphere Cloud Provider refactor design
 
-As outlined in [KEP0002](https://github.com/kubernetes/community/blob/master/keps/sig-cloud-provider/0002-cloud-controller-manager.md),
+As outlined in [KEP2392](https://github.com/kubernetes/enhancements/tree/master/keps/sig-cloud-provider/2392-cloud-controller-manager),
 we want to remove any cloud provider specific logic from the kubernetes/kubernetes repo. We want to restructure the code to make it easy for any cloud provider to extend the kubernetes core in a consistent manner for their cloud.
 
 ## Current Status
 
-Currently the in-tree vSphere cloud provider and the `vsphere_volume` volume driver are intertwined and the volume driver calls into the cloud provider code to perform the heavy lifting of volume management, also, the in-tree cloud provider assumes to be run on every kubernetes node and has specific code paths for master and worker nodes ([reference](https://github.com/kubernetes/kubernetes/blob/master/pkg/cloudprovider/providers/vsphere/vsphere.go#L221-L231)).
+Currently the in-tree vSphere cloud provider and the `vsphere_volume` volume driver are intertwined and the volume driver calls into the cloud provider code to perform the heavy lifting of volume management, also, the in-tree cloud provider assumes to be run on every kubernetes node and has specific code paths for master and worker nodes ([reference](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/legacy-cloud-providers/vsphere/vsphere.go#L221-L231)).
 
 to recap:
 
@@ -20,7 +20,7 @@ Currently the vSphere in-tree cloud provider implements two controller loops:
 1. nodeController
 2. volumeController
 
-Given the ongoing effort to move volume management to out-of-tree plugin using the Container Storage Interface (CSI), KEP0002 favors the removal of the volume management code from controller-manager into a separate CSI plugin ([reference](https://github.com/kubernetes/community/blob/master/keps/sig-cloud-provider/0002-cloud-controller-manager.md#volume-management-changes)).
+Given the ongoing effort to move volume management to out-of-tree plugin using the Container Storage Interface (CSI), KEP0002 favors the removal of the volume management code from controller-manager into a separate CSI plugin ([reference](https://github.com/kubernetes/enhancements/tree/master/keps/sig-cloud-provider/2392-cloud-controller-manager#volume-management-changes)).
 
 Specifically to vSphere, the decision is to follow the guideline reimplementing the `nodeController` loop in the cloud controller manager and move `volumeController` to a standalone CSI plugin called `vsphere-csi` that will be available in this same repository.
 
