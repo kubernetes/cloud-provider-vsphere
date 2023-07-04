@@ -5,7 +5,7 @@ we want to remove any cloud provider specific logic from the kubernetes/kubernet
 
 ## Current Status
 
-Currently the in-tree vSphere cloud provider and the `vsphere_volume` volume driver are intertwined and the volume driver calls into the cloud provider code to perform the heavy lifting of volume management, also, the in-tree cloud provider assumes to be run on every kubernetes node and has specific code paths for master and worker nodes ([reference](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/legacy-cloud-providers/vsphere/vsphere.go#L221-L231)).
+Currently the in-tree vSphere cloud provider and the `vsphere_volume` volume driver are intertwined and the volume driver calls into the cloud provider code to perform the heavy lifting of volume management, also, the in-tree cloud provider assumes to be run on every kubernetes node and has specific code paths for master and worker nodes ([reference](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/legacy-cloud-providers/vsphere/vsphere.go#L224-L247)).
 
 to recap:
 
