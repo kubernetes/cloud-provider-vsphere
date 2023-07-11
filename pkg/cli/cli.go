@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	klog "k8s.io/klog/v2"
@@ -50,7 +50,7 @@ func ParseConfig(configFile string) (*config.Config, error) {
 		return nil, fmt.Errorf("Can not open config file %s, %v", configFile, err)
 	}
 
-	byConfig, err := ioutil.ReadAll(f)
+	byConfig, err := io.ReadAll(f)
 	if err != nil {
 		klog.Errorf("ReadAll failed: %s", err)
 		return nil, err

@@ -19,7 +19,6 @@ package vsphere
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 
@@ -58,7 +57,7 @@ const (
 
 func init() {
 	cloudprovider.RegisterCloudProvider(RegisteredProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
-		byConfig, err := ioutil.ReadAll(config)
+		byConfig, err := io.ReadAll(config)
 		if err != nil {
 			klog.Errorf("ReadAll failed: %s", err)
 			return nil, err

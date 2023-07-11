@@ -19,7 +19,6 @@ package vsphereparavirtual
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"testing"
@@ -62,7 +61,7 @@ func TestReadOwnerRef(t *testing.T) {
 	for _, test := range tests {
 
 		if test.fileExists {
-			tmpfile, err := ioutil.TempFile("", "TestReadOwnerRef")
+			tmpfile, err := os.CreateTemp("", "TestReadOwnerRef")
 			if err != nil {
 				t.Errorf("Should be able to create tmpfile: %s", err)
 			}
