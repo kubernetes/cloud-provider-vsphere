@@ -51,7 +51,7 @@ func NewConnectionManager(cfg *vcfg.Config, informMgr *k8s.InformerManager, clie
 	}
 	if informMgr != nil {
 		klog.V(2).Info("Initializing with K8s SecretLister")
-		credMgr := cm.NewCredentialManager(cfg.Global.SecretName, cfg.Global.SecretNamespace, "", informMgr.GetSecretLister())
+		credMgr := cm.NewCredentialManager(cfg.Global.SecretName, cfg.Global.SecretNamespace, "", informMgr.GetSecretLister(cfg.Global.SecretNamespace))
 		connMgr.credentialManagers[vcfg.DefaultCredentialManager] = credMgr
 		connMgr.informerManagers[vcfg.DefaultCredentialManager] = informMgr
 
@@ -116,8 +116,8 @@ func (connMgr *ConnectionManager) createManagersPerTenant(secretName string, sec
 	var informMgr *k8s.InformerManager
 	var lister listerv1.SecretLister
 	if client != nil && secretsDirectory == "" {
-		informMgr = k8s.NewInformer(client, true)
-		lister = informMgr.GetSecretLister()
+		informMgr = k8s.NewInformer(client, secretNamespace)
+		lister = informMgr.GetSecretLister(secretNamespace)
 	}
 
 	credMgr := cm.NewCredentialManager(secretName, secretNamespace, secretsDirectory, lister)

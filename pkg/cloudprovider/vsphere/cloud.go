@@ -122,7 +122,7 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 	if err == nil {
 		klog.V(1).Info("Kubernetes Client Init Succeeded")
 
-		vs.informMgr = k8s.NewInformer(client, true)
+		vs.informMgr = k8s.NewInformer(client, vs.cfg.Config.Global.SecretNamespace, vs.nsxtSecretNamespace)
 
 		connMgr := cm.NewConnectionManager(&vs.cfg.Config, vs.informMgr, client)
 		vs.connectionManager = connMgr
@@ -156,7 +156,7 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 		}
 		vs.loadbalancer.Initialize(loadbalancer.ClusterName, client, stop)
 	}
-	err = vs.nsxtConnectorMgr.AddSecretListener(vs.informMgr.GetSecretInformer())
+	err = vs.nsxtConnectorMgr.AddSecretListener(vs.informMgr.GetSecretInformer(vs.nsxtSecretNamespace))
 	if err != nil {
 		klog.Warningf("Adding NSXT secret listener failed: %v", err)
 	}
@@ -257,15 +257,21 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 		return nil, err
 	}
 
+	nsxtSecretNamespace := v1.NamespaceAll
+	if nsxtcfg != nil {
+		nsxtSecretNamespace = nsxtcfg.SecretNamespace
+	}
+
 	vs := VSphere{
-		cfg:              cfg,
-		cfgLB:            lbcfg,
-		nodeManager:      nm,
-		nsxtConnectorMgr: ncm,
-		loadbalancer:     lb,
-		routes:           routes,
-		instances:        newInstances(nm),
-		zones:            newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
+		cfg:                 cfg,
+		cfgLB:               lbcfg,
+		nodeManager:         nm,
+		nsxtConnectorMgr:    ncm,
+		nsxtSecretNamespace: nsxtSecretNamespace,
+		loadbalancer:        lb,
+		routes:              routes,
+		instances:           newInstances(nm),
+		zones:               newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
 	}
 	return &vs, nil
 }
