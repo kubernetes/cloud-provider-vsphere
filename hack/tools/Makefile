@@ -46,4 +46,4 @@ $(KIND): go.mod
 
 ginkgo: $(GINKGO) $(SRCS)
 $(GINKGO): go.mod
-	go build -tags=tools -o $@ github.com/onsi/ginkgo/ginkgo
+	go build -tags=tools -o $@ github.com/onsi/ginkgo/v2/ginkgo
