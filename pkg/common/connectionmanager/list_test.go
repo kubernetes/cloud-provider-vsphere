@@ -23,10 +23,10 @@ import (
 	"strings"
 	"testing"
 
-	lookup "github.com/vmware/govmomi/lookup/simulator"
+	_ "github.com/vmware/govmomi/lookup/simulator"
 	"github.com/vmware/govmomi/simulator"
-	"github.com/vmware/govmomi/simulator/vpx"
-	sts "github.com/vmware/govmomi/sts/simulator"
+	_ "github.com/vmware/govmomi/sts/simulator"
+	_ "github.com/vmware/govmomi/vapi/simulator"
 
 	vcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
@@ -57,15 +57,11 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 		log.Fatal(err)
 	}
 
+	// Adds vAPI, STS, Lookup Service endpoints to vcsim
+	model.Service.RegisterEndpoints = true
+
 	model.Service.TLS = tlsConfig
 	s := model.Service.NewServer()
-
-	// STS simulator
-	path, handler := sts.New(s.URL, vpx.Setting)
-	model.Service.ServeMux.Handle(path, handler)
-
-	// Lookup Service simulator
-	model.Service.RegisterSDK(lookup.New())
 
 	cfg.Global.InsecureFlag = insecureAllowed
 	cfg.Global.VCenterIP = s.URL.Hostname()
