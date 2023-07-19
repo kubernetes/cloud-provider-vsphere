@@ -7,7 +7,7 @@ global:
     enabled: false
 
 config:
-  enabled: false
+  enabled: true
   name: vsphere-cloud-config
   vcenter: "vcenter.local"
   username: "user"
