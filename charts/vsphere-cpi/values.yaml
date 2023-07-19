@@ -2,10 +2,6 @@
 # This is a YAML-formatted file.
 # vSphere CPI values are grouped by component
 
-global:
-  config:
-    enabled: false
-
 config:
   enabled: false
   name: vsphere-cloud-config

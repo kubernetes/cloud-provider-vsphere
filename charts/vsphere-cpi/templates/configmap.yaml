@@ -1,8 +1,14 @@
-{{- if .Values.config.enabled | default .Values.global.config.enabled -}}
+{{- $config := .Values.config -}}
+{{- if .Values.global }}
+{{- if .Values.global.config }}
+{{- $config = mergeOverwrite (deepCopy .Values.config) .Values.global.config -}}
+{{- end }}
+{{- end }}
+{{- if $config.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.config.name | default "cloud-config" }}
+  name: {{ $config.name | default "cloud-config" }}
   labels:
     app: {{ template "cpi.name" . }}
     vsphere-cpi-infra: cloud-config
@@ -13,25 +19,25 @@ data:
     # Global properties in this section will be used for all specified vCenters unless overriden in VirtualCenter section.
     global:
       port: 443
-      {{- if .Values.config.thumbprint }}
-      thumbprint: {{ .Values.config.thumbprint }}
+      {{- if $config.thumbprint }}
+      thumbprint: {{ $config.thumbprint }}
       {{- else }}
       # set insecure-flag to true if the vCenter uses a self-signed cert
       insecureFlag: true
       {{- end }}
       # settings for using k8s secret
-      secretName: {{ .Values.config.secret.name }}
+      secretName: {{ $config.secret.name }}
       secretNamespace: {{ .Release.Namespace }}
 
     # vcenter section
     vcenter:
-      {{ .Values.config.vcenter | default .Values.global.config.vcenter }}:
-        server: {{ .Values.config.vcenter | default .Values.global.config.vcenter }}
+      {{ $config.vcenter }}:
+        server: {{ $config.vcenter }}
         datacenters:
-          - {{ .Values.config.datacenter | default .Values.global.config.datacenter }}
+          - {{ $config.datacenter }}
 
     # labels for regions and zones
     labels:
-      region: {{ .Values.config.region | default .Values.global.config.region }}
-      zone: {{ .Values.config.zone | default .Values.global.config.zone }}
+      region: {{ $config.region }}
+      zone: {{ $config.zone }}
 {{- end -}}
