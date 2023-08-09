@@ -23,7 +23,7 @@ ARG GOLANG_IMAGE=golang:1.20
 # the fully-qualified image can be obtained by entering
 # "gcr.io/distroless/static:latest" in a browser and then copying the
 # fully-qualified image from the web page.
-ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian11@latest
+ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian11:latest
 
 ################################################################################
 ##                              BUILD STAGE                                   ##
