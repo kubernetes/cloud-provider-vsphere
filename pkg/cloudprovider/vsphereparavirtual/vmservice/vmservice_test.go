@@ -80,7 +80,7 @@ func initTest() (*v1.Service, VMService, *util.FakeClientWrapper) {
 	}
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewFakeClientWithScheme(scheme)
+	fc := fakeClient.NewClientBuilder().WithScheme(scheme).Build()
 	fcw = util.NewFakeClientWrapper(fc)
 	vms = NewVMService(fcw, testClusterNameSpace, &testOwnerReference)
 

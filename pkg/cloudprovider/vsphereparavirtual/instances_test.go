@@ -97,7 +97,7 @@ func TestNewInstances(t *testing.T) {
 func initTest(testVM *vmopv1alpha1.VirtualMachine) (*instances, *util.FakeClientWrapper) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewFakeClientWithScheme(scheme, testVM)
+	fc := fakeClient.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(testVM).Build()
 	fcw := util.NewFakeClientWrapper(fc)
 	instance := &instances{
 		vmClient:  fcw,
