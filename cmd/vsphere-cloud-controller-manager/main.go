@@ -34,6 +34,7 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual"
 	"k8s.io/cloud-provider/app"
 	appconfig "k8s.io/cloud-provider/app/config"
+	"k8s.io/cloud-provider/names"
 	"k8s.io/cloud-provider/options"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/cli/globalflag"
@@ -80,7 +81,7 @@ func main() {
 	}
 
 	fs := command.Flags()
-	namedFlagSets := ccmOptions.Flags(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List(), app.AllWebhooks, app.DisabledByDefaultWebhooks)
+	namedFlagSets := ccmOptions.Flags(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List(), names.CCMControllerAliases(), app.AllWebhooks, app.DisabledByDefaultWebhooks)
 	verflag.AddFlags(namedFlagSets.FlagSet("global"))
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), command.Name())
 
@@ -150,7 +151,7 @@ func main() {
 		verflag.PrintAndExitIfRequested()
 		cliflag.PrintFlags(cmd.Flags())
 
-		c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List(), app.AllWebhooks, app.DisabledByDefaultWebhooks)
+		c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List(), names.CCMControllerAliases(), app.AllWebhooks, app.DisabledByDefaultWebhooks)
 		if err != nil {
 			// explicitly ignore the error by Fprintf, exiting anyway
 			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
