@@ -54,7 +54,7 @@ var (
 func newTestLoadBalancer() (cloudprovider.LoadBalancer, *util.FakeClientWrapper) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewFakeClientWithScheme(scheme)
+	fc := fakeClient.NewClientBuilder().WithScheme(scheme).Build()
 	fcw := util.NewFakeClientWrapper(fc)
 	vms := vmservice.NewVMService(fcw, testClusterNameSpace, &testOwnerReference)
 	return &loadBalancer{

@@ -138,7 +138,7 @@ func TestZonesByNodeName(t *testing.T) {
 func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *util.FakeClientWrapper) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewFakeClientWithScheme(scheme, testVM)
+	fc := fakeClient.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(testVM).Build()
 	fcw := util.NewFakeClientWrapper(fc)
 	zone := zones{
 		vmClient:  fcw,
