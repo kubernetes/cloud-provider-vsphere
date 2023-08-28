@@ -17,12 +17,6 @@
 ARG GOLANG_IMAGE=golang:1.20
 
 # The distroless image on which the CPI manager image is built.
-#
-# Please do not use "latest". Explicit tags should be used to provide
-# deterministic builds. This image doesn't have semantic version tags, but
-# the fully-qualified image can be obtained by entering
-# "gcr.io/distroless/static:latest" in a browser and then copying the
-# fully-qualified image from the web page.
 ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian11:latest
 
 ################################################################################
@@ -51,7 +45,7 @@ RUN go build -a -ldflags="-w -s -extldflags=static -X main.version=${VERSION}" -
 ################################################################################
 # Copy the manager into the distroless image.
 FROM ${DISTROLESS_IMAGE}
-LABEL maintainer="Travis Rhoden <trhoden@vmware.com>"
+LABEL maintainer="Yike Wang <yikew@vmware.com>"
 
 USER nobody
 
