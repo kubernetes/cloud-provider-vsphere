@@ -2,8 +2,27 @@ apiVersion: v1
 entries:
   vsphere-cpi:
   - apiVersion: v2
+    appVersion: 1.23.5
+    created: "2023-08-28T16:46:55.969073+08:00"
+    description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
+    digest: e52060f75f36cb9c93d93eaa6ace81c32c3bfc71bf690055960a397401583bea
+    home: https://github.com/kubernetes/cloud-provider-vsphere
+    icon: https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/master/docs/vmware_logo.png
+    keywords:
+    - vsphere
+    - vmware
+    - cloud
+    - provider
+    - cpi
+    name: vsphere-cpi
+    sources:
+    - https://github.com/kubernetes/cloud-provider-vsphere
+    urls:
+    - https://kubernetes.github.io/cloud-provider-vsphere/charts/vsphere-cpi-1.23.5.tgz
+    version: 1.23.5
+  - apiVersion: v2
     appVersion: 1.23.4
-    created: "2023-03-03T14:12:25.895478-08:00"
+    created: "2023-08-28T16:46:55.968132+08:00"
     description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
     digest: d6e201506e01f83b52a64dc03dae0d231da835e882c258859ac62a118e278e09
     home: https://github.com/kubernetes/cloud-provider-vsphere
@@ -22,7 +41,7 @@ entries:
     version: 1.23.4
   - apiVersion: v2
     appVersion: 1.23.2
-    created: "2023-03-03T14:12:25.894622-08:00"
+    created: "2023-08-28T16:46:55.96701+08:00"
     description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
     digest: 883ec295a07ac932009179801748668090e915d1f88d1bf001337d7ab463100e
     home: https://github.com/kubernetes/cloud-provider-vsphere
@@ -41,7 +60,7 @@ entries:
     version: 1.23.2
   - apiVersion: v2
     appVersion: 1.23.1
-    created: "2023-03-03T14:12:25.893642-08:00"
+    created: "2023-08-28T16:46:55.965619+08:00"
     description: A Helm chart for vSphere Cloud Provider Interface Manager (CPI)
     digest: ec70834e13c37ab0080ddbad05f6b1ba80da097a32ee1a61e7ba19428276b54a
     home: https://github.com/kubernetes/cloud-provider-vsphere
@@ -58,4 +77,4 @@ entries:
     urls:
     - https://kubernetes.github.io/cloud-provider-vsphere/charts/vsphere-cpi-1.23.1.tgz
     version: 1.23.1
-generated: "2023-03-03T14:12:25.891703-08:00"
+generated: "2023-08-28T16:46:55.964383+08:00"
