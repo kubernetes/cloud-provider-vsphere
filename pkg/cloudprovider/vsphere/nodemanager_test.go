@@ -17,6 +17,8 @@ limitations under the License.
 package vsphere
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -240,7 +242,6 @@ func TestDiscoverNodeIPs(t *testing.T) {
 		expectedIPs            []v1.NodeAddress
 		expectedErrorSubstring string
 	}{
-
 		{
 			testName: "BySubnet",
 			setup: testSetup{
@@ -1761,6 +1762,50 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			},
 		},
 		{
+			testName: "StaticAddresses_IPv6_usesNetworkB64EncodedStaticAddressForExternalInternal",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6"},
+				guestinfo:        guestInfoEncodedNetconfigWithAddresses("gzip+base64", "fd01:cccc::1/128"),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"fe80::1",
+							"fd01:1234::1",
+							"fd01:cccc::1",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd01:cccc::1"},
+				{Type: "ExternalIP", Address: "fd01:cccc::1"},
+			},
+		},
+		{
+			testName: "StaticAddresses_IPv6_usesNetworkGZB64EncodedStaticAddressForExternalInternal",
+			setup: testSetup{
+				ipFamilyPriority: []string{"ipv6"},
+				guestinfo:        guestInfoEncodedNetconfigWithAddresses("base64", "fd01:cccc::1/128"),
+				cpiConfig:        nil,
+				networks: []vimtypes.GuestNicInfo{
+					{
+						Network: "VM Network",
+						IpAddress: []string{
+							"fe80::1",
+							"fd01:1234::1",
+							"fd01:cccc::1",
+						},
+					},
+				},
+			},
+			expectedIPs: []v1.NodeAddress{
+				{Type: "InternalIP", Address: "fd01:cccc::1"},
+				{Type: "ExternalIP", Address: "fd01:cccc::1"},
+			},
+		},
+		{
 			testName: "StaticAddresses_errorsOnInvalidGuestInfoFormat",
 			setup: testSetup{
 				guestinfo: "not-valid-yaml this should error",
@@ -2094,12 +2139,12 @@ func TestFindNetworkNameMatch(t *testing.T) {
 
 func TestExcludeLocalhostIPs(t *testing.T) {
 	ipAddrNetworkNames := []*ipAddrNetworkName{
-		//doesn't parse
+		// doesn't parse
 		{ipAddr: "garbage"},
-		//unspecified
+		// unspecified
 		{ipAddr: "0.0.0.0"},
 		{ipAddr: "::"},
-		//link local multicast
+		// link local multicast
 		{ipAddr: "224.0.0.1"},
 		{ipAddr: "ff02::1"},
 		// link local unicast
@@ -2164,4 +2209,48 @@ network:
       dhcp4: false
       dhcp6: false`,
 		addresses)
+}
+
+func guestInfoEncodedNetconfigWithAddresses(encoding, addresses string) string {
+	var (
+		networkConfig = []byte(fmt.Sprintf(`version: 2
+ethernets:
+  id0:
+    addresses: [%s]
+    match:
+    macaddress: "00:11:22"
+    set-name: "eth0"
+    wakeonlan: true
+    dhcp4: false
+    dhcp6: false`,
+			addresses))
+
+		encodedNetconfig string
+	)
+
+	switch encoding {
+	case "base64":
+		encodedNetconfig = base64.RawStdEncoding.EncodeToString(networkConfig)
+	case "gzip+base64":
+		buf := bytes.NewBuffer(nil)
+		gw := gzip.NewWriter(buf)
+		if _, err := gw.Write(networkConfig); err != nil {
+			return err.Error()
+		}
+		if err := gw.Close(); err != nil {
+			return err.Error()
+		}
+		encodedNetconfig = base64.RawStdEncoding.EncodeToString(buf.Bytes())
+	default:
+		return guestInfoWithAddresses(addresses)
+	}
+
+	return fmt.Sprintf(`instance-id: "tkg-mgmt-vc"
+local-hostname: "tkg-mgmt-vc"
+wait-on-network:
+  ipv4: false
+  ipv6: false
+network.encoding: %s
+network: %s`,
+		encoding, encodedNetconfig)
 }

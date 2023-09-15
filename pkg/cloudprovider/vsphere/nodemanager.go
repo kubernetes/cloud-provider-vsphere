@@ -17,10 +17,13 @@ limitations under the License.
 package vsphere
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sort"
 	"strings"
@@ -52,14 +55,20 @@ var (
 	ErrVMNotFound = errors.New("VM not found")
 )
 
-type cloudInitConfig struct {
-	Network struct {
+type (
+	networkConfig struct {
 		Ethernets map[string]struct {
 			Name      string   `yaml:"set-name"`
 			Addresses []string `yaml:"addresses"`
 		} `yaml:"ethernets"`
-	} `yaml:"network"`
-}
+	}
+	cloudInitConfig struct {
+		Network networkConfig `yaml:"network"`
+	}
+	encodedCloudInitConfig struct {
+		Network string `yaml:"network"`
+	}
+)
 
 func newNodeManager(cfg *ccfg.CPIConfig, cm *cm.ConnectionManager) *NodeManager {
 	return &NodeManager{
@@ -362,8 +371,10 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		os,
 	)
 
-	nodeInfo := &NodeInfo{tenantRef: tenantRef, dataCenter: vmDI.DataCenter, vm: vmDI.VM, vcServer: vmDI.VcServer,
-		UUID: vmDI.UUID, NodeName: vmDI.NodeName, NodeType: instanceType, NodeAddresses: addrs}
+	nodeInfo := &NodeInfo{
+		tenantRef: tenantRef, dataCenter: vmDI.DataCenter, vm: vmDI.VM, vcServer: vmDI.VcServer,
+		UUID: vmDI.UUID, NodeName: vmDI.NodeName, NodeType: instanceType, NodeAddresses: addrs,
+	}
 	nm.addNodeInfo(nodeInfo)
 
 	return nil
@@ -395,8 +406,8 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 func discoverIPs(ipAddrNetworkNames []*ipAddrNetworkName, ipFamily string,
 	internalNetworkSubnets, externalNetworkSubnets,
 	excludeInternalNetworkSubnets, excludeExternalNetworkSubnets []*net.IPNet,
-	internalVMNetworkName, externalVMNetworkName string) (internal *ipAddrNetworkName, external *ipAddrNetworkName) {
-
+	internalVMNetworkName, externalVMNetworkName string,
+) (internal *ipAddrNetworkName, external *ipAddrNetworkName) {
 	ipFamilyMatches := collectMatchesForIPFamily(ipAddrNetworkNames, ipFamily)
 
 	var discoveredInternal *ipAddrNetworkName
@@ -667,7 +678,6 @@ func (nm *NodeManager) getNodeNameByUUID(UUID string) string {
 		if v.UUID == UUID {
 			return k
 		}
-
 	}
 	return ""
 }
@@ -693,37 +703,92 @@ func guestInfoMetadata(extraConfig []types.BaseOptionValue) (string, string) {
 func sortStaticallyConfiguredAddressesFirst(extraConfig []types.BaseOptionValue, nonLocalhostIPs []*ipAddrNetworkName) ([]*ipAddrNetworkName, error) {
 	guestInfo, encoding := guestInfoMetadata(extraConfig)
 
-	if guestInfo != "" && encoding == "base64" {
-		value, err := base64.StdEncoding.DecodeString(guestInfo)
-		if err != nil {
-			return nil, err
-		}
-
-		guestInfo := &cloudInitConfig{}
-		err = yaml.Unmarshal(value, guestInfo)
-		if err != nil {
-			return nil, err
-		}
-
-		// Map of guestInfo IP -> index that describes the order they appear in the guestInfo
-		guestInfoAddresses := make(map[string]int)
-		for _, eth := range guestInfo.Network.Ethernets {
-			for _, address := range eth.Addresses {
-				ip := net.ParseIP(strings.Split(address, "/")[0])
-				guestInfoAddresses[ip.String()] = len(guestInfoAddresses)
-			}
-		}
-
-		// Sort nonlocalhostIPs by the following comparator for two IP addresses: a and b
-		// if a is statically configured, but b is not then a should be prioritized before b
-		// if b is statically configured, but a is not then a should not be prioritized before b
-		// if a and b are both statically configured, then use the index from the guest info
-		sort.SliceStable(nonLocalhostIPs, func(i, j int) bool {
-			aIndex, aFound := guestInfoAddresses[nonLocalhostIPs[i].ipAddr]
-			bIndex, bFound := guestInfoAddresses[nonLocalhostIPs[j].ipAddr]
-
-			return aFound && !bFound || aFound && bFound && aIndex < bIndex
-		})
+	if guestInfo == "" || encoding != "base64" {
+		return nonLocalhostIPs, nil
 	}
+
+	value, err := base64.StdEncoding.DecodeString(guestInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	ne := struct {
+		NetworkEncoding string `yaml:"network.encoding"`
+	}{}
+	if err := yaml.Unmarshal(value, &ne); err != nil {
+		return nil, err
+	}
+
+	var netConfig networkConfig
+	switch ne.NetworkEncoding {
+	case "base64", "b64":
+		var encNetconfig encodedCloudInitConfig
+		if err := yaml.Unmarshal(value, &encNetconfig); err != nil {
+			return nil, err
+		}
+
+		if value, err = base64.RawStdEncoding.DecodeString(encNetconfig.Network); err != nil {
+			return nil, err
+		}
+
+		if err := yaml.Unmarshal(value, &netConfig); err != nil {
+			return nil, err
+		}
+	case "gzip+base64", "gz+b64":
+		var encNetconfig encodedCloudInitConfig
+		if err := yaml.Unmarshal(value, &encNetconfig); err != nil {
+			return nil, err
+		}
+
+		gzData, err := base64.RawStdEncoding.DecodeString(encNetconfig.Network)
+		if err != nil {
+			return nil, err
+		}
+
+		r := bytes.NewReader(gzData)
+		gr, err := gzip.NewReader(r)
+		if err != nil {
+			return nil, err
+		}
+
+		if value, err = io.ReadAll(gr); err != nil {
+			return nil, err
+		}
+
+		if err := gr.Close(); err != nil {
+			return nil, err
+		}
+
+		if err := yaml.Unmarshal(value, &netConfig); err != nil {
+			return nil, err
+		}
+	default: // raw data
+		cloudInitCfg := &cloudInitConfig{}
+		if err := yaml.Unmarshal(value, cloudInitCfg); err != nil {
+			return nil, err
+		}
+		netConfig = cloudInitCfg.Network
+	}
+
+	// Map of guestInfo IP -> index that describes the order they appear in the guestInfo
+	guestInfoAddresses := make(map[string]int)
+	for _, eth := range netConfig.Ethernets {
+		for _, address := range eth.Addresses {
+			ip := net.ParseIP(strings.Split(address, "/")[0])
+			guestInfoAddresses[ip.String()] = len(guestInfoAddresses)
+		}
+	}
+
+	// Sort nonlocalhostIPs by the following comparator for two IP addresses: a and b
+	// if a is statically configured, but b is not then a should be prioritized before b
+	// if b is statically configured, but a is not then a should not be prioritized before b
+	// if a and b are both statically configured, then use the index from the guest info
+	sort.SliceStable(nonLocalhostIPs, func(i, j int) bool {
+		aIndex, aFound := guestInfoAddresses[nonLocalhostIPs[i].ipAddr]
+		bIndex, bFound := guestInfoAddresses[nonLocalhostIPs[j].ipAddr]
+
+		return aFound && !bFound || aFound && bFound && aIndex < bIndex
+	})
+
 	return nonLocalhostIPs, nil
 }
