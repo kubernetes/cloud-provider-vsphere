@@ -147,8 +147,8 @@ variables:
   # Following CAPV variables should be set before testing
   VSPHERE_TLS_THUMBPRINT: "18:EC:35:60:54:68:92:F6:F8:92:3E:4D:11:A1:0D:13:9C:E9:3E:B6"
   VSPHERE_DATACENTER:  "SDDC-Datacenter"
-  VSPHERE_FOLDER: "clusterapi"
-  VSPHERE_RESOURCE_POOL: "clusterapi"
+  VSPHERE_FOLDER: "cloud-provider-vsphere"
+  VSPHERE_RESOURCE_POOL: "cloud-provider-vsphere"
   VSPHERE_DATASTORE: "WorkloadDatastore"
   VSPHERE_STORAGE_POLICY: "Cluster API vSphere Storage Policy"
   VSPHERE_NETWORK: "sddc-cgw-network-6"
