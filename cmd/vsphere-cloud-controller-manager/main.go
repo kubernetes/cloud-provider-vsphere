@@ -56,6 +56,7 @@ const AppName string = "vsphere-cloud-controller-manager"
 var version string
 
 func main() {
+	// testing something
 	loadbalancer.Version = version
 	loadbalancer.AppName = AppName
 
