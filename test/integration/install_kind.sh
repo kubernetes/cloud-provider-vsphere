@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-KIND_VERSION="v0.8.1"
+KIND_VERSION="v0.20.0"
 KIND_PATH="/usr/local/bin/kind"
 
 # Check if KIND already exists
