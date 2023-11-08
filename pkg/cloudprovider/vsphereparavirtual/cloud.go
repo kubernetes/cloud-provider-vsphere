@@ -57,6 +57,9 @@ var (
 
 	// RouteEnabled if set to true, will start ippool and node controller.
 	RouteEnabled bool
+
+	// vpcModeEnabled if set to true, ippool and node controller will process v1alpha1 StaticRoute and v1alpha2 IPPool, otherwise v1alpha1 RouteSet and v1alpha1 IPPool
+	vpcModeEnabled bool
 )
 
 func init() {
@@ -82,6 +85,7 @@ func init() {
 	})
 
 	flag.BoolVar(&vmservice.IsLegacy, "is-legacy-paravirtual", false, "If true, machine label selector will start with capw.vmware.com. By default, it's false, machine label selector will start with capv.vmware.com.")
+	flag.BoolVar(&vpcModeEnabled, "enable-vpc-mode", false, "If true, routable pod controller will start with VPC mode. It is useful only when route controller is enabled in vsphereparavirtual mode")
 }
 
 // Creates new Controller node interface and returns
@@ -121,7 +125,7 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 		klog.Fatalf("Failed to get cluster namespace: %v", err)
 	}
 
-	routes, err := NewRoutes(clusterNS, kcfg, *cp.ownerReference)
+	routes, err := NewRoutes(clusterNS, kcfg, *cp.ownerReference, vpcModeEnabled)
 	if err != nil {
 		klog.Errorf("Failed to init Route: %v", err)
 	}
@@ -144,7 +148,7 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	if RouteEnabled {
 		klog.V(0).Info("Starting routable pod controllers")
 
-		if err := routablepod.StartControllers(kcfg, client, cp.informMgr, ClusterName, clusterNS, ownerRef); err != nil {
+		if err := routablepod.StartControllers(kcfg, client, cp.informMgr, ClusterName, clusterNS, ownerRef, vpcModeEnabled); err != nil {
 			klog.Errorf("Failed to start Routable pod controllers: %v", err)
 		}
 	}
@@ -223,7 +227,7 @@ func (cp *VSphereParavirtual) nodeAdded(obj interface{}) {
 	}
 
 	if cp.routes != nil {
-		klog.V(6).Info("adding node: %s", node.Name)
+		klog.V(6).Infof("adding node: %s", node.Name)
 		cp.routes.AddNode(node)
 	}
 }
@@ -237,7 +241,7 @@ func (cp *VSphereParavirtual) nodeDeleted(obj interface{}) {
 	}
 
 	if cp.routes != nil {
-		klog.V(6).Info("deleting node: %s", node.Name)
+		klog.V(6).Infof("deleting node: %s", node.Name)
 		cp.routes.DeleteNode(node)
 	}
 }

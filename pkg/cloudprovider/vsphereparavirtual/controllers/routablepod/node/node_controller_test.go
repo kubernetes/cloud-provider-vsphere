@@ -24,12 +24,11 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	ippoolv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
-	fakeippoolclientset "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/fake"
-	ippoolscheme "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/scheme"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/helper"
-
-	klog "k8s.io/klog/v2"
+	t1networkingapis "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
+	faket1networkingclients "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/fake"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
+	ippmv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -46,19 +45,21 @@ var (
 
 func alwaysReady() bool { return true }
 
-func newController() (*Controller, *fakeippoolclientset.Clientset) {
+func newController() (*Controller, *faket1networkingclients.Clientset) {
 	kubeClient := fake.NewSimpleClientset()
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
-	recorder := eventBroadcaster.NewRecorder(ippoolscheme.Scheme, corev1.EventSource{Component: controllerName})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerName})
 
-	ippoolclientset := fakeippoolclientset.NewSimpleClientset()
+	// testing with non-vpc mode
+	ippoolclientset := faket1networkingclients.NewSimpleClientset()
+	ippManager, _ := ippmv1alpha1.NewIPPoolManagerWithClients(ippoolclientset, testClusterNS)
 
 	informerFactory := informers.NewSharedInformerFactory(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
 	c := &Controller{
-		ippoolclientset:  ippoolclientset,
+		ippoolManager:    ippManager,
 		nodesLister:      nodeInformer.Lister(),
 		nodeListerSynced: nodeInformer.Informer().HasSynced,
 
@@ -122,11 +123,6 @@ func TestProcessNodeCreateOrUpdate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			s := scheme.Scheme
-			if err := ippoolscheme.AddToScheme(s); err != nil {
-				t.Fatalf("Unable to add route scheme: (%v)", err)
-			}
-
 			ippc, ippcs := newController()
 			// create nodes and run process processNodeCreateOrUpdate
 			for _, n := range tc.nodes {
@@ -221,11 +217,6 @@ func TestProcessNodeDelete(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			s := scheme.Scheme
-			if err := ippoolscheme.AddToScheme(s); err != nil {
-				t.Fatalf("Unable to add route scheme: (%v)", err)
-			}
-
 			ippc, ippcs := newController()
 
 			if tc.ippoolExist {
@@ -296,24 +287,24 @@ func createNode(name string) corev1.Node {
 	}
 }
 
-func createIPPool(ippcs *fakeippoolclientset.Clientset, nodes []corev1.Node) (*ippoolv1alpha1.IPPool, error) {
-	ippool := &ippoolv1alpha1.IPPool{
+func createIPPool(ippcs *faket1networkingclients.Clientset, nodes []corev1.Node) (*t1networkingapis.IPPool, error) {
+	ipp := &t1networkingapis.IPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      helper.IppoolNameFromClusterName(testClusterName),
 			Namespace: testClusterNS,
 		},
-		Spec: ippoolv1alpha1.IPPoolSpec{
-			Subnets: []ippoolv1alpha1.SubnetRequest{},
+		Spec: t1networkingapis.IPPoolSpec{
+			Subnets: []t1networkingapis.SubnetRequest{},
 		},
 	}
 
 	for _, n := range nodes {
-		ippool.Spec.Subnets = append(ippool.Spec.Subnets, ippoolv1alpha1.SubnetRequest{
+		ipp.Spec.Subnets = append(ipp.Spec.Subnets, t1networkingapis.SubnetRequest{
 			Name:         n.Name,
 			IPFamily:     helper.IPFamilyDefault,
 			PrefixLength: helper.PrefixLengthDefault,
 		})
 	}
 
-	return ippcs.NsxV1alpha1().IPPools(testClusterNS).Create(context.Background(), ippool, metav1.CreateOptions{})
+	return ippcs.NsxV1alpha1().IPPools(testClusterNS).Create(context.Background(), ipp, metav1.CreateOptions{})
 }
