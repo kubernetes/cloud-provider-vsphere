@@ -16,52 +16,41 @@ package routablepod
 import (
 	"context"
 	"fmt"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	ippoolclientset "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned"
-	ippoolscheme "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/scheme"
-	ippoolinformers "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/informers/externalversions"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ippool"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/node"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
-)
-
-const (
-	defaultResyncTime time.Duration = time.Minute * 1
+	"k8s.io/klog/v2"
 )
 
 // StartControllers starts ippool_controller and node_controller
-func StartControllers(scCfg *rest.Config, client kubernetes.Interface, informerManager *k8s.InformerManager, clusterName, clusterNS string, ownerRef *metav1.OwnerReference) error {
+func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
+	informerManager *k8s.InformerManager, clusterName, clusterNS string, ownerRef *metav1.OwnerReference, vpcModeEnabled bool) error {
+
 	if clusterName == "" {
 		return fmt.Errorf("cluster name can't be empty")
 	}
 	if clusterNS == "" {
 		return fmt.Errorf("cluster namespace can't be empty")
 	}
-	ipcs, err := ippoolclientset.NewForConfig(scCfg)
+
+	klog.V(2).Info("Routable pod controllers start with VPC mode enabled: ", vpcModeEnabled)
+
+	ippManager, err := ippoolmanager.GetIPPoolManager(vpcModeEnabled, scCfg, clusterNS)
 	if err != nil {
-		return fmt.Errorf("error building ippool clientset: %w", err)
+		return fmt.Errorf("fail to get ippool manager or start ippool controller: %w", err)
 	}
 
-	s := scheme.Scheme
-	if err := ippoolscheme.AddToScheme(s); err != nil {
-		return fmt.Errorf("failed to register ippoolSchemes")
-	}
-
-	ippoolInformerFactory := ippoolinformers.NewSharedInformerFactoryWithOptions(ipcs, defaultResyncTime, ippoolinformers.WithNamespace(clusterNS))
-	ippoolInformer := ippoolInformerFactory.Nsx().V1alpha1().IPPools()
-
-	ippoolController := ippool.NewController(client, ipcs, ippoolInformer)
+	ippoolController := ippool.NewController(client, ippManager)
 	go ippoolController.Run(context.Background().Done())
 
-	ippoolInformerFactory.Start(wait.NeverStop)
+	ippManager.StartIPPoolInformers()
 
-	nodeController := node.NewController(client, ipcs, informerManager, clusterName, clusterNS, ownerRef)
+	nodeController := node.NewController(client, ippManager, informerManager, clusterName, clusterNS, ownerRef)
 	go nodeController.Run(context.Background().Done())
 
 	return nil

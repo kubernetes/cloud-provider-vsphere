@@ -13,14 +13,27 @@ limitations under the License.
 
 package helper
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const (
-	// IPFamilyDefault is default value of ipFamily
+	// DefaultResyncTime is the default period for ippool informer to do re-sync
+	DefaultResyncTime time.Duration = time.Minute * 1
+)
+
+const (
+	// IPFamilyDefault is default value of ipFamily in v1alpha1 ippool
 	IPFamilyDefault = "ipv4"
+	// IPFamilyDefaultV2 is default value of ipFamily in v1alpha2 ippool
+	IPFamilyDefaultV2 = "IPv4"
 	// PrefixLengthDefault is default value of prefixLength
 	PrefixLengthDefault = 24
 )
+
+// NSXIPPool defines an interface that is used to represent different versions nsx.vmware.com ipppol
+type NSXIPPool interface{}
 
 // IppoolNameFromClusterName returns the ippool name constructed using the cluster name
 func IppoolNameFromClusterName(clusterName string) string {

@@ -24,12 +24,11 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	ippoolv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
-	fakeippoolclientset "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/fake"
-	ippoolscheme "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/scheme"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/helper"
-
-	klog "k8s.io/klog/v2"
+	t1networkingapis "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
+	faket1networkingclients "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/fake"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
+	ippmv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -46,25 +45,24 @@ var (
 	n3     = createNode(n3Name)
 )
 
-func alwaysReady() bool { return true }
-
 func newController() (*Controller, *fake.Clientset) {
 	kubeClient := fake.NewSimpleClientset()
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
-	recorder := eventBroadcaster.NewRecorder(ippoolscheme.Scheme, corev1.EventSource{Component: controllerName})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerName})
 
-	ippoolclientset := fakeippoolclientset.NewSimpleClientset()
+	// testing with non-vpc mode
+	ippoolclientset := faket1networkingclients.NewSimpleClientset()
+	ippManager, _ := ippmv1alpha1.NewIPPoolManagerWithClients(ippoolclientset, testClusterNS)
 
 	c := &Controller{
-		kubeclientset:   kubeClient,
-		ippoolclientset: ippoolclientset,
+		kubeclientset: kubeClient,
+		ippoolManager: ippManager,
 
 		recorder:  recorder,
 		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "IPPools"),
 	}
 
-	c.ippoolListerSynced = alwaysReady
 	c.recorder = record.NewFakeRecorder(100)
 	ippoolclientset.ClearActions()
 	kubeClient.ClearActions()
@@ -78,17 +76,17 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 	)
 	testCases := []struct {
 		desc               string
-		ippool             ippoolv1alpha1.IPPool
+		ippool             t1networkingapis.IPPool
 		nodes              []corev1.Node
-		subnetAllocated    []ippoolv1alpha1.SubnetResult
-		subnetAfterRevoked []ippoolv1alpha1.SubnetResult
+		subnetAllocated    []t1networkingapis.SubnetResult
+		subnetAfterRevoked []t1networkingapis.SubnetResult
 		expectedNumPatches int
 	}{
 		{
 			desc:   "update 2 nodes' cidr, then 2 nodes are removed",
 			ippool: testIPPool,
 			nodes:  []corev1.Node{n1, n2, n3},
-			subnetAllocated: []ippoolv1alpha1.SubnetResult{
+			subnetAllocated: []t1networkingapis.SubnetResult{
 				{
 					Name: n1.Name,
 					CIDR: "10.0.0.1/24",
@@ -105,7 +103,7 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 			desc:   "update 1 nodes' cidr, then 1 node are revoved",
 			ippool: testIPPool,
 			nodes:  []corev1.Node{n1},
-			subnetAllocated: []ippoolv1alpha1.SubnetResult{
+			subnetAllocated: []t1networkingapis.SubnetResult{
 				{
 					Name: n1.Name,
 					CIDR: "10.0.0.1/24",
@@ -118,7 +116,7 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 			desc:   "ippool exhausted, updates 1 node, the 2 node didn't get ip. then node 2 was removed",
 			ippool: testIPPool,
 			nodes:  []corev1.Node{n1, n2, n3},
-			subnetAllocated: []ippoolv1alpha1.SubnetResult{
+			subnetAllocated: []t1networkingapis.SubnetResult{
 				{
 					Name: n1.Name,
 					CIDR: "10.0.0.1/24",
@@ -128,7 +126,7 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 					CIDR: "",
 				},
 			},
-			subnetAfterRevoked: []ippoolv1alpha1.SubnetResult{
+			subnetAfterRevoked: []t1networkingapis.SubnetResult{
 				{
 					Name: n1.Name,
 					CIDR: "10.0.0.1/24",
@@ -140,18 +138,13 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			s := scheme.Scheme
-			if err := ippoolscheme.AddToScheme(s); err != nil {
-				t.Fatalf("Unable to add route scheme: (%v)", err)
-			}
-
 			c, cs := newController()
-
-			if _, err := c.ippoolclientset.NsxV1alpha1().IPPools(testClusterNS).Create(context.Background(), &testIPPool, metav1.CreateOptions{}); err != nil {
+			if _, err := c.ippoolManager.CreateIPPool(testClusterNS, testClusterName, &metav1.OwnerReference{}); err != nil {
 				t.Errorf("failed to create test ippool %s: %v", testIPPool.Name, err)
 			}
 
-			if err := c.processIPPoolCreateOrUpdate(&testIPPool); err != nil {
+			subs, _ := c.ippoolManager.GetIPPoolSubnets(&testIPPool)
+			if err := c.processIPPoolCreateOrUpdate(subs); err != nil {
 				t.Errorf("failed to processIPPoolCreateOrUpdate %v: %v", testIPPool, err)
 			}
 
@@ -184,10 +177,11 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 		})
 	}
 }
-func updateIPPoolCIDRAndVerifyNodeCIDR(srs []ippoolv1alpha1.SubnetResult, c *Controller) error {
+func updateIPPoolCIDRAndVerifyNodeCIDR(srs []t1networkingapis.SubnetResult, c *Controller) error {
 	// add subnet allocation result updates to ippool
 	ippoolUpdatedSubnet := createIPPool(srs)
-	if err := c.processIPPoolCreateOrUpdate(ippoolUpdatedSubnet); err != nil {
+	subs, _ := c.ippoolManager.GetIPPoolSubnets(ippoolUpdatedSubnet)
+	if err := c.processIPPoolCreateOrUpdate(subs); err != nil {
 		return fmt.Errorf("failed to processIPPoolCreateOrUpdate %v: %w", ippoolUpdatedSubnet, err)
 	}
 
@@ -216,13 +210,13 @@ func updateIPPoolCIDRAndVerifyNodeCIDR(srs []ippoolv1alpha1.SubnetResult, c *Con
 
 	return nil
 }
-func createIPPool(srs []ippoolv1alpha1.SubnetResult) *ippoolv1alpha1.IPPool {
-	ippool := &ippoolv1alpha1.IPPool{
+func createIPPool(srs []t1networkingapis.SubnetResult) *t1networkingapis.IPPool {
+	ippool := &t1networkingapis.IPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      helper.IppoolNameFromClusterName(testClusterName),
 			Namespace: testClusterNS,
 		},
-		Status: ippoolv1alpha1.IPPoolStatus{
+		Status: t1networkingapis.IPPoolStatus{
 			Subnets: srs,
 		},
 	}
