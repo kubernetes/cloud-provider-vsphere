@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/pem"
+	"fmt"
 	"net"
 	neturl "net/url"
 	"sync"
@@ -47,11 +48,10 @@ type VSphereConnection struct {
 	Insecure          bool
 	RoundTripperCount uint
 	credentialsLock   sync.Mutex
+	ClusterID         string
 }
 
-var (
-	clientLock sync.Mutex
-)
+var clientLock sync.Mutex
 
 // Connect makes connection to vCenter and sets VSphereConnection.Client.
 // If connection.Client is already set, it obtains the existing user session.
@@ -181,7 +181,12 @@ func (connection *VSphereConnection) NewClient(ctx context.Context) (*vim25.Clie
 		klog.Errorf("Failed to create new client. err: %+v", err)
 		return nil, err
 	}
+
 	client.UserAgent = userAgentName
+	if connection.ClusterID != "" {
+		client.UserAgent = fmt.Sprintf("%s-%s", userAgentName, connection.ClusterID)
+	}
+
 	err = connection.login(ctx, client)
 	if err != nil {
 		return nil, err

@@ -53,6 +53,10 @@ type Global struct {
 	// 2) we are not in a k8s env, namely DC/OS, since CSI is CO agnostic
 	// Default: /etc/cloud/credentials
 	SecretsDirectory string
+	// ClusterID defines a cluster unique identifier (eg the CAPV cluster name)
+	// that can be passed on the configuration and can be used to identify connections
+	// to vSphere
+	ClusterID string `yaml:"clusterID"`
 }
 
 // VirtualCenterConfig struct

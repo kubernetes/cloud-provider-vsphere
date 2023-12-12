@@ -37,6 +37,7 @@ func (ccy *CommonConfigYAML) CreateConfig() *Config {
 		VirtualCenter: make(map[string]*VirtualCenterConfig),
 	}
 
+	cfg.Global.ClusterID = ccy.Global.ClusterID
 	cfg.Global.User = ccy.Global.User
 	cfg.Global.Password = ccy.Global.Password
 	cfg.Global.VCenterIP = ccy.Global.VCenterIP
@@ -88,7 +89,7 @@ func (vccy *VirtualCenterConfigYAML) isSecretInfoProvided() bool {
 }
 
 func (ccy *CommonConfigYAML) validateConfig() error {
-	//Fix default global values
+	// Fix default global values
 	if ccy.Global.RoundTripperCount == 0 {
 		ccy.Global.RoundTripperCount = DefaultRoundTripperCount
 	}
