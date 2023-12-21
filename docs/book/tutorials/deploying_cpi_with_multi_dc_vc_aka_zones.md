@@ -35,7 +35,7 @@ An ideal configuration is creating a zone per cluster. It follows that datastore
 
 ### Zones Per Datacenter
 
-Zones per datacenter can work as well, but there are some very important design considerations when doing this. If this deployment strategy is taken, it is important to understand that all compute nodes in that zone aka datacenter have access to provision VMDKs from a given shared datastore. The reason for this is CSI driver uses zones in order to target Kubenetes pods or workloads when provisioning external storage. Example diagrams or configurations appear below.
+Zones per datacenter can work as well, but there are some very important design considerations when doing this. If this deployment strategy is taken, it is important to understand that all compute nodes in that zone aka datacenter have access to provision VMDKs from a given shared datastore. The reason for this is CSI driver uses zones in order to target Kubernetes pods or workloads when provisioning external storage. Example diagrams or configurations appear below.
 
 ![Datacenter-based Zones](https://github.com/kubernetes/cloud-provider-vsphere/raw/master/docs/images/datacenterbased.png)
 
