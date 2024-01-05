@@ -50,8 +50,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// AppName is the full name of this CCM
-const AppName string = "vsphere-cloud-controller-manager"
+const (
+	// AppName is the full name of this CCM
+	AppName string = "vsphere-cloud-controller-manager"
+	// SupervisorServiceAccountPath is the path to the projected service account that is mounted to the pod
+	SupervisorServiceAccountPath = "/etc/cloud/ccm-provider"
+)
 
 var version string
 
@@ -182,8 +186,8 @@ func main() {
 
 		// initialize a notifier for cloud config update
 		cloudConfig := completedConfig.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile
-		klog.Infof("initialize notifier on configmap update %s\n", cloudConfig)
-		watch, stop, err := initializeWatch(completedConfig, cloudConfig)
+		klog.Infof("initialize notifier on configmap and service token update %s\n", cloudConfig)
+		watch, stop, err := initializeWatch(completedConfig, cloudConfig, SupervisorServiceAccountPath)
 		if err != nil {
 			klog.Fatalf("fail to initialize watch on config map %s: %v\n", cloudConfig, err)
 		}
@@ -230,9 +234,10 @@ func shouldEnableRouteController(controllersFlag, cloudProviderFlag *pflag.Value
 		vsphereparavirtual.RegisteredProviderName == (*cloudProviderFlag).String()
 }
 
-// set up a filesystem watcher for the cloud config mount
-// reboot the app whenever there is an update via the returned stopCh
-func initializeWatch(_ *appconfig.CompletedConfig, cloudConfigPath string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
+// set up a filesystem watcher for the mounted files
+// which include cloud-config and projected service account.
+// reboot the app whenever there is an update via the returned stopCh.
+func initializeWatch(_ *appconfig.CompletedConfig, paths ...string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
 	stopCh = make(chan struct{})
 	watch, err = fsnotify.NewWatcher()
 	if err != nil {
@@ -245,17 +250,20 @@ func initializeWatch(_ *appconfig.CompletedConfig, cloudConfigPath string) (watc
 				klog.Warningf("watcher receives err: %v\n", err)
 			case event := <-watch.Events:
 				if event.Op != fsnotify.Chmod {
-					klog.Fatalf("config map %s has been updated, restarting pod, received event %v\n", cloudConfigPath, event)
+					klog.Fatalf("restarting pod because received event %v\n", event)
 					stopCh <- struct{}{}
 				} else {
-					klog.V(5).Infof("watcher receives %s on the cloud config\n", event.Op.String())
+					klog.V(5).Infof("watcher receives %s on the mounted file %s\n", event.Op.String(), event.Name)
 				}
 			}
 		}
 	}()
-	if err := watch.Add(cloudConfigPath); err != nil {
-		klog.Fatalf("fail to watch cloud config file %s\n", cloudConfigPath)
+	for _, p := range paths {
+		if err := watch.Add(p); err != nil {
+			klog.Fatalf("fail to watch cloud config file %s\n", p)
+		}
 	}
+
 	return
 }
 
