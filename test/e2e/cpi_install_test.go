@@ -39,8 +39,8 @@ func findVSphereCPIDaemonsetInList(daemonList *appsv1.DaemonSetList) (*appsv1.Da
 }
 
 /*
-	CPI should be installable from the helm chart. Its daemon set will eventually
-	become ready with number equals to the desired pods.
+CPI should be installable from the helm chart. Its daemon set will eventually
+become ready with number equals to the desired pods.
 */
 var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 	It("should have running CPI daemon set", func() {

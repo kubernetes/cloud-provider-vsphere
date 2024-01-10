@@ -253,6 +253,20 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		klog.Infof("Installed %s helm chart in namespace %s\n", release.Name, release.Namespace)
 	})
 
+	By("Watching daemonset logs", func() {
+		workloadProxy := proxy.GetWorkloadCluster(ctx, workloadKubeconfigNamespace, workloadName)
+
+		WatchDaemonSetLogsByLabelSelector(ctx, WatchDaemonSetLogsByLabelSelectorInput{
+			GetLister: workloadProxy.GetClient(),
+			Cache:     workloadProxy.GetCache(ctx),
+			ClientSet: workloadProxy.GetClientSet(),
+			Labels: map[string]string{
+				"component": "cloud-controller-manager",
+			},
+			LogPath: filepath.Join(artifactFolder, "clusters", workloadProxy.GetName(), "logs"),
+		})
+	})
+
 	return []byte(
 		strings.Join([]string{
 			artifactFolder,
