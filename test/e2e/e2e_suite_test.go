@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -272,6 +273,23 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 				Namespace: "default",
 				LogPath:   filepath.Join(artifactFolder, "clusters", proxy.GetName(), "resources"),
 			})
+		})
+		By("Dump CPI logs to artifacts", func() {
+			cmd := exec.Command("kubectl",
+				fmt.Sprintf("--kubeconfig %s", workloadKubeconfig),
+				"logs",
+				"ds/vsphere-cloud-controller-manager",
+				"-n kube-system")
+			out, err := cmd.Output()
+			if err != nil {
+				klog.Infof("Failed to get CPI logs with command: %s", cmd)
+			}
+			if out != nil {
+				cpiLogPath := filepath.Join(artifactFolder, "vsphere-cloud-controller-manager.log")
+				if err := os.WriteFile(cpiLogPath, out, 0644); err != nil {
+					klog.Infof("Failed to write CPI logs to %s", cpiLogPath)
+				}
+			}
 		})
 		By("Tear down the workload cluster", func() {
 			framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
