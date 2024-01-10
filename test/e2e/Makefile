@@ -59,12 +59,12 @@ push-ccm-image:
 	../../hack/release.sh -p -t pr
 
 run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
-	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
+	$(GINKGO) -v -failFast . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
 		--e2e.version="$(VERSION)"
 
 dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
-	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
+	$(GINKGO) -v -failFast . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
 		--e2e.version="$(VERSION)"
 
