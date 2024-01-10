@@ -187,7 +187,12 @@ func main() {
 		// initialize a notifier for cloud config update
 		cloudConfig := completedConfig.ComponentConfig.KubeCloudShared.CloudProvider.CloudConfigFile
 		klog.Infof("initialize notifier on configmap and service token update %s\n", cloudConfig)
-		watch, stop, err := initializeWatch(completedConfig, cloudConfig, SupervisorServiceAccountPath)
+
+		pathsToMonitor := []string{cloudConfig}
+		if cloudProvider == vsphereparavirtual.RegisteredProviderName {
+			pathsToMonitor = append(pathsToMonitor, SupervisorServiceAccountPath)
+		}
+		watch, stop, err := initializeWatch(completedConfig, pathsToMonitor)
 		if err != nil {
 			klog.Fatalf("fail to initialize watch on config map %s: %v\n", cloudConfig, err)
 		}
@@ -237,7 +242,7 @@ func shouldEnableRouteController(controllersFlag, cloudProviderFlag *pflag.Value
 // set up a filesystem watcher for the mounted files
 // which include cloud-config and projected service account.
 // reboot the app whenever there is an update via the returned stopCh.
-func initializeWatch(_ *appconfig.CompletedConfig, paths ...string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
+func initializeWatch(_ *appconfig.CompletedConfig, paths []string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
 	stopCh = make(chan struct{})
 	watch, err = fsnotify.NewWatcher()
 	if err != nil {
