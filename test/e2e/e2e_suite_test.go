@@ -266,6 +266,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	// after all parallel test cases finish
 	if !skipCleanup {
+		By("Dump all resources to artifacts", func() {
+			framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
+				Lister:    proxy.GetClient(),
+				Namespace: "default",
+				LogPath:   filepath.Join(artifactFolder, "clusters", proxy.GetName(), "resources"),
+			})
+		})
 		By("Tear down the workload cluster", func() {
 			framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
 				Client:    proxy.GetClient(),
