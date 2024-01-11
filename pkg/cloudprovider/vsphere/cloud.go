@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"sync"
 
 	v1 "k8s.io/api/core/v1"
 	klog "k8s.io/klog/v2"
@@ -55,7 +56,13 @@ const (
 	dualStackFeatureGateEnv string = "ENABLE_ALPHA_DUAL_STACK"
 )
 
+var (
+	logoutCh chan struct{}
+	logoutWG sync.WaitGroup
+)
+
 func init() {
+	logoutCh = make(chan struct{})
 	cloudprovider.RegisterCloudProvider(RegisteredProviderName, func(config io.Reader) (cloudprovider.Interface, error) {
 		byConfig, err := io.ReadAll(config)
 		if err != nil {
@@ -101,6 +108,14 @@ func newVSphere(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lcfg.LBConfig,
 	return vs, nil
 }
 
+// SessionLogout signals all VSphere sessions to logout and waits before returning
+func SessionLogout() {
+	if logoutCh != nil {
+		close(logoutCh)
+		logoutWG.Wait()
+	}
+}
+
 // Initialize initializes the cloud provider.
 func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
 	client, err := clientBuilder.Client(ClientName)
@@ -112,6 +127,18 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 		connMgr := cm.NewConnectionManager(&vs.cfg.Config, vs.informMgr, client)
 		vs.connectionManager = connMgr
 		vs.nodeManager.connectionManager = connMgr
+
+		logoutWG.Add(1)
+		// Gracefully logout of all VSphere sessions if the stop channel is signaled
+		go func() {
+			// TODO: The stop channel is unusable since the cloud-provider module
+			// passes in a context.TODO() in for the context:
+			// https://github.com/kubernetes/cloud-provider/blob/1bae60eb89ced16795f81a900b79cb55524ba6f0/app/controllermanager.go#L536
+			// <-stop
+			<-logoutCh
+			logout(vs)
+			logoutWG.Done()
+		}()
 
 		vs.informMgr.AddNodeListener(vs.nodeAdded, vs.nodeDeleted, nil)
 
@@ -261,7 +288,9 @@ func validateDualStack(cfg *ccfg.CPIConfig) error {
 }
 
 func logout(vs *VSphere) {
+	klog.Info("logout: ending session to vSphere")
 	vs.connectionManager.Logout()
+	klog.Info("logout: finished")
 }
 
 // Notification handler when node is added into k8s cluster.

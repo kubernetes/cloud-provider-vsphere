@@ -25,7 +25,9 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	cloudprovider "k8s.io/cloud-provider"
@@ -191,11 +193,24 @@ func main() {
 			_ = watch.Close() // ignore explicitly when the watch closes
 		}(watch)
 
+		// Notify the stop channel on SIGTERM or SIGINT in order
+		// to run cleanup such as logout of VSphere sessions
+		cancelChan := make(chan os.Signal, 1)
+		signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
+		go func() {
+			sig := <-cancelChan
+			klog.Infof("Signal received: %s. Stopping...\n", sig)
+			close(stop)
+		}()
+
 		if err := app.Run(completedConfig, cloud, controllerInitializers, webhookHandlers, stop); err != nil {
 			// explicitly ignore the error by Fprintf, exiting anyway due to app error
+			// We don't call SessionLogout here since errors after initialization aren't bubbled up to here
 			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
+		// Log out of all sessions on exit or signal
+		vsphere.SessionLogout()
 	}
 
 	command.Run = func(cmd *cobra.Command, args []string) {
