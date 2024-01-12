@@ -29,10 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
+	"k8s.io/klog/v2"
+
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/helper"
 	"k8s.io/cloud-provider-vsphere/pkg/util"
-	"k8s.io/klog/v2"
 )
 
 // RoutesProvider is the interface definition for Routes functionality
@@ -126,7 +127,7 @@ func (r *routesProvider) CreateRoute(ctx context.Context, clusterName string, na
 	_, err = r.routeManager.CreateRouteCR(ctx, routeInfo)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			klog.Errorf("Route CR %s is already existing: %w", nodeName, err)
+			klog.Errorf("Route CR %s is already existing: %v", nodeName, err)
 			return nil
 		}
 		klog.Errorf("creating Route CR for node %s failed: %s", nodeName, err)

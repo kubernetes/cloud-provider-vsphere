@@ -320,7 +320,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	}
 
 	for _, ipFamily := range ipFamilies {
-		klog.V(6).Infof("ipFamily: %q nonLocalhostIPs: %q", ipFamily, sortedNonLocalhostIPs)
+		klog.V(6).Infof("ipFamily: %q nonLocalhostIPs: %v", ipFamily, sortedNonLocalhostIPs)
 		discoveredInternal, discoveredExternal := discoverIPs(
 			sortedNonLocalhostIPs,
 			ipFamily,

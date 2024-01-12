@@ -131,7 +131,7 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 	}
 	err = vs.nsxtConnectorMgr.AddSecretListener(vs.informMgr.GetSecretInformer())
 	if err != nil {
-		klog.Warning("Adding NSXT secret listener failed: %v", err)
+		klog.Warningf("Adding NSXT secret listener failed: %v", err)
 	}
 }
 
