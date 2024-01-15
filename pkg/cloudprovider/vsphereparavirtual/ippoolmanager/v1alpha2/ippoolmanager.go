@@ -13,8 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
 	"k8s.io/klog/v2"
+
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
 )
 
 // IPPoolManager defines an ippool manager working with v1alpha2 ippool CR
@@ -146,7 +147,7 @@ func (p *IPPoolManager) AddSubnetToIPPool(node *corev1.Node, ippool helper.NSXIP
 	newIpp := ipp.DeepCopy()
 	// add node cidr allocation req to the ippool spec only when node doesn't contain pod cidr
 	if node.Spec.PodCIDR == "" || len(node.Spec.PodCIDRs) == 0 {
-		klog.V(4).Info("add subnet to ippool for node %s", node.Name)
+		klog.V(4).Infof("add subnet to ippool for node %s", node.Name)
 		newIpp.Spec.Subnets = append(newIpp.Spec.Subnets, vpcnetworkingapis.SubnetRequest{
 			Name:         node.Name,
 			IPFamily:     helper.IPFamilyDefaultV2,

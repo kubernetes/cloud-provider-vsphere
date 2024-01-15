@@ -30,8 +30,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager"
 	"k8s.io/klog/v2"
+
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager"
 )
 
 const (
@@ -225,7 +226,7 @@ func (c *Controller) patchNodeCIDRWithRetry(node types.NodeName, cidr string) er
 	var err error
 	for i := 0; i < cidrUpdateRetries; i++ {
 		if err = c.patchNodeCIDR(node, cidr); err == nil {
-			klog.V(4).Info("Set node %v PodCIDR to %v", node, cidr)
+			klog.V(4).Infof("Set node %v PodCIDR to %v", node, cidr)
 			return nil
 		}
 	}

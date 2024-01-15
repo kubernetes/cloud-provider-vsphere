@@ -144,7 +144,7 @@ func (p *IPPoolManager) AddSubnetToIPPool(node *corev1.Node, ippool helper.NSXIP
 	newIpp := ipp.DeepCopy()
 	// add node cidr allocation req to the ippool spec only when node doesn't contain pod cidr
 	if node.Spec.PodCIDR == "" || len(node.Spec.PodCIDRs) == 0 {
-		klog.V(4).Info("add subnet to ippool for node %s", node.Name)
+		klog.V(4).Infof("add subnet to ippool for node %s", node.Name)
 		newIpp.Spec.Subnets = append(newIpp.Spec.Subnets, t1networkingapis.SubnetRequest{
 			Name:         node.Name,
 			IPFamily:     helper.IPFamilyDefault,
