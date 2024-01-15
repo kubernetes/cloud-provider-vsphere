@@ -235,10 +235,10 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75 h1:6fotK7otjonDflCTK0BCfls4SPy3NcCVb5dqqmbRknE=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75/go.mod h1:KO6IkyS8Y3j8OdNO85qEYBsRPuteD+YciPomcXdrMnk=
-github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20231227030711-34390278f3cd h1:rl/Yg5m2WrecTBHvf1ZSg/lMBOguIWOeaCf1uo5ARTQ=
-github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20231227030711-34390278f3cd/go.mod h1:Q4JzNkNMvjo7pXtlB5/R3oME4Nhah7fAObWgghVmtxk=
-github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240103020117-417d1d01f14b h1:QRC2/l0VwKDVpe5bQFYR4oX1Fad6Ch5FlDaQmkgLW1g=
-github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240103020117-417d1d01f14b/go.mod h1:dzob8tUzpAREQPtbbjQs4b1UyQDR37B2TiIdg8WJSRM=
+github.com/vmware-tanzu/nsx-operator/pkg/apis v0.1.0 h1:HdnQb/X9vJ8a5WQ03g/0nDr9igIIK1fF6wO5wOtkJT4=
+github.com/vmware-tanzu/nsx-operator/pkg/apis v0.1.0/go.mod h1:Q4JzNkNMvjo7pXtlB5/R3oME4Nhah7fAObWgghVmtxk=
+github.com/vmware-tanzu/nsx-operator/pkg/client v0.1.0 h1:X4jP7pn3aUf+GLn1+GfPcDPVTnX5c2kvLDi2lUrDKfI=
+github.com/vmware-tanzu/nsx-operator/pkg/client v0.1.0/go.mod h1:TPlw/Ggl5PYfNQ/AnHSoQl2jhxVMK/oE3IR0ETvCrNs=
 github.com/vmware-tanzu/vm-operator-api v0.1.4-0.20201118171008-5ca641b0e126 h1:kDAAVFnTW9YHGuUTMGQoWz9AV7aZo3+wCbtzyenVktI=
 github.com/vmware-tanzu/vm-operator-api v0.1.4-0.20201118171008-5ca641b0e126/go.mod h1:mubK0QMyaA2TbeAmGsu2GVfiqDFppNUAUqoMPoKFgzM=
 github.com/vmware/govmomi v0.30.6 h1:O3tjSwQBy0XwI5uK1/yVIfQ1LP9bAECEDUfifnyGs9U=
