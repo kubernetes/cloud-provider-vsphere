@@ -11,7 +11,7 @@ require (
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.29.0
 	k8s.io/klog/v2 v2.110.1
-	sigs.k8s.io/cluster-api v1.6.0-rc.0.0.20240112131553-005971d34c42
+	sigs.k8s.io/cluster-api v1.6.0
 	sigs.k8s.io/cluster-api/test v1.6.0-rc.0.0.20240112131553-005971d34c42
 )
 
