@@ -37,9 +37,17 @@ Normally, we need to cut alpha and beta releases before the official release. Fo
 To create a new release, please refer to the following workflow:
 
 ```shell
+# if is to cut a minor release, do below on master branch first
+# if it's for a patch release, do below on release branch
 $ git pull --rebase
 # release_name can be v1.22.0-alpha.1, v1.22.0-beta.1, v1.22.0, etc
 $ git tag -a <release_name>
+# push to master branch first before checking out a new release branch
+$ git push <remote_name> <branch_name> --tags
+# skip below if it's for cutting patch release
+# check out a minor branch if there isn't any for that minor version
+$ git checkout -b <release_name>
+# push
 $ git push <remote_name> <release_name>
 ```
 
