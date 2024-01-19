@@ -6,165 +6,106 @@
 # - vsphere
 
 providers:
-  - name: cluster-api
-    type: CoreProvider
-    versions:
-    - name: v0.3.25 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: "http://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/core-components.yaml"
-      type: "url"
-      contract: v1alpha3
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-        - sourcePath: "../data/shared/metadata.yaml"
-    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/core-components.yaml"
-      type: "url"
-      contract: v1alpha4
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-        - sourcePath: "../data/shared/metadata.yaml"
-    - name: v1.0.1 # latest published release in the v1beta1 series; this is used for v1beta1 --> main clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.1/core-components.yaml"
-      type: "url"
-      contract: v1beta1
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-        - sourcePath: "../data/shared/metadata.yaml"
 
-  - name: kubeadm
-    type: BootstrapProvider
-    versions:
-    - name: v0.3.25 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/bootstrap-components.yaml"
-      type: "url"
-      contract: v1alpha3
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-        - sourcePath: "../data/shared/metadata.yaml"
-    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/bootstrap-components.yaml"
-      type: "url"
-      contract: v1alpha4
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-        - sourcePath: "../data/shared/metadata.yaml"
-    - name: v1.0.1 # latest published release in the v1beta1 series; this is used for v1beta1 --> main clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.1/bootstrap-components.yaml"
-      type: "url"
-      contract: v1beta1
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-      - sourcePath: "../data/shared/metadata.yaml"
+- name: cluster-api
+  type: CoreProvider
+  versions:
+  - name: v1.6.1
+    # Use manifest from source files
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/core-components.yaml"
+    type: "url"
+    contract: v1beta1
+    files:
+    - sourcePath: "../data/shared/main/v1beta1/metadata.yaml"
+    replacements:
+    - old: "imagePullPolicy: Always"
+      new: "imagePullPolicy: IfNotPresent"
 
-  - name: kubeadm
-    type: ControlPlaneProvider
-    versions:
-    - name: v0.3.25 # latest published release in the v1alpha3 series; this is used for v1alpha3 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/control-plane-components.yaml"
-      type: "url"
-      contract: v1alpha3
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-        - sourcePath: "../data/shared/metadata.yaml"
-    - name: v0.4.7 # latest published release in the v1alpha4 series; this is used for v1alpha4 --> v1beta1 clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/control-plane-components.yaml"
-      type: "url"
-      contract: v1alpha4
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-        - sourcePath: "../data/shared/metadata.yaml"
-    - name: v1.0.1 # latest published release in the v1beta1 series; this is used for v1beta1 --> main clusterctl upgrades test only.
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.1/control-plane-components.yaml"
-      type: "url"
-      contract: v1beta1
-      replacements:
-        - old: "imagePullPolicy: Always"
-          new: "imagePullPolicy: IfNotPresent"
-      files:
-      - sourcePath: "../data/shared/metadata.yaml"
+- name: kubeadm
+  type: BootstrapProvider
+  versions:
+  - name: v1.6.1
+    # Use manifest from source files
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/bootstrap-components.yaml"
+    type: "url"
+    contract: v1beta1
+    files:
+    - sourcePath: "../data/shared/main/v1beta1/metadata.yaml"
+    replacements:
+    - old: "imagePullPolicy: Always"
+      new: "imagePullPolicy: IfNotPresent"
 
-  - name: vsphere
-    type: InfrastructureProvider
-    versions:
-      - name: v0.7.12
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.7.12/infrastructure-components.yaml
-        type: url
-        contract: v1alpha3
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-        files:
-          # TODO: v1a3 cluster-template includes WORKLOAD_CONTROL_PLANE_ENDPOINT_IP
-          - sourcePath: "../data/metadata.yaml"
-          - sourcePath: "../data/infrastructure-vsphere/capi-upgrades/v1alpha3/cluster-template.yaml"
-      - name: v0.8.2
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v0.8.2/infrastructure-components.yaml
-        type: url
-        contract: v1alpha4
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-        files:
-          - sourcePath: "../data/metadata.yaml"
-          - sourcePath: "../data/infrastructure-vsphere/capi-upgrades/v1alpha4/cluster-template.yaml"
-      - name: v1.0.1
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.0.1/infrastructure-components.yaml
-        type: url
-        contract: v1beta1
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-        files:
-          # Add a cluster template
-          - sourcePath: "../data/infrastructure-vsphere/cluster-template.yaml"
-          - sourcePath: "../data/infrastructure-vsphere/cluster-template-remote-management.yaml"
-          - sourcePath: "../data/metadata.yaml"
+- name: kubeadm
+  type: ControlPlaneProvider
+  versions:
+  - name: v1.6.1
+    # Use manifest from source files
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/control-plane-components.yaml"
+    type: "url"
+    contract: v1beta1
+    files:
+    - sourcePath: "../data/shared/main/v1beta1/metadata.yaml"
+    replacements:
+    - old: "imagePullPolicy: Always"
+      new: "imagePullPolicy: IfNotPresent"
+
+- name: vsphere
+  type: InfrastructureProvider
+  versions:
+  - name: v1.9.0
+    # Use manifest from source files
+    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.9.0/infrastructure-components.yaml"
+    type: "url"
+    contract: v1beta1
+    files:
+    # Add a cluster template
+    - sourcePath: "../../../test/e2e/data/infrastructure-vsphere/main/cluster-template.yaml"
+    - sourcePath: "../data/shared/main/v1beta1_provider/metadata.yaml"
 
 variables:
-  KUBERNETES_VERSION: "v1.23.5"
+  KUBERNETES_VERSION: "v1.29.0"
+  KUBERNETES_VERSION_UPGRADE_FROM: "v1.28.0"
+  KUBERNETES_VERSION_UPGRADE_TO: "v1.29.0"
+  CPI_IMAGE_K8S_VERSION: "v1.29.0"
   CNI: "./data/cni/calico/calico.yaml"
   EXP_CLUSTER_RESOURCE_SET: "true"
+  EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
   CONTROL_PLANE_MACHINE_COUNT: 1
   WORKER_MACHINE_COUNT: 1
   IP_FAMILY: "IPv4"
   CLUSTER_CLASS_NAME: "quick-start"
   # Following CAPV variables should be set before testing
   VSPHERE_TLS_THUMBPRINT: "18:EC:35:60:54:68:92:F6:F8:92:3E:4D:11:A1:0D:13:9C:E9:3E:B6"
+  VSPHERE_COMPUTE_CLUSTER: "Cluster-1"
   VSPHERE_DATACENTER:  "SDDC-Datacenter"
   VSPHERE_FOLDER: "cloud-provider-vsphere"
   VSPHERE_RESOURCE_POOL: "cloud-provider-vsphere"
   VSPHERE_DATASTORE: "WorkloadDatastore"
   VSPHERE_STORAGE_POLICY: "Cluster API vSphere Storage Policy"
   VSPHERE_NETWORK: "sddc-cgw-network-6"
-  VSPHERE_TEMPLATE: "ubuntu-2004-kube-v1.23.5"
-  VSPHERE_INSECURE: "true"
+  VSPHERE_TEMPLATE: "ubuntu-2204-kube-v1.29.0"
+  FLATCAR_VSPHERE_TEMPLATE: "flatcar-stable-3602.2.3-kube-v1.29.0"
   VSPHERE_INSECURE_CSI: "true"
-  INIT_WITH_BINARY_V1ALPHA3: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.25/clusterctl-{OS}-{ARCH}"
-  INIT_WITH_BINARY_V1ALPHA4: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.7/clusterctl-{OS}-{ARCH}"
-  INIT_WITH_KUBERNETES_VERSION: "v1.23.5"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   NODE_DRAIN_TIMEOUT: "60s"
   CLUSTER_TOPOLOGY: "true"
+  # These IDs correspond to Tesla T4s, they are the decimal representation of the hex values.
+  DEVICE_ID: 7864
+  VENDOR_ID: 4318
+  # CAPV feature flags
+  EXP_NODE_ANTI_AFFINITY: "true"
+  CAPI_DIAGNOSTICS_ADDRESS: ":8080"
+  CAPI_INSECURE_DIAGNOSTICS: "true"
+
 intervals:
   default/wait-controllers: ["5m", "10s"]
   default/wait-cluster: ["5m", "10s"]
-  default/wait-control-plane: ["20m", "10s"]
-  default/wait-worker-nodes: ["20m", "10s"]
+  default/wait-control-plane: ["10m", "10s"]
+  default/wait-worker-nodes: ["10m", "10s"]
   default/wait-delete-cluster: ["5m", "10s"]
   default/wait-machine-upgrade: ["15m", "1m"]
+  default/wait-machine-remediation: ["15m", "10s"]
+  mhc-remediation/mhc-remediation: ["30m", "10s"]
+  node-drain/wait-deployment-available: ["3m", "10s"]
+  node-drain/wait-machine-deleted: ["2m", "10s"]
+  anti-affinity/wait-vm-redistribution: ["5m", "10s"]

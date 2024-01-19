@@ -63,6 +63,9 @@ var (
 	// If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.
 	clusterctlConfig string
 
+	// image is the cloud-controller-manager image to be tested, for example, gcr.io/cloud-provider-vsphere/cpi/pr/manager
+	image string
+
 	// version is the cloud-controller-manager version to be tested, for example, v1.22.3-76-g6f4fa01
 	version string
 
@@ -84,7 +87,6 @@ var (
 	// helm install configurations
 	namespace = "kube-system"
 	release   = "vsphere-cpi-e2e"
-	image     = "gcr.io/cloud-provider-vsphere/cpi/pr/manager"
 
 	// helm install expectation
 	daemonsetName = "vsphere-cpi"
@@ -95,6 +97,7 @@ func init() {
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.StringVar(&clusterctlConfig, "e2e.clusterctl-config", "", "file which tests will use as a clusterctl config. If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.")
 	flag.StringVar(&chartFolder, "e2e.chart-folder", "", "folder where the helm chart for e2e should be stored")
+	flag.StringVar(&image, "e2e.image", "gcr.io/cloud-provider-vsphere/cpi/pr/manager", "the cloud-controller-manager image to be tested, for example, gcr.io/cloud-provider-vsphere/cpi/pr/manager")
 	flag.StringVar(&version, "e2e.version", "dev", "the cloud-controller-manager version to be tested, for example, v1.22.3-76-g6f4fa01")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false,
 		"if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
@@ -192,7 +195,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
 				ClusterName:              workloadName,
 				Namespace:                workloadKubeconfigNamespace,
-				KubernetesVersion:        e2eConfig.GetVariable("INIT_WITH_KUBERNETES_VERSION"),
+				KubernetesVersion:        e2eConfig.GetVariable("KUBERNETES_VERSION"),
 				ControlPlaneMachineCount: e2eConfig.GetInt64PtrVariable("CONTROL_PLANE_MACHINE_COUNT"),
 				WorkerMachineCount:       e2eConfig.GetInt64PtrVariable("WORKER_MACHINE_COUNT"),
 				Flavor:                   clusterctl.DefaultFlavor,
