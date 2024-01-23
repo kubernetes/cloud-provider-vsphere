@@ -52,7 +52,7 @@ export VSPHERE_SSH_PRIVATE_KEY="/root/ssh/.private-key/private-key"
 # Run the vpn client in container
 docker run --rm -d --name vpn -v "${HOME}/.openvpn/:${HOME}/.openvpn/" \
   -w "${HOME}/.openvpn/" --cap-add=NET_ADMIN --net=host --device=/dev/net/tun \
-  gcr.io/cluster-api-provider-vsphere/extra/openvpn:latest
+  gcr.io/k8s-staging-capi-vsphere/extra/openvpn:latest
 
 # Tail the vpn logs
 docker logs vpn
