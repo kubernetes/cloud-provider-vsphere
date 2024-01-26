@@ -24,19 +24,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/node/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	clientgotesting "k8s.io/client-go/testing"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
-
-	"k8s.io/cloud-provider-vsphere/pkg/util"
 )
 
 var (
@@ -54,10 +52,10 @@ var (
 	fakeLBIP = "1.1.1.1"
 
 	// FakeClientWrapper allows functions to be replaced for fault injection
-	fcw *util.FakeClientWrapper
+	fc *fakevmclient.Clientset
 )
 
-func initTest() (*v1.Service, VMService, *util.FakeClientWrapper) {
+func initTest() (*v1.Service, VMService, *fakevmclient.Clientset) {
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -78,13 +76,10 @@ func initTest() (*v1.Service, VMService, *util.FakeClientWrapper) {
 			},
 		},
 	}
-	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewClientBuilder().WithScheme(scheme).Build()
-	fcw = util.NewFakeClientWrapper(fc)
-	vms = NewVMService(fcw, testClusterNameSpace, &testOwnerReference)
+	fc := fakevmclient.NewSimpleClientset()
+	vms = NewVMService(fc, testClusterNameSpace, &testOwnerReference)
 
-	return testK8sService, vms, fcw
+	return testK8sService, vms, fc
 }
 
 func TestNewVMService(t *testing.T) {
@@ -408,20 +403,20 @@ func TestCreateOrUpdateVMService(t *testing.T) {
 func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 	testCases := []struct {
 		name        string
-		getFunc     func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
+		getFunc     func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
 		expectedErr error
 	}{
 		{
 			name: "failed to create VirtualMachineService",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				return fmt.Errorf("failed to get VirtualMachineService")
+			getFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, nil, fmt.Errorf("failed to get VirtualMachineService")
 			},
 			expectedErr: ErrGetVMService,
 		},
 		{
 			name: "when VMService does not exist",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				return apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
+			getFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, nil, apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
 			},
 			expectedErr: ErrVMServiceIPNotFound,
 		},
@@ -429,9 +424,9 @@ func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			testK8sService, vms, fcw := initTest()
+			testK8sService, vms, fc := initTest()
 			// Redefine Get in the client to return an error
-			fcw.GetFunc = testCase.getFunc
+			fc.PrependReactor("get", "virtualmachineservices", testCase.getFunc)
 			_, err := vms.CreateOrUpdate(context.Background(), testK8sService, testClustername)
 			assert.Equal(t, testCase.expectedErr.Error(), err.Error())
 		})
@@ -439,11 +434,11 @@ func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 }
 
 func TestCreateOrUpdateVMService_RedefineCreateFunc(t *testing.T) {
-	testK8sService, vms, fcw := initTest()
+	testK8sService, vms, fc := initTest()
 	// Redefine Create in the client to return an error
-	fcw.CreateFunc = func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-		return fmt.Errorf("failed to create VirtualMachineService")
-	}
+	fc.PrependReactor("create", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("failed to create VirtualMachineService")
+	})
 	_, err := vms.CreateOrUpdate(context.Background(), testK8sService, testClustername)
 	assert.Equal(t, ErrCreateVMService.Error(), err.Error())
 }

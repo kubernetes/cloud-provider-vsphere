@@ -27,13 +27,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clientgotesting "k8s.io/client-go/testing"
 	cloudprovider "k8s.io/cloud-provider"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
-	"k8s.io/cloud-provider-vsphere/pkg/util"
 
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 )
@@ -51,15 +50,13 @@ var (
 	}
 )
 
-func newTestLoadBalancer() (cloudprovider.LoadBalancer, *util.FakeClientWrapper) {
-	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewClientBuilder().WithScheme(scheme).Build()
-	fcw := util.NewFakeClientWrapper(fc)
-	vms := vmservice.NewVMService(fcw, testClusterNameSpace, &testOwnerReference)
+func newTestLoadBalancer() (cloudprovider.LoadBalancer, *fakevmclient.Clientset) {
+	fc := fakevmclient.NewSimpleClientset()
+
+	vms := vmservice.NewVMService(fc, testClusterNameSpace, &testOwnerReference)
 	return &loadBalancer{
 		vmService: vms,
-	}, fcw
+	}, fc
 }
 
 func TestNewLoadBalancer(t *testing.T) {
@@ -155,7 +152,7 @@ func TestUpdateLoadBalancer(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			lb, fcw := newTestLoadBalancer()
+			lb, fc := newTestLoadBalancer()
 			testK8sService := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      testK8sServiceName,
@@ -181,9 +178,9 @@ func TestUpdateLoadBalancer(t *testing.T) {
 
 			if testCase.expectErr {
 				// Ensure that the client Update call returns an error on update
-				fcw.UpdateFunc = func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
-					return fmt.Errorf("Some undefined update error")
-				}
+				fc.PrependReactor("update", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+					return true, &vmopv1alpha1.VirtualMachineService{}, fmt.Errorf("Some undefined update error")
+				})
 				err = lb.UpdateLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
 				assert.Error(t, err)
 			} else {
@@ -195,7 +192,7 @@ func TestUpdateLoadBalancer(t *testing.T) {
 }
 
 func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
-	lb, fcw := newTestLoadBalancer()
+	lb, fc := newTestLoadBalancer()
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -205,8 +202,9 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
 		},
 	}
-	fcw.CreateFunc = func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-		vms := &vmopv1alpha1.VirtualMachineService{
+
+	fc.PrependReactor("create", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &vmopv1alpha1.VirtualMachineService{
 			Status: vmopv1alpha1.VirtualMachineServiceStatus{
 				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
 					Ingress: []vmopv1alpha1.LoadBalancerIngress{
@@ -216,10 +214,8 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 					},
 				},
 			},
-		}
-		vms.DeepCopyInto(obj.(*vmopv1alpha1.VirtualMachineService))
-		return nil
-	}
+		}, nil
+	})
 
 	_, ensureErr := lb.EnsureLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
 	assert.NoError(t, ensureErr)
@@ -231,17 +227,20 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 func TestEnsureLoadBalancer(t *testing.T) {
 	testCases := []struct {
 		name       string
-		createFunc func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
+		createFunc func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
 		expectErr  error
 	}{
 		{
-			name:      "when VMService is created but IP not found",
+			name: "when VMService is created but IP not found",
+			createFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &vmopv1alpha1.VirtualMachineService{}, fmt.Errorf(vmservice.ErrVMServiceIPNotFound.Error())
+			},
 			expectErr: vmservice.ErrVMServiceIPNotFound,
 		},
 		{
 			name: "when VMService creation failed",
-			createFunc: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-				return fmt.Errorf(vmservice.ErrCreateVMService.Error())
+			createFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &vmopv1alpha1.VirtualMachineService{}, fmt.Errorf(vmservice.ErrCreateVMService.Error())
 			},
 			expectErr: vmservice.ErrCreateVMService,
 		},
@@ -249,14 +248,14 @@ func TestEnsureLoadBalancer(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			lb, fcw := newTestLoadBalancer()
+			lb, fc := newTestLoadBalancer()
 			testK8sService := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      testK8sServiceName,
 					Namespace: testK8sServiceNameSpace,
 				},
 			}
-			fcw.CreateFunc = testCase.createFunc
+			fc.PrependReactor("create", "virtualmachineservices", testCase.createFunc)
 
 			_, ensureErr := lb.EnsureLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
 			assert.Equal(t, ensureErr.Error(), testCase.expectErr.Error())
@@ -268,7 +267,7 @@ func TestEnsureLoadBalancer(t *testing.T) {
 }
 
 func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
-	lb, fcw := newTestLoadBalancer()
+	lb, fc := newTestLoadBalancer()
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -276,8 +275,8 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 		},
 	}
 	// Ensure that the client Create call returns a VMService with a valid IP
-	fcw.CreateFunc = func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-		vms := &vmopv1alpha1.VirtualMachineService{
+	fc.PrependReactor("create", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &vmopv1alpha1.VirtualMachineService{
 			Status: vmopv1alpha1.VirtualMachineServiceStatus{
 				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
 					Ingress: []vmopv1alpha1.LoadBalancerIngress{
@@ -308,10 +307,8 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 					vmservice.NodeSelectorKey:    vmservice.NodeRole,
 				},
 			},
-		}
-		vms.DeepCopyInto(obj.(*vmopv1alpha1.VirtualMachineService))
-		return nil
-	}
+		}, nil
+	})
 
 	status, ensureErr := lb.EnsureLoadBalancer(context.Background(), testClustername, testK8sService, []*v1.Node{})
 	assert.NoError(t, ensureErr)
@@ -324,19 +321,19 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 	testCases := []struct {
 		name       string
-		deleteFunc func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
+		deleteFunc func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
 		expectErr  string
 	}{
 		{
 			name: "should ignore not found error",
-			deleteFunc: func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-				return apierrors.NewNotFound(vmopv1alpha1.Resource("virtualmachineservice"), testClustername)
+			deleteFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, nil, apierrors.NewNotFound(vmopv1alpha1.Resource("virtualmachineservice"), testClustername)
 			},
 		},
 		{
 			name: "should return error",
-			deleteFunc: func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-				return fmt.Errorf("an error occurred while deleting load balancer")
+			deleteFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, nil, fmt.Errorf("an error occurred while deleting load balancer")
 			},
 			expectErr: "an error occurred while deleting load balancer",
 		},
@@ -344,7 +341,7 @@ func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			lb, fcw := newTestLoadBalancer()
+			lb, fc := newTestLoadBalancer()
 			testK8sService := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      testK8sServiceName,
@@ -356,7 +353,8 @@ func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 			err := lb.EnsureLoadBalancerDeleted(context.Background(), testClustername, testK8sService)
 			assert.NoError(t, err)
 
-			fcw.DeleteFunc = testCase.deleteFunc
+			fc.PrependReactor("delete", "virtualmachineservices", testCase.deleteFunc)
+
 			err = lb.EnsureLoadBalancerDeleted(context.Background(), "test", testK8sService)
 			if err != nil {
 				assert.Equal(t, err.Error(), testCase.expectErr)

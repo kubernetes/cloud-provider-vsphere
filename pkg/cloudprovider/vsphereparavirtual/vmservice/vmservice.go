@@ -29,11 +29,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	rest "k8s.io/client-go/rest"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned"
 )
 
 const (
@@ -89,17 +88,14 @@ var (
 
 // GetVmopClient gets a vm-operator-api client
 // This is separate from NewVMService so that a fake client can be injected for testing
-func GetVmopClient(config *rest.Config) (client.Client, error) {
+func GetVmopClient(config *rest.Config) (vmopclient.Interface, error) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
-	client, err := client.New(config, client.Options{
-		Scheme: scheme,
-	})
-	return client, err
+	return vmopclient.NewForConfig(config)
 }
 
 // NewVMService creates a vmService object
-func NewVMService(vmClient client.Client, ns string, ownerRef *metav1.OwnerReference) VMService {
+func NewVMService(vmClient vmopclient.Interface, ns string, ownerRef *metav1.OwnerReference) VMService {
 	return &vmService{
 		vmClient:       vmClient,
 		namespace:      ns,
@@ -135,10 +131,8 @@ func (s *vmService) Get(ctx context.Context, service *v1.Service, clusterName st
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to get VirtualMachineService")
 
-	vmService := vmopv1alpha1.VirtualMachineService{}
-	vmServiceKey := types.NamespacedName{Name: s.GetVMServiceName(service, clusterName), Namespace: s.namespace}
-
-	if err := s.vmClient.Get(ctx, vmServiceKey, &vmService); err != nil {
+	vmService, err := s.vmClient.VmoperatorV1alpha1().VirtualMachineServices(s.namespace).Get(ctx, s.GetVMServiceName(service, clusterName), metav1.GetOptions{})
+	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -146,7 +140,7 @@ func (s *vmService) Get(ctx context.Context, service *v1.Service, clusterName st
 		return nil, err
 	}
 
-	return &vmService, nil
+	return vmService, nil
 }
 
 // Create creates a vmservice to map to the given lb type of service, it should be called if vmservice not found
@@ -160,8 +154,8 @@ func (s *vmService) Create(ctx context.Context, service *v1.Service, clusterName
 		return nil, err
 	}
 
-	vmService.Namespace = s.namespace
-	if err = s.vmClient.Create(ctx, vmService); err != nil {
+	vmService, err = s.vmClient.VmoperatorV1alpha1().VirtualMachineServices(s.namespace).Create(ctx, vmService, metav1.CreateOptions{})
+	if err != nil {
 		logger.Error(ErrCreateVMService, fmt.Sprintf("%v", err))
 		return nil, err
 	}
@@ -258,7 +252,8 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 	}
 
 	if needsUpdate {
-		if err := s.vmClient.Update(ctx, newVMService); err != nil {
+		newVMService, err = s.vmClient.VmoperatorV1alpha1().VirtualMachineServices(s.namespace).Update(ctx, newVMService, metav1.UpdateOptions{})
+		if err != nil {
 			logger.Error(ErrUpdateVMService, fmt.Sprintf("%v", err))
 			return nil, err
 		}
@@ -275,11 +270,8 @@ func (s *vmService) Delete(ctx context.Context, service *v1.Service, clusterName
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to delete VirtualMachineService")
 
-	vmService := vmopv1alpha1.VirtualMachineService{}
-	vmService.Name = s.GetVMServiceName(service, clusterName)
-	vmService.Namespace = s.namespace
-
-	if err := s.vmClient.Delete(ctx, &vmService); err != nil {
+	err := s.vmClient.VmoperatorV1alpha1().VirtualMachineServices(s.namespace).Delete(ctx, s.GetVMServiceName(service, clusterName), metav1.DeleteOptions{})
+	if err != nil {
 		logger.Error(ErrDeleteVMService, fmt.Sprintf("%v", err))
 		return err
 	}

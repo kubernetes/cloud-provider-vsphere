@@ -27,10 +27,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	clientgotesting "k8s.io/client-go/testing"
 	cloudprovider "k8s.io/cloud-provider"
-	"k8s.io/cloud-provider-vsphere/pkg/util"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
@@ -73,7 +72,9 @@ func TestNewInstances(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "NewInstance: when everything is ok",
+			name: "NewInstance: when everything is ok",
+			// The above code is declaring a test environment variable of type `envtest.Environment` and
+			// initializing it with an empty instance of `envtest.Environment`.
 			testEnv:     &envtest.Environment{},
 			expectedErr: nil,
 		},
@@ -94,16 +95,14 @@ func TestNewInstances(t *testing.T) {
 	}
 }
 
-func initTest(testVM *vmopv1alpha1.VirtualMachine) (*instances, *util.FakeClientWrapper) {
-	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(testVM).Build()
-	fcw := util.NewFakeClientWrapper(fc)
+func initTest(testVM *vmopv1alpha1.VirtualMachine) (*instances, *fakevmclient.Clientset, error) {
+	fc := fakevmclient.NewSimpleClientset()
 	instance := &instances{
-		vmClient:  fcw,
+		vmClient:  fc,
 		namespace: testClusterNameSpace,
 	}
-	return instance, fcw
+	_, err := fc.VmoperatorV1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	return instance, fc, err
 }
 
 func TestInstanceID(t *testing.T) {
@@ -142,7 +141,8 @@ func TestInstanceID(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			instance, _ := initTest(testCase.testVM)
+			instance, _, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
 			instanceID, err := instance.InstanceID(context.Background(), testVMName)
 			assert.Equal(t, testCase.expectedErr, err)
 			assert.Equal(t, testCase.expectedInstanceID, instanceID)
@@ -165,11 +165,11 @@ func TestInstanceIDThrowsErr(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			instance, fcw := initTest(testCase.testVM)
-			fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				return fmt.Errorf("Internal error getting VMs")
-			}
-
+			instance, fc, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
+			fc.PrependReactor("get", "virtualmachines", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &vmopv1alpha1.VirtualMachine{}, fmt.Errorf("Internal error getting VMs")
+			})
 			instanceID, err := instance.InstanceID(context.Background(), testVMName)
 			assert.NotEqual(t, nil, err)
 			assert.NotEqual(t, cloudprovider.InstanceNotFound, err)
@@ -201,7 +201,8 @@ func TestInstanceExistsByProviderID(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			instance, _ := initTest(testCase.testVM)
+			instance, _, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
 			providerID, err := instance.InstanceExistsByProviderID(context.Background(), testProviderID)
 			assert.Equal(t, testCase.expectedErr, err)
 			assert.Equal(t, testCase.expectedResult, providerID)
@@ -255,7 +256,8 @@ func TestInstanceShutdownByProviderID(t *testing.T) {
 				testCase.testVM.Status.PowerState = vmopv1alpha1.VirtualMachinePoweredOff
 			}
 
-			instance, _ := initTest(testCase.testVM)
+			instance, _, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
 			ret, err := instance.InstanceShutdownByProviderID(context.Background(), testProviderID)
 			assert.Equal(t, testCase.expectedErr, err)
 			assert.Equal(t, testCase.expectedResult, ret)
@@ -301,7 +303,8 @@ func TestNodeAddressesByProviderID(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			instance, _ := initTest(testCase.testVM)
+			instance, _, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
 			ret, err := instance.NodeAddressesByProviderID(context.Background(), testProviderID)
 			assert.Equal(t, testCase.expectedErr, err)
 			assert.Equal(t, testCase.expectedNodeAddress, ret)
@@ -324,11 +327,11 @@ func TestNodeAddressesByProviderIDInternalErr(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			instance, fcw := initTest(testCase.testVM)
-			fcw.ListFunc = func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-				return fmt.Errorf("Internal error listing VMs")
-			}
-
+			instance, fc, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
+			fc.PrependReactor("list", "virtualmachines", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &vmopv1alpha1.VirtualMachineList{}, fmt.Errorf("Internal error listing VMs")
+			})
 			ret, err := instance.NodeAddressesByProviderID(context.Background(), testProviderID)
 			assert.NotEqual(t, nil, err)
 			assert.NotEqual(t, cloudprovider.InstanceNotFound, err)
@@ -375,7 +378,8 @@ func TestNodeAddresses(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			instance, _ := initTest(testCase.testVM)
+			instance, _, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
 			ret, err := instance.NodeAddresses(context.Background(), testVMName)
 			assert.Equal(t, testCase.expectedErr, err)
 			assert.Equal(t, testCase.expectedNodeAddress, ret)
@@ -398,11 +402,11 @@ func TestNodeAddressesInternalErr(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			instance, fcw := initTest(testCase.testVM)
-			fcw.GetFunc = func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				return fmt.Errorf("Internal error getting VMs")
-			}
-
+			instance, fc, err := initTest(testCase.testVM)
+			assert.NoError(t, err)
+			fc.PrependReactor("get", "virtualmachines", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &vmopv1alpha1.VirtualMachine{}, fmt.Errorf("Internal error getting VMs")
+			})
 			ret, err := instance.NodeAddresses(context.Background(), testVMName)
 			assert.NotEqual(t, nil, err)
 			assert.NotEqual(t, cloudprovider.InstanceNotFound, err)

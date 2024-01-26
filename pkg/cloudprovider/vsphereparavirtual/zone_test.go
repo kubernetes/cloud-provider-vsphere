@@ -7,11 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
-	"k8s.io/cloud-provider-vsphere/pkg/util"
-	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
@@ -78,7 +76,8 @@ func TestZonesByProviderID(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			zone, _ := initVMopClient(testCase.testVM)
+			zone, _, err := initVMopClient(testCase.testVM)
+			assert.NoError(t, err)
 			z, err := zone.GetZoneByProviderID(ctx, providerid)
 
 			if testCase.expectedErr != nil {
@@ -121,7 +120,8 @@ func TestZonesByNodeName(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			zone, _ := initVMopClient(testCase.testVM)
+			zone, _, err := initVMopClient(testCase.testVM)
+			assert.NoError(t, err)
 			z, err := zone.GetZoneByNodeName(ctx, testCase.vmName)
 
 			if testCase.expectedErr != nil {
@@ -135,16 +135,14 @@ func TestZonesByNodeName(t *testing.T) {
 	}
 }
 
-func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *util.FakeClientWrapper) {
-	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(testVM).Build()
-	fcw := util.NewFakeClientWrapper(fc)
+func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *fakevmclient.Clientset, error) {
+	fc := fakevmclient.NewSimpleClientset()
 	zone := zones{
-		vmClient:  fcw,
+		vmClient:  fc,
 		namespace: testClusterNameSpace,
 	}
-	return zone, fcw
+	_, err := fc.VmoperatorV1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	return zone, fc, err
 }
 
 func createTestVMWithZone(name, namespace string) *vmopv1alpha1.VirtualMachine {
