@@ -19,8 +19,8 @@ limitations under the License.
 package applyconfiguration
 
 import (
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	v1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	vmopv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/applyconfiguration/vmop/v1alpha1"
 )
 

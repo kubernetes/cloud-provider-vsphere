@@ -21,8 +21,8 @@ package v1alpha1
 import (
 	"net/http"
 
-	rest "k8s.io/client-go/rest"
 	v1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	rest "k8s.io/client-go/rest"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/scheme"
 )
 
