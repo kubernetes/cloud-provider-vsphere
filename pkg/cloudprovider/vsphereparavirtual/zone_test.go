@@ -7,10 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
-	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
+
+	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
 
 var (
@@ -128,13 +131,16 @@ func TestZonesByNodeName(t *testing.T) {
 	}
 }
 
-func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *fakevmclient.Clientset, error) {
-	fc := fakevmclient.NewSimpleClientset()
+func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *dynamicfake.FakeDynamicClient, error) {
+	scheme := runtime.NewScheme()
+	_ = vmopv1alpha1.AddToScheme(scheme)
+	fc := dynamicfake.NewSimpleDynamicClient(scheme)
+	fcw := vmopclient.NewFakeClient(fc)
 	zone := zones{
-		vmClient:  fc,
+		vmClient:  fcw,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fc.VmoperatorV1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	_, err := fcw.VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
 	return zone, fc, err
 }
 

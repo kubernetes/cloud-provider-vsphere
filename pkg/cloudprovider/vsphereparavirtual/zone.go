@@ -4,7 +4,7 @@ import (
 	"context"
 
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
-	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned"
+	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -14,7 +14,7 @@ import (
 )
 
 type zones struct {
-	vmClient  vmopclient.Interface
+	vmClient  vmop.VmoperatorV1alpha1Interface
 	namespace string
 }
 

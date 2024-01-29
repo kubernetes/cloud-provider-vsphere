@@ -34,7 +34,9 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
-	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+
+	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
 
 var (
@@ -52,7 +54,7 @@ var (
 	fakeLBIP = "1.1.1.1"
 )
 
-func initTest() (*v1.Service, VMService, *fakevmclient.Clientset) {
+func initTest() (*v1.Service, VMService, *dynamicfake.FakeDynamicClient) {
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -73,9 +75,11 @@ func initTest() (*v1.Service, VMService, *fakevmclient.Clientset) {
 			},
 		},
 	}
-	fc := fakevmclient.NewSimpleClientset()
-	vms = NewVMService(fc, testClusterNameSpace, &testOwnerReference)
 
+	scheme := runtime.NewScheme()
+	_ = vmopv1alpha1.AddToScheme(scheme)
+	fc := dynamicfake.NewSimpleDynamicClient(scheme)
+	vms = NewVMService(vmopclient.NewFakeClient(fc), testClusterNameSpace, &testOwnerReference)
 	return testK8sService, vms, fc
 }
 
@@ -141,7 +145,6 @@ func TestGetVMService(t *testing.T) {
 	}
 	// create a fake VMService
 	createdVMService, _ := vms.Create(context.Background(), k8sService, testClustername)
-
 	vmService, err := vms.Get(context.Background(), k8sService, testClustername)
 	assert.NoError(t, err)
 	assert.Equal(t, (*vmService).Spec, (*createdVMService).Spec)

@@ -30,7 +30,9 @@ import (
 	"k8s.io/client-go/rest"
 	clientgotesting "k8s.io/client-go/testing"
 	cloudprovider "k8s.io/cloud-provider"
-	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
+	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
+
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
 var (
@@ -87,13 +89,16 @@ func TestNewInstances(t *testing.T) {
 	}
 }
 
-func initTest(testVM *vmopv1alpha1.VirtualMachine) (*instances, *fakevmclient.Clientset, error) {
-	fc := fakevmclient.NewSimpleClientset()
+func initTest(testVM *vmopv1alpha1.VirtualMachine) (*instances, *dynamicfake.FakeDynamicClient, error) {
+	scheme := runtime.NewScheme()
+	_ = vmopv1alpha1.AddToScheme(scheme)
+	fc := dynamicfake.NewSimpleDynamicClient(scheme)
+	fcw := vmopclient.NewFakeClient(fc)
 	instance := &instances{
-		vmClient:  fc,
+		vmClient:  fcw,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fc.VmoperatorV1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	_, err := fcw.VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
 	return instance, fc, err
 }
 
@@ -160,7 +165,7 @@ func TestInstanceIDThrowsErr(t *testing.T) {
 			instance, fc, err := initTest(testCase.testVM)
 			assert.NoError(t, err)
 			fc.PrependReactor("get", "virtualmachines", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &vmopv1alpha1.VirtualMachine{}, fmt.Errorf("Internal error getting VMs")
+				return true, nil, fmt.Errorf("Internal error getting VMs")
 			})
 			instanceID, err := instance.InstanceID(context.Background(), testVMName)
 			assert.NotEqual(t, nil, err)
@@ -322,7 +327,7 @@ func TestNodeAddressesByProviderIDInternalErr(t *testing.T) {
 			instance, fc, err := initTest(testCase.testVM)
 			assert.NoError(t, err)
 			fc.PrependReactor("list", "virtualmachines", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &vmopv1alpha1.VirtualMachineList{}, fmt.Errorf("Internal error listing VMs")
+				return true, nil, fmt.Errorf("Internal error listing VMs")
 			})
 			ret, err := instance.NodeAddressesByProviderID(context.Background(), testProviderID)
 			assert.NotEqual(t, nil, err)
@@ -397,7 +402,7 @@ func TestNodeAddressesInternalErr(t *testing.T) {
 			instance, fc, err := initTest(testCase.testVM)
 			assert.NoError(t, err)
 			fc.PrependReactor("get", "virtualmachines", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &vmopv1alpha1.VirtualMachine{}, fmt.Errorf("Internal error getting VMs")
+				return true, nil, fmt.Errorf("Internal error getting VMs")
 			})
 			ret, err := instance.NodeAddresses(context.Background(), testVMName)
 			assert.NotEqual(t, nil, err)
