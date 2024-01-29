@@ -27,10 +27,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	clientgotesting "k8s.io/client-go/testing"
 	cloudprovider "k8s.io/cloud-provider"
 	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
 
@@ -61,27 +61,21 @@ func newTestLoadBalancer() (cloudprovider.LoadBalancer, *fakevmclient.Clientset)
 
 func TestNewLoadBalancer(t *testing.T) {
 	testCases := []struct {
-		name    string
-		testEnv *envtest.Environment
-		err     error
+		name   string
+		config *rest.Config
+		err    error
 	}{
 		{
-			name:    "NewLoadBalancer: when everything is ok",
-			testEnv: &envtest.Environment{},
-			err:     nil,
+			name:   "NewLoadBalancer: when everything is ok",
+			config: &rest.Config{},
+			err:    nil,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := testCase.testEnv.Start()
-			assert.NoError(t, err)
-
-			_, err = NewLoadBalancer(testClusterNameSpace, cfg, &testOwnerReference)
+			_, err := NewLoadBalancer(testClusterNameSpace, testCase.config, &testOwnerReference)
 			assert.Equal(t, testCase.err, err)
-
-			err = testCase.testEnv.Stop()
-			assert.NoError(t, err)
 		})
 	}
 }

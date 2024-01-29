@@ -27,10 +27,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	clientgotesting "k8s.io/client-go/testing"
 	cloudprovider "k8s.io/cloud-provider"
 	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 var (
@@ -68,29 +68,21 @@ func createTestVMWithVMIPAndHost(name, namespace, biosUUID string) *vmopv1alpha1
 func TestNewInstances(t *testing.T) {
 	testCases := []struct {
 		name        string
-		testEnv     *envtest.Environment
+		config      *rest.Config
 		expectedErr error
 	}{
 		{
-			name: "NewInstance: when everything is ok",
-			// The above code is declaring a test environment variable of type `envtest.Environment` and
-			// initializing it with an empty instance of `envtest.Environment`.
-			testEnv:     &envtest.Environment{},
+			name:        "NewInstance: when everything is ok",
+			config:      &rest.Config{},
 			expectedErr: nil,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := testCase.testEnv.Start()
-			assert.NoError(t, err)
-
-			_, err = NewInstances(testClusterNameSpace, cfg)
+			_, err := NewInstances(testClusterNameSpace, testCase.config)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.expectedErr, err)
-
-			err = testCase.testEnv.Stop()
-			assert.NoError(t, err)
 		})
 	}
 }

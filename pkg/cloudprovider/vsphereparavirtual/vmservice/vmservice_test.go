@@ -30,11 +30,11 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	rest "k8s.io/client-go/rest"
 	clientgotesting "k8s.io/client-go/testing"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 var (
@@ -50,9 +50,6 @@ var (
 	}
 	vms      VMService
 	fakeLBIP = "1.1.1.1"
-
-	// FakeClientWrapper allows functions to be replaced for fault injection
-	fc *fakevmclient.Clientset
 )
 
 func initTest() (*v1.Service, VMService, *fakevmclient.Clientset) {
@@ -84,31 +81,25 @@ func initTest() (*v1.Service, VMService, *fakevmclient.Clientset) {
 
 func TestNewVMService(t *testing.T) {
 	testCases := []struct {
-		name    string
-		testEnv *envtest.Environment
-		err     error
+		name   string
+		config *rest.Config
+		err    error
 	}{
 		{
-			name:    "NewVMService: when everything is ok",
-			testEnv: &envtest.Environment{},
-			err:     nil,
+			name:   "NewVMService: when everything is ok",
+			config: &rest.Config{},
+			err:    nil,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := testCase.testEnv.Start()
-			assert.NoError(t, err)
-
-			client, err := GetVmopClient(cfg)
+			client, err := GetVmopClient(testCase.config)
 			assert.NoError(t, err)
 			assert.NotEqual(t, client, nil)
 
 			realVms := NewVMService(client, testClusterNameSpace, &testOwnerReference)
 			assert.NotEqual(t, realVms, nil)
-
-			err = testCase.testEnv.Stop()
-			assert.NoError(t, err)
 		})
 	}
 }

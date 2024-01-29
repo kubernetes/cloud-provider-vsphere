@@ -8,9 +8,9 @@ import (
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
 	fakevmclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/fake"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 var (
@@ -23,13 +23,13 @@ var (
 func TestNewZones(t *testing.T) {
 	testCases := []struct {
 		name        string
-		testEnv     *envtest.Environment
+		config      *rest.Config
 		expectedErr error
 		testVM      *vmopv1alpha1.VirtualMachine
 	}{
 		{
 			name:        "NewZone: when everything is ok",
-			testEnv:     &envtest.Environment{},
+			config:      &rest.Config{},
 			testVM:      createTestVMWithZone(string(vmName), testClusterNameSpace),
 			expectedErr: nil,
 		},
@@ -37,15 +37,10 @@ func TestNewZones(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := testCase.testEnv.Start()
-			assert.NoError(t, err)
 			//initVMopClient(testCase.testVM)
-			_, err = NewZones(testClusterNameSpace, cfg)
+			_, err := NewZones(testClusterNameSpace, testCase.config)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.expectedErr, err)
-
-			err = testCase.testEnv.Stop()
-			assert.NoError(t, err)
 		})
 	}
 }
@@ -53,7 +48,6 @@ func TestNewZones(t *testing.T) {
 func TestZonesByProviderID(t *testing.T) {
 	testCases := []struct {
 		name           string
-		testEnv        *envtest.Environment
 		expectedResult string
 		expectedErr    error
 		testVM         *vmopv1alpha1.VirtualMachine
@@ -94,7 +88,6 @@ func TestZonesByProviderID(t *testing.T) {
 func TestZonesByNodeName(t *testing.T) {
 	testCases := []struct {
 		name           string
-		testEnv        *envtest.Environment
 		expectedResult string
 		expectedErr    error
 		testVM         *vmopv1alpha1.VirtualMachine
