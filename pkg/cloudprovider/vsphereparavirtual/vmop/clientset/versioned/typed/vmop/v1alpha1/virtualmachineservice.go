@@ -24,11 +24,11 @@ import (
 	"fmt"
 	"time"
 
+	v1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	vmopv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/applyconfiguration/vmop/v1alpha1"
 	scheme "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/clientset/versioned/scheme"
 )

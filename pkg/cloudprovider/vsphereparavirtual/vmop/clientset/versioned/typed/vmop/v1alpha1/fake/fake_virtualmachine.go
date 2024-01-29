@@ -23,12 +23,12 @@ import (
 	json "encoding/json"
 	"fmt"
 
+	v1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
-	v1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	vmopv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmop/applyconfiguration/vmop/v1alpha1"
 )
 

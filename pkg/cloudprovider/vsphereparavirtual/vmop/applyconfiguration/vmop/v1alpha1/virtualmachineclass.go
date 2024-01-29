@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 )
 
 // VirtualMachineClassApplyConfiguration represents an declarative configuration of the VirtualMachineClass type for use

@@ -19,8 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // VirtualMachineConditionApplyConfiguration represents an declarative configuration of the VirtualMachineCondition type for use
