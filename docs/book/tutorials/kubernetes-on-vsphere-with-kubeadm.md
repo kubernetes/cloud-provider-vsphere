@@ -472,7 +472,7 @@ vcenter:
   tenant-finance:
     server: 1.1.1.1
     datacenters:
-      - finanace
+      - finance
   tenant-hr:
     server: 192.168.0.1
     datacenters:
