@@ -9,8 +9,8 @@ import (
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 )
 
-// VmoperatorV1alpha1Interface has methods to work with Vmoperator V1alpha1 resources.
-type VmoperatorV1alpha1Interface interface {
+// V1alpha1Interface has methods to work with Vmoperator V1alpha1 resources.
+type V1alpha1Interface interface {
 	Client() dynamic.Interface
 	VirtualMachines(namespace string) VirtualMachineInterface
 	VirtualMachineServices(namespace string) VirtualMachineServiceInterface

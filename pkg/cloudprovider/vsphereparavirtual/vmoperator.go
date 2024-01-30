@@ -14,7 +14,7 @@ import (
 
 // discoverNodeByProviderID takes a ProviderID and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func discoverNodeByProviderID(ctx context.Context, providerID string, namespace string, vmClient vmop.VmoperatorV1alpha1Interface) (*vmopv1alpha1.VirtualMachine, error) {
+func discoverNodeByProviderID(ctx context.Context, providerID string, namespace string, vmClient vmop.V1alpha1Interface) (*vmopv1alpha1.VirtualMachine, error) {
 	var discoveredNode *vmopv1alpha1.VirtualMachine = nil
 
 	// Adding Retry here because there is no retry in caller from node controller
@@ -44,7 +44,7 @@ func discoverNodeByProviderID(ctx context.Context, providerID string, namespace 
 
 // discoverNodeByName takes a node name and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func discoverNodeByName(ctx context.Context, name types.NodeName, namespace string, vmClient vmop.VmoperatorV1alpha1Interface) (*vmopv1alpha1.VirtualMachine, error) {
+func discoverNodeByName(ctx context.Context, name types.NodeName, namespace string, vmClient vmop.V1alpha1Interface) (*vmopv1alpha1.VirtualMachine, error) {
 	var discoveredNode *vmopv1alpha1.VirtualMachine = nil
 
 	// Adding Retry here because there is no retry in caller from node controller

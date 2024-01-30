@@ -88,12 +88,12 @@ var (
 
 // GetVmopClient gets a vm-operator-api client
 // This is separate from NewVMService so that a fake client can be injected for testing
-func GetVmopClient(config *rest.Config) (vmop.VmoperatorV1alpha1Interface, error) {
+func GetVmopClient(config *rest.Config) (vmop.V1alpha1Interface, error) {
 	return vmopclient.NewForConfig(config)
 }
 
 // NewVMService creates a vmService object
-func NewVMService(vmClient vmop.VmoperatorV1alpha1Interface, ns string, ownerRef *metav1.OwnerReference) VMService {
+func NewVMService(vmClient vmop.V1alpha1Interface, ns string, ownerRef *metav1.OwnerReference) VMService {
 	return &vmService{
 		vmClient:       vmClient,
 		namespace:      ns,

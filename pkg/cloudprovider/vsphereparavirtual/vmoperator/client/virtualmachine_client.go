@@ -19,7 +19,7 @@ type virtualMachines struct {
 	ns     string
 }
 
-func newVirtualMachines(c vmoperator.VmoperatorV1alpha1Interface, namespace string) *virtualMachines {
+func newVirtualMachines(c vmoperator.V1alpha1Interface, namespace string) *virtualMachines {
 	return &virtualMachines{
 		client: c.Client(),
 		ns:     namespace,

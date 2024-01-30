@@ -19,7 +19,7 @@ type virtualMachineServices struct {
 }
 
 // newVirtualMachineServices returns a VirtualMachineServices
-func newVirtualMachineServices(c vmoperator.VmoperatorV1alpha1Interface, namespace string) *virtualMachineServices {
+func newVirtualMachineServices(c vmoperator.V1alpha1Interface, namespace string) *virtualMachineServices {
 	return &virtualMachineServices{
 		client: c.Client(),
 		ns:     namespace,
