@@ -41,7 +41,7 @@ type VMService interface {
 
 // vmService takes care of mapping of LB type of service to VM service in supervisor cluster
 type vmService struct {
-	vmClient       vmop.V1alpha1Interface
+	vmClient       vmop.Interface
 	namespace      string
 	ownerReference *metav1.OwnerReference
 }

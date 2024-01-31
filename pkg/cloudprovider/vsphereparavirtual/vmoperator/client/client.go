@@ -26,6 +26,17 @@ var (
 	}
 )
 
+// Clientset contains the clients for groups. Each group has exactly one
+// version included in a Clientset.
+type Clientset struct {
+	vmopv1alpha1 *VmoperatorV1alpha1Client
+}
+
+// V1alpha1 retrieves the VmoperatorV1alpha1Client
+func (c *Clientset) V1alpha1() vmoperator.V1alpha1Interface {
+	return c.vmopv1alpha1
+}
+
 // VmoperatorV1alpha1Client contains the dynamic client for vm operator group
 type VmoperatorV1alpha1Client struct {
 	dynamicClient *dynamic.DynamicClient
@@ -50,7 +61,7 @@ func (c *VmoperatorV1alpha1Client) Client() dynamic.Interface {
 }
 
 // NewForConfig creates a new client for the given config.
-func NewForConfig(c *rest.Config) (*VmoperatorV1alpha1Client, error) {
+func NewForConfig(c *rest.Config) (*Clientset, error) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
 
@@ -59,8 +70,10 @@ func NewForConfig(c *rest.Config) (*VmoperatorV1alpha1Client, error) {
 		return nil, err
 	}
 
-	client := &VmoperatorV1alpha1Client{
-		dynamicClient: dynamicClient,
+	clientSet := &Clientset{
+		vmopv1alpha1: &VmoperatorV1alpha1Client{
+			dynamicClient: dynamicClient,
+		},
 	}
-	return client, nil
+	return clientSet, nil
 }

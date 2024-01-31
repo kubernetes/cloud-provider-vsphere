@@ -18,12 +18,11 @@ func initVMTest() (*virtualMachines, *dynamicfake.FakeDynamicClient) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	vms := newVirtualMachines(NewFakeClient(fc), "test-ns")
+	vms := newVirtualMachines(NewFakeClientSet(fc).V1alpha1(), "test-ns")
 	return vms, fc
 }
 
 func TestVMCreate(t *testing.T) {
-	vms, fc := initVMTest()
 	testCases := []struct {
 		name           string
 		virtualMachine *vmopv1alpha1.VirtualMachine
@@ -61,6 +60,7 @@ func TestVMCreate(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			vms, fc := initVMTest()
 			if testCase.createFunc != nil {
 				fc.PrependReactor("create", "*", testCase.createFunc)
 			}
@@ -76,7 +76,6 @@ func TestVMCreate(t *testing.T) {
 }
 
 func TestVMUpdate(t *testing.T) {
-	vms, fc := initVMTest()
 	testCases := []struct {
 		name        string
 		oldVM       *vmopv1alpha1.VirtualMachine
@@ -134,6 +133,7 @@ func TestVMUpdate(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			vms, fc := initVMTest()
 			_, err := vms.Create(context.Background(), testCase.oldVM, metav1.CreateOptions{})
 			assert.NoError(t, err)
 			if testCase.updateFunc != nil {
@@ -151,7 +151,6 @@ func TestVMUpdate(t *testing.T) {
 }
 
 func TestVMDelete(t *testing.T) {
-	vms, fc := initVMTest()
 	testCases := []struct {
 		name           string
 		virtualMachine *vmopv1alpha1.VirtualMachine
@@ -170,7 +169,7 @@ func TestVMDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "Create: when delete error",
+			name: "Delete: when delete error",
 			virtualMachine: &vmopv1alpha1.VirtualMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
@@ -188,6 +187,7 @@ func TestVMDelete(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			vms, fc := initVMTest()
 			_, err := vms.Create(context.Background(), testCase.virtualMachine, metav1.CreateOptions{})
 			assert.NoError(t, err)
 			if testCase.deleteFunc != nil {
@@ -204,7 +204,6 @@ func TestVMDelete(t *testing.T) {
 }
 
 func TestVMGet(t *testing.T) {
-	vms, fc := initVMTest()
 	testCases := []struct {
 		name           string
 		virtualMachine *vmopv1alpha1.VirtualMachine
@@ -251,6 +250,7 @@ func TestVMGet(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			vms, fc := initVMTest()
 			_, err := vms.Create(context.Background(), testCase.virtualMachine, metav1.CreateOptions{})
 			assert.NoError(t, err)
 			if testCase.getFunc != nil {
@@ -268,34 +268,72 @@ func TestVMGet(t *testing.T) {
 }
 
 func TestVMList(t *testing.T) {
-	vms, fc := initVMTest()
 	testCases := []struct {
-		name           string
-		virtualMachine *vmopv1alpha1.VirtualMachine
-		listFunc       func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVMNum  int
-		expectedErr    bool
+		name               string
+		virtualMachineList *vmopv1alpha1.VirtualMachineList
+		listFunc           func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
+		expectedVMNum      int
+		expectedErr        bool
 	}{
 		{
-			name: "List: when everything is ok",
-			virtualMachine: &vmopv1alpha1.VirtualMachine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-vm",
-				},
-				Spec: vmopv1alpha1.VirtualMachineSpec{
-					ImageName: "test-image",
+			name: "List: when there is one virtual machine, list should be ok",
+			virtualMachineList: &vmopv1alpha1.VirtualMachineList{
+				Items: []vmopv1alpha1.VirtualMachine{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm",
+						},
+						Spec: vmopv1alpha1.VirtualMachineSpec{
+							ImageName: "test-image",
+						},
+					},
 				},
 			},
 			expectedVMNum: 1,
 		},
 		{
-			name: "List: when list error",
-			virtualMachine: &vmopv1alpha1.VirtualMachine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-vm-error",
+			name: "List: when there is 2 virtual machines, list should be ok",
+			virtualMachineList: &vmopv1alpha1.VirtualMachineList{
+				Items: []vmopv1alpha1.VirtualMachine{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm",
+						},
+						Spec: vmopv1alpha1.VirtualMachineSpec{
+							ImageName: "test-image",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm-2",
+						},
+						Spec: vmopv1alpha1.VirtualMachineSpec{
+							ImageName: "test-image",
+						},
+					},
 				},
-				Spec: vmopv1alpha1.VirtualMachineSpec{
-					ImageName: "test-image",
+			},
+			expectedVMNum: 2,
+		},
+		{
+			name: "List: when there is 0 virtual machine, list should be ok",
+			virtualMachineList: &vmopv1alpha1.VirtualMachineList{
+				Items: []vmopv1alpha1.VirtualMachine{},
+			},
+			expectedVMNum: 0,
+		},
+		{
+			name: "List: when list error",
+			virtualMachineList: &vmopv1alpha1.VirtualMachineList{
+				Items: []vmopv1alpha1.VirtualMachine{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm",
+						},
+						Spec: vmopv1alpha1.VirtualMachineSpec{
+							ImageName: "test-image",
+						},
+					},
 				},
 			},
 			listFunc: func(action clientgotesting.Action) (bool, runtime.Object, error) {
@@ -308,11 +346,15 @@ func TestVMList(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := vms.Create(context.Background(), testCase.virtualMachine, metav1.CreateOptions{})
-			assert.NoError(t, err)
-			if testCase.listFunc != nil {
-				fc.PrependReactor("list", "*", testCase.listFunc)
+			vms, fc := initVMTest()
+			for _, vm := range testCase.virtualMachineList.Items {
+				_, err := vms.Create(context.Background(), &vm, metav1.CreateOptions{})
+				assert.NoError(t, err)
+				if testCase.listFunc != nil {
+					fc.PrependReactor("list", "*", testCase.listFunc)
+				}
 			}
+
 			vmList, err := vms.List(context.Background(), metav1.ListOptions{})
 			if testCase.expectedErr {
 				assert.Error(t, err)

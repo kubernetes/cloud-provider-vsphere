@@ -135,12 +135,12 @@ func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *dynamicfake.Fa
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	fcw := vmopclient.NewFakeClient(fc)
+	fcw := vmopclient.NewFakeClientSet(fc)
 	zone := zones{
 		vmClient:  fcw,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fcw.VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	_, err := fcw.V1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
 	return zone, fc, err
 }
 

@@ -14,7 +14,7 @@ import (
 )
 
 type zones struct {
-	vmClient  vmop.V1alpha1Interface
+	vmClient  vmop.Interface
 	namespace string
 }
 

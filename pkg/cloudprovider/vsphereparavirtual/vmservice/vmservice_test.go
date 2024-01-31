@@ -79,7 +79,7 @@ func initTest() (*v1.Service, VMService, *dynamicfake.FakeDynamicClient) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	vms = NewVMService(vmopclient.NewFakeClient(fc), testClusterNameSpace, &testOwnerReference)
+	vms = NewVMService(vmopclient.NewFakeClientSet(fc), testClusterNameSpace, &testOwnerReference)
 	return testK8sService, vms, fc
 }
 

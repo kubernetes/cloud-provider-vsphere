@@ -18,27 +18,26 @@ func initVMServiceTest() (*virtualMachineServices, *dynamicfake.FakeDynamicClien
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	vms := newVirtualMachineServices(NewFakeClient(fc), "test-ns")
+	vms := newVirtualMachineServices(NewFakeClientSet(fc).V1alpha1(), "test-ns")
 	return vms, fc
 }
 
 func TestVMServiceCreate(t *testing.T) {
-	vms, fc := initVMServiceTest()
 	testCases := []struct {
-		name           string
-		virtualMachine *vmopv1alpha1.VirtualMachineService
-		createFunc     func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVM     *vmopv1alpha1.VirtualMachineService
-		expectedErr    bool
+		name                  string
+		virtualMachineService *vmopv1alpha1.VirtualMachineService
+		createFunc            func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
+		expectedVMService     *vmopv1alpha1.VirtualMachineService
+		expectedErr           bool
 	}{
 		{
 			name: "Create: when everything is ok",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
 				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
-			expectedVM: &vmopv1alpha1.VirtualMachineService{
+			expectedVMService: &vmopv1alpha1.VirtualMachineService{
 				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
@@ -46,7 +45,7 @@ func TestVMServiceCreate(t *testing.T) {
 		},
 		{
 			name: "Create: when create error",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
 				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
@@ -54,40 +53,40 @@ func TestVMServiceCreate(t *testing.T) {
 			createFunc: func(action clientgotesting.Action) (bool, runtime.Object, error) {
 				return true, nil, fmt.Errorf("test error")
 			},
-			expectedVM:  nil,
-			expectedErr: true,
+			expectedVMService: nil,
+			expectedErr:       true,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			vms, fc := initVMServiceTest()
 			if testCase.createFunc != nil {
 				fc.PrependReactor("create", "*", testCase.createFunc)
 			}
-			actualVM, err := vms.Create(context.Background(), testCase.virtualMachine, metav1.CreateOptions{})
+			actualVM, err := vms.Create(context.Background(), testCase.virtualMachineService, metav1.CreateOptions{})
 			if testCase.expectedErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, testCase.expectedVM.Spec, actualVM.Spec)
+				assert.Equal(t, testCase.expectedVMService.Spec, actualVM.Spec)
 			}
 		})
 	}
 }
 
 func TestVMServiceUpdate(t *testing.T) {
-	vms, fc := initVMServiceTest()
 	testCases := []struct {
-		name        string
-		oldVM       *vmopv1alpha1.VirtualMachineService
-		newVM       *vmopv1alpha1.VirtualMachineService
-		updateFunc  func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVM  *vmopv1alpha1.VirtualMachineService
-		expectedErr bool
+		name              string
+		oldVMService      *vmopv1alpha1.VirtualMachineService
+		newVMService      *vmopv1alpha1.VirtualMachineService
+		updateFunc        func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
+		expectedVMService *vmopv1alpha1.VirtualMachineService
+		expectedErr       bool
 	}{
 		{
 			name: "Update: when everything is ok",
-			oldVM: &vmopv1alpha1.VirtualMachineService{
+			oldVMService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
@@ -95,7 +94,7 @@ func TestVMServiceUpdate(t *testing.T) {
 					Type: "NodePort",
 				},
 			},
-			newVM: &vmopv1alpha1.VirtualMachineService{
+			newVMService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
@@ -103,7 +102,7 @@ func TestVMServiceUpdate(t *testing.T) {
 					Type: "NodePort",
 				},
 			},
-			expectedVM: &vmopv1alpha1.VirtualMachineService{
+			expectedVMService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
@@ -114,12 +113,12 @@ func TestVMServiceUpdate(t *testing.T) {
 		},
 		{
 			name: "Update: when update error",
-			oldVM: &vmopv1alpha1.VirtualMachineService{
+			oldVMService: &vmopv1alpha1.VirtualMachineService{
 				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
-			newVM: &vmopv1alpha1.VirtualMachineService{
+			newVMService: &vmopv1alpha1.VirtualMachineService{
 				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
@@ -127,40 +126,40 @@ func TestVMServiceUpdate(t *testing.T) {
 			updateFunc: func(action clientgotesting.Action) (bool, runtime.Object, error) {
 				return true, nil, fmt.Errorf("test error")
 			},
-			expectedVM:  nil,
-			expectedErr: true,
+			expectedVMService: nil,
+			expectedErr:       true,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := vms.Create(context.Background(), testCase.oldVM, metav1.CreateOptions{})
+			vms, fc := initVMServiceTest()
+			_, err := vms.Create(context.Background(), testCase.oldVMService, metav1.CreateOptions{})
 			assert.NoError(t, err)
 			if testCase.updateFunc != nil {
 				fc.PrependReactor("update", "*", testCase.updateFunc)
 			}
-			updatedVM, err := vms.Update(context.Background(), testCase.newVM, metav1.UpdateOptions{})
+			updatedVM, err := vms.Update(context.Background(), testCase.newVMService, metav1.UpdateOptions{})
 			if testCase.expectedErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, testCase.expectedVM.Spec, updatedVM.Spec)
+				assert.Equal(t, testCase.expectedVMService.Spec, updatedVM.Spec)
 			}
 		})
 	}
 }
 
 func TestVMServiceDelete(t *testing.T) {
-	vms, fc := initVMServiceTest()
 	testCases := []struct {
-		name           string
-		virtualMachine *vmopv1alpha1.VirtualMachineService
-		deleteFunc     func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedErr    bool
+		name                  string
+		virtualMachineService *vmopv1alpha1.VirtualMachineService
+		deleteFunc            func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
+		expectedErr           bool
 	}{
 		{
 			name: "Delete: when everything is ok",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
@@ -170,8 +169,8 @@ func TestVMServiceDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "Create: when delete error",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
+			name: "Delete: when delete error",
+			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
@@ -188,12 +187,13 @@ func TestVMServiceDelete(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := vms.Create(context.Background(), testCase.virtualMachine, metav1.CreateOptions{})
+			vms, fc := initVMServiceTest()
+			_, err := vms.Create(context.Background(), testCase.virtualMachineService, metav1.CreateOptions{})
 			assert.NoError(t, err)
 			if testCase.deleteFunc != nil {
 				fc.PrependReactor("delete", "*", testCase.deleteFunc)
 			}
-			err = vms.Delete(context.Background(), testCase.virtualMachine.Name, metav1.DeleteOptions{})
+			err = vms.Delete(context.Background(), testCase.virtualMachineService.Name, metav1.DeleteOptions{})
 			if testCase.expectedErr {
 				assert.Error(t, err)
 			} else {
@@ -204,17 +204,16 @@ func TestVMServiceDelete(t *testing.T) {
 }
 
 func TestVMServiceGet(t *testing.T) {
-	vms, fc := initVMServiceTest()
 	testCases := []struct {
-		name           string
-		virtualMachine *vmopv1alpha1.VirtualMachineService
-		getFunc        func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVM     *vmopv1alpha1.VirtualMachineService
-		expectedErr    bool
+		name                  string
+		virtualMachineService *vmopv1alpha1.VirtualMachineService
+		getFunc               func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
+		expectedVMService     *vmopv1alpha1.VirtualMachineService
+		expectedErr           bool
 	}{
 		{
 			name: "Get: when everything is ok",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
@@ -222,7 +221,7 @@ func TestVMServiceGet(t *testing.T) {
 					Type: "NodePort",
 				},
 			},
-			expectedVM: &vmopv1alpha1.VirtualMachineService{
+			expectedVMService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
@@ -233,7 +232,7 @@ func TestVMServiceGet(t *testing.T) {
 		},
 		{
 			name: "Get: when get error",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm-error",
 				},
@@ -244,81 +243,124 @@ func TestVMServiceGet(t *testing.T) {
 			getFunc: func(action clientgotesting.Action) (bool, runtime.Object, error) {
 				return true, nil, fmt.Errorf("test error")
 			},
-			expectedVM:  nil,
-			expectedErr: true,
+			expectedVMService: nil,
+			expectedErr:       true,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := vms.Create(context.Background(), testCase.virtualMachine, metav1.CreateOptions{})
+			vms, fc := initVMServiceTest()
+			_, err := vms.Create(context.Background(), testCase.virtualMachineService, metav1.CreateOptions{})
 			assert.NoError(t, err)
 			if testCase.getFunc != nil {
 				fc.PrependReactor("get", "*", testCase.getFunc)
 			}
-			actualVM, err := vms.Get(context.Background(), testCase.virtualMachine.Name, metav1.GetOptions{})
+			actualVM, err := vms.Get(context.Background(), testCase.virtualMachineService.Name, metav1.GetOptions{})
 			if testCase.expectedErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, testCase.expectedVM.Spec, actualVM.Spec)
+				assert.Equal(t, testCase.expectedVMService.Spec, actualVM.Spec)
 			}
 		})
 	}
 }
 
 func TestVMServiceList(t *testing.T) {
-	vms, fc := initVMServiceTest()
 	testCases := []struct {
-		name           string
-		virtualMachine *vmopv1alpha1.VirtualMachineService
-		listFunc       func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVMNum  int
-		expectedErr    bool
+		name                      string
+		virtualMachineServiceList *vmopv1alpha1.VirtualMachineServiceList
+		listFunc                  func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
+		expectedVMServiceNum      int
+		expectedErr               bool
 	}{
 		{
-			name: "List: when everything is ok",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-vm",
-				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
-					Type: "NodePort",
+			name: "List: when there is one virtual machine service, list should be ok",
+			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
+				Items: []vmopv1alpha1.VirtualMachineService{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm",
+						},
+						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+							Type: "NodePort",
+						},
+					},
 				},
 			},
-			expectedVMNum: 1,
+			expectedVMServiceNum: 1,
+		},
+		{
+			name: "List: when there is 2 virtual machine services, list should be ok",
+			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
+				Items: []vmopv1alpha1.VirtualMachineService{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm",
+						},
+						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+							Type: "NodePort",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm-2",
+						},
+						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+							Type: "NodePort",
+						},
+					},
+				},
+			},
+			expectedVMServiceNum: 2,
+		},
+		{
+			name: "List: when there is 0 virtual machine service, list should be ok",
+			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
+				Items: []vmopv1alpha1.VirtualMachineService{},
+			},
+			expectedVMServiceNum: 0,
 		},
 		{
 			name: "List: when list error",
-			virtualMachine: &vmopv1alpha1.VirtualMachineService{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-vm-error",
-				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
-					Type: "NodePort",
+			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
+				Items: []vmopv1alpha1.VirtualMachineService{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-vm",
+						},
+						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+							Type: "NodePort",
+						},
+					},
 				},
 			},
 			listFunc: func(action clientgotesting.Action) (bool, runtime.Object, error) {
 				return true, nil, fmt.Errorf("test error")
 			},
-			expectedVMNum: 0,
-			expectedErr:   true,
+			expectedVMServiceNum: 0,
+			expectedErr:          true,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := vms.Create(context.Background(), testCase.virtualMachine, metav1.CreateOptions{})
-			assert.NoError(t, err)
-			if testCase.listFunc != nil {
-				fc.PrependReactor("list", "*", testCase.listFunc)
+			vms, fc := initVMServiceTest()
+			for _, vmservice := range testCase.virtualMachineServiceList.Items {
+				_, err := vms.Create(context.Background(), &vmservice, metav1.CreateOptions{})
+				assert.NoError(t, err)
+				if testCase.listFunc != nil {
+					fc.PrependReactor("list", "*", testCase.listFunc)
+				}
 			}
-			vmList, err := vms.List(context.Background(), metav1.ListOptions{})
+
+			vmServiceList, err := vms.List(context.Background(), metav1.ListOptions{})
 			if testCase.expectedErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, testCase.expectedVMNum, len(vmList.Items))
+				assert.Equal(t, testCase.expectedVMServiceNum, len(vmServiceList.Items))
 			}
 		})
 	}

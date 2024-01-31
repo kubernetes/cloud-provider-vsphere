@@ -93,12 +93,12 @@ func initTest(testVM *vmopv1alpha1.VirtualMachine) (*instances, *dynamicfake.Fak
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	fcw := vmopclient.NewFakeClient(fc)
+	fcw := vmopclient.NewFakeClientSet(fc)
 	instance := &instances{
 		vmClient:  fcw,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fcw.VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	_, err := fcw.V1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
 	return instance, fc, err
 }
 

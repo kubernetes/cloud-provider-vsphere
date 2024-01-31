@@ -37,7 +37,7 @@ import (
 )
 
 type instances struct {
-	vmClient  vmop.V1alpha1Interface
+	vmClient  vmop.Interface
 	namespace string
 }
 

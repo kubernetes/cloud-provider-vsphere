@@ -7,16 +7,30 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 )
 
+// FakeClientSet contains the fake clients for groups. Each group has exactly one
+// version included in a Clientset.
+type FakeClientSet struct {
+	FakeClient *FakeClient
+}
+
+// V1alpha1 retrieves the fake VmoperatorV1alpha1Client
+func (c *FakeClientSet) V1alpha1() vmoperator.V1alpha1Interface {
+	return c.FakeClient
+}
+
+// NewFakeClientSet creates a FakeClientWrapper
+func NewFakeClientSet(fakeClient *dynamicfake.FakeDynamicClient) *FakeClientSet {
+	fcw := &FakeClientSet{
+		FakeClient: &FakeClient{
+			DynamicClient: fakeClient,
+		},
+	}
+	return fcw
+}
+
 // FakeClient contains the fake dynamic client for vm operator group
 type FakeClient struct {
 	DynamicClient *dynamicfake.FakeDynamicClient
-}
-
-// NewFakeClient creates a FakeClientWrapper
-func NewFakeClient(fakeClient *dynamicfake.FakeDynamicClient) *FakeClient {
-	fcw := FakeClient{}
-	fcw.DynamicClient = fakeClient
-	return &fcw
 }
 
 // VirtualMachines retrieves the virtualmachine client
