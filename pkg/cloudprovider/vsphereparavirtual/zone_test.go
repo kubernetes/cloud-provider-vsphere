@@ -9,10 +9,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
-	"k8s.io/cloud-provider-vsphere/pkg/util"
-	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
 
 var (
@@ -25,13 +26,13 @@ var (
 func TestNewZones(t *testing.T) {
 	testCases := []struct {
 		name        string
-		testEnv     *envtest.Environment
+		config      *rest.Config
 		expectedErr error
 		testVM      *vmopv1alpha1.VirtualMachine
 	}{
 		{
 			name:        "NewZone: when everything is ok",
-			testEnv:     &envtest.Environment{},
+			config:      &rest.Config{},
 			testVM:      createTestVMWithZone(string(vmName), testClusterNameSpace),
 			expectedErr: nil,
 		},
@@ -39,15 +40,10 @@ func TestNewZones(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := testCase.testEnv.Start()
-			assert.NoError(t, err)
 			//initVMopClient(testCase.testVM)
-			_, err = NewZones(testClusterNameSpace, cfg)
+			_, err := NewZones(testClusterNameSpace, testCase.config)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.expectedErr, err)
-
-			err = testCase.testEnv.Stop()
-			assert.NoError(t, err)
 		})
 	}
 }
@@ -55,7 +51,6 @@ func TestNewZones(t *testing.T) {
 func TestZonesByProviderID(t *testing.T) {
 	testCases := []struct {
 		name           string
-		testEnv        *envtest.Environment
 		expectedResult string
 		expectedErr    error
 		testVM         *vmopv1alpha1.VirtualMachine
@@ -78,7 +73,8 @@ func TestZonesByProviderID(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			zone, _ := initVMopClient(testCase.testVM)
+			zone, _, err := initVMopClient(testCase.testVM)
+			assert.NoError(t, err)
 			z, err := zone.GetZoneByProviderID(ctx, providerid)
 
 			if testCase.expectedErr != nil {
@@ -95,7 +91,6 @@ func TestZonesByProviderID(t *testing.T) {
 func TestZonesByNodeName(t *testing.T) {
 	testCases := []struct {
 		name           string
-		testEnv        *envtest.Environment
 		expectedResult string
 		expectedErr    error
 		testVM         *vmopv1alpha1.VirtualMachine
@@ -121,7 +116,8 @@ func TestZonesByNodeName(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			zone, _ := initVMopClient(testCase.testVM)
+			zone, _, err := initVMopClient(testCase.testVM)
+			assert.NoError(t, err)
 			z, err := zone.GetZoneByNodeName(ctx, testCase.vmName)
 
 			if testCase.expectedErr != nil {
@@ -135,16 +131,17 @@ func TestZonesByNodeName(t *testing.T) {
 	}
 }
 
-func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *util.FakeClientWrapper) {
+func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *dynamicfake.FakeDynamicClient, error) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(testVM).Build()
-	fcw := util.NewFakeClientWrapper(fc)
+	fc := dynamicfake.NewSimpleDynamicClient(scheme)
+	fcw := vmopclient.NewFakeClientSet(fc)
 	zone := zones{
 		vmClient:  fcw,
 		namespace: testClusterNameSpace,
 	}
-	return zone, fcw
+	_, err := fcw.V1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	return zone, fc, err
 }
 
 func createTestVMWithZone(name, namespace string) *vmopv1alpha1.VirtualMachine {

@@ -5,14 +5,16 @@ import (
 
 	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cloud-provider-vsphere/pkg/util"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 )
 
 // discoverNodeByProviderID takes a ProviderID and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func discoverNodeByProviderID(ctx context.Context, providerID string, namespace string, vmClient client.Client) (*vmopv1alpha1.VirtualMachine, error) {
+func discoverNodeByProviderID(ctx context.Context, providerID string, namespace string, vmClient vmop.Interface) (*vmopv1alpha1.VirtualMachine, error) {
 	var discoveredNode *vmopv1alpha1.VirtualMachine = nil
 
 	// Adding Retry here because there is no retry in caller from node controller
@@ -22,10 +24,7 @@ func discoverNodeByProviderID(ctx context.Context, providerID string, namespace 
 		checkError,
 		func() error {
 			uuid := GetUUIDFromProviderID(providerID)
-			vms := vmopv1alpha1.VirtualMachineList{}
-			err := vmClient.List(ctx, &vms, &client.ListOptions{
-				Namespace: namespace,
-			})
+			vms, err := vmClient.V1alpha1().VirtualMachines(namespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				return err
 			}
@@ -45,7 +44,7 @@ func discoverNodeByProviderID(ctx context.Context, providerID string, namespace 
 
 // discoverNodeByName takes a node name and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func discoverNodeByName(ctx context.Context, name types.NodeName, namespace string, vmClient client.Client) (*vmopv1alpha1.VirtualMachine, error) {
+func discoverNodeByName(ctx context.Context, name types.NodeName, namespace string, vmClient vmop.Interface) (*vmopv1alpha1.VirtualMachine, error) {
 	var discoveredNode *vmopv1alpha1.VirtualMachine = nil
 
 	// Adding Retry here because there is no retry in caller from node controller
@@ -54,16 +53,14 @@ func discoverNodeByName(ctx context.Context, name types.NodeName, namespace stri
 		DiscoverNodeBackoff,
 		checkError,
 		func() error {
-			vmKey := types.NamespacedName{Name: string(name), Namespace: namespace}
-			vm := vmopv1alpha1.VirtualMachine{}
-			err := vmClient.Get(ctx, vmKey, &vm)
+			vm, err := vmClient.V1alpha1().VirtualMachines(namespace).Get(ctx, string(name), metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					return nil
 				}
 				return err
 			}
-			discoveredNode = &vm
+			discoveredNode = vm
 			return nil
 		})
 

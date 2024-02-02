@@ -24,19 +24,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/node/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	rest "k8s.io/client-go/rest"
+	clientgotesting "k8s.io/client-go/testing"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
-
-	"k8s.io/cloud-provider-vsphere/pkg/util"
+	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
 
 var (
@@ -52,12 +52,9 @@ var (
 	}
 	vms      VMService
 	fakeLBIP = "1.1.1.1"
-
-	// FakeClientWrapper allows functions to be replaced for fault injection
-	fcw *util.FakeClientWrapper
 )
 
-func initTest() (*v1.Service, VMService, *util.FakeClientWrapper) {
+func initTest() (*v1.Service, VMService, *dynamicfake.FakeDynamicClient) {
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -78,42 +75,35 @@ func initTest() (*v1.Service, VMService, *util.FakeClientWrapper) {
 			},
 		},
 	}
+
 	scheme := runtime.NewScheme()
 	_ = vmopv1alpha1.AddToScheme(scheme)
-	fc := fakeClient.NewClientBuilder().WithScheme(scheme).Build()
-	fcw = util.NewFakeClientWrapper(fc)
-	vms = NewVMService(fcw, testClusterNameSpace, &testOwnerReference)
-
-	return testK8sService, vms, fcw
+	fc := dynamicfake.NewSimpleDynamicClient(scheme)
+	vms = NewVMService(vmopclient.NewFakeClientSet(fc), testClusterNameSpace, &testOwnerReference)
+	return testK8sService, vms, fc
 }
 
 func TestNewVMService(t *testing.T) {
 	testCases := []struct {
-		name    string
-		testEnv *envtest.Environment
-		err     error
+		name   string
+		config *rest.Config
+		err    error
 	}{
 		{
-			name:    "NewVMService: when everything is ok",
-			testEnv: &envtest.Environment{},
-			err:     nil,
+			name:   "NewVMService: when everything is ok",
+			config: &rest.Config{},
+			err:    nil,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := testCase.testEnv.Start()
-			assert.NoError(t, err)
-
-			client, err := GetVmopClient(cfg)
+			client, err := GetVmopClient(testCase.config)
 			assert.NoError(t, err)
 			assert.NotEqual(t, client, nil)
 
 			realVms := NewVMService(client, testClusterNameSpace, &testOwnerReference)
 			assert.NotEqual(t, realVms, nil)
-
-			err = testCase.testEnv.Stop()
-			assert.NoError(t, err)
 		})
 	}
 }
@@ -155,7 +145,6 @@ func TestGetVMService(t *testing.T) {
 	}
 	// create a fake VMService
 	createdVMService, _ := vms.Create(context.Background(), k8sService, testClustername)
-
 	vmService, err := vms.Get(context.Background(), k8sService, testClustername)
 	assert.NoError(t, err)
 	assert.Equal(t, (*vmService).Spec, (*createdVMService).Spec)
@@ -408,20 +397,20 @@ func TestCreateOrUpdateVMService(t *testing.T) {
 func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 	testCases := []struct {
 		name        string
-		getFunc     func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
+		getFunc     func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
 		expectedErr error
 	}{
 		{
 			name: "failed to create VirtualMachineService",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				return fmt.Errorf("failed to get VirtualMachineService")
+			getFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, nil, fmt.Errorf("failed to get VirtualMachineService")
 			},
 			expectedErr: ErrGetVMService,
 		},
 		{
 			name: "when VMService does not exist",
-			getFunc: func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				return apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
+			getFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, nil, apierrors.NewNotFound(v1alpha1.Resource("virtualmachineservice"), testClustername)
 			},
 			expectedErr: ErrVMServiceIPNotFound,
 		},
@@ -429,9 +418,9 @@ func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			testK8sService, vms, fcw := initTest()
+			testK8sService, vms, fc := initTest()
 			// Redefine Get in the client to return an error
-			fcw.GetFunc = testCase.getFunc
+			fc.PrependReactor("get", "virtualmachineservices", testCase.getFunc)
 			_, err := vms.CreateOrUpdate(context.Background(), testK8sService, testClustername)
 			assert.Equal(t, testCase.expectedErr.Error(), err.Error())
 		})
@@ -439,11 +428,11 @@ func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 }
 
 func TestCreateOrUpdateVMService_RedefineCreateFunc(t *testing.T) {
-	testK8sService, vms, fcw := initTest()
+	testK8sService, vms, fc := initTest()
 	// Redefine Create in the client to return an error
-	fcw.CreateFunc = func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-		return fmt.Errorf("failed to create VirtualMachineService")
-	}
+	fc.PrependReactor("create", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("failed to create VirtualMachineService")
+	})
 	_, err := vms.CreateOrUpdate(context.Background(), testK8sService, testClustername)
 	assert.Equal(t, ErrCreateVMService.Error(), err.Error())
 }

@@ -22,9 +22,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2/klogr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 )
 
 var log = klogr.New().WithName("vmservice")
@@ -41,7 +41,7 @@ type VMService interface {
 
 // vmService takes care of mapping of LB type of service to VM service in supervisor cluster
 type vmService struct {
-	vmClient       client.Client
+	vmClient       vmop.Interface
 	namespace      string
 	ownerReference *metav1.OwnerReference
 }
