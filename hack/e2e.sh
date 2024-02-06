@@ -98,6 +98,8 @@ function claim_ip() {
 export KUBECONFIG="/root/ipam-conf/capv-services.conf"
 
 
+exit 0
+
 # Retrieve an IP to be used as the kube-vip IP
 CONTROL_PLANE_IPCLAIM_NAME="ip-claim-$(openssl rand -hex 20)"
 CONTROL_PLANE_ENDPOINT_IP=$(claim_ip "${CONTROL_PLANE_IPCLAIM_NAME}")
