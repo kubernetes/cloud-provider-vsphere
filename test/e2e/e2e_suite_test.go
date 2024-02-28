@@ -45,7 +45,10 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // Test Suite flags
@@ -74,6 +77,9 @@ var (
 
 	// skipCleanup prevents cleanup of test resources e.g. for debug purposes.
 	skipCleanup bool
+
+	// useLatestK8sVersion indicates if the e2e test should use k8s version specified in KUBERNETES_VERSION_LATEST_CI
+	useLatestK8sVersion bool
 )
 
 var (
@@ -102,7 +108,7 @@ func init() {
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false,
 		"if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
-
+	flag.BoolVar(&useLatestK8sVersion, "e2e.use-latest-k8s-version", false, "if true, e2e test suite will run on a k8s version specified in KUBERNETES_VERSION_LATEST_CI")
 }
 
 // Global variables
@@ -136,6 +142,9 @@ func TestE2E(t *testing.T) {
 
 // Create a kind cluster that shared across all the tests
 var _ = SynchronizedBeforeSuite(func() []byte {
+	// This line prevents controller-runtime from complaining about log.SetLogger never being called
+	ctrl.SetLogger(klog.Background())
+
 	By("Load e2e config file", func() {
 		Expect(configPath).To(BeAnExistingFile(), "invalid test suite argument. e2e.config should be an existing file.")
 		e2eConfig = clusterctl.LoadE2EConfig(ctx, clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
@@ -183,10 +192,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		}, e2eConfig.GetIntervals(proxy.GetName(), "wait-controllers")...)
 	})
 
+	workloadName = fmt.Sprintf("%s-%s", "workload", util.RandomString(6))
 	By("Create a workload cluster", func() {
-		workloadName = fmt.Sprintf("%s-%s", "workload", util.RandomString(6))
-		workloadResult = new(clusterctl.ApplyClusterTemplateAndWaitResult)
-		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+		workloadInput := clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: proxy,
 			ConfigCluster: clusterctl.ConfigClusterInput{
 				LogFolder:                filepath.Join(artifactFolder, "clusters", proxy.GetName()),
@@ -195,7 +203,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
 				ClusterName:              workloadName,
 				Namespace:                workloadKubeconfigNamespace,
-				KubernetesVersion:        e2eConfig.GetVariable("KUBERNETES_VERSION"),
 				ControlPlaneMachineCount: e2eConfig.GetInt64PtrVariable("CONTROL_PLANE_MACHINE_COUNT"),
 				WorkerMachineCount:       e2eConfig.GetInt64PtrVariable("WORKER_MACHINE_COUNT"),
 				Flavor:                   clusterctl.DefaultFlavor,
@@ -203,8 +210,17 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(proxy.GetName(), "wait-cluster"),
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(proxy.GetName(), "wait-control-plane"),
 			WaitForMachineDeployments:    e2eConfig.GetIntervals(proxy.GetName(), "wait-worker-nodes"),
-		}, workloadResult)
-		klog.Infof("Created workload cluster %s\n", workloadName)
+		}
+		workloadResult = &clusterctl.ApplyClusterTemplateAndWaitResult{}
+		resolveK8sVersion()
+		// if use dev k8s version, install-on-bootstrap is needed to install Kubernetes on bootstrap
+		if useLatestK8sVersion {
+			workloadInput.ConfigCluster.Flavor = "install-on-bootstrap"
+		} else {
+			workloadInput.ConfigCluster.KubernetesVersion = e2eConfig.GetVariable("KUBERNETES_VERSION")
+		}
+		clusterctl.ApplyClusterTemplateAndWait(ctx, workloadInput, workloadResult)
+		klog.Infof("Created k8s %s workload cluster %s\n", e2eConfig.GetVariable("KUBERNETES_VERSION"), workloadName)
 	})
 
 	By("Grab workload cluster kubeconfig", func() {
@@ -383,4 +399,17 @@ func newCPIInstallValues() map[string]interface{} {
 		},
 	}
 	return values
+}
+
+// resolveK8sVersion valids and sets the correct k8s from KUBERNETES_VERSION_LATEST_CI or KUBERNETES_VERSION
+func resolveK8sVersion() {
+	var kubernetesVersion string
+	var err error
+	if useLatestK8sVersion {
+		kubernetesVersion, err = kubernetesversions.ResolveVersion(ctx, e2eConfig.GetVariable("KUBERNETES_VERSION_LATEST_CI"))
+	} else {
+		kubernetesVersion, err = kubernetesversions.ResolveVersion(ctx, e2eConfig.GetVariable("KUBERNETES_VERSION"))
+	}
+	Expect(err).NotTo(HaveOccurred())
+	Expect(os.Setenv("KUBERNETES_VERSION", kubernetesVersion)).To(Succeed())
 }
