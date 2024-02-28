@@ -249,6 +249,10 @@ $(TOOLING_BINARIES):
 e2e:
 	make -C $(E2E_DIR) run
 
+.PHONY: e2e-latest-k8s-version
+e2e-latest-k8s-version:
+	make -C $(E2E_DIR) run-on-latest-k8s-version
+
 .PHONY: integration-test
 integration-test: | $(DOCKER_SOCK)
 	$(MAKE) -C test/integration

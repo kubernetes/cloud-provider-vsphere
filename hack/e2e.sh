@@ -35,6 +35,11 @@ on_exit() {
 
 trap on_exit EXIT
 
+
+RUN_ON_LATEST_K8S = $1
+
+
+
 function login() {
   # If GCR_KEY_FILE is set, use that service account to login
   if [ "${GCR_KEY_FILE}" ]; then
@@ -112,4 +117,8 @@ export WORKLOAD_CONTROL_PLANE_ENDPOINT_IP
 GCR_KEY_FILE="${GCR_KEY_FILE:-}"
 login
 
-E2E_ARTIFACTS=${ARTIFACTS} make e2e
+if ["${RUN_ON_LATEST_K8S}" == "latest-k8s-version"]; then
+  E2E_ARTIFACTS=${ARTIFACTS} make e2e-latest-k8s-version
+else 
+  E2E_ARTIFACTS=${ARTIFACTS} make e2e
+fi
