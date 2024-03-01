@@ -6,17 +6,13 @@ aliases:
     - cheftako
   cloud-provider-vsphere-maintainers:
     - andrewsykim
-    - baludontu
     - divyenpatel
     - dougm
-    - dvonthenen
     - frapposelli
-    - imkin
     - sandeeppissay
-    - maplain
     - lubronzhan
-    - nicolehanjing
-    - HanFa
     - XudongLiuHarold
     - wyike
     - YanzhaoLi
+    - DanielXiao
+    - chenlin07
