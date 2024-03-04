@@ -25,6 +25,7 @@ updates:
     prefix: ":seedling:"
   labels:
     - "ok-to-test"
+  open-pull-requests-limit: 10
 ## Update dockerfile
 - package-ecosystem: docker
   directory: /
