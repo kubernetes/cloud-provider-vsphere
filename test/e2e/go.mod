@@ -13,7 +13,7 @@ require (
 	k8s.io/klog/v2 v2.120.1
 	sigs.k8s.io/cluster-api v1.6.2
 	sigs.k8s.io/cluster-api/test v1.6.2
-	sigs.k8s.io/controller-runtime v0.16.5
+	sigs.k8s.io/controller-runtime v0.17.2
 )
 
 require (
@@ -52,7 +52,7 @@ require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.2 // indirect
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
-	github.com/evanphx/json-patch/v5 v5.7.0 // indirect
+	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -155,7 +155,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.20.0 // indirect
 	go.opentelemetry.io/otel/trace v1.20.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
-	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
