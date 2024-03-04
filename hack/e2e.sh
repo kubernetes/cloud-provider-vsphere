@@ -112,4 +112,8 @@ export WORKLOAD_CONTROL_PLANE_ENDPOINT_IP
 GCR_KEY_FILE="${GCR_KEY_FILE:-}"
 login
 
-E2E_ARTIFACTS=${ARTIFACTS} make e2e
+if [ "$#" -eq 1 ] && [ "$1" = "latest-k8s-version" ]; then
+  E2E_ARTIFACTS=${ARTIFACTS} make e2e-latest-k8s-version
+else 
+  E2E_ARTIFACTS=${ARTIFACTS} make e2e
+fi

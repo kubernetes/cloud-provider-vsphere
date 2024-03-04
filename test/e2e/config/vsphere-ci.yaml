@@ -60,10 +60,17 @@ providers:
     files:
     # Add a cluster template
     - sourcePath: "../../../test/e2e/data/infrastructure-vsphere/main/cluster-template.yaml"
+    - sourcePath: "../../../test/e2e/data/infrastructure-vsphere/main/cluster-template-install-on-bootstrap.yaml"
+    - sourcePath: "../../../test/e2e/data/infrastructure-vsphere/main/clusterclass-quick-start.yaml"
     - sourcePath: "../data/shared/main/v1beta1_provider/metadata.yaml"
 
 variables:
   KUBERNETES_VERSION: "v1.29.0"
+  #! KUBERNETES_VERSION_LATEST_CI can have the following formats:
+  #! * v1.28.0 => will return the same version for convenience
+  #! * stable-1.28 => will return the latest patch release for v1.28, e.g. v1.28.5
+  #! * ci/latest-1.28 => will return the latest built version from the release branch, e.g. v1.28.5-26+72feddd3acde14
+  KUBERNETES_VERSION_LATEST_CI: "ci/latest-1.30"
   KUBERNETES_VERSION_UPGRADE_FROM: "v1.28.0"
   KUBERNETES_VERSION_UPGRADE_TO: "v1.29.0"
   CPI_IMAGE_K8S_VERSION: "v1.29.0"
