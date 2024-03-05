@@ -39,9 +39,11 @@ jobs:
       - name: Create PR
         if: steps.changes.outputs.changes
         run: |
+          HEAD_BRANCH="auto-bump-$(date +'%Y%m%d%H%M%S')"
+          git checkout -b "$HEAD_BRANCH"
           git add go.mod go.sum
-          git commit -sm "Bump the kubernetes group updates"
-          git push
-          gh pr create --base master --head "origin/master" --title ":seedling: Bump the kubernetes group updates" --label "ok-to-test" --body "This is an automated pull request generated to bump latest k8s dependencies."
+          git commit -sm "Bump the Kubernetes group updates"
+          git push origin "$HEAD_BRANCH"
+          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates" --label "ok-to-test" --body "This is an automated pull request generated to bump the latest k8s dependencies."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
