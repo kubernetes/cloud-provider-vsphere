@@ -25,17 +25,6 @@ set -o pipefail
 
 dependencies=("k8s.io/api" "k8s.io/client-go" "k8s.io/cloud-provider" "k8s.io/apimachinery" "k8s.io/code-generator" "k8s.io/component-base" "k8s.io/klog/v2")
 
-compare_versions() {
-    version1=$1
-    version2=$2
-
-    if [[ $(echo -e "$version1\n$version2" | sort -V | tail -n 1) == "$version1" ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 check_and_bump_dependency() {
   dep=$1
   current_version=$(go list -m -f '{{.Version}}' "${dep}")
@@ -45,15 +34,12 @@ check_and_bump_dependency() {
   echo "Current $dep version: $current_version"
   echo "Latest $dep version: $latest_version"
 
-  compare_versions "$current_version" "$latest_version"
-  result=$?
-
   # Bump the version if needed
-  if [ $result -eq 1 ]; then
-      echo "Updating $dep to the $latest_version..."
-      go get -u k8s.io/api@"${latest_version}"
+ if [ "$current_version" == "$latest_version" ]; then
+    echo "$dep@$current_version is already up to date."
   else
-      echo "$dep is already up to date."
+    echo "Updating $dep to the $latest_version..."
+    go get -u "${dep}"@"${latest_version}"
   fi
 }
 
