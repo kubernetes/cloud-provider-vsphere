@@ -23,7 +23,7 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Bump latest k8s.io dependices
+      - name: Bump latest k8s.io dependencies
         run: bash ./hack/bump-k8s-dep.sh
       
       - name: Configure Git
@@ -34,12 +34,12 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          git diff --quiet || echo "Changes detected"
+          echo "::set-output name=changes::$(git diff)"
 
       - name: Create PR
-        if: steps.changes.outputs.stdout
+        if: steps.changes.outputs.changes
         run: |
-          git add .
+          git add go.mod go.sum
           git commit -sm "Bump the kubernetes group updates"
           git push
           gh pr create --base master --head "origin/master" --title ":seedling: Bump the kubernetes group updates" --label "ok-to-test" --body "This is an automated pull request generated to bump latest k8s dependencies."
