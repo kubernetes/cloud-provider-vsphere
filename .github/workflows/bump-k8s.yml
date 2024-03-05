@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: '0 0 * * *'  # Run daily at midnight
 
+  workflow_dispatch:
+
 jobs:
   bump-to-latest-pre-release:
     runs-on: ubuntu-latest
