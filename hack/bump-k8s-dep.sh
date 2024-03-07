@@ -39,11 +39,11 @@ check_and_bump_dependency() {
   latest_version=$(go list -m -versions -json "${dep}" | jq -r '.Versions[-1]')
   # latest_stable_version=$(go list -m -u -json ${dep} | jq -r .Version)
 
-  # filter out the alpha release skip for test
-  # if [[ $latest_version =~ alpha\.([0-9]+)$ ]]; then
-  #   echo -e "${BLUE} Skip auto bump for alpha release: [$dep@$latest_version]${RESET}"
-  #   return
-  # fi
+  # filter out the alpha release
+  if [[ $latest_version =~ alpha\.([0-9]+)$ ]]; then
+    echo -e "${BLUE} Skip auto bump for alpha release: [$dep@$latest_version]${RESET}"
+    return
+  fi
 
   # Bump the version if needed
   if [ "$current_version" == "$latest_version" ]; then
