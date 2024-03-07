@@ -1,0 +1,48 @@
+name: Bump latest Kubernetes dependecies for e2e test
+
+on:
+  schedule:
+    - cron: '0 12 */2 * *' # Run every two days at UTC noon
+
+  workflow_dispatch: # Use for manaully trigger to debug
+
+jobs:
+  bump-to-latest-pre-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'test/e2e/go.mod'
+
+      - name: Bump latest k8s.io dependencies
+        run: |
+          cd test/e2e
+          bash ./hack/bump-k8s-dep.sh e2e
+          cd ../..
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions-bot@example.com"
+
+      - name: Check for changes and update version
+        id: changes
+        run: |
+          echo "changes=$(git diff)" >> $GITHUB_OUTPUT
+
+      - name: Create PR
+        if: steps.changes.outputs.changes
+        run: |
+          HEAD_BRANCH="github-actions/auto-bump/k8s-dependencies-$(date +'%Y%m%d%H%M%S')"
+          git checkout -b "$HEAD_BRANCH"
+          git add go.mod go.sum
+          git commit -sm "Bump kubernetes group dependencies updates for e2e test"
+          git push origin "$HEAD_BRANCH"
+          gh pr create --base master --title ":seedling: Bump the kubernetes group updates for e2e test" --body "This is an automatic generated pull request to bump the latest k8s dependencies for e2e test."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
