@@ -1,4 +1,4 @@
-name: Bump latest Kubernetes dependecies
+name: Bump latest Kubernetes dependecies for e2e test
 
 on:
   schedule:
