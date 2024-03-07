@@ -22,7 +22,7 @@ jobs:
       - name: Bump latest k8s.io dependencies
         run: |
           cd test/e2e
-          bash ./hack/bump-k8s-dep.sh e2e
+          bash ../../hack/bump-k8s-dep.sh test-e2e
           cd ../..
       
       - name: Configure Git

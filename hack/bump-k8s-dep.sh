@@ -24,7 +24,7 @@ set -o pipefail
 
 # Check if the first input does not exist or is not equal to "test"
 dependencies=("k8s.io/api" "k8s.io/client-go" "k8s.io/apimachinery" "k8s.io/klog/v2")
-if [ -z "${1:-}" ] || [ "${1}" != "test" ]; then
+if [ -z "${1:-}" ] || [ "${1}" != "test-e2e" ]; then
   dependencies+=("k8s.io/cloud-provider" "k8s.io/code-generator" "k8s.io/component-base")
 fi
 
