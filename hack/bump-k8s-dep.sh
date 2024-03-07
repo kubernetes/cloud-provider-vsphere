@@ -22,7 +22,16 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-dependencies=("k8s.io/api" "k8s.io/client-go" "k8s.io/cloud-provider" "k8s.io/apimachinery" "k8s.io/code-generator" "k8s.io/component-base" "k8s.io/klog/v2")
+# Check if the first input does not exist or is not equal to "test"
+dependencies=("k8s.io/api" "k8s.io/client-go" "k8s.io/apimachinery" "k8s.io/klog/v2")
+if [ -z "${1:-}" ] || [ "${1}" != "test" ]; then
+  dependencies+=("k8s.io/cloud-provider" "k8s.io/code-generator" "k8s.io/component-base")
+fi
+
+# Define color codes
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RESET='\033[0m'  # Reset color to default
 
 check_and_bump_dependency() {
   dep=$1
@@ -32,18 +41,15 @@ check_and_bump_dependency() {
 
   # filter out the alpha release
   if [[ $latest_version =~ alpha\.([0-9]+)$ ]]; then
-    echo "Skip auto bump for alpha release: [$dep@$current_version]"
+    echo -e "${BLUE} Skip auto bump for alpha release: [$dep@$latest_version]${RESET}"
     return
   fi
 
-  echo "Current $dep version: $current_version"
-  echo "Latest $dep version: $latest_version"
-
   # Bump the version if needed
   if [ "$current_version" == "$latest_version" ]; then
-    echo "$dep@$current_version is already up to date."
+    echo -e "${BLUE} $dep@$current_version is already up to date.${RESET}"
   else
-    echo "Updating $dep to $latest_version ..."
+    echo -e "${GREEN} Updating $dep to $latest_version ...${RESET}"
     go get -u "${dep}"@"${latest_version}"
   fi
 }
