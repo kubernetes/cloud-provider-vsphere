@@ -25,12 +25,15 @@ jobs:
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions-bot@example.com"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Check for changes and update version
         id: changes
         run: |
-          echo "changes=$(git diff)" >> $GITHUB_OUTPUT
+          git_diff_output=$(git diff)
+          if [ -n "$git_diff_output" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create PR
         if: steps.changes.outputs.changes
@@ -40,6 +43,6 @@ jobs:
           git add go.mod go.sum
           git commit -sm "Bump Kubernetes group dependencies updates"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates " --body "This is an automatically generated pull request to bump the latest k8s dependencies."
+          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates " --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
