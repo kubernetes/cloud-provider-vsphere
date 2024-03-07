@@ -43,6 +43,6 @@ jobs:
           git add go.mod go.sum
           git commit -sm "Bump Kubernetes group dependencies updates"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates " --body "This is an automatically generated pull request to bump the latest k8s dependencies."
+          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates " --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

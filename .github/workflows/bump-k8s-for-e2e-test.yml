@@ -46,6 +46,6 @@ jobs:
           git add test/e2e/go.mod test/e2e/go.sum
           git commit -sm "Bump kubernetes group dependencies updates for e2e test"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the kubernetes group updates for e2e test" --body "This is an automatic generated pull request to bump the latest k8s dependencies for e2e test."
+          gh pr create --base master --title ":seedling: Bump the kubernetes group updates for e2e test" --label "ok-to-test" --body "This is an automatic generated pull request to bump the latest k8s dependencies for e2e test."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
