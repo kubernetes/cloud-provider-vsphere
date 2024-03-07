@@ -1,14 +1,10 @@
 name: Bump latest Kubernetes dependecies
 
 on:
-  push:
-    branches:
-      - main
-
   schedule:
-    - cron: '0 0 * * *'  # Run daily at midnight
+    - cron: '0 0 */2 * *' # Run every two days at UTC midnight
 
-  workflow_dispatch:
+  workflow_dispatch: # Use for manaully trigger to debug
 
 jobs:
   bump-to-latest-pre-release:
@@ -21,29 +17,29 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version-file: 'go.mod'
 
       - name: Bump latest k8s.io dependencies
         run: bash ./hack/bump-k8s-dep.sh
       
       - name: Configure Git
         run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions-bot@example.com"
 
-      - name: Check for changes
+      - name: Check for changes and update version
         id: changes
         run: |
-          echo "::set-output name=changes::$(git diff)"
+          echo "changes=$(git diff)" >> $GITHUB_OUTPUT
 
       - name: Create PR
         if: steps.changes.outputs.changes
         run: |
-          HEAD_BRANCH="auto-bump-$(date +'%Y%m%d%H%M%S')"
+          HEAD_BRANCH="github-actions/auto-bump/k8s-dependencies-$(date +'%Y%m%d%H%M%S')"
           git checkout -b "$HEAD_BRANCH"
           git add go.mod go.sum
-          git commit -sm "Bump the Kubernetes group updates"
+          git commit -sm "Bump Kubernetes group dependencies updates"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates" --label "ok-to-test" --body "This is an automated pull request generated to bump the latest k8s dependencies."
+          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates " --body "This is an automatically generated pull request to bump the latest k8s dependencies."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
