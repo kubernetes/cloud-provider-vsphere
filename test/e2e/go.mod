@@ -7,9 +7,9 @@ require (
 	github.com/onsi/gomega v1.31.1
 	github.com/vmware/govmomi v0.27.4
 	helm.sh/helm/v3 v3.14.2
-	k8s.io/api v0.29.2
-	k8s.io/apimachinery v0.29.2
-	k8s.io/client-go v0.29.2
+	k8s.io/api v0.30.0-alpha.3
+	k8s.io/apimachinery v0.30.0-alpha.3
+	k8s.io/client-go v0.30.0-alpha.3
 	k8s.io/klog/v2 v2.120.1
 	sigs.k8s.io/cluster-api v1.6.2
 	sigs.k8s.io/cluster-api/test v1.6.2
@@ -162,8 +162,8 @@ require (
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/term v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
@@ -182,7 +182,7 @@ require (
 	k8s.io/cli-runtime v0.29.0 // indirect
 	k8s.io/cluster-bootstrap v0.29.0 // indirect
 	k8s.io/component-base v0.29.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
+	k8s.io/kube-openapi v0.0.0-20231113174909-778a5567bc1e // indirect
 	k8s.io/kubectl v0.29.0 // indirect
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661 // indirect
 	oras.land/oras-go v1.2.4 // indirect
