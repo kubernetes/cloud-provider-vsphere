@@ -12,7 +12,6 @@ import (
 )
 
 var (
-
 	// VirtualMachineServiceGVR has virtualmachineservice resource info.
 	VirtualMachineServiceGVR = schema.GroupVersionResource{
 		Group:    "vmoperator.vmware.com",
