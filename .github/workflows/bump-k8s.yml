@@ -35,8 +35,15 @@ jobs:
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check if update PR exist
+        id: exist
+        run: |
+          LATEST_VERSION=$(go list -m -versions -json "k8s.io/api" | jq -r '.Versions[-1]')
+          HEAD_BRANCH="github-actions/auto-bump/k8s-dependencies-$LATEST_VERSION"
+          echo "exist=$(gh repo view cloud-provider-vsphere --json branch --jq ".branches[].name | select(. == \"$HEAD_BRANCH\"))" >> $GITHUB_OUTPUT
+
       - name: Create PR
-        if: steps.changes.outputs.changes
+        if: steps.changes.outputs.changes && steps.exist.outputs.exist
         run: |
           HEAD_BRANCH="github-actions/auto-bump/k8s-dependencies-$(date +'%Y%m%d%H%M%S')"
           git checkout -b "$HEAD_BRANCH"
