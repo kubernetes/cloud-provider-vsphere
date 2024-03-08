@@ -39,13 +39,20 @@ jobs:
         id: exist
         run: |
           LATEST_VERSION=$(go list -m -versions -json "k8s.io/api" | jq -r '.Versions[-1]')
-          HEAD_BRANCH="github-actions/auto-bump/k8s-dependencies-$LATEST_VERSION"
-          echo "exist=$(gh repo view cloud-provider-vsphere --json branch --jq ".branches[].name | select(. == \"$HEAD_BRANCH\"))" >> $GITHUB_OUTPUT
+          HEAD_BRANCH="topic/github-actions/auto-bump/k8s-dependencies-$LATEST_VERSION"
+          echo "$HEAD_BRANCH"
+          if ! git ls-remote --exit-code origin refs/heads/$HEAD_BRANCH; then
+            echo "debug 1"
+            echo "exist=true" >> $GITHUB_OUTPUT
+            echo "head_branch=$HEAD_BRANCH" >> $GITHUB_OUTPUT
+          fi
+          echo "debug 2"
+
 
       - name: Create PR
-        if: steps.changes.outputs.changes && steps.exist.outputs.exist
+        if: ${{ steps.changes.outputs.changes && steps.exist.outputs.exist }}
         run: |
-          HEAD_BRANCH="github-actions/auto-bump/k8s-dependencies-$(date +'%Y%m%d%H%M%S')"
+          HEAD_BRANCH=${{ steps.exist.outputs.head_branch }}
           git checkout -b "$HEAD_BRANCH"
           git add go.mod go.sum
           git commit -sm "Bump Kubernetes group dependencies updates"
