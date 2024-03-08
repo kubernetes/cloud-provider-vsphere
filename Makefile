@@ -21,7 +21,6 @@ export ARTIFACTS ?= $(BUILD_OUT)/artifacts
 # BRANCH_NAME is the name of current branch.
 export BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
--include hack/make/docker.mk
 
 ################################################################################
 ##                             VERIFY GO VERSION                              ##
