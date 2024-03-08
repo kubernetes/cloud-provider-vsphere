@@ -35,14 +35,26 @@ jobs:
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create PR
-        if: steps.changes.outputs.changes
+      - name: Check if update PR exist
+        id: exist
         run: |
-          HEAD_BRANCH="github-actions/auto-bump/k8s-dependencies-$(date +'%Y%m%d%H%M%S')"
+          LATEST_VERSION=$(go list -m -versions -json "k8s.io/api" | jq -r '.Versions[-1]')
+          HEAD_BRANCH="topic/github-actions/auto-bump/k8s-dependencies-$LATEST_VERSION"
+          echo "$HEAD_BRANCH"
+          if ! git ls-remote --exit-code origin refs/heads/$HEAD_BRANCH; then
+            echo "exist=true" >> $GITHUB_OUTPUT
+            echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+            echo "head_branch=$HEAD_BRANCH" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR
+        if: ${{ steps.changes.outputs.changes && steps.exist.outputs.exist }}
+        run: |
+          HEAD_BRANCH=${{ steps.exist.outputs.head_branch }}
           git checkout -b "$HEAD_BRANCH"
           git add go.mod go.sum
           git commit -sm "Bump Kubernetes group dependencies updates"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the Kubernetes group updates " --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
+          gh pr create --base master --title ":seedling: Bump the Kubernetes group to ${{ steps.exist.outputs.latest_version }}" --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
