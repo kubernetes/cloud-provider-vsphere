@@ -2,8 +2,12 @@
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 version: 2
 updates:
+# #############
+# master branch
+# #############
 # GitHub Actions
-- package-ecosystem: "github-actions"
+- target-branch: master
+  package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
@@ -12,7 +16,8 @@ updates:
   labels:
     - "ok-to-test"
 # Main Go module
-- package-ecosystem: "gomod"
+- target-branch: master
+  package-ecosystem: "gomod"
   directory: "/"
   schedule:
     interval: "weekly"
@@ -27,8 +32,9 @@ updates:
     - "ok-to-test"
   open-pull-requests-limit: 10
 ## Update dockerfile
-- package-ecosystem: docker
-  directory: /
+- target-branch: master
+  package-ecosystem: docker
+  directory: "/cluster/images/controller-manager"
   schedule:
     interval: weekly
   commit-message:
@@ -36,7 +42,8 @@ updates:
   labels:
     - "ok-to-test"
 # Test Go module
-- package-ecosystem: "gomod"
+- target-branch: master
+  package-ecosystem: "gomod"
   directory: "/test/e2e"
   schedule:
     interval: "weekly"
@@ -49,3 +56,228 @@ updates:
     prefix: ":seedling:"
   labels:
     - "ok-to-test"
+
+# ################
+# release branch N
+# ################
+# GitHub Actions
+- target-branch: release-1.29
+  package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Main Go module
+- target-branch: release-1.29
+  package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  open-pull-requests-limit: 10
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+## Update dockerfile
+- target-branch: release-1.29
+  package-ecosystem: docker
+  directory: "/cluster/images/controller-manager"
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Test Go module
+- target-branch: release-1.29
+  package-ecosystem: "gomod"
+  directory: "/test/e2e"
+  schedule:
+    interval: "weekly"
+    day: "tuesday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+
+# ##################
+# release branch N-1
+# ##################
+# GitHub Actions
+- target-branch: release-1.28
+  package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Main Go module
+- target-branch: release-1.28
+  package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  open-pull-requests-limit: 10
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+## Update dockerfile
+- target-branch: release-1.28
+  package-ecosystem: docker
+  directory: "/cluster/images/controller-manager"
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Test Go module
+- target-branch: release-1.28
+  package-ecosystem: "gomod"
+  directory: "/test/e2e"
+  schedule:
+    interval: "weekly"
+    day: "tuesday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+
+# ##################
+# release branch N-2
+# ##################
+# GitHub Actions
+- target-branch: release-1.27
+  package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Main Go module
+- target-branch: release-1.27
+  package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  open-pull-requests-limit: 10
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+## Update dockerfile
+- target-branch: release-1.27
+  package-ecosystem: docker
+  directory: "/cluster/images/controller-manager"
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Test Go module
+- target-branch: release-1.27
+  package-ecosystem: "gomod"
+  directory: "/test/e2e"
+  schedule:
+    interval: "weekly"
+    day: "tuesday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
