@@ -1,7 +1,5 @@
 all: test
 
-include ../../hack/make/docker.mk
-
 # PROJECT_ROOT may be set externally when this Makefile is invoked with DinD.
 PROJECT_ROOT ?= $(abspath ../..)
 
