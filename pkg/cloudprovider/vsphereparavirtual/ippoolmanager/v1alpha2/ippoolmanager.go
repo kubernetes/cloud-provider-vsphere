@@ -22,10 +22,11 @@ import (
 type IPPoolManager struct {
 	clients         vpcnetworkingclients.Interface
 	informerFactory vpcnetworkinginformers.SharedInformerFactory
+	podIPPoolType   string
 }
 
 // NewIPPoolManager  initializes a IPPoolManager
-func NewIPPoolManager(config *rest.Config, clusterNS string) (*IPPoolManager, error) {
+func NewIPPoolManager(config *rest.Config, clusterNS string, podIPPoolType string) (*IPPoolManager, error) {
 	ippoolclients, err := vpcnetworkingclients.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("error building ippool ippoolclientset: %w", err)
@@ -37,6 +38,7 @@ func NewIPPoolManager(config *rest.Config, clusterNS string) (*IPPoolManager, er
 	return &IPPoolManager{
 		clients:         ippoolclients,
 		informerFactory: ippoolInformerFactory,
+		podIPPoolType:   podIPPoolType,
 	}, nil
 }
 
@@ -83,6 +85,7 @@ func (p *IPPoolManager) CreateIPPool(clusterNS, clusterName string, ownerRef *me
 		},
 		// Omit to provide IPPool type. nsx operator will update the type afterwards.
 		Spec: vpcnetworkingapis.IPPoolSpec{
+			Type:    p.podIPPoolType,
 			Subnets: []vpcnetworkingapis.SubnetRequest{},
 		},
 	}
