@@ -67,7 +67,7 @@ updates:
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.29]"
   labels:
     - "ok-to-test"
   ignore:
@@ -87,10 +87,10 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.29]"
   labels:
     - "ok-to-test"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 5
   ignore:
     - dependency-name: "*"
       update-types:
@@ -103,7 +103,7 @@ updates:
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.29]"
   labels:
     - "ok-to-test"
   ignore:
@@ -123,7 +123,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.29]"
   labels:
     - "ok-to-test"
   ignore:
@@ -142,7 +142,7 @@ updates:
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   ignore:
@@ -162,10 +162,10 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 5
   ignore:
     - dependency-name: "*"
       update-types:
@@ -178,7 +178,7 @@ updates:
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   ignore:
@@ -198,7 +198,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   ignore:
@@ -217,7 +217,7 @@ updates:
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.27]"
   labels:
     - "ok-to-test"
   ignore:
@@ -237,10 +237,10 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.27]"
   labels:
     - "ok-to-test"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 5
   ignore:
     - dependency-name: "*"
       update-types:
@@ -253,7 +253,7 @@ updates:
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.27]"
   labels:
     - "ok-to-test"
   ignore:
@@ -273,7 +273,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:"
+    prefix: ":seedling:[release-1.27]"
   labels:
     - "ok-to-test"
   ignore:
