@@ -67,7 +67,7 @@ var (
 	// vpcModeEnabled if set to true, ippool and node controller will process v1alpha1 StaticRoute and v1alpha2 IPPool, otherwise v1alpha1 RouteSet and v1alpha1 IPPool
 	vpcModeEnabled bool
 
-	// podIPPoolType specify if Pod IP addresses is public or private.
+	// podIPPoolType specifies if Pod IP addresses are public or private.
 	podIPPoolType string
 )
 
@@ -114,6 +114,10 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	if vpcModeEnabled {
 		if podIPPoolType != PublicIPPoolType && podIPPoolType != PrivateIPPoolType {
 			klog.Fatalf("Pod IP Pool Type can be either Public or Private in VPC network, %s is not supported", podIPPoolType)
+		}
+
+		if podIPPoolType == "" {
+			podIPPoolType = PrivateIPPoolType
 		}
 	} else {
 		// NSX-T T1 or VDS network
