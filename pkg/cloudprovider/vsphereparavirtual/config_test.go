@@ -23,6 +23,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -263,6 +264,61 @@ func TestGetRestConfig(t *testing.T) {
 			if err == nil {
 				t.Errorf("Should fail when an invalid supervisor config is provided")
 			}
+		}
+	}
+}
+
+func TestCheckPodIPPoolType(t *testing.T) {
+	tests := []struct {
+		vpcModeEnabled   bool
+		podIPPoolType    string
+		expectedErrorMsg string
+		name             string
+	}{
+		{
+			name:             "If VPC mode is not enabled, --pod-ip-pool-type should be empty",
+			vpcModeEnabled:   false,
+			podIPPoolType:    "",
+			expectedErrorMsg: "",
+		},
+		{
+			name:             "If VPC mode is not enabled, throw out error if --pod-ip-pool-type is not empty",
+			vpcModeEnabled:   false,
+			podIPPoolType:    "test-ns",
+			expectedErrorMsg: "--pod-ip-pool-type can be set only when the network is VPC",
+		},
+		{
+			name:             "If VPC mode is enabled, throw error if --pod-ip-pool-type is not Public or Private",
+			vpcModeEnabled:   true,
+			podIPPoolType:    "test-ns",
+			expectedErrorMsg: "--pod-ip-pool-type can be either Public or Private in NSX-T VPC network, test-ns is not supported",
+		},
+		{
+			name:             "If VPC mode is enabled, throw error if --pod-ip-pool-type is empty",
+			vpcModeEnabled:   true,
+			podIPPoolType:    "",
+			expectedErrorMsg: "--pod-ip-pool-type is required in the NSX-T VPC network",
+		},
+		{
+			name:             "Pod IP Pool type should be successfully set as Public",
+			vpcModeEnabled:   true,
+			podIPPoolType:    "Public",
+			expectedErrorMsg: "",
+		},
+		{
+			name:             "Pod IP Pool type should be successfully set as Private",
+			vpcModeEnabled:   true,
+			podIPPoolType:    "Private",
+			expectedErrorMsg: "",
+		},
+	}
+
+	for _, test := range tests {
+		err := checkPodIPPoolType(test.vpcModeEnabled, test.podIPPoolType)
+		if test.expectedErrorMsg == "" {
+			assert.Equal(t, err, nil)
+		} else {
+			assert.Equal(t, err.Error(), test.expectedErrorMsg)
 		}
 	}
 }
