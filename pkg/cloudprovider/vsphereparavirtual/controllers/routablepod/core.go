@@ -20,16 +20,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
+
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ippool"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/node"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
-	"k8s.io/klog/v2"
 )
 
 // StartControllers starts ippool_controller and node_controller
 func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
-	informerManager *k8s.InformerManager, clusterName, clusterNS string, ownerRef *metav1.OwnerReference, vpcModeEnabled bool) error {
+	informerManager *k8s.InformerManager, clusterName, clusterNS string, ownerRef *metav1.OwnerReference,
+	vpcModeEnabled bool, podIPPoolType string) error {
 
 	if clusterName == "" {
 		return fmt.Errorf("cluster name can't be empty")
@@ -40,7 +42,7 @@ func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
 
 	klog.V(2).Info("Routable pod controllers start with VPC mode enabled: ", vpcModeEnabled)
 
-	ippManager, err := ippoolmanager.GetIPPoolManager(vpcModeEnabled, scCfg, clusterNS)
+	ippManager, err := ippoolmanager.GetIPPoolManager(vpcModeEnabled, scCfg, clusterNS, podIPPoolType)
 	if err != nil {
 		return fmt.Errorf("fail to get ippool manager or start ippool controller: %w", err)
 	}

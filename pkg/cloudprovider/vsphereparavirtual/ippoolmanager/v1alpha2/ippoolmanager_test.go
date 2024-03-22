@@ -10,6 +10,7 @@ import (
 	fakevpcnetworkingclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 	t1networkingapis "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
 )
@@ -395,6 +396,71 @@ func TestDiffIPPoolSubnets(t *testing.T) {
 		ipm, _ := initIPPoolTest()
 		t.Run(testCase.name, func(t *testing.T) {
 			assert.Equal(t, testCase.expectedDiff, ipm.DiffIPPoolSubnets(testCase.old, testCase.cur))
+		})
+	}
+}
+
+func TestNewIPPoolManager(t *testing.T) {
+	testcases := []struct {
+		name                  string
+		podIPPoolType         string
+		expectedpodIPPoolType string
+	}{
+		{
+			name:                  "Public podIPPoolType should be correctly populated into ipPoolManager",
+			podIPPoolType:         "Public",
+			expectedpodIPPoolType: "Public",
+		},
+		{
+			name:                  "Private podIPPoolType should be correctly populated into ipPoolManager",
+			podIPPoolType:         "Private",
+			expectedpodIPPoolType: "Private",
+		},
+	}
+
+	for _, testCase := range testcases {
+		t.Run(testCase.name, func(t *testing.T) {
+			config := &rest.Config{
+				UserAgent: testClustername,
+			}
+			ipm, err := NewIPPoolManager(config, testClusterNameSpace, testCase.podIPPoolType)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, testCase.expectedpodIPPoolType, ipm.podIPPoolType)
+		})
+	}
+}
+
+func TestCreateIPPool(t *testing.T) {
+	testcases := []struct {
+		name                  string
+		podIPPoolType         string
+		expectedpodIPPoolType string
+	}{
+		{
+			name:                  "Public podIPPoolType should be correctly populated into ipPool",
+			podIPPoolType:         "Public",
+			expectedpodIPPoolType: "Public",
+		},
+		{
+			name:                  "Private podIPPoolType should be correctly populated into ipPool",
+			podIPPoolType:         "Private",
+			expectedpodIPPoolType: "Private",
+		},
+		{
+			name:                  "empty podIPPoolType should be correctly populated into ipPool",
+			podIPPoolType:         "",
+			expectedpodIPPoolType: "",
+		},
+	}
+
+	for _, testCase := range testcases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ipm, _ := initIPPoolTest()
+			ipm.podIPPoolType = testCase.podIPPoolType
+			ipp, err := ipm.CreateIPPool(testClusterNameSpace, testClustername, &metav1.OwnerReference{})
+			assert.Equal(t, nil, err)
+			ippool, _ := ipp.(*vpcnetworkingapis.IPPool)
+			assert.Equal(t, testCase.expectedpodIPPoolType, ippool.Spec.Type)
 		})
 	}
 }

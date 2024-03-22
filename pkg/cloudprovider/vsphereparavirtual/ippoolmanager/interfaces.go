@@ -5,6 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
 	ippmv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1"
 	ippmv1alpha2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha2"
@@ -27,9 +28,9 @@ type IPPoolManager interface {
 }
 
 // GetIPPoolManager gets an IPPoolManager
-func GetIPPoolManager(vpcModeEnabled bool, scCfg *rest.Config, clusterNS string) (IPPoolManager, error) {
+func GetIPPoolManager(vpcModeEnabled bool, scCfg *rest.Config, clusterNS string, podIPPoolType string) (IPPoolManager, error) {
 	if vpcModeEnabled {
-		return ippmv1alpha2.NewIPPoolManager(scCfg, clusterNS)
+		return ippmv1alpha2.NewIPPoolManager(scCfg, clusterNS, podIPPoolType)
 	}
 
 	return ippmv1alpha1.NewIPPoolManager(scCfg, clusterNS)
