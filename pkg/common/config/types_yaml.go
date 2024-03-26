@@ -69,6 +69,10 @@ type GlobalYAML struct {
 	// ipv4 - IPv4 addresses only (Default)
 	// ipv6 - IPv6 addresses only
 	IPFamilyPriority []string `yaml:"ipFamily"`
+	// ClusterID defines a cluster unique identifier (eg the CAPV cluster name)
+	// that can be passed on the configuration and can be used to identify connections
+	// to vSphere
+	ClusterID string `yaml:"clusterID"`
 }
 
 // VirtualCenterConfigYAML contains information used to access a remote vCenter

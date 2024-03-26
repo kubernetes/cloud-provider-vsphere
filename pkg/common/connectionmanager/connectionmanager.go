@@ -80,6 +80,7 @@ func generateInstanceMap(cfg *vcfg.Config) map[string]*VSphereInstance {
 			Port:              vcConfig.VCenterPort,
 			CACert:            vcConfig.CAFile,
 			Thumbprint:        vcConfig.Thumbprint,
+			ClusterID:         cfg.Global.ClusterID,
 		}
 		vsphereIns := VSphereInstance{
 			Conn: &vSphereConn,
@@ -111,8 +112,8 @@ func (connMgr *ConnectionManager) InitializeSecretLister() {
 }
 
 func (connMgr *ConnectionManager) createManagersPerTenant(secretName string, secretNamespace string,
-	secretsDirectory string, client clientset.Interface) (*cm.CredentialManager, *k8s.InformerManager) {
-
+	secretsDirectory string, client clientset.Interface,
+) (*cm.CredentialManager, *k8s.InformerManager) {
 	var informMgr *k8s.InformerManager
 	var lister listerv1.SecretLister
 	if client != nil && secretsDirectory == "" {

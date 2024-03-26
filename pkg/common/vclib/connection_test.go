@@ -140,8 +140,7 @@ func TestWithVerificationWithoutCaCertOrThumbprint(t *testing.T) {
 func TestWithValidThumbprint(t *testing.T) {
 	handler, verifyConnectionWasMade := getRequestVerifier(t)
 
-	server, thumbprint :=
-		createTestServer(t, fixtures.CaCertPath, fixtures.ServerCertPath, fixtures.ServerKeyPath, handler)
+	server, thumbprint := createTestServer(t, fixtures.CaCertPath, fixtures.ServerCertPath, fixtures.ServerKeyPath, handler)
 	server.StartTLS()
 	u := mustParseUrl(t, server.URL)
 
@@ -182,6 +181,26 @@ func TestInvalidCaCert(t *testing.T) {
 	if msg := err.Error(); !strings.Contains(msg, "invalid certificate") {
 		t.Fatalf("Expected invalid certificate error, got '%s'", msg)
 	}
+}
+
+func TestSpecificCluterID(t *testing.T) {
+	handler, verifyConnectionWasMade := getRequestVerifier(t)
+
+	server, _ := createTestServer(t, fixtures.CaCertPath, fixtures.ServerCertPath, fixtures.ServerKeyPath, handler)
+	server.StartTLS()
+	u := mustParseUrl(t, server.URL)
+
+	connection := &vclib.VSphereConnection{
+		Hostname:  u.Hostname(),
+		Port:      u.Port(),
+		CACert:    fixtures.CaCertPath,
+		ClusterID: "my-amazing-cluster",
+	}
+
+	// Ignoring error here, because we only care about the TLS connection
+	connection.NewClient(context.Background())
+
+	verifyConnectionWasMade()
 }
 
 func verifyWrappedX509UnkownAuthorityErr(t *testing.T, err error) {
