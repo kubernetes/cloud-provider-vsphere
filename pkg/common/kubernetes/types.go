@@ -23,18 +23,26 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const (
+	defaultInformerFactoryNamespace = ""
+)
+
 // InformerManager is a service that notifies subscribers about changes
 // to well-defined information in the Kubernetes API server.
 type InformerManager struct {
 	// k8s client
 	client clientset.Interface
-	// main shared informer factory
-	informerFactory informers.SharedInformerFactory
+
+	// namespaced informer factories for resources limited to namespaces.
+	// The main informer factory is for cluster-scoped resources and is under
+	// the key "".
+	namespacedInformerFactories map[string]informers.SharedInformerFactory
+
 	// main signal
 	stopCh (<-chan struct{})
 
-	// secret informer
-	secretInformer v1.SecretInformer
+	// secret informers by namespace
+	namespacedSecretInformer map[string]v1.SecretInformer
 
 	// node informer
 	nodeInformer cache.SharedInformer
