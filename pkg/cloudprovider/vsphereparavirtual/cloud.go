@@ -46,12 +46,6 @@ const (
 
 	// CloudControllerManagerNS is the namespace for vsphere paravirtual cluster cloud provider
 	CloudControllerManagerNS = "vmware-system-cloud-provider"
-
-	// PublicIPPoolType allows Pod IP address routable outside of Tier 0 router.
-	PublicIPPoolType = "Public"
-
-	// PrivateIPPoolType allows Pod IP address routable within VPC router.
-	PrivateIPPoolType = "Private"
 )
 
 var (
@@ -111,19 +105,9 @@ func newVSphereParavirtual(cfg *cpcfg.Config) (*VSphereParavirtual, error) {
 func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
 	klog.V(0).Info("Initing vSphere Paravirtual Cloud Provider")
 
-	if vpcModeEnabled {
-		if podIPPoolType != PublicIPPoolType && podIPPoolType != PrivateIPPoolType {
-			klog.Fatalf("Pod IP Pool Type can be either Public or Private in VPC network, %s is not supported", podIPPoolType)
-		}
-
-		if podIPPoolType == "" {
-			podIPPoolType = PrivateIPPoolType
-		}
-	} else {
-		// NSX-T T1 or VDS network
-		if podIPPoolType != "" {
-			klog.Fatal("Pod IP Pool Type can be set only when the network is VPC")
-		}
+	err := checkPodIPPoolType(vpcModeEnabled, podIPPoolType)
+	if err != nil {
+		klog.Fatalf("Invalid IP pool type: %v", err)
 	}
 
 	ownerRef, err := readOwnerRef(VsphereParavirtualCloudProviderConfigPath)
