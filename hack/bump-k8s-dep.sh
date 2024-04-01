@@ -33,11 +33,30 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RESET='\033[0m'  # Reset color to default
 
+pre_release_regex="-((alpha|beta|rc)\.[0-9]+)"
+
+get_latest_version() {
+  local current_version=$1
+  local dep=$2
+
+  if [[ $current_version =~ $pre_release_regex ]]; then
+    echo "$current_version is a pre-release version, checking for the same minor version latest patch release."
+    local minor_version=$(echo "$current_version" | grep -oP 'v[0-9]+\.[0-9]+')
+    local latest_version=$(go list -m -versions -json "$dep" | jq -r "$minor_version" '.Versions[] | select(startswith($minor_version))' | tail -n 1)
+  else
+    echo "$current_version is a stable version, checking for the latest minor version."
+    local latest_version=$(go list -m -versions -json "$dep" | jq -r '.Versions[-1]')
+  fi
+
+  echo "$latest_version"
+}
+
+
 check_and_bump_dependency() {
   dep=$1
+
   current_version=$(go list -m -f '{{.Version}}' "${dep}")
-  latest_version=$(go list -m -versions -json "${dep}" | jq -r '.Versions[-1]')
-  # latest_stable_version=$(go list -m -u -json ${dep} | jq -r .Version)
+  latest_version=$(get_latest_version "$current_version" "$dep")
 
   # filter out the alpha release
   if [[ $latest_version =~ alpha\.([0-9]+)$ ]]; then
