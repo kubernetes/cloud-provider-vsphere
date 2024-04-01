@@ -7,6 +7,8 @@ on:
     paths:
       - "charts/**"
 
+  workflow_dispatch: # Use for manaully trigger to debug
+
 jobs:
   release:
     runs-on: ubuntu-latest
