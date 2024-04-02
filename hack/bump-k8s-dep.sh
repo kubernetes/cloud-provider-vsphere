@@ -61,22 +61,26 @@ check_and_bump_dependency() {
 
   # filter out the alpha release
   if [[ $latest_version =~ alpha\.([0-9]+)$ ]]; then
-    echo -e "${BLUE} Skip auto bump for alpha release: [$dep@$latest_version]${RESET}"
+    echo -e "${BLUE} Skip auto bump for alpha release: [$dep@$latest_version]${RESET}" 1>&2
     return
   fi
 
   # Bump the version if needed
   if [ "$current_version" == "$latest_version" ]; then
-    echo -e "${BLUE} $dep@$current_version is already up to date.${RESET}"
+    echo -e "${BLUE} $dep@$current_version is already up to date.${RESET}" 1>&2
   else
-    echo -e "${GREEN} Updating $dep to $latest_version ...${RESET}"
+    echo -e "${GREEN} Updating $dep to $latest_version ...${RESET}" 1>&2
     go get "${dep}"@"${latest_version}"
   fi
+
+  echo "$latest_version"
 }
 
 # Loop through the list of dependencies
 for dep in "${dependencies[@]}"; do
-  check_and_bump_dependency "$dep"
+  latest_version=$(check_and_bump_dependency "$dep")
 done
 
 go mod tidy
+
+echo "$latest_version"

@@ -20,7 +20,10 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Bump latest k8s.io dependencies
-        run: bash ./hack/bump-k8s-dep.sh
+        id: bump          
+        run: |
+          LATEST_VERSION=$(./hack/bump-k8s-dep.sh)
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
       
       - name: Configure Git
         run: |
@@ -38,7 +41,7 @@ jobs:
       - name: Check if update PR exist
         id: exist
         run: |
-          LATEST_VERSION=$(go list -m -versions -json "k8s.io/api" | jq -r '.Versions[-1]')
+          LATEST_VERSION=${{ steps.bump.outputs.latest_version }}
           HEAD_BRANCH="topic/github-actions/auto-bump/k8s-dependencies-$LATEST_VERSION"
           echo "$HEAD_BRANCH"
           if ! git ls-remote --exit-code origin refs/heads/$HEAD_BRANCH; then
@@ -55,6 +58,6 @@ jobs:
           git add go.mod go.sum
           git commit -sm "Bump Kubernetes group dependencies updates"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the Kubernetes group to ${{ steps.exist.outputs.latest_version }}" --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
+          gh pr create --base master --title ":seedling: Bump the Kubernetes group to ${{ steps.bump.outputs.latest_version }}" --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
