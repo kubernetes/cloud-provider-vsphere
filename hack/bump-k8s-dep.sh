@@ -56,7 +56,6 @@ get_latest_version() {
 
 check_and_bump_dependency() {
   dep=$1
-
   current_version=$(go list -m -f '{{.Version}}' "${dep}")
   latest_version=$(get_latest_version "$current_version" "$dep")
 
