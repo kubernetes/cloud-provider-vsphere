@@ -20,11 +20,13 @@ jobs:
           go-version-file: 'test/e2e/go.mod'
 
       - name: Bump latest k8s.io dependencies
+        id: bump          
         run: |
           cd test/e2e
-          bash ../../hack/bump-k8s-dep.sh test-e2e
+          LATEST_VERSION=$(../../hack/bump-k8s-dep.sh test-e2e)
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
           cd ../..
-      
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -41,12 +43,11 @@ jobs:
       - name: Check if update PR already exist
         id: exist
         run: |
-          LATEST_VERSION=$(go list -m -versions -json "k8s.io/api" | jq -r '.Versions[-1]')
+          LATEST_VERSION=${{ steps.bump.outputs.latest_version }}
           HEAD_BRANCH="topic/github-actions/auto-bump/test-e2e-k8s-dependencies-$LATEST_VERSION"
           echo "$HEAD_BRANCH"
           if ! git ls-remote --exit-code origin refs/heads/$HEAD_BRANCH; then
             echo "exist=true" >> $GITHUB_OUTPUT
-            echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
             echo "head_branch=$HEAD_BRANCH" >> $GITHUB_OUTPUT
           fi
 
@@ -58,6 +59,6 @@ jobs:
           git add test/e2e/go.mod test/e2e/go.sum
           git commit -sm "Bump kubernetes group dependencies updates for e2e test"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the kubernetes group to ${{ steps.exist.outputs.latest_version }} for e2e test" --label "ok-to-test" --body "This is an automatic generated pull request to bump the latest k8s dependencies for e2e test."
+          gh pr create --base master --title ":seedling: Bump the kubernetes group to ${{ steps.bump.outputs.latest_version }} for e2e test" --label "ok-to-test" --body "This is an automatic generated pull request to bump the latest k8s dependencies for e2e test."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
