@@ -46,7 +46,6 @@ jobs:
           echo "$HEAD_BRANCH"
           if ! git ls-remote --exit-code origin refs/heads/$HEAD_BRANCH; then
             echo "exist=true" >> $GITHUB_OUTPUT
-            echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
             echo "head_branch=$HEAD_BRANCH" >> $GITHUB_OUTPUT
           fi
 
