@@ -3,7 +3,7 @@ module k8s.io/cloud-provider-vsphere/test/e2e
 go 1.21
 
 require (
-	github.com/onsi/ginkgo/v2 v2.16.0
+	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.31.1
 	github.com/vmware/govmomi v0.36.3
 	helm.sh/helm/v3 v3.14.2
