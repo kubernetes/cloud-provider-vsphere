@@ -10,9 +10,9 @@ providers:
 - name: cluster-api
   type: CoreProvider
   versions:
-  - name: v1.6.1
+  - name: v1.6.4
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/core-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.4/core-components.yaml"
     type: "url"
     contract: v1beta1
     files:
@@ -24,9 +24,9 @@ providers:
 - name: kubeadm
   type: BootstrapProvider
   versions:
-  - name: v1.6.1
+  - name: v1.6.4
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/bootstrap-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.4/bootstrap-components.yaml"
     type: "url"
     contract: v1beta1
     files:
@@ -38,9 +38,9 @@ providers:
 - name: kubeadm
   type: ControlPlaneProvider
   versions:
-  - name: v1.6.1
+  - name: v1.6.4
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/control-plane-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.4/control-plane-components.yaml"
     type: "url"
     contract: v1beta1
     files:
@@ -52,9 +52,9 @@ providers:
 - name: vsphere
   type: InfrastructureProvider
   versions:
-  - name: v1.9.0
+  - name: v1.9.3
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.9.0/infrastructure-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.9.3/infrastructure-components.yaml"
     type: "url"
     contract: v1beta1
     files:
