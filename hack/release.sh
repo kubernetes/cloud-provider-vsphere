@@ -132,9 +132,9 @@ function push_images() {
 
   login
 
-  existing_tags=$(gcloud container images list-tags --filter="tags:${VERSION}" --format=json "${CPI_IMAGE_NAME}")
+  tag_exists=$(gcloud container images describe "${CPI_IMAGE_NAME}":"${VERSION}" > /dev/null; echo $?)
 
-  if [[ "$existing_tags" != "[]" ]]; then
+  if [[ "$tag_exists" -eq 0 ]]; then
     echo "${CPI_IMAGE_NAME}:${VERSION} already exists, skip pushing"
   else
     echo "pushing ${CPI_IMAGE_NAME}:${VERSION}"
