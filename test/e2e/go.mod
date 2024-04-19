@@ -1,21 +1,19 @@
 module k8s.io/cloud-provider-vsphere/test/e2e
 
-go 1.22.0
-
-toolchain go1.22.2
+go 1.21
 
 require (
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
-	github.com/vmware/govmomi v0.37.0
+	github.com/vmware/govmomi v0.36.3
 	helm.sh/helm/v3 v3.14.4
-	k8s.io/api v0.30.0
-	k8s.io/apimachinery v0.30.0
-	k8s.io/client-go v0.30.0
+	k8s.io/api v0.29.3
+	k8s.io/apimachinery v0.29.3
+	k8s.io/client-go v0.29.3
 	k8s.io/klog/v2 v2.120.1
 	sigs.k8s.io/cluster-api v1.6.4
 	sigs.k8s.io/cluster-api/test v1.6.4
-	sigs.k8s.io/controller-runtime v0.17.1-0.20240416095710-67b27f27e514
+	sigs.k8s.io/controller-runtime v0.17.3
 )
 
 require (
@@ -73,7 +71,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
-	github.com/google/cel-go v0.17.8 // indirect
+	github.com/google/cel-go v0.17.7 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-github/v53 v53.2.0 // indirect
@@ -177,11 +175,11 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.30.0-rc.2 // indirect
-	k8s.io/apiserver v0.30.0-rc.2 // indirect
+	k8s.io/apiextensions-apiserver v0.29.3 // indirect
+	k8s.io/apiserver v0.29.3 // indirect
 	k8s.io/cli-runtime v0.29.3 // indirect
 	k8s.io/cluster-bootstrap v0.29.3 // indirect
-	k8s.io/component-base v0.30.0-rc.2 // indirect
+	k8s.io/component-base v0.29.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/kubectl v0.29.3 // indirect
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661 // indirect
