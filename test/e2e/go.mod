@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/onsi/ginkgo/v2 v2.17.2
-	github.com/onsi/gomega v1.33.0
+	github.com/onsi/gomega v1.33.1
 	github.com/vmware/govmomi v0.36.3
 	helm.sh/helm/v3 v3.14.4
 	k8s.io/api v0.29.3
