@@ -45,6 +45,13 @@ $(warning This project uses Go modules and should not be cloned into the GOPATH)
 endif
 endif
 
+# Use GOPROXY environment variable if set
+GOPROXY := $(shell go env GOPROXY)
+ifeq (,$(strip $(GOPROXY)))
+GOPROXY := https://proxy.golang.org
+endif
+export GOPROXY
+
 ################################################################################
 ##                                DEPENDENCIES                                ##
 ################################################################################
@@ -356,3 +363,58 @@ docker-image:
 	-f cluster/images/controller-manager/Dockerfile \
 	-t "$(IMAGE):$(BRANCH_NAME)" \
 	--build-arg "VERSION=${VERSION}" . \
+
+################################################################################
+##                            GCP CLOUDBUILD RELEATED                         ##
+################################################################################
+# Define DGCP Cloud build related variables.
+PROD_REGISTRY ?= registry.k8s.io/cloud-pv-vsphere
+
+STAGING_REGISTRY ?= gcr.io/k8s-staging-cloud-pv-vsphere
+STAGING_BUCKET ?= k8s-staging-cloud-pv-vsphere
+
+IMAGE_NAME ?= cloud-provider-vsphere
+VERSION ?=$(shell git describe --dirty --always)
+# Default build type, this can be choosen from pr/ci/release
+BUILD_TYPE := ci
+BUILD_FOLDER := .build/bin
+
+.PHONY: docker-build
+docker-build: 
+	docker build \
+	-f cluster/images/controller-manager/Dockerfile \
+	-t "$(STAGING_REGISTRY)/$(BUILD_TYPE)/$(IMAGE_NAME):$(VERSION)" \
+	--build-arg "VERSION=${VERSION}" \
+    --build-arg "GOPROXY=${GOPROXY}" \
+    .
+
+.PHONY: docker-push
+docker-push: 
+	docker push "$(STAGING_REGISTRY)/$(BUILD_TYPE)/$(IMAGE_NAME):$(VERSION)"
+
+.PHONY: ccm-bin-push
+ccm-bin-push:
+	$(shell shasum -a 256 $(BUILD_FOLDER)/vsphere-cloud-controller-manager.$(GOOS)_$(GOARCH) 2>/dev/null > $(BUILD_FOLDER)/vsphere-cloud-controller-manager.$(GOOS)_$(GOARCH).sha256)
+	gsutil cp "$(BUILD_FOLDER)/vsphere-cloud-controller-manager.$(GOOS)_$(GOARCH)" "gs://$(STAGING_BUCKET)/$(BUILD_TYPE)/$(VERSION)/bin/$(GOOS)/$(GOARCH)/vsphere-cloud-controller-manager"
+	gsutil cp "$(BUILD_FOLDER)/vsphere-cloud-controller-manager.$(GOOS)_$(GOARCH).sha256" "gs://$(STAGING_BUCKET)/$(BUILD_TYPE)/$(VERSION)/bin/$(GOOS)/$(GOARCH)/vsphere-cloud-controller-manager.sha256"
+
+.PHONY: pr-staging
+pr-staging: 
+	$(MAKE) BUILD_TYPE=pr docker-build
+	$(MAKE) BUILD_TYPE=pr docker-push
+	$(MAKE) build-bins
+	$(MAKE) BUILD_TYPE=pr ccm-bin-push
+
+.PHONY: ci-staging
+ci-staging: 
+	$(MAKE) BUILD_TYPE=ci docker-build
+	$(MAKE) BUILD_TYPE=ci docker-push
+	$(MAKE) build-bins
+	$(MAKE) BUILD_TYPE=ci ccm-bin-push
+
+.PHONY: release-staging
+release-staging: 
+	$(MAKE) BUILD_TYPE=release docker-build
+	$(MAKE) BUILD_TYPE=release docker-push
+	$(MAKE) build-bins
+	$(MAKE) BUILD_TYPE=release ccm-bin-push
