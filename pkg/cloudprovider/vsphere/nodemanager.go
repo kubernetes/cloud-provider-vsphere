@@ -127,13 +127,12 @@ func (nm *NodeManager) removeNode(uuid string, node *v1.Node) {
 
 	nm.nodeInfoLock.Lock()
 	klog.V(4).Info("removeNode from UUID and Name cache. NodeName: ", node.GetName(), ", UID: ", uuid)
-	// in case of a race condition that node with same name create happens before delete event,
-	// delete the node based on uuid
 	name := nm.getNodeNameByUUID(uuid)
 	if name != "" {
 		delete(nm.nodeNameMap, name)
 	} else {
-		klog.V(4).Info("node name: ", node.GetName(), " has a different uuid. Skip deleting this node from cache.")
+		klog.V(4).Info("node name: ", node.GetName(), " has a different uuid. Delete this node from cache, this could happen if VM is rebooted, and SystemUUID change.")
+		delete(nm.nodeNameMap, node.GetName())
 	}
 	delete(nm.nodeUUIDMap, uuid)
 	nm.nodeInfoLock.Unlock()
