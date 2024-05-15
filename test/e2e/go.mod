@@ -7,9 +7,9 @@ require (
 	github.com/onsi/gomega v1.33.1
 	github.com/vmware/govmomi v0.36.3
 	helm.sh/helm/v3 v3.14.4
-	k8s.io/api v0.29.3
-	k8s.io/apimachinery v0.29.3
-	k8s.io/client-go v0.29.3
+	k8s.io/api v0.29.5
+	k8s.io/apimachinery v0.29.5
+	k8s.io/client-go v0.29.5
 	k8s.io/klog/v2 v2.120.1
 	sigs.k8s.io/cluster-api v1.6.4
 	sigs.k8s.io/cluster-api/test v1.6.4
