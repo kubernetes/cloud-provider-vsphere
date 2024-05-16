@@ -27,8 +27,11 @@ go install ${KPROMO_PKG}@${KPROMO_VER}
 KPROMO_BIN="$(go env GOPATH)/bin/kpromo"
 
 # ========== find user's fork ==========
-# for git@github.com:<username>/cloud-provider-vsphere.git style URLs
-USER_FORK=$(git config --get remote.origin.url | cut -d: -f2 | cut -d/ -f1)
+USER_FORK=${1:-}
+if [ -z "${USER_FORK}" ]; then
+    # for git@github.com:<username>/cloud-provider-vsphere.git style URLs
+    USER_FORK=$(git config --get remote.origin.url | cut -d: -f2 | cut -d/ -f1)
+fi
 if [ -z "${USER_FORK}" ]; then
     # only works on https://github.com/<username>/cluster-api.git style URLs
     USER_FORK=$(git config --get remote.origin.url | cut -d/ -f4) 

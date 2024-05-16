@@ -7,8 +7,9 @@ on:
   workflow_dispatch: # Use for manaully trigger to debug
 
 jobs:
-  release:
+  promote-image:
     runs-on: ubuntu-latest
+    environment: promote-image
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Checkout
@@ -26,8 +27,14 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      # pass XudongLiuHarold in this step because kpromo can only work on a fork, so leverage 
+      # one maintainer(@XudongLiuHarold)'s fork repo
       - name: Run kpromo command to promote image to registry.k8s.io
         run: |
-          ./hack/kpromo.sh
+          if hack/match-release-tag.sh >/dev/null 2>&1; then
+            ./hack/kpromo.sh XudongLiuHarold
+          else
+            echo "$(git describe --dirty) is not a release tag, skip promoting to registry.k8s.io"
+          fi
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN: ${{ secrets.XUDONG_GITHUB_TOKEN }}
