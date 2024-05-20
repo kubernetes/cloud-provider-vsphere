@@ -328,6 +328,10 @@ func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string
 	}
 
 	vmService := &vmopv1alpha1.VirtualMachineService{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: vmopclient.VirtualMachineServiceGVR.Group + "/" + vmopclient.VirtualMachineServiceGVR.Version,
+			Kind:       "VirtualMachineService",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: label,
 			Name:   s.GetVMServiceName(service, clusterName),
