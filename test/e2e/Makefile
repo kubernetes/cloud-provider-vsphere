@@ -61,18 +61,15 @@ $(E2E_DATA_DIR): $(TMP_CAPV_DIR)
 	$(MAKE) -C $(TMP_CAPV_DIR) generate-e2e-templates && cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
 	cp $(TMP_CAPV_DIR)/metadata.yaml $(E2E_DATA_DIR)
 
-push-ccm-image:
-	../../hack/release.sh -p -t pr
-
 install-helm:
 	../../hack/install-helm.sh
 
-run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image install-helm
+run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
 		--e2e.version="$(VERSION)"
 
-dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image install-helm
+dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
 		--e2e.version="$(VERSION)"
@@ -88,8 +85,8 @@ run-e2e-with-dev-image: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 		--e2e.version="$(VERSION_DEV)" --e2e.image="$(IMAGE_DEV)"
 
 # run-on-latest-k8s-version runs the E2E tests on the k8s version specified in KUBERNETES_VERSION_LATEST_CI
-run-on-latest-k8s-version: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image install-helm
+run-on-latest-k8s-version: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
-		--e2e.version="$(VERSION)" --e2e.image="$(IMAGE_DEV)" \
+		--e2e.version="$(VERSION)" \
 		--e2e.use-latest-k8s-version=true

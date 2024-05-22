@@ -46,6 +46,8 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	vsphereframework "sigs.k8s.io/cluster-api-provider-vsphere/test/framework"
 )
 
 // Test Suite flags
@@ -99,7 +101,7 @@ func init() {
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.StringVar(&clusterctlConfig, "e2e.clusterctl-config", "", "file which tests will use as a clusterctl config. If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.")
 	flag.StringVar(&chartFolder, "e2e.chart-folder", "", "folder where the helm chart for e2e should be stored")
-	flag.StringVar(&image, "e2e.image", "gcr.io/cloud-provider-vsphere/cpi/pr/manager", "the cloud-controller-manager image to be tested, for example, gcr.io/cloud-provider-vsphere/cpi/pr/manager")
+	flag.StringVar(&image, "e2e.image", "gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere", "the cloud-controller-manager image to be tested, for example, gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere")
 	flag.StringVar(&version, "e2e.version", "dev", "the cloud-controller-manager version to be tested, for example, v1.22.3-76-g6f4fa01")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false,
 		"if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
@@ -246,6 +248,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		Eventually(func() error {
 			return removeOldCPI(workloadClientset)
 		}, 2*time.Minute).Should(BeNil())
+	})
+
+	By("Load vsphere-cpi image", func() {
+		vsphereframework.LoadImagesFunc(ctx)
 	})
 
 	By("Install dev vsphere cpi using helm on workload cluster", func() {
