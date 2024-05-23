@@ -66,13 +66,11 @@ install-helm:
 
 run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
-		--e2e.version="$(VERSION)"
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false
 
 dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
-		--e2e.version="$(VERSION)"
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true
 
 clean:
 	rm -rf $(E2E_DATA_DIR) $(TMP_CAPV_DIR)
@@ -82,11 +80,10 @@ clean:
 run-e2e-with-dev-image: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
-		--e2e.version="$(VERSION_DEV)" --e2e.image="$(IMAGE_DEV)"
+		--e2e.image="$(IMAGE_DEV)"
 
 # run-on-latest-k8s-version runs the E2E tests on the k8s version specified in KUBERNETES_VERSION_LATEST_CI
 run-on-latest-k8s-version: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
-		--e2e.version="$(VERSION)" \
 		--e2e.use-latest-k8s-version=true

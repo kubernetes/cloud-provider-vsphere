@@ -251,7 +251,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	})
 
 	By("Load vsphere-cpi image", func() {
-		vsphereframework.LoadImagesFunc(ctx)
+		vsphereframework.LoadImagesFunc(ctx)(proxy.GetWorkloadCluster(ctx, workloadKubeconfigNamespace, workloadName))
 	})
 
 	By("Install dev vsphere cpi using helm on workload cluster", func() {
