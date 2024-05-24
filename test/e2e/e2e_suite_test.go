@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -29,10 +30,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/kube"
-	helmrelease "helm.sh/helm/v3/pkg/release"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,7 +89,6 @@ var (
 
 	// helm install configurations
 	namespace = "kube-system"
-	release   = "vsphere-cpi-e2e"
 
 	// helm install expectation
 	daemonsetName = "vsphere-cpi"
@@ -252,23 +248,33 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		}, 2*time.Minute).Should(BeNil())
 	})
 
-	By("Install new vsphere-cpi with helm on workload cluster", func() {
-		actionConfig := new(action.Configuration)
-		err = actionConfig.Init(kube.GetConfig(workloadKubeconfig, "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {})
+	By("Install dev vsphere cpi using helm on workload cluster", func() {
+		cmdName := "helm"
+		cmdArgs := []string{
+			"install", "vsphere-cpi", "vsphere-cpi/vsphere-cpi",
+			"--namespace", namespace,
+			"--set", "config.enabled=true",
+			"--set", "config.name=cloud-config",
+			"--set", "config.vcenter=" + e2eConfig.GetVariable("VSPHERE_SERVER"),
+			"--set", "config.username=" + e2eConfig.GetVariable("VSPHERE_USERNAME"),
+			"--set", "config.password=" + e2eConfig.GetVariable("VSPHERE_PASSWORD"),
+			"--set", "config.datacenter=" + e2eConfig.GetVariable("VSPHERE_DATACENTER"),
+			"--set", "config.region=" + "",
+			"--set", "config.zone=" + "",
+			"--set", "daemonset.image=" + image,
+			"--set", "daemonset.tag=" + version,
+			"--set", "securityContext.enabled=false",
+		}
+
+		// Create the command
+		cmd := exec.Command(cmdName, cmdArgs...)
+		cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", workloadKubeconfig))
+
+		// Capture the output (stdout and stderr)
+		output, err := cmd.CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 
-		chart, err := loader.Load(chartFolder)
-		Expect(err).NotTo(HaveOccurred())
-
-		install := newCPIInstallFromConfig(actionConfig)
-		values := newCPIInstallValues()
-
-		var release *helmrelease.Release
-		Eventually(func() error {
-			release, err = install.Run(chart, values)
-			return err
-		}).ShouldNot(HaveOccurred(), "Cannot install vsphere-cpi helm chart")
-		klog.Infof("Installed %s helm chart in namespace %s\n", release.Name, release.Namespace)
+		klog.Infof("Command output: %s\n", string(output))
 	})
 
 	By("Watching vsphere-cpi daemonset logs", func() {
@@ -366,39 +372,6 @@ func removeOldCPI(clientset *kubernetes.Clientset) error {
 		return err
 	}
 	return nil
-}
-
-// newCPIInstallFromConfig returns an `Install` object, given the configurations, for the CPI chart installation
-func newCPIInstallFromConfig(config *action.Configuration) *action.Install {
-	install := action.NewInstall(config)
-	install.ReleaseName = release
-	install.Namespace = namespace
-	install.DryRun = false
-	return install
-}
-
-// newCPIInstallValues returns the values to helm-install the CPI chart
-func newCPIInstallValues() map[string]interface{} {
-	values := map[string]interface{}{
-		"config": map[string]interface{}{
-			"enabled":    "true",
-			"name":       "cloud-config",
-			"vcenter":    e2eConfig.GetVariable("VSPHERE_SERVER"),
-			"username":   e2eConfig.GetVariable("VSPHERE_USERNAME"),
-			"password":   e2eConfig.GetVariable("VSPHERE_PASSWORD"),
-			"datacenter": e2eConfig.GetVariable("VSPHERE_DATACENTER"),
-			"region":     "",
-			"zone":       "",
-		},
-		"daemonset": map[string]interface{}{
-			"image": image,
-			"tag":   version,
-		},
-		"securityContext": map[string]interface{}{
-			"enabled": "false",
-		},
-	}
-	return values
 }
 
 // resolveK8sVersion valids and sets the correct k8s from KUBERNETES_VERSION_LATEST_CI or KUBERNETES_VERSION
