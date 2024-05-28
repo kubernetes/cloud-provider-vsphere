@@ -1,14 +1,15 @@
 module k8s.io/cloud-provider-vsphere/test/e2e
 
 go 1.21
+toolchain go1.22.2
 
 require (
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	github.com/vmware/govmomi v0.37.2
-	k8s.io/api v0.29.5
-	k8s.io/apimachinery v0.29.5
-	k8s.io/client-go v0.29.5
+	k8s.io/api v0.30.1
+	k8s.io/apimachinery v0.30.1
+	k8s.io/client-go v0.30.1
 	k8s.io/klog/v2 v2.120.1
 	sigs.k8s.io/cluster-api v1.7.2
 	sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0-rc.1.0.20240521132953-469f652e57ae
