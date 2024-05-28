@@ -56,6 +56,18 @@ updates:
     prefix: ":seedling:"
   labels:
     - "ok-to-test"
+# Tools Go module
+- target-branch: master
+  package-ecosystem: "gomod"
+  directory: "/hack/tools"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  open-pull-requests-limit: 10
 # ##################
 # release branch N
 # ##################
