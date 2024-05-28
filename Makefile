@@ -315,28 +315,12 @@ staticcheck:
 
 vet:
 	hack/check-vet.sh
-################################################################################
-##                                 BUILD IMAGES AND BINARIES                  ##
-################################################################################
-.PHONY: release
-release: | $(DOCKER_SOCK)
-	hack/release.sh
-
-################################################################################
-##                                  PUSH IMAGES AND BINARIES                  ##
-################################################################################
-.PHONY: release-push
-release-push: | $(DOCKER_SOCK)
-	hack/release.sh -p
 
 ################################################################################
 ##                                  CI IMAGE                                  ##
 ################################################################################
 build-ci-image:
 	$(MAKE) -C hack/images/ci build
-
-push-ci-image:
-	$(MAKE) -C hack/images/ci push
 
 print-ci-image:
 	@$(MAKE) --no-print-directory -C hack/images/ci print
