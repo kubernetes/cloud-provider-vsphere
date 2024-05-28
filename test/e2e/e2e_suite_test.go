@@ -368,10 +368,19 @@ func writeSecretKubeconfigToFile(secret *corev1.Secret, key string, file string)
 
 // removeOldCPI removes the old vsphere-cpi instance before installing a build version using helm
 func removeOldCPI(clientset *kubernetes.Clientset) error {
-	if err := clientset.AppsV1().DaemonSets(namespace).Delete(ctx, "vsphere-cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+	if err := clientset.AppsV1().DaemonSets(namespace).Delete(ctx, "vsphere-cpi", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, "cloud-config", metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	if err := clientset.CoreV1().ServiceAccounts(namespace).Delete(ctx, "cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.RbacV1().ClusterRoles().Delete(ctx, "cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.RbacV1().ClusterRoleBindings().Delete(ctx, "cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	if err := clientset.RbacV1().RoleBindings(namespace).Delete(ctx, "servicecatalog.k8s.io:apiserver-authentication-reader", metav1.DeleteOptions{}); err != nil {
