@@ -39,7 +39,7 @@ jobs:
           echo "valid=$(./hack/match-release-tag.sh >/dev/null 2>&1)" >> $GITHUB_OUTPUT
 
       - name: Find Second Latest Release Tag
-        if: ${{ step.check.output.valid }}
+        # if: ${{ step.check.output.valid }}
         id: find
         run: |
           SEMVER_REGEX='^[[:space:]]{0,}v[[:digit:]]{1,}\.[[:digit:]]{1,}\.[[:digit:]]{1,}(-(alpha|beta|rc)\.[[:digit:]]{1,}){0,1}[[:space:]]{0,}$'
@@ -58,7 +58,7 @@ jobs:
           fi
 
       - name: Generate Release Note
-        if: ${{ step.check.output.valid }}
+        # if: ${{ step.check.output.valid }}
         run: |
           if {{ step.find.pre_release}}; then
             gh release create ${{ step.find.latest_release_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ step.find.second_latest_release_tag}} --prerelease
