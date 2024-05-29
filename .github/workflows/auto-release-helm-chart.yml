@@ -10,7 +10,7 @@ on:
   workflow_dispatch: # Use for manaully trigger to debug
 
 jobs:
-  release:
+  release-helm-chart:
     runs-on: ubuntu-latest
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout

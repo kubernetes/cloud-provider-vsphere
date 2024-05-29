@@ -1,0 +1,69 @@
+name: Generate Release Notes
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+  workflow_dispatch: # Use for manaully trigger to debug
+
+
+permissions:
+  contents: write # Allow to create a release.
+
+jobs:
+  generate-release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      # This step uses Github's checkout-action: https://github.com/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Configure Git for helm release
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Check Latest Release Tag
+        id: check
+        run: |
+          echo "valid=$(./hack/match-release-tag.sh >/dev/null 2>&1)" >> $GITHUB_OUTPUT
+
+      - name: Find Second Latest Release Tag
+        # if: ${{ step.check.output.valid }}
+        id: find
+        run: |
+          SEMVER_REGEX='^[[:space:]]{0,}v[[:digit:]]{1,}\.[[:digit:]]{1,}\.[[:digit:]]{1,}(-(alpha|beta|rc)\.[[:digit:]]{1,}){0,1}[[:space:]]{0,}$'
+          PRERELEASE_SEMVER_REGEX='^v?[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*$'
+          STABLE_RELEASE_SEMVER_REGEX='^v?[0-9]+\.[0-9]+\.[0-9]+$'
+          git fetch --tags
+          latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | sed -n '1p')
+          echo "latest_release_tag=${latest_release_tag}" >> $GITHUB_OUTPUT
+          if [[ latest_release_tag =~ ${PRERELEASE_SEMVER_REGEX} ]]; then
+            echo "${latest_release_tag} is a pre-release, return second latest release tag"
+            echo "pre_release=1" >> $GITHUB_OUTPUT
+            echo "second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | sed -n '2p')" >> $GITHUB_OUTPUT
+          else
+            echo "${latest_release_tag} is a stable release, return second stable release tag"
+            echo "second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${STABLE_RELEASE_SEMVER_REGEX} | sed -n '2p')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate Release Note
+        # if: ${{ step.check.output.valid }}
+        run: |
+          if {{ step.find.pre_release}}; then
+            gh release create ${{ step.find.latest_release_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ step.find.second_latest_release_tag}} --prerelease
+          else
+            gh release create ${{ step.find.latest_release_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ step.find.second_latest_release_tag}}
+          fi 
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

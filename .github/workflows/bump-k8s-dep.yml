@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Use for manaully trigger to debug
 
 jobs:
-  bump-to-latest-pre-release:
+  bump-k8s-dep-to-latest-pre-release:
     runs-on: ubuntu-latest
     
     steps:
@@ -57,6 +57,6 @@ jobs:
           git add go.mod go.sum
           git commit -sm "Bump Kubernetes group dependencies updates"
           git push origin "$HEAD_BRANCH"
-          gh pr create --base master --title ":seedling: Bump the Kubernetes group to ${{ steps.bump.outputs.latest_version }}" --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
+          gh pr create --base master --title ":seedling:(deps) Bump the Kubernetes group to ${{ steps.bump.outputs.latest_version }}" --label "ok-to-test" --body "This is an automatically generated pull request to bump the latest k8s dependencies."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
