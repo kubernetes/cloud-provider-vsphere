@@ -119,17 +119,6 @@ $ docker run -it --rm \
   make integration-test
 ```
 
-## Deploy the CCM image
-
-Pushing the images requires bind mounting a GCR key file into the container and setting the environment variable `GCR_KEY_FILE` to inform the deployment process the location of the key file:
-
-```shell
-$ docker run -it --rm --privileged \
-  -e "GCR_KEY_FILE=/keyfile.json" -v "$(pwd)/keyfile.json":/keyfile.json \
-  gcr.io/cloud-provider-vsphere/ci \
-  make push-images
-```
-
 ## Execute the conformance tests
 
 Running the e2e conformance suite not only requires DinD but also an environment variable file that provides the information required to turn up a Kubernetes cluster against which the e2e tests are executed. For example:
