@@ -6,7 +6,7 @@ PROJECT_ROOT ?= $(abspath ../..)
 
 CLUSTER_NAME := ccm-integration-test
 VERSION ?= $(shell git describe --always --dirty)
-CCM_IMAGE := gcr.io/cloud-provider-vsphere/cpi/pr/manager:$(VERSION)
+CCM_IMAGE := gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere:integration-test-$(VERSION)
 
 KIND_CONFIG := kind-config.yaml
 .PHONY: $(KIND_CONFIG)
@@ -72,7 +72,12 @@ log-ccm:
 	kubectl -n kube-system logs vsphere-cloud-controller-manager
 
 build-ccm-image:
-	../../hack/release.sh -t pr
+	docker build \
+	-f ../../cluster/images/controller-manager/Dockerfile \
+	-t $(CCM_IMAGE) \
+	--build-arg "VERSION=${VERSION}" \
+	--build-arg "GOPROXY=${GOPROXY}" \
+	../..
 
 load-ccm-image: | $(DOCKER_SOCK)
 	kind load docker-image --name "$(CLUSTER_NAME)" $(CCM_IMAGE)
