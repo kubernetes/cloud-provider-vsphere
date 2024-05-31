@@ -47,7 +47,7 @@ E2E_DATA_CAPV_VER ?= release-1.10
 VERSION_DEV ?= $(VERSION)
 
 # IMAGE_DEV is the image used for development
-IMAGE_DEV ?= gcr.io/cloud-provider-vsphere/cpi/pr/manager
+IMAGE_DEV ?= gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere
 
 all: run
 
@@ -76,7 +76,7 @@ clean:
 	rm -rf $(E2E_DATA_DIR) $(TMP_CAPV_DIR)
 
 # run-e2e-with-dev-image is a convenience target to run the E2E tests with the development image already pushed to any
-# registry (e.g. dockerhub). No need push permission of gcr.io/cloud-provider-vsphere/cpi/pr/manager
+# registry (e.g. dockerhub). No need push permission of gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere
 run-e2e-with-dev-image: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \

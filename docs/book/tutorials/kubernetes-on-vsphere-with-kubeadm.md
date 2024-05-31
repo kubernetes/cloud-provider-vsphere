@@ -33,9 +33,9 @@ The following is the list of docker images that are required for the installatio
 VMware distributes and recommends the following images:
 
 ```bash
-gcr.io/cloud-provider-vsphere/csi/release/driver:v1.0.1
-gcr.io/cloud-provider-vsphere/csi/release/syncer:v1.0.1
-http://gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.0.0
+gcr.io/cloud-provider-vsphere/csi/release/driver:v3.2.0
+gcr.io/cloud-provider-vsphere/csi/release/syncer:v3.2.0
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
 ```
 
 In addition, you can use the following images or any of the open source or commercially available container images appropriate for the CSI deployment. Note that the tags reference the version of various components. This will change with future versions:

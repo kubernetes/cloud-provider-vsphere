@@ -282,7 +282,7 @@ else
 	  -e "NUM_WORKERS=$${NUM_WORKERS}" \
 	  -e "ARTIFACTS=/artifacts"    -v "$(abspath $(ARTIFACTS))":/artifacts \
 	  -e "CONFIG_ENV=/config.env"  -v "$${CONFIG_ENV:-$(abspath config.env)}":/config.env:ro \
-	  gcr.io/cloud-provider-vsphere/ci \
+	  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
 	  make conformance-test
 endif
 
