@@ -1,6 +1,14 @@
 # Continuous integration
 
-The image `gcr.io/cloud-provider-vsphere/ci` is used by Prow jobs to build, test, and deploy the CCM provider.
+## :warning: Changes to Cloud Provider vSphere E2E Test Image Handling
+
+---
+
+Starting from version v1.30.0, the cloud-provider-vsphere E2E tests will no longer push images to the `gcr.io/cloud-provider-vsphere/ci` registry. Instead, the development image will be saved as a tarball and loaded directly into the E2E test cluster.
+
+---
+
+The image `gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere` is used by Prow jobs to build, test, and deploy the CCM provider.
 
 ## The CI workflow
 
@@ -57,7 +65,7 @@ To check the sources run the following command:
 ```shell
 $ docker run -it --rm \
   -e "ARTIFACTS=/out" -v "$(pwd)":/out \
-  gcr.io/cloud-provider-vsphere/ci \
+  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
   make check
 ```
 
@@ -72,7 +80,7 @@ The CI image is built with Go module and build caches from a recent build of the
 ```shell
 $ docker run -it --rm \
   -e "BIN_OUT=/out" -v "$(pwd)":/out \
-  gcr.io/cloud-provider-vsphere/ci \
+  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
   make build
 ```
 
@@ -84,7 +92,7 @@ The above command will create the following files in the working directory:
 
 ```shell
 $ docker run -it --rm \
-  gcr.io/cloud-provider-vsphere/ci \
+  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
   make unit-test
 ```
 
@@ -94,7 +102,7 @@ Building the CCM image inside another image requires Docker-in-Docker (DinD):
 
 ```shell
 $ docker run -it --rm --privileged \
-  gcr.io/cloud-provider-vsphere/ci \
+  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
   make build-images
 ```
 
@@ -104,7 +112,7 @@ The project's integration tests leverage Kind, a solution for turning up a Kuber
 
 ```shell
 $ docker run -it --rm --privileged \
-  gcr.io/cloud-provider-vsphere/ci \
+  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
   make integration-test
 ```
 
@@ -115,7 +123,7 @@ $ docker run -it --rm \
   -e "PROJECT_ROOT=$(pwd)" \
   -v "$(pwd)":/go/src/k8s.io/cloud-provider-vsphere \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  gcr.io/cloud-provider-vsphere/ci \
+  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
   make integration-test
 ```
 
@@ -160,7 +168,7 @@ Once the environment variable file is created, the conformance tests may be exec
 $ docker run -it --rm --privileged \
   -e "ARTIFACTS=/out" -v "$(pwd)":/out \
   --env-file config.env \
-  gcr.io/cloud-provider-vsphere/ci \
+  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
   make conformance-test
 ```
 
