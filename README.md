@@ -21,8 +21,11 @@ In the future, the major and minor versions of releases should be equivalent to 
 
 Version matrix:
 
+<!-- RELEASE_TABLE -->
+
 | Kubernetes Version | vSphere Cloud Provider Release Version | Cloud Provider Branch |
 |--------------------|----------------------------------------|-----------------------|
+| v1.2.X            | v1.2.X                                | release-1.2          |
 | v1.30.X            | v1.30.X                                | release-1.30          |
 | v1.29.X            | v1.29.X                                | release-1.29          |
 | v1.28.X            | v1.28.X                                | release-1.28          |
@@ -82,6 +85,7 @@ $ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
 
 ## Container images
 
+<!-- this section can be removed after v1.32 release -->
 ### :warning: Kubernetes Image Registry Migration for Cloud Provider vSphere
 
 ---
@@ -91,10 +95,11 @@ As part of the overall Kubernetes project image registry migration, starting wit
 Additionally, images for the following versions of cloud-provider-vsphere have already been migrated to registry.k8s.io:
 
 ```bash
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.0
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.29.0
 registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.28.0
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.29.0
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.0
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
+...
 ```
 
 ---
@@ -102,7 +107,7 @@ registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.28.0
 Official releases of the vSphere Cloud Controller Manager container image can be found at:
 
 ```bash
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:<release version>
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1 # <== latest version
 ```
 
 The very latest builds from the tip of master, which may not be stable, can be found at:
