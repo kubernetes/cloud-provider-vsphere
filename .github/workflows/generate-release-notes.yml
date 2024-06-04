@@ -36,34 +36,40 @@ jobs:
       - name: Check Latest Release Tag
         id: check
         run: |
-          echo "valid=$(./hack/match-release-tag.sh >/dev/null 2>&1)" >> $GITHUB_OUTPUT
+          git fetch --tags
+          latest_tag=$(git tag --sort=-creatordate | head -n 1)
+
+          echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
+          echo "valid=$(./hack/match-release-tag.sh ${latest_tag} >/dev/null 2>&1)" >> $GITHUB_OUTPUT
 
       - name: Find Second Latest Release Tag
-        # if: ${{ step.check.output.valid }}
+        if: ${{ steps.check.outputs.valid }}
         id: find
         run: |
           SEMVER_REGEX='^[[:space:]]{0,}v[[:digit:]]{1,}\.[[:digit:]]{1,}\.[[:digit:]]{1,}(-(alpha|beta|rc)\.[[:digit:]]{1,}){0,1}[[:space:]]{0,}$'
           PRERELEASE_SEMVER_REGEX='^v?[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*$'
           STABLE_RELEASE_SEMVER_REGEX='^v?[0-9]+\.[0-9]+\.[0-9]+$'
-          git fetch --tags
-          latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | sed -n '1p')
-          echo "latest_release_tag=${latest_release_tag}" >> $GITHUB_OUTPUT
-          if [[ latest_release_tag =~ ${PRERELEASE_SEMVER_REGEX} ]]; then
-            echo "${latest_release_tag} is a pre-release, return second latest release tag"
+
+          latest_tag=${{ steps.check.outputs.latest_tag }}
+          if [[ latest_tag =~ ${PRERELEASE_SEMVER_REGEX} ]]; then
+            second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | sed -n '2p')
+            echo "${latest_tag} is a pre-release, return second latest release tag ${second_latest_release_tag}"
             echo "pre_release=1" >> $GITHUB_OUTPUT
-            echo "second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | sed -n '2p')" >> $GITHUB_OUTPUT
           else
-            echo "${latest_release_tag} is a stable release, return second stable release tag"
-            echo "second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${STABLE_RELEASE_SEMVER_REGEX} | sed -n '2p')" >> $GITHUB_OUTPUT
+            second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${STABLE_RELEASE_SEMVER_REGEX} | sed -n '2p')
+            echo "${latest_tag} is a stable release, return second stable release tag ${second_latest_release_tag}"
           fi
+          
+          echo "second_latest_release_tag=${second_latest_release_tag}" >> $GITHUB_OUTPUT
+
 
       - name: Generate Release Note
-        # if: ${{ step.check.output.valid }}
+        if: ${{ steps.check.outputs.valid }}
         run: |
-          if {{ step.find.pre_release}}; then
-            gh release create ${{ step.find.latest_release_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ step.find.second_latest_release_tag}} --prerelease
+          if ${{ steps.find.outputs.pre_release}} >/dev/null 2>&1; then
+            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }} --prerelease
           else
-            gh release create ${{ step.find.latest_release_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ step.find.second_latest_release_tag}}
+            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }}
           fi 
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
