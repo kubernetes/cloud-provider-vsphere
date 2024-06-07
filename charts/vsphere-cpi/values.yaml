@@ -12,50 +12,44 @@ config:
   region: "k8s-region"
   zone: "k8s-zone"
   thumbprint: ""
-
   secret:
     # Specifies whether Secret should be created from config values
     create: true
     # The name of the Secret referred to in the vsphere-cloud-config ConfigMap
     # If your Kubernetes platform provides this secret, set create to false and adjust the secret name
     name: vsphere-cloud-secret
-
 ## Specify if a Pod Security Policy for kube-state-metrics must be created
 ## Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/
 podSecurityPolicy:
   enabled: false
   annotations: {}
-    # Specify pod annotations
-    # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#apparmor
-    # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#seccomp
-    # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#sysctl
-    #
-    # seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
-    # seccomp.security.alpha.kubernetes.io/defaultProfileName: 'docker/default'
-    # apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
-
+  # Specify pod annotations
+  # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#apparmor
+  # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#seccomp
+  # Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#sysctl
+  #
+  # seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
+  # seccomp.security.alpha.kubernetes.io/defaultProfileName: 'docker/default'
+  # apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
 # Run containers to have security context. Default is 'nobody' (65534/65534) in distroless
 securityContext:
   enabled: true
   runAsUser: 1001
   fsGroup: 1001
-
 # RBAC configuration
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
-
 serviceAccount:
   # Specifies whether a ServiceAccount should be created
   create: true
   # The name of the ServiceAccount to use.
   name: cloud-controller-manager
-
 # Daemonset configuration
 daemonset:
   annotations: {}
   image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere
-  tag: v1.30.1
+  tag: v1.99.9
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
@@ -67,12 +61,12 @@ daemonset:
     additionalParams: {}
   replicaCount: 1
   resources: {}
-    # limits:
-    #   cpu: 500m
-    #   memory: 512Mi
-    # requests:
-    #    cpu: 256m
-    #    memory: 128Mi
+  # limits:
+  #   cpu: 500m
+  #   memory: 512Mi
+  # requests:
+  #    cpu: 256m
+  #    memory: 128Mi
   podAnnotations: {}
   ## Additional pod labels
   ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/

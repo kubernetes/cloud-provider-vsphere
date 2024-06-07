@@ -32,18 +32,18 @@ spec:
       securityContext:
         runAsUser: 1001
       tolerations:
-      - key: node.cloudprovider.kubernetes.io/uninitialized
-        value: "true"
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
-      - key: node.kubernetes.io/not-ready
-        effect: NoSchedule
-        operator: Exists
+        - key: node.cloudprovider.kubernetes.io/uninitialized
+          value: "true"
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node.kubernetes.io/not-ready
+          effect: NoSchedule
+          operator: Exists
       serviceAccountName: cloud-controller-manager
       containers:
         - name: vsphere-cloud-controller-manager
-          image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
+          image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.99.9
           args:
             - --v=2
             - --cloud-provider=vsphere
@@ -57,9 +57,9 @@ spec:
               cpu: 200m
       hostNetwork: true
       volumes:
-      - name: vsphere-config-volume
-        configMap:
-          name: cloud-config
+        - name: vsphere-config-volume
+          configMap:
+            name: cloud-config
 ---
 apiVersion: v1
 kind: Service
