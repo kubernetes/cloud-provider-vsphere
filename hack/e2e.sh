@@ -35,13 +35,6 @@ on_exit() {
 
 trap on_exit EXIT
 
-function login() {
-  # If GCR_KEY_FILE is set, use that service account to login
-  if [ "${GCR_KEY_FILE}" ]; then
-    gcloud auth activate-service-account --key-file "${GCR_KEY_FILE}" || fatal "unable to login"
-  fi
-}
-
 # convert vsphere credentials from test-infra to e2e config format
 export VSPHERE_SERVER="${GOVC_URL}"
 export VSPHERE_USERNAME="${GOVC_USERNAME}"
@@ -109,7 +102,23 @@ WORKLOAD_CONTROL_PLANE_ENDPOINT_IP=$(claim_ip "${WORKLOAD_IPCLAIM_NAME}")
 export CONTROL_PLANE_ENDPOINT_IP
 export WORKLOAD_CONTROL_PLANE_ENDPOINT_IP
 
-GCR_KEY_FILE="${GCR_KEY_FILE:-}"
-login
+# build cloud-provider-vsphere image and save it as tarball
+CPI_IMAGE_NAME="gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere"
+GOPROXY="${GOPROXY:-}"
+
+echo "building ${CPI_IMAGE_NAME}:dev"
+echo "GOPROXY=${GOPROXY}"
+docker build \
+  -f cluster/images/controller-manager/Dockerfile \
+  -t "${CPI_IMAGE_NAME}:dev" \
+  --build-arg "VERSION=dev" \
+  --build-arg "GOPROXY=${GOPROXY}" \
+  .
+
+export DOCKER_IMAGE_TAR="/tmp/images/image.tar"
+mkdir -p /tmp/images
+
+docker save "${CPI_IMAGE_NAME}:dev" > ${DOCKER_IMAGE_TAR}
+
 
 E2E_ARTIFACTS=${ARTIFACTS} make e2e
