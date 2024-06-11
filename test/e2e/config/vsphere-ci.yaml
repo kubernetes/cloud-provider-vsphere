@@ -10,13 +10,13 @@ providers:
 - name: cluster-api
   type: CoreProvider
   versions:
-  - name: v1.6.1
+  - name: v1.7.1
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/core-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.1/core-components.yaml"
     type: "url"
     contract: v1beta1
     files:
-    - sourcePath: "../data/shared/main/v1beta1/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.7/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -24,13 +24,13 @@ providers:
 - name: kubeadm
   type: BootstrapProvider
   versions:
-  - name: v1.6.1
+  - name: v1.7.1
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/bootstrap-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.1/bootstrap-components.yaml"
     type: "url"
     contract: v1beta1
     files:
-    - sourcePath: "../data/shared/main/v1beta1/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.7/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -38,13 +38,13 @@ providers:
 - name: kubeadm
   type: ControlPlaneProvider
   versions:
-  - name: v1.6.1
+  - name: v1.7.1
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.1/control-plane-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.1/control-plane-components.yaml"
     type: "url"
     contract: v1beta1
     files:
-    - sourcePath: "../data/shared/main/v1beta1/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.7/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -52,15 +52,17 @@ providers:
 - name: vsphere
   type: InfrastructureProvider
   versions:
-  - name: v1.9.0
+  - name: v1.10.0
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.9.0/infrastructure-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.10.0/infrastructure-components.yaml"
     type: "url"
     contract: v1beta1
     files:
     # Add a cluster template
-    - sourcePath: "../../../test/e2e/data/infrastructure-vsphere/main/cluster-template.yaml"
-    - sourcePath: "../data/shared/main/v1beta1_provider/metadata.yaml"
+    - sourcePath: "../../../test/e2e/data/infrastructure-vsphere-govmomi/main/cluster-template.yaml"
+    - sourcePath: "../../../test/e2e/data/infrastructure-vsphere-govmomi/main/cluster-template-install-on-bootstrap.yaml"
+    - sourcePath: "../../../test/e2e/data/infrastructure-vsphere-govmomi/main/clusterclass-quick-start.yaml"
+    - sourcePath: "../data/shared/capv/main/metadata.yaml"
 
 variables:
   KUBERNETES_VERSION: "v1.29.0"
@@ -78,8 +80,8 @@ variables:
   VSPHERE_TLS_THUMBPRINT: "18:EC:35:60:54:68:92:F6:F8:92:3E:4D:11:A1:0D:13:9C:E9:3E:B6"
   VSPHERE_COMPUTE_CLUSTER: "Cluster-1"
   VSPHERE_DATACENTER:  "SDDC-Datacenter"
-  VSPHERE_FOLDER: "cloud-provider-vsphere"
-  VSPHERE_RESOURCE_POOL: "cloud-provider-vsphere"
+  VSPHERE_FOLDER: "/SDDC-Datacenter/vm/Workloads/cloud-provider-vsphere"
+  VSPHERE_RESOURCE_POOL: "/SDDC-Datacenter/host/Cluster-1/Resources/Compute-ResourcePool/cloud-provider-vsphere"
   VSPHERE_DATASTORE: "WorkloadDatastore"
   VSPHERE_STORAGE_POLICY: "Cluster API vSphere Storage Policy"
   VSPHERE_NETWORK: "sddc-cgw-network-6"
