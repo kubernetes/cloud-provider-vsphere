@@ -110,8 +110,8 @@ The following table lists the configurable parameters of the vSphere CPI chart a
 | `serviceAccount.create`                  | Create the service account          |  true                                  |
 | `serviceAccount.name`                    | Name of the created service account |  cloud-controller-manager              |
 | `daemonset.annotations`                  | Annotations for CPI pod             |  nil                                   |
-| `daemonset.image`                        | Image for vSphere CPI               |  gcr.io/cloud-provider-vsphere/        |
-|                                          |                                     |       vsphere-cloud-controller-manager |
+| `daemonset.image`                        | Image for vSphere CPI               |   registry.k8s.io/cloud-pv-vsphere/    |
+|                                          |                                     |       cloud-provider-vsphere           |
 | `daemonset.tag`                          | Tag for vSphere CPI                 |  latest                                |
 | `daemonset.pullPolicy`                   | CPI image pullPolicy                |  IfNotPresent                          |
 | `daemonset.dnsPolicy`                    | CPI dnsPolicy                       |  ClusterFirst                          |
@@ -149,7 +149,7 @@ helm repo add vsphere-cpi https://kubernetes.github.io/cloud-provider-vsphere
 helm repo update
 
 # Package CPI Chart
-VERSION=1.30.0
+VERSION=1.30.1
 cd charts
 helm package vsphere-cpi --version $VERSION --app-version $VERSION
 
