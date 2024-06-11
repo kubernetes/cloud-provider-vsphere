@@ -11,7 +11,7 @@ require (
 	k8s.io/client-go v0.29.5
 	k8s.io/klog/v2 v2.120.1
 	sigs.k8s.io/cluster-api v1.7.1
-	sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0-rc.1.0.20240521132953-469f652e57ae
+	sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0
 	sigs.k8s.io/cluster-api/test v1.7.1
 	sigs.k8s.io/controller-runtime v0.17.5
 )
@@ -62,7 +62,6 @@ require (
 	github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6 // indirect
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
@@ -77,12 +76,10 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc6 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
