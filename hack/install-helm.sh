@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2024 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-KIND_VERSION="v0.23.0"
-KIND_PATH="/usr/local/bin/kind"
+# ========== install Helm Chart ==========
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-# Check if KIND already exists
-if ! [[ -x "${KIND_PATH}" ]]; then
-  wget "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64" \
-    --no-verbose -O "${KIND_PATH}"
-  chmod +x "${KIND_PATH}"
-fi
+# ========== install cloud-provider-vsphere chart ==========
+helm repo add vsphere-cpi https://kubernetes.github.io/cloud-provider-vsphere
+helm repo update

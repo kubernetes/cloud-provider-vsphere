@@ -41,13 +41,13 @@ E2E_CHART ?= ${REPO_ROOT}/charts/vsphere-cpi
 E2E_DATA_DIR := ${REPO_ROOT}/test/e2e/data
 
 # E2E_DATA_CAPV_VER defines the providers from which version of CAPV to use
-E2E_DATA_CAPV_VER ?= release-1.9
+E2E_DATA_CAPV_VER ?= release-1.10
 
 # VERSION_DEV is the version of the image used for development
 VERSION_DEV ?= $(VERSION)
 
 # IMAGE_DEV is the image used for development
-IMAGE_DEV ?= gcr.io/cloud-provider-vsphere/cpi/pr/manager
+IMAGE_DEV ?= gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere
 
 all: run
 
@@ -61,32 +61,29 @@ $(E2E_DATA_DIR): $(TMP_CAPV_DIR)
 	$(MAKE) -C $(TMP_CAPV_DIR) generate-e2e-templates && cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
 	cp $(TMP_CAPV_DIR)/metadata.yaml $(E2E_DATA_DIR)
 
-push-ccm-image:
-	../../hack/release.sh -p -t pr
+install-helm:
+	../../hack/install-helm.sh
 
-run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
+run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
-		--e2e.version="$(VERSION)"
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false
 
-dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
+dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
-		--e2e.version="$(VERSION)"
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true
 
 clean:
 	rm -rf $(E2E_DATA_DIR) $(TMP_CAPV_DIR)
 
 # run-e2e-with-dev-image is a convenience target to run the E2E tests with the development image already pushed to any
-# registry (e.g. dockerhub). No need push permission of gcr.io/cloud-provider-vsphere/cpi/pr/manager
-run-e2e-with-dev-image: $(TOOLING_BINARIES) $(E2E_DATA_DIR)
+# registry (e.g. dockerhub). No need push permission of gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere
+run-e2e-with-dev-image: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
-		--e2e.version="$(VERSION_DEV)" --e2e.image="$(IMAGE_DEV)"
+		--e2e.image="$(IMAGE_DEV)"
 
 # run-on-latest-k8s-version runs the E2E tests on the k8s version specified in KUBERNETES_VERSION_LATEST_CI
-run-on-latest-k8s-version: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
+run-on-latest-k8s-version: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
-		--e2e.version="$(VERSION)" --e2e.image="$(IMAGE_DEV)" \
 		--e2e.use-latest-k8s-version=true

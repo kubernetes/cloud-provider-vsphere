@@ -56,9 +56,94 @@ updates:
     prefix: ":seedling:"
   labels:
     - "ok-to-test"
-
-# ################
+# Tools Go module
+- target-branch: master
+  package-ecosystem: "gomod"
+  directory: "/hack/tools"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  commit-message:
+    prefix: ":seedling:"
+  labels:
+    - "ok-to-test"
+  open-pull-requests-limit: 10
+# ##################
 # release branch N
+# ##################
+# GitHub Actions
+- target-branch: release-1.30
+  package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  commit-message:
+    prefix: ":seedling:[release-1.30]"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Main Go module
+- target-branch: release-1.30
+  package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:[release-1.30]"
+  labels:
+    - "ok-to-test"
+  open-pull-requests-limit: 5
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+## Update dockerfile
+- target-branch: release-1.30
+  package-ecosystem: docker
+  directory: "/cluster/images/controller-manager"
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: ":seedling:[release-1.30]"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# Test Go module
+- target-branch: release-1.30
+  package-ecosystem: "gomod"
+  directory: "/test/e2e"
+  schedule:
+    interval: "weekly"
+    day: "tuesday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling:[release-1.30]"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+# ################
+# release branch N-1
 # ################
 # GitHub Actions
 - target-branch: release-1.29
@@ -124,81 +209,6 @@ updates:
       patterns: [ "k8s.io/*" ]
   commit-message:
     prefix: ":seedling:[release-1.29]"
-  labels:
-    - "ok-to-test"
-  ignore:
-    - dependency-name: "*"
-      update-types:
-        - "version-update:semver-major"
-        - "version-update:semver-minor"
-
-# ##################
-# release branch N-1
-# ##################
-# GitHub Actions
-- target-branch: release-1.28
-  package-ecosystem: "github-actions"
-  directory: "/"
-  schedule:
-    interval: "weekly"
-  commit-message:
-    prefix: ":seedling:[release-1.28]"
-  labels:
-    - "ok-to-test"
-  ignore:
-    - dependency-name: "*"
-      update-types:
-        - "version-update:semver-major"
-        - "version-update:semver-minor"
-# Main Go module
-- target-branch: release-1.28
-  package-ecosystem: "gomod"
-  directory: "/"
-  schedule:
-    interval: "weekly"
-    day: "monday"
-  ## group all dependencies with a k8s.io prefix into a single PR.
-  groups:
-    kubernetes:
-      patterns: [ "k8s.io/*" ]
-  commit-message:
-    prefix: ":seedling:[release-1.28]"
-  labels:
-    - "ok-to-test"
-  open-pull-requests-limit: 5
-  ignore:
-    - dependency-name: "*"
-      update-types:
-        - "version-update:semver-major"
-        - "version-update:semver-minor"
-## Update dockerfile
-- target-branch: release-1.28
-  package-ecosystem: docker
-  directory: "/cluster/images/controller-manager"
-  schedule:
-    interval: weekly
-  commit-message:
-    prefix: ":seedling:[release-1.28]"
-  labels:
-    - "ok-to-test"
-  ignore:
-    - dependency-name: "*"
-      update-types:
-        - "version-update:semver-major"
-        - "version-update:semver-minor"
-# Test Go module
-- target-branch: release-1.28
-  package-ecosystem: "gomod"
-  directory: "/test/e2e"
-  schedule:
-    interval: "weekly"
-    day: "tuesday"
-  ## group all dependencies with a k8s.io prefix into a single PR.
-  groups:
-    kubernetes:
-      patterns: [ "k8s.io/*" ]
-  commit-message:
-    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   ignore:
@@ -211,13 +221,13 @@ updates:
 # release branch N-2
 # ##################
 # GitHub Actions
-- target-branch: release-1.27
+- target-branch: release-1.28
   package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling:[release-1.27]"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   ignore:
@@ -226,7 +236,7 @@ updates:
         - "version-update:semver-major"
         - "version-update:semver-minor"
 # Main Go module
-- target-branch: release-1.27
+- target-branch: release-1.28
   package-ecosystem: "gomod"
   directory: "/"
   schedule:
@@ -237,7 +247,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:[release-1.27]"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   open-pull-requests-limit: 5
@@ -247,13 +257,13 @@ updates:
         - "version-update:semver-major"
         - "version-update:semver-minor"
 ## Update dockerfile
-- target-branch: release-1.27
+- target-branch: release-1.28
   package-ecosystem: docker
   directory: "/cluster/images/controller-manager"
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling:[release-1.27]"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   ignore:
@@ -262,7 +272,7 @@ updates:
         - "version-update:semver-major"
         - "version-update:semver-minor"
 # Test Go module
-- target-branch: release-1.27
+- target-branch: release-1.28
   package-ecosystem: "gomod"
   directory: "/test/e2e"
   schedule:
@@ -273,7 +283,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling:[release-1.27]"
+    prefix: ":seedling:[release-1.28]"
   labels:
     - "ok-to-test"
   ignore:
