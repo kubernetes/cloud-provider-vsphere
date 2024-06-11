@@ -412,8 +412,8 @@ k8s.io/utils v0.0.0-20231127182322-b307cd553661 h1:FepOBzJ0GXm8t0su67ln2wAZjbQ6R
 k8s.io/utils v0.0.0-20231127182322-b307cd553661/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.0 h1:Tc9rS7JJoZ9sl3OpL4842oIk6lH7gWBb0JOmJ0ute7M=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.0/go.mod h1:1ewhL9l1gkPcU/IU/6rFYfikf+7Y5imWv7ARVbBOzNs=
-sigs.k8s.io/cluster-api v1.7.0-rc.0.0.20240528063443-2568aa2997bc h1:hTCGJ8AJR1wBJ2RNDuC7MEErfzfJXO4XwiKwzlMafTs=
-sigs.k8s.io/cluster-api v1.7.0-rc.0.0.20240528063443-2568aa2997bc/go.mod h1:RLKV3xccUOBpaQKtrpGHwaCY/3mFhk6npcr7N9hA4Zc=
+sigs.k8s.io/cluster-api v1.7.3 h1:DsSRxsA+18jxLqPAo29abZ9kOPK1/xwhSuQb/MROzSs=
+sigs.k8s.io/cluster-api v1.7.3/go.mod h1:V9ZhKLvQtsDODwjXOKgbitjyCmC71yMBwDcMyNNIov0=
 sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0-rc.1.0.20240521132953-469f652e57ae h1:9OdrRW95qC7Fm1yGAovMf4j8MSjdKJX2sY3YPLCtJO0=
 sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0-rc.1.0.20240521132953-469f652e57ae/go.mod h1:iKduNuR64GXIrIFnqsKIPdrryb8fqpg+Ny3xnZARIWE=
 sigs.k8s.io/cluster-api/test v1.7.0-rc.0.0.20240528063443-2568aa2997bc h1:rraUWzPdOGi/nF6R1n/mA9D+/j/jm8chlZRpGxwEucE=
