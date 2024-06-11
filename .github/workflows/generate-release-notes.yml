@@ -67,9 +67,9 @@ jobs:
         if: ${{ steps.check.outputs.valid }}
         run: |
           if ${{ steps.find.outputs.pre_release}} >/dev/null 2>&1; then
-            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }} --prerelease
+            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }} --prerelease
           else
-            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --draft --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }}
-          fi 
+            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }}
+          fi
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
