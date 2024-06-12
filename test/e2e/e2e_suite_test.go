@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -29,10 +30,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/kube"
-	helmrelease "helm.sh/helm/v3/pkg/release"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,7 +42,12 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	vsphereframework "sigs.k8s.io/cluster-api-provider-vsphere/test/framework"
 )
 
 // Test Suite flags
@@ -62,6 +64,9 @@ var (
 	// clusterctlConfig is the file which tests will use as a clusterctl config.
 	// If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.
 	clusterctlConfig string
+
+	// image is the cloud-controller-manager image to be tested, for example, gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere
+	image string
 
 	// version is the cloud-controller-manager version to be tested, for example, v1.22.3-76-g6f4fa01
 	version string
@@ -83,8 +88,6 @@ var (
 
 	// helm install configurations
 	namespace = "kube-system"
-	release   = "vsphere-cpi-e2e"
-	image     = "gcr.io/cloud-provider-vsphere/cpi/pr/manager"
 
 	// helm install expectation
 	daemonsetName = "vsphere-cpi"
@@ -95,11 +98,11 @@ func init() {
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.StringVar(&clusterctlConfig, "e2e.clusterctl-config", "", "file which tests will use as a clusterctl config. If it is not set, a local clusterctl repository (including a clusterctl config) will be created automatically.")
 	flag.StringVar(&chartFolder, "e2e.chart-folder", "", "folder where the helm chart for e2e should be stored")
+	flag.StringVar(&image, "e2e.image", "gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere", "the cloud-controller-manager image to be tested, for example, gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere")
 	flag.StringVar(&version, "e2e.version", "dev", "the cloud-controller-manager version to be tested, for example, v1.22.3-76-g6f4fa01")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false,
 		"if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
-
 }
 
 // Global variables
@@ -133,6 +136,9 @@ func TestE2E(t *testing.T) {
 
 // Create a kind cluster that shared across all the tests
 var _ = SynchronizedBeforeSuite(func() []byte {
+	// This line prevents controller-runtime from complaining about log.SetLogger never being called
+	ctrl.SetLogger(klog.Background())
+
 	By("Load e2e config file", func() {
 		Expect(configPath).To(BeAnExistingFile(), "invalid test suite argument. e2e.config should be an existing file.")
 		e2eConfig = clusterctl.LoadE2EConfig(ctx, clusterctl.LoadE2EConfigInput{ConfigPath: configPath})
@@ -180,10 +186,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		}, e2eConfig.GetIntervals(proxy.GetName(), "wait-controllers")...)
 	})
 
+	workloadName = fmt.Sprintf("%s-%s", "workload", util.RandomString(6))
 	By("Create a workload cluster", func() {
-		workloadName = fmt.Sprintf("%s-%s", "workload", util.RandomString(6))
-		workloadResult = new(clusterctl.ApplyClusterTemplateAndWaitResult)
-		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+		workloadInput := clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: proxy,
 			ConfigCluster: clusterctl.ConfigClusterInput{
 				LogFolder:                filepath.Join(artifactFolder, "clusters", proxy.GetName()),
@@ -192,7 +197,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
 				ClusterName:              workloadName,
 				Namespace:                workloadKubeconfigNamespace,
-				KubernetesVersion:        e2eConfig.GetVariable("INIT_WITH_KUBERNETES_VERSION"),
 				ControlPlaneMachineCount: e2eConfig.GetInt64PtrVariable("CONTROL_PLANE_MACHINE_COUNT"),
 				WorkerMachineCount:       e2eConfig.GetInt64PtrVariable("WORKER_MACHINE_COUNT"),
 				Flavor:                   clusterctl.DefaultFlavor,
@@ -200,8 +204,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(proxy.GetName(), "wait-cluster"),
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(proxy.GetName(), "wait-control-plane"),
 			WaitForMachineDeployments:    e2eConfig.GetIntervals(proxy.GetName(), "wait-worker-nodes"),
-		}, workloadResult)
-		klog.Infof("Created workload cluster %s\n", workloadName)
+		}
+		workloadResult = &clusterctl.ApplyClusterTemplateAndWaitResult{}
+		kubernetesVersion, err := kubernetesversions.ResolveVersion(ctx, e2eConfig.GetVariable("KUBERNETES_VERSION"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv("KUBERNETES_VERSION", kubernetesVersion)).To(Succeed())
+		workloadInput.ConfigCluster.KubernetesVersion = e2eConfig.GetVariable("KUBERNETES_VERSION")
+		clusterctl.ApplyClusterTemplateAndWait(ctx, workloadInput, workloadResult)
+		klog.Infof("Created k8s %s workload cluster %s\n", e2eConfig.GetVariable("KUBERNETES_VERSION"), workloadName)
 	})
 
 	By("Grab workload cluster kubeconfig", func() {
@@ -233,23 +243,37 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		}, 2*time.Minute).Should(BeNil())
 	})
 
-	By("Install new vsphere-cpi with helm on workload cluster", func() {
-		actionConfig := new(action.Configuration)
-		err = actionConfig.Init(kube.GetConfig(workloadKubeconfig, "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {})
+	By("Load vsphere-cpi image", func() {
+		vsphereframework.LoadImagesFunc(ctx)(proxy.GetWorkloadCluster(ctx, workloadKubeconfigNamespace, workloadName))
+	})
+
+	By("Install dev vsphere cpi using helm on workload cluster", func() {
+		cmdName := "helm"
+		cmdArgs := []string{
+			"install", "vsphere-cpi", "vsphere-cpi/vsphere-cpi",
+			"--namespace", namespace,
+			"--set", "config.enabled=true",
+			"--set", "config.name=cloud-config",
+			"--set", "config.vcenter=" + e2eConfig.GetVariable("VSPHERE_SERVER"),
+			"--set", "config.username=" + e2eConfig.GetVariable("VSPHERE_USERNAME"),
+			"--set", "config.password=" + e2eConfig.GetVariable("VSPHERE_PASSWORD"),
+			"--set", "config.datacenter=" + e2eConfig.GetVariable("VSPHERE_DATACENTER"),
+			"--set", "config.region=" + "",
+			"--set", "config.zone=" + "",
+			"--set", "daemonset.image=" + image,
+			"--set", "daemonset.tag=" + version,
+			"--set", "securityContext.enabled=false",
+		}
+
+		// Create the command
+		cmd := exec.Command(cmdName, cmdArgs...)
+		cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", workloadKubeconfig))
+
+		// Capture the output (stdout and stderr)
+		output, err := cmd.CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 
-		chart, err := loader.Load(chartFolder)
-		Expect(err).NotTo(HaveOccurred())
-
-		install := newCPIInstallFromConfig(actionConfig)
-		values := newCPIInstallValues()
-
-		var release *helmrelease.Release
-		Eventually(func() error {
-			release, err = install.Run(chart, values)
-			return err
-		}).ShouldNot(HaveOccurred(), "Cannot install vsphere-cpi helm chart")
-		klog.Infof("Installed %s helm chart in namespace %s\n", release.Name, release.Namespace)
+		klog.Infof("Command output: %s\n", string(output))
 	})
 
 	return []byte(
@@ -317,47 +341,23 @@ func writeSecretKubeconfigToFile(secret *corev1.Secret, key string, file string)
 
 // removeOldCPI removes the old vsphere-cpi instance before installing a build version using helm
 func removeOldCPI(clientset *kubernetes.Clientset) error {
-	if err := clientset.AppsV1().DaemonSets(namespace).Delete(ctx, "vsphere-cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+	if err := clientset.AppsV1().DaemonSets(namespace).Delete(ctx, "vsphere-cpi", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, "cloud-config", metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	if err := clientset.CoreV1().ServiceAccounts(namespace).Delete(ctx, "cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.RbacV1().ClusterRoles().Delete(ctx, "cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
+		return err
+	}
+	if err := clientset.RbacV1().ClusterRoleBindings().Delete(ctx, "cloud-controller-manager", metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	if err := clientset.RbacV1().RoleBindings(namespace).Delete(ctx, "servicecatalog.k8s.io:apiserver-authentication-reader", metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	return nil
-}
-
-// newCPIInstallFromConfig returns an `Install` object, given the configurations, for the CPI chart installation
-func newCPIInstallFromConfig(config *action.Configuration) *action.Install {
-	install := action.NewInstall(config)
-	install.ReleaseName = release
-	install.Namespace = namespace
-	install.DryRun = false
-	return install
-}
-
-// newCPIInstallValues returns the values to helm-install the CPI chart
-func newCPIInstallValues() map[string]interface{} {
-	values := map[string]interface{}{
-		"config": map[string]interface{}{
-			"enabled":    "true",
-			"name":       "cloud-config",
-			"vcenter":    e2eConfig.GetVariable("VSPHERE_SERVER"),
-			"username":   e2eConfig.GetVariable("VSPHERE_USERNAME"),
-			"password":   e2eConfig.GetVariable("VSPHERE_PASSWORD"),
-			"datacenter": e2eConfig.GetVariable("VSPHERE_DATACENTER"),
-			"region":     "",
-			"zone":       "",
-		},
-		"daemonset": map[string]interface{}{
-			"image": image,
-			"tag":   version,
-		},
-		"securityContext": map[string]interface{}{
-			"enabled": "false",
-		},
-	}
-	return values
 }

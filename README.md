@@ -21,9 +21,13 @@ In the future, the major and minor versions of releases should be equivalent to 
 
 Version matrix:
 
+<!-- RELEASE_TABLE -->
+
 | Kubernetes Version | vSphere Cloud Provider Release Version | Cloud Provider Branch |
 |--------------------|----------------------------------------|-----------------------|
- | v1.28.X            | v1.28.X                                | release-1.28          |
+| v1.30.X            | v1.30.X                                | release-1.30          |
+| v1.29.X            | v1.29.X                                | release-1.29          |
+| v1.28.X            | v1.28.X                                | release-1.28          |
 | v1.27.X            | v1.27.X                                | release-1.27          |
 | v1.26.X            | v1.26.X                                | release-1.26          |
 | v1.25.X            | v1.25.X                                | release-1.25          |
@@ -80,13 +84,34 @@ $ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
 
 ## Container images
 
+<!-- this section can be removed after v1.32 release -->
+### :warning: Kubernetes Image Registry Migration for Cloud Provider vSphere
+
+---
+
+As part of the overall Kubernetes project image registry migration, starting with the v1.30.1 release, the cloud-provider-vsphere images will be hosted exclusively on the community-owned `registry.k8s.io` registry. These images will no longer be available on the previous `gcr.io/cloud-provider-vsphere/release` registry.
+
+Additionally, images for the following versions of cloud-provider-vsphere have already been migrated to registry.k8s.io:
+
+```bash
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.28.0
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.29.0
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.0
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
+...
+```
+
+---
+
 Official releases of the vSphere Cloud Controller Manager container image can be found at:
 
-<https://gcr.io/cloud-provider-vsphere/cpi/release/manager>
+```bash
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1 # <== latest version
+```
 
 The very latest builds from the tip of master, which may not be stable, can be found at:
 
-<https://gcr.io/cloud-provider-vsphere/cpi/ci/manager>
+<https://gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere>
 
 ## Contributing
 
