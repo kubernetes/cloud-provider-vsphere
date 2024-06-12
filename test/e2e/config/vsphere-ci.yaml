@@ -89,7 +89,7 @@ variables:
   VSPHERE_RESOURCE_POOL: "/SDDC-Datacenter/host/Cluster-1/Resources/Compute-ResourcePool/cloud-provider-vsphere"
   VSPHERE_DATASTORE: "WorkloadDatastore"
   VSPHERE_STORAGE_POLICY: "Cluster API vSphere Storage Policy"
-  VSPHERE_NETWORK: "sddc-cgw-network-6"
+  VSPHERE_NETWORK: "sddc-cgw-network-10"
   VSPHERE_TEMPLATE: "ubuntu-2204-kube-v1.30.0"
   FLATCAR_VSPHERE_TEMPLATE: "flatcar-stable-3815.2.2-kube-v1.30.0"
   VSPHERE_INSECURE_CSI: "true"
