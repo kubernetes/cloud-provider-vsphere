@@ -233,14 +233,14 @@ spec:
       priorityClassName: system-node-critical
       containers:
         - name: vsphere-cloud-controller-manager
-          image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.28.0
+          image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.28.1
           args:
             - --cloud-provider=vsphere
             - --v=2
             - --cloud-config=/etc/cloud/vsphere.conf
           env:
-          - name: SKIP_NODE_DELETION
-            value: true
+            - name: SKIP_NODE_DELETION
+              value: true
           volumeMounts:
             - mountPath: /etc/cloud
               name: vsphere-config-volume
