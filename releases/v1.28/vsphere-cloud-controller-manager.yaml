@@ -234,7 +234,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
         - name: vsphere-cloud-controller-manager
-          image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.28.0
+          image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.28.1
           args:
             - --cloud-provider=vsphere
             - --v=2
@@ -255,9 +255,9 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: node-role.kubernetes.io/control-plane
-                operator: Exists
-            - matchExpressions:
-              - key: node-role.kubernetes.io/master
-                operator: Exists
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/master
+                    operator: Exists
