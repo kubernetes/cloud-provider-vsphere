@@ -106,7 +106,7 @@ registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
 Official releases of the vSphere Cloud Controller Manager container image can be found at:
 
 ```bash
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1 # <== latest version
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.2 # <== latest version
 ```
 
 The very latest builds from the tip of master, which may not be stable, can be found at:
