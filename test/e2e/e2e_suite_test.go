@@ -180,7 +180,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		proxy = framework.NewClusterProxy("bootstrap", kubeconfig, defaultScheme())
 		Expect(proxy).NotTo(BeNil())
 	})
-
+	By("test boskos")
 	By("Initialize bootstrap cluster", func() {
 		clusterctl.InitManagementClusterAndWatchControllerLogs(ctx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
 			ClusterProxy:            proxy,

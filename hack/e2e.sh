@@ -79,10 +79,10 @@ on_exit() {
 trap on_exit EXIT
 
 # convert vsphere credentials from test-infra to e2e config format
-export VSPHERE_SERVER="${GOVC_URL}"
-export VSPHERE_USERNAME="${GOVC_USERNAME}"
-export VSPHERE_PASSWORD="${GOVC_PASSWORD}"
-export VSPHERE_SSH_AUTHORIZED_KEY="${VM_SSH_PUB_KEY}"
+export VSPHERE_SERVER="${GOVC_URL:-}"
+export VSPHERE_USERNAME="${GOVC_USERNAME:-}"
+export VSPHERE_PASSWORD="${GOVC_PASSWORD:-}"
+export VSPHERE_SSH_AUTHORIZED_KEY="${VM_SSH_PUB_KEY:-}"
 export VSPHERE_SSH_PRIVATE_KEY="/root/ssh/.private-key/private-key"
 
 # Run the vpn client in container
