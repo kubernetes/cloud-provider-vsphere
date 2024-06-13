@@ -97,7 +97,7 @@ update_readme_files() {
 
 update_release_folder() {
     git fetch --tags
-    if [ ! -d "${REPO_ROOT}/releases/${major_minor_version}/vsphere-cloud-controller-manager.yaml" ]; then  
+    if [ ! -e "${REPO_ROOT}/releases/${major_minor_version}/vsphere-cloud-controller-manager.yaml" ]; then  
         mkdir -p "${REPO_ROOT}"/releases/"${major_minor_version}"
         latest_release=$(git tag --sort=-v:refname | grep -E "${SEMVER_REGEX}" | sed -n '1p' | cut -d '.' -f 1,2)
         cp  "${REPO_ROOT}"/releases/"${latest_release}"/vsphere-cloud-controller-manager.yaml "${REPO_ROOT}"/releases/"${major_minor_version}"/vsphere-cloud-controller-manager.yaml
