@@ -32,13 +32,16 @@ jobs:
         id: check
         run: |          
           git fetch --tags --force
-
+          echo "latest release is ${latest_tag}"
           latest_tag=$(git tag --sort=-creatordate | head -n 1)
           echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
-          echo "valid=$(./hack/match-release-tag.sh ${latest_tag} >/dev/null 2>&1)" >> $GITHUB_OUTPUT
+
+          ./hack/match-release-tag.sh ${latest_tag}
+          valid=$?
+          echo "valid=${valid}" >> $GITHUB_OUTPUT
 
       - name: Cherry Pick All Related Changes in Master Branch
-        if: ${{ steps.check.outputs.valid }}
+        if: ${{ steps.check.outputs.valid }} == 0
         run: |
           git checkout gh-pages
           git checkout -b topic/github-action/update-gh-pages-$(date +'%Y%m%d')
@@ -48,7 +51,7 @@ jobs:
           git push -u origin topic/github-action/update-gh-pages-$(date +'%Y%m%d')
 
       - name: Create Pull Request
-        if: ${{ steps.check.outputs.valid }}
+        if: ${{ steps.check.outputs.valid }} == 0
         run: |
           gh pr create --title ":book:(docs) cherry-pick docs update to gh-pages" \
             --body "This PR was created by GitHub Actions to update documentation in gh-pages branch" \
