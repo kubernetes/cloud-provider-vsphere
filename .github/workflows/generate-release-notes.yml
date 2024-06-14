@@ -36,7 +36,7 @@ jobs:
       - name: Check Latest Release Tag
         id: check
         run: |
-          git fetch --tags
+          git fetch --tags --force
           latest_tag=$(git tag --sort=-creatordate | head -n 1)
 
           echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
@@ -52,11 +52,11 @@ jobs:
 
           latest_tag=${{ steps.check.outputs.latest_tag }}
           if [[ latest_tag =~ ${PRERELEASE_SEMVER_REGEX} ]]; then
-            second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | sed -n '2p')
+            second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | awk 'p{print; exit} /${latest_tag}/{p=1}')
             echo "${latest_tag} is a pre-release, return second latest release tag ${second_latest_release_tag}"
             echo "pre_release=1" >> $GITHUB_OUTPUT
           else
-            second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${STABLE_RELEASE_SEMVER_REGEX} | sed -n '2p')
+            second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${STABLE_RELEASE_SEMVER_REGEX} | awk 'p{print; exit} /${latest_tag}/{p=1}')
             echo "${latest_tag} is a stable release, return second stable release tag ${second_latest_release_tag}"
           fi
           
