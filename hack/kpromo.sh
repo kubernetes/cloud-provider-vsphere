@@ -47,7 +47,7 @@ TAG=$(git describe --always)
 
 # ========== run kpromo command to sumbit PR ==========
 GCP_PROJECT=cloud-pv-vsphere
-IMAGE_NAME=cloud-pv-vsphere
+IMAGE_NAME=cloud-provider-vsphere
 KPROMO_CMD="${KPROMO_BIN} pr --fork ${USER_FORK} --project ${GCP_PROJECT} --reviewers ${REVIEWERS} --tag ${TAG} --image ${IMAGE_NAME}"
 echo "Run KPROMO Command: ${KPROMO_CMD}"
 $KPROMO_CMD
