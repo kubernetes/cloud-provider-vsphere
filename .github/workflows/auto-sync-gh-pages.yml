@@ -32,18 +32,24 @@ jobs:
         id: check
         run: |          
           git fetch --tags --force
-
           latest_tag=$(git tag --sort=-creatordate | head -n 1)
           echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
-          echo "valid=$(./hack/match-release-tag.sh ${latest_tag} >/dev/null 2>&1)" >> $GITHUB_OUTPUT
+          ./hack/match-release-tag.sh ${latest_tag}
+          valid_tag=$?
+
+          current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+          if [ "${current_branch}" == "master" && "${valid_tag}" == 0 ]; then
+            echo "valid=1" >> $GITHUB_OUTPUT
+          fi
 
       - name: Cherry Pick All Related Changes in Master Branch
         if: ${{ steps.check.outputs.valid }}
         run: |
           git checkout gh-pages
           git checkout -b topic/github-action/update-gh-pages-$(date +'%Y%m%d')
-          git checkout ${{ steps.check.outputs.latest_tag }} README.md index.yaml charts/* releases/* docs/*
-          git add README.md index.yaml charts/* releases/* docs/*
+          git checkout master README.md releases/* docs/*
+          git add README.md releases/* docs/*
           git commit -m":book:(docs) cherry-pick docs update from master to gh-pages"
           git push -u origin topic/github-action/update-gh-pages-$(date +'%Y%m%d')
 
