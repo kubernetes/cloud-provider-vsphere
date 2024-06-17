@@ -17,11 +17,6 @@ rebuild: MAKEFLAGS += --always-make
 rebuild:
 	$(MAKE) build
 
-.PHONY: push
-push: $(IMAGE_D) login-to-image-registry
-	docker push $(IMAGE):$(VERSION)
-	docker push $(IMAGE):latest
-
 .PHONY: ls-images
 ls-images:
 	docker images --filter=reference=$(IMAGE):*

@@ -1,0 +1,63 @@
+name: Sync update to gh-pages branch
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+  workflow_dispatch: # Use for manaully trigger to debug
+
+
+permissions:
+  contents: write # Allow to create a release.
+
+jobs:
+  sync-changes-to-gh-pages-branch:
+    runs-on: ubuntu-latest
+    steps:
+      # This step uses Github's checkout-action: https://github.com/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Configure Git for helm release
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Check Latest Release Tag
+        id: check
+        run: |          
+          git fetch --tags --force
+          latest_tag=$(git tag --sort=-creatordate | head -n 1)
+          echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
+          ./hack/match-release-tag.sh ${latest_tag}
+          valid_tag=$?
+
+          current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+          if [ "${current_branch}" == "master" && "${valid_tag}" == 0 ]; then
+            echo "valid=1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Cherry Pick All Related Changes in Master Branch
+        if: ${{ steps.check.outputs.valid }}
+        run: |
+          git checkout gh-pages
+          git checkout -b topic/github-action/update-gh-pages-$(date +'%Y%m%d')
+          git checkout master README.md releases/* docs/*
+          git add README.md releases/* docs/*
+          git commit -m":book:(docs) cherry-pick docs update from master to gh-pages"
+          git push -u origin topic/github-action/update-gh-pages-$(date +'%Y%m%d')
+
+      - name: Create Pull Request
+        if: ${{ steps.check.outputs.valid }}
+        run: |
+          gh pr create --title ":book:(docs) cherry-pick docs update to gh-pages" \
+            --body "This PR was created by GitHub Actions to update documentation in gh-pages branch" \
+            --base gh-pages --head topic/github-action/update-gh-pages-$(date +'%Y%m%d')
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

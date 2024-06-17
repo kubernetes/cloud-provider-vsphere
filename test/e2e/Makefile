@@ -41,7 +41,7 @@ E2E_CHART ?= ${REPO_ROOT}/charts/vsphere-cpi
 E2E_DATA_DIR := ${REPO_ROOT}/test/e2e/data
 
 # E2E_DATA_CAPV_VER defines the providers from which version of CAPV to use
-E2E_DATA_CAPV_VER ?= release-1.0
+E2E_DATA_CAPV_VER ?= release-1.10
 
 all: run
 
@@ -52,21 +52,19 @@ $(TMP_CAPV_DIR):
 	git clone -b $(E2E_DATA_CAPV_VER) https://github.com/kubernetes-sigs/cluster-api-provider-vsphere.git $(TMP_CAPV_DIR)
 
 $(E2E_DATA_DIR): $(TMP_CAPV_DIR)
-	$(MAKE) -C $(TMP_CAPV_DIR) e2e-templates && cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
+	$(MAKE) -C $(TMP_CAPV_DIR) generate-e2e-templates && cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
 	cp $(TMP_CAPV_DIR)/metadata.yaml $(E2E_DATA_DIR)
 
-push-ccm-image:
-	../../hack/release.sh -p -t pr
+install-helm:
+	../../hack/install-helm.sh
 
-run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
+run: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false \
-		--e2e.version="$(VERSION)"
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=false
 
-dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) push-ccm-image
+dev: $(TOOLING_BINARIES) $(E2E_DATA_DIR) install-helm
 	$(GINKGO) -v . -- --e2e.config="$(E2E_CONF_FILE_DEV)" --e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
-		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true \
-		--e2e.version="$(VERSION)"
+		--e2e.chart-folder="$(E2E_CHART)" --e2e.skip-resource-cleanup=true
 
 clean:
 	rm -rf $(E2E_DATA_DIR) $(TMP_CAPV_DIR)
