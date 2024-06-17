@@ -1,0 +1,64 @@
+name: Bump latest Kubernetes dependecies for e2e test
+
+on:
+  schedule:
+    - cron: '0 12 */2 * *' # Run every two days at UTC noon
+
+  workflow_dispatch: # Use for manaully trigger to debug
+
+jobs:
+  bump-test-k8s-dep-to-latest-pre-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'test/e2e/go.mod'
+
+      - name: Bump latest k8s.io dependencies
+        id: bump          
+        run: |
+          cd test/e2e
+          LATEST_VERSION=$(../../hack/bump-k8s-dep.sh test-e2e)
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          cd ../..
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Check for changes and update version
+        id: changes
+        run: |
+          git_diff_output=$(git diff)
+          if [ -n "$git_diff_output" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if update PR already exist
+        id: exist
+        run: |
+          LATEST_VERSION=${{ steps.bump.outputs.latest_version }}
+          HEAD_BRANCH="topic/github-actions/auto-bump/test-e2e-k8s-dependencies-$LATEST_VERSION"
+          echo "$HEAD_BRANCH"
+          if ! git ls-remote --exit-code origin refs/heads/$HEAD_BRANCH; then
+            echo "exist=true" >> $GITHUB_OUTPUT
+            echo "head_branch=$HEAD_BRANCH" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR
+        if: ${{ steps.changes.outputs.changes && steps.exist.outputs.exist }}
+        run: |
+          HEAD_BRANCH=${{ steps.exist.outputs.head_branch }}
+          git checkout -b "$HEAD_BRANCH"
+          git add test/e2e/go.mod test/e2e/go.sum
+          git commit -sm "Bump kubernetes group dependencies updates for e2e test"
+          git push origin "$HEAD_BRANCH"
+          gh pr create --base master --title ":seedling:(deps)test: Bump the kubernetes group to ${{ steps.bump.outputs.latest_version }} for e2e test" --label "ok-to-test" --body "This is an automatic generated pull request to bump the latest k8s dependencies for e2e test."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
