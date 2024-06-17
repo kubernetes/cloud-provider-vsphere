@@ -44,5 +44,5 @@ echo "${-}" | grep -q i && TERM_FLAGS="${TERM_FLAGS}t"
 docker run --rm ${TERM_FLAGS} ${DOCKER_OPTS} \
   -v "$(pwd)":/build:z \
   -w /build \
-  "${CI_IMAGE:-gcr.io/cloud-provider-vsphere/ci:latest}" \
+  "${CI_IMAGE:-gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere:latest}" \
   make "${@}"
