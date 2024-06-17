@@ -1,12 +1,11 @@
 all: test
 
-
 # PROJECT_ROOT may be set externally when this Makefile is invoked with DinD.
 PROJECT_ROOT ?= $(abspath ../..)
 
 CLUSTER_NAME := ccm-integration-test
 VERSION ?= $(shell git describe --always --dirty)
-CCM_IMAGE := gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere:integration-test-$(VERSION)
+CCM_IMAGE := gcr.io/cloud-provider-vsphere/cpi/pr/manager:$(VERSION)
 
 KIND_CONFIG := kind-config.yaml
 .PHONY: $(KIND_CONFIG)
@@ -55,7 +54,7 @@ deploy-ccm:
 	kubectl -n kube-system create -f secrets.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-roles.yaml && \
 	kubectl -n kube-system apply -f ../../manifests/controller-manager/cloud-controller-manager-role-bindings.yaml && \
-	sed 's~^\([[:space:]]*\)image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere.*~\1image: $(CCM_IMAGE)~g' <../../manifests/controller-manager/vsphere-cloud-controller-manager-pod.yaml | kubectl -n kube-system apply -f -
+	sed 's~gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.2.1~$(CCM_IMAGE)~g' <../../manifests/controller-manager/vsphere-cloud-controller-manager-pod.yaml | kubectl -n kube-system apply -f -
 
 delete-ccm:
 	kubectl -n kube-system delete configmaps vsphere-cloud-config && \

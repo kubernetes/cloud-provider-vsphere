@@ -1,14 +1,6 @@
 # Continuous integration
 
-## :warning: Changes to Cloud Provider vSphere E2E Test Image Handling
-
----
-
-Starting from version v1.30.0, the cloud-provider-vsphere E2E tests will no longer push images to the `gcr.io/cloud-provider-vsphere/ci` registry. Instead, the development image will be saved as a tarball and loaded directly into the E2E test cluster.
-
----
-
-The image `gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere` is used by Prow jobs to build, test, and deploy the CCM provider.
+The image `gcr.io/cloud-provider-vsphere/ci` is used by Prow jobs to build, test, and deploy the CCM provider.
 
 ## The CI workflow
 
@@ -65,7 +57,7 @@ To check the sources run the following command:
 ```shell
 $ docker run -it --rm \
   -e "ARTIFACTS=/out" -v "$(pwd)":/out \
-  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
+  gcr.io/cloud-provider-vsphere/ci \
   make check
 ```
 
@@ -80,7 +72,7 @@ The CI image is built with Go module and build caches from a recent build of the
 ```shell
 $ docker run -it --rm \
   -e "BIN_OUT=/out" -v "$(pwd)":/out \
-  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
+  gcr.io/cloud-provider-vsphere/ci \
   make build
 ```
 
@@ -92,7 +84,7 @@ The above command will create the following files in the working directory:
 
 ```shell
 $ docker run -it --rm \
-  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
+  gcr.io/cloud-provider-vsphere/ci \
   make unit-test
 ```
 
@@ -102,7 +94,7 @@ Building the CCM image inside another image requires Docker-in-Docker (DinD):
 
 ```shell
 $ docker run -it --rm --privileged \
-  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
+  gcr.io/cloud-provider-vsphere/ci \
   make build-images
 ```
 
@@ -112,7 +104,7 @@ The project's integration tests leverage Kind, a solution for turning up a Kuber
 
 ```shell
 $ docker run -it --rm --privileged \
-  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
+  gcr.io/cloud-provider-vsphere/ci \
   make integration-test
 ```
 
@@ -123,8 +115,19 @@ $ docker run -it --rm \
   -e "PROJECT_ROOT=$(pwd)" \
   -v "$(pwd)":/go/src/k8s.io/cloud-provider-vsphere \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
+  gcr.io/cloud-provider-vsphere/ci \
   make integration-test
+```
+
+## Deploy the CCM image
+
+Pushing the images requires bind mounting a GCR key file into the container and setting the environment variable `GCR_KEY_FILE` to inform the deployment process the location of the key file:
+
+```shell
+$ docker run -it --rm --privileged \
+  -e "GCR_KEY_FILE=/keyfile.json" -v "$(pwd)/keyfile.json":/keyfile.json \
+  gcr.io/cloud-provider-vsphere/ci \
+  make push-images
 ```
 
 ## Execute the conformance tests
@@ -168,7 +171,7 @@ Once the environment variable file is created, the conformance tests may be exec
 $ docker run -it --rm --privileged \
   -e "ARTIFACTS=/out" -v "$(pwd)":/out \
   --env-file config.env \
-  gcr.io/k8s-staging-cloud-pv-vsphere/cloud-provider-vsphere \
+  gcr.io/cloud-provider-vsphere/ci \
   make conformance-test
 ```
 
