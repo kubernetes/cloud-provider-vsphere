@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rest "k8s.io/client-go/rest"
 
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
@@ -125,11 +125,11 @@ func (s *vmService) GetVMServiceName(service *v1.Service, clusterName string) st
 }
 
 // Get returns the corresponding virtual machine service if it exists
-func (s *vmService) Get(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1alpha1.VirtualMachineService, error) {
+func (s *vmService) Get(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error) {
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to get VirtualMachineService")
 
-	vmService, err := s.vmClient.V1alpha1().VirtualMachineServices(s.namespace).Get(ctx, s.GetVMServiceName(service, clusterName), metav1.GetOptions{})
+	vmService, err := s.vmClient.V1alpha2().VirtualMachineServices(s.namespace).Get(ctx, s.GetVMServiceName(service, clusterName), metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, nil
@@ -142,7 +142,7 @@ func (s *vmService) Get(ctx context.Context, service *v1.Service, clusterName st
 }
 
 // Create creates a vmservice to map to the given lb type of service, it should be called if vmservice not found
-func (s *vmService) Create(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1alpha1.VirtualMachineService, error) {
+func (s *vmService) Create(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error) {
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to create VirtualMachineService")
 
@@ -152,7 +152,7 @@ func (s *vmService) Create(ctx context.Context, service *v1.Service, clusterName
 		return nil, err
 	}
 
-	vmService, err = s.vmClient.V1alpha1().VirtualMachineServices(s.namespace).Create(ctx, vmService, metav1.CreateOptions{})
+	vmService, err = s.vmClient.V1alpha2().VirtualMachineServices(s.namespace).Create(ctx, vmService, metav1.CreateOptions{})
 	if err != nil {
 		logger.Error(ErrCreateVMService, fmt.Sprintf("%v", err))
 		return nil, err
@@ -164,7 +164,7 @@ func (s *vmService) Create(ctx context.Context, service *v1.Service, clusterName
 }
 
 // CreateOrUpdate creates a vmservice to map to the given lb type of service
-func (s *vmService) CreateOrUpdate(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1alpha1.VirtualMachineService, error) {
+func (s *vmService) CreateOrUpdate(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error) {
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to create or update a VirtualMachineService")
 
@@ -205,7 +205,7 @@ func (s *vmService) CreateOrUpdate(ctx context.Context, service *v1.Service, clu
 }
 
 // Update updates a vmservice
-func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName string, vmService *vmopv1alpha1.VirtualMachineService) (*vmopv1alpha1.VirtualMachineService, error) {
+func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName string, vmService *vmopv1.VirtualMachineService) (*vmopv1.VirtualMachineService, error) {
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to update VirtualMachineService")
 
@@ -250,7 +250,7 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 	}
 
 	if needsUpdate {
-		newVMService, err = s.vmClient.V1alpha1().VirtualMachineServices(s.namespace).Update(ctx, newVMService, metav1.UpdateOptions{})
+		newVMService, err = s.vmClient.V1alpha2().VirtualMachineServices(s.namespace).Update(ctx, newVMService, metav1.UpdateOptions{})
 		if err != nil {
 			logger.Error(ErrUpdateVMService, fmt.Sprintf("%v", err))
 			return nil, err
@@ -268,7 +268,7 @@ func (s *vmService) Delete(ctx context.Context, service *v1.Service, clusterName
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to delete VirtualMachineService")
 
-	err := s.vmClient.V1alpha1().VirtualMachineServices(s.namespace).Delete(ctx, s.GetVMServiceName(service, clusterName), metav1.DeleteOptions{})
+	err := s.vmClient.V1alpha2().VirtualMachineServices(s.namespace).Delete(ctx, s.GetVMServiceName(service, clusterName), metav1.DeleteOptions{})
 	if err != nil {
 		logger.Error(ErrDeleteVMService, fmt.Sprintf("%v", err))
 		return err
@@ -278,13 +278,13 @@ func (s *vmService) Delete(ctx context.Context, service *v1.Service, clusterName
 	return nil
 }
 
-func findPorts(service *v1.Service) ([]vmopv1alpha1.VirtualMachineServicePort, error) {
-	var ports []vmopv1alpha1.VirtualMachineServicePort
+func findPorts(service *v1.Service) ([]vmopv1.VirtualMachineServicePort, error) {
+	var ports []vmopv1.VirtualMachineServicePort
 	for _, port := range service.Spec.Ports {
 		if port.NodePort == 0 {
 			return nil, errors.Wrapf(ErrNodePortNotFound, fmt.Sprintf("port %s", port.Name))
 		}
-		ports = append(ports, vmopv1alpha1.VirtualMachineServicePort{
+		ports = append(ports, vmopv1.VirtualMachineServicePort{
 			Name:       port.Name,
 			Port:       port.Port,
 			TargetPort: port.NodePort,
@@ -294,13 +294,13 @@ func findPorts(service *v1.Service) ([]vmopv1alpha1.VirtualMachineServicePort, e
 	return ports, nil
 }
 
-func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string) (*vmopv1alpha1.VirtualMachineService, error) {
+func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error) {
 	ports, err := findPorts(service)
 	if err != nil {
 		return nil, err
 	}
-	vmServiceSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	vmServiceSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: clusterName,
@@ -327,7 +327,7 @@ func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string
 		LabelServiceNameSpaceKey: service.Namespace,
 	}
 
-	vmService := &vmopv1alpha1.VirtualMachineService{
+	vmService := &vmopv1.VirtualMachineService{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: vmopclient.VirtualMachineServiceGVR.Group + "/" + vmopclient.VirtualMachineServiceGVR.Version,
 			Kind:       "VirtualMachineService",
@@ -349,7 +349,7 @@ func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string
 	return vmService, nil
 }
 
-func getVMServiceAnnotations(vmService *vmopv1alpha1.VirtualMachineService, service *v1.Service) map[string]string {
+func getVMServiceAnnotations(vmService *vmopv1.VirtualMachineService, service *v1.Service) map[string]string {
 	var annotations map[string]string
 	// When ExternalTrafficPolicy is set to Local in the Service, add its
 	// value and the healthCheckNodePort to VirtualMachineService
@@ -365,7 +365,7 @@ func getVMServiceAnnotations(vmService *vmopv1alpha1.VirtualMachineService, serv
 	return annotations
 }
 
-func getVMServiceIP(vmService *vmopv1alpha1.VirtualMachineService) string {
+func getVMServiceIP(vmService *vmopv1.VirtualMachineService) string {
 	if len(vmService.Status.LoadBalancer.Ingress) > 0 {
 		return vmService.Status.LoadBalancer.Ingress[0].IP
 	}

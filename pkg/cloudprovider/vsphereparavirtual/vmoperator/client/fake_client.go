@@ -13,8 +13,8 @@ type FakeClientSet struct {
 	FakeClient *FakeClient
 }
 
-// V1alpha1 retrieves the fake VmoperatorV1alpha1Client
-func (c *FakeClientSet) V1alpha1() vmoperator.V1alpha1Interface {
+// V1alpha2 retrieves the fake VmoperatorV1alpha2Client
+func (c *FakeClientSet) V1alpha2() vmoperator.V1alpha2Interface {
 	return c.FakeClient
 }
 

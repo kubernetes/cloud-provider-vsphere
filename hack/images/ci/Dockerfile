@@ -3,7 +3,7 @@
 ################################################################################
 # The golang image is used to create the project's module and build caches
 # and is also the image on which this image is based.
-ARG GOLANG_IMAGE=golang:1.21.5
+ARG GOLANG_IMAGE=golang:1.22.4
 
 # The image from which the Terraform project used to turn up a K8s cluster is
 # copied, as well as several programs.
@@ -54,7 +54,7 @@ RUN /google-cloud-sdk/bin/gcloud components update
 ##                               KIND STAGE                                   ##
 ################################################################################
 FROM ${GOLANG_IMAGE} as kind
-RUN cd / && GO111MODULE="on" go get -u sigs.k8s.io/kind@v0.11.1
+RUN cd / && GO111MODULE="on" go get -u sigs.k8s.io/kind@v0.23.0
 
 ################################################################################
 ##                               MAIN STAGE                                   ##

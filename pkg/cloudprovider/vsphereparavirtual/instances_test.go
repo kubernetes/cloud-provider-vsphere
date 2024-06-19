@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,28 +41,35 @@ var (
 	testProviderID = providerPrefix + testVMUUID
 )
 
-func createTestVM(name, namespace, biosUUID string) *vmopv1alpha1.VirtualMachine {
-	return &vmopv1alpha1.VirtualMachine{
+func createTestVM(name, namespace, biosUUID string) *vmopv1.VirtualMachine {
+	return &vmopv1.VirtualMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Status: vmopv1alpha1.VirtualMachineStatus{
+		Status: vmopv1.VirtualMachineStatus{
 			BiosUUID: biosUUID,
 		},
 	}
 }
 
-func createTestVMWithVMIPAndHost(name, namespace, biosUUID string) *vmopv1alpha1.VirtualMachine {
-	return &vmopv1alpha1.VirtualMachine{
+func createTestVMWithVMIPAndHost(name, namespace, biosUUID string) *vmopv1.VirtualMachine {
+	// TODO: Currently, dual-stack (IPv4 and IPv6) is not supported.
+	// Cluster will be assumed as IPv4 Primary by default.
+	// In the future, when dual-stack support is implemented, this code should be updated to
+	// dynamically determine the IP format based on the cluster's IP family.
+	// https://github.com/kubernetes/cloud-provider-vsphere/issues/1129
+	return &vmopv1.VirtualMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Status: vmopv1alpha1.VirtualMachineStatus{
+		Status: vmopv1.VirtualMachineStatus{
 			BiosUUID: biosUUID,
-			VmIp:     "1.2.3.4",
 			Host:     "test-host",
+			Network: &vmopv1.VirtualMachineNetworkStatus{
+				PrimaryIP4: "1.2.3.4",
+			},
 		},
 	}
 }
@@ -89,23 +96,23 @@ func TestNewInstances(t *testing.T) {
 	}
 }
 
-func initTest(testVM *vmopv1alpha1.VirtualMachine) (*instances, *dynamicfake.FakeDynamicClient, error) {
+func initTest(testVM *vmopv1.VirtualMachine) (*instances, *dynamicfake.FakeDynamicClient, error) {
 	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
+	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
 	fcw := vmopclient.NewFakeClientSet(fc)
 	instance := &instances{
 		vmClient:  fcw,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fcw.V1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	_, err := fcw.V1alpha2().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
 	return instance, fc, err
 }
 
 func TestInstanceID(t *testing.T) {
 	testCases := []struct {
 		name                string
-		testVM              *vmopv1alpha1.VirtualMachine
+		testVM              *vmopv1.VirtualMachine
 		expectInternalError bool
 		expectedInstanceID  string
 		expectedErr         error
@@ -150,7 +157,7 @@ func TestInstanceID(t *testing.T) {
 func TestInstanceIDThrowsErr(t *testing.T) {
 	testCases := []struct {
 		name               string
-		testVM             *vmopv1alpha1.VirtualMachine
+		testVM             *vmopv1.VirtualMachine
 		expectedInstanceID string
 	}{
 		{
@@ -178,7 +185,7 @@ func TestInstanceIDThrowsErr(t *testing.T) {
 func TestInstanceExistsByProviderID(t *testing.T) {
 	testCases := []struct {
 		name           string
-		testVM         *vmopv1alpha1.VirtualMachine
+		testVM         *vmopv1.VirtualMachine
 		expectedResult bool
 		expectedErr    error
 	}{
@@ -210,7 +217,7 @@ func TestInstanceExistsByProviderID(t *testing.T) {
 func TestInstanceShutdownByProviderID(t *testing.T) {
 	testCases := []struct {
 		name             string
-		testVM           *vmopv1alpha1.VirtualMachine
+		testVM           *vmopv1.VirtualMachine
 		testVMPowerState string
 		expectedResult   bool
 		expectedErr      error
@@ -248,9 +255,9 @@ func TestInstanceShutdownByProviderID(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			if testCase.testVMPowerState == "PoweredOn" {
-				testCase.testVM.Status.PowerState = vmopv1alpha1.VirtualMachinePoweredOn
+				testCase.testVM.Status.PowerState = vmopv1.VirtualMachinePowerStateOn
 			} else {
-				testCase.testVM.Status.PowerState = vmopv1alpha1.VirtualMachinePoweredOff
+				testCase.testVM.Status.PowerState = vmopv1.VirtualMachinePowerStateOff
 			}
 
 			instance, _, err := initTest(testCase.testVM)
@@ -265,7 +272,7 @@ func TestInstanceShutdownByProviderID(t *testing.T) {
 func TestNodeAddressesByProviderID(t *testing.T) {
 	testCases := []struct {
 		name                string
-		testVM              *vmopv1alpha1.VirtualMachine
+		testVM              *vmopv1.VirtualMachine
 		expectedNodeAddress []v1.NodeAddress
 		expectedErr         error
 	}{
@@ -312,7 +319,7 @@ func TestNodeAddressesByProviderID(t *testing.T) {
 func TestNodeAddressesByProviderIDInternalErr(t *testing.T) {
 	testCases := []struct {
 		name                string
-		testVM              *vmopv1alpha1.VirtualMachine
+		testVM              *vmopv1.VirtualMachine
 		expectedNodeAddress []v1.NodeAddress
 	}{
 		{
@@ -340,7 +347,7 @@ func TestNodeAddressesByProviderIDInternalErr(t *testing.T) {
 func TestNodeAddresses(t *testing.T) {
 	testCases := []struct {
 		name                string
-		testVM              *vmopv1alpha1.VirtualMachine
+		testVM              *vmopv1.VirtualMachine
 		expectedNodeAddress []v1.NodeAddress
 		expectedErr         error
 	}{
@@ -387,7 +394,7 @@ func TestNodeAddresses(t *testing.T) {
 func TestNodeAddressesInternalErr(t *testing.T) {
 	testCases := []struct {
 		name                string
-		testVM              *vmopv1alpha1.VirtualMachine
+		testVM              *vmopv1.VirtualMachine
 		expectedNodeAddress []v1.NodeAddress
 	}{
 		{

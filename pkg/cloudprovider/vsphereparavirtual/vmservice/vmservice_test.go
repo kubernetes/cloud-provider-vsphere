@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/node/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -77,7 +77,7 @@ func initTest() (*v1.Service, VMService, *dynamicfake.FakeDynamicClient) {
 	}
 
 	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
+	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
 	vms = NewVMService(vmopclient.NewFakeClientSet(fc), testClusterNameSpace, &testOwnerReference)
 	return testK8sService, vms, fc
@@ -131,7 +131,7 @@ func TestGetVMService_ReturnNil(t *testing.T) {
 		},
 	}
 	vmService, err := vms.Get(context.Background(), k8sService, testClustername)
-	assert.Equal(t, vmService, (*vmopv1alpha1.VirtualMachineService)(nil))
+	assert.Equal(t, vmService, (*vmopv1.VirtualMachineService)(nil))
 	assert.NoError(t, err)
 }
 
@@ -156,8 +156,8 @@ func TestGetVMService(t *testing.T) {
 func TestCreateVMService(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -176,8 +176,8 @@ func TestCreateVMService(t *testing.T) {
 func TestCreateVMServiceWithLegacySelector(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			LegacyClusterSelectorKey: testClustername,
@@ -217,18 +217,18 @@ func TestCreateVMService_ZeroNodeport(t *testing.T) {
 		},
 	}
 	vmServiceObj, err := vms.Create(context.Background(), k8sService, testClustername)
-	assert.Equal(t, vmServiceObj, (*vmopv1alpha1.VirtualMachineService)(nil))
+	assert.Equal(t, vmServiceObj, (*vmopv1.VirtualMachineService)(nil))
 	assert.Error(t, err)
 }
 
 func TestCreateDuplicateVMService(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
-	assert.NotEqual(t, vmServiceObj, (*vmopv1alpha1.VirtualMachineService)(nil))
+	assert.NotEqual(t, vmServiceObj, (*vmopv1.VirtualMachineService)(nil))
 	assert.NoError(t, err)
 	// Try to create the same object twice
 	vmServiceObj, err = vms.Create(context.Background(), testK8sService, testClustername)
-	assert.Equal(t, vmServiceObj, (*vmopv1alpha1.VirtualMachineService)(nil))
+	assert.Equal(t, vmServiceObj, (*vmopv1.VirtualMachineService)(nil))
 	assert.Error(t, err)
 }
 
@@ -237,7 +237,7 @@ func TestCreateVMService_LBConfigs(t *testing.T) {
 	testCases := []struct {
 		name           string
 		testK8sService *v1.Service
-		expectedSpec   vmopv1alpha1.VirtualMachineServiceSpec
+		expectedSpec   vmopv1.VirtualMachineServiceSpec
 	}{
 		{
 			name: "when Service has loadBalancerIP defined",
@@ -262,8 +262,8 @@ func TestCreateVMService_LBConfigs(t *testing.T) {
 					LoadBalancerIP: fakeLBIP,
 				},
 			},
-			expectedSpec: vmopv1alpha1.VirtualMachineServiceSpec{
-				Type: vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+			expectedSpec: vmopv1.VirtualMachineServiceSpec{
+				Type: vmopv1.VirtualMachineServiceTypeLoadBalancer,
 				Selector: map[string]string{
 					ClusterSelectorKey: testClustername,
 					NodeSelectorKey:    NodeRole,
@@ -294,8 +294,8 @@ func TestCreateVMService_LBConfigs(t *testing.T) {
 					LoadBalancerSourceRanges: []string{"1.1.1.0/24", "10.0.0.0/19"},
 				},
 			},
-			expectedSpec: vmopv1alpha1.VirtualMachineServiceSpec{
-				Type: vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+			expectedSpec: vmopv1.VirtualMachineServiceSpec{
+				Type: vmopv1.VirtualMachineServiceTypeLoadBalancer,
 				Selector: map[string]string{
 					ClusterSelectorKey: testClustername,
 					NodeSelectorKey:    NodeRole,
@@ -461,8 +461,8 @@ func TestVMService_AlreadyExists(t *testing.T) {
 	}
 
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -495,8 +495,8 @@ func TestUpdateVMService_NodePortChanges(t *testing.T) {
 	oldK8sService := testK8sService.DeepCopy()
 	oldK8sService.Spec.Ports[0].NodePort = 30500
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -519,8 +519,8 @@ func TestUpdateVMService_LBIPAdded(t *testing.T) {
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.LoadBalancerIP = fakeLBIP
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -545,8 +545,8 @@ func TestUpdateVMService_LBIPChanges(t *testing.T) {
 	testK8sService.Spec.LoadBalancerIP = fakeLBIP
 	oldK8sService.Spec.LoadBalancerIP = "2.2.2.2"
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -570,8 +570,8 @@ func TestUpdateVMService_LBSourceRangesAdded(t *testing.T) {
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.LoadBalancerSourceRanges = []string{"1.1.1.0/24"}
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -596,8 +596,8 @@ func TestUpdateVMService_LBSourceRangesChanges(t *testing.T) {
 	testK8sService.Spec.LoadBalancerSourceRanges = []string{"1.1.1.0/24"}
 	oldK8sService.Spec.LoadBalancerSourceRanges = []string{"2.2.2.0/24"}
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -622,8 +622,8 @@ func TestUpdateVMService_ExternalTrafficPolicyLocal(t *testing.T) {
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
 	testK8sService.Spec.HealthCheckNodePort = 31234
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,
@@ -654,8 +654,8 @@ func TestUpdateVMService_ExternalTrafficPolicyCluster(t *testing.T) {
 	testK8sService.Spec.HealthCheckNodePort = 31234
 	oldK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
 	ports, _ := findPorts(testK8sService)
-	expectedSpec := vmopv1alpha1.VirtualMachineServiceSpec{
-		Type:  vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: testClustername,

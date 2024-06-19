@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,7 +28,7 @@ func TestNewZones(t *testing.T) {
 		name        string
 		config      *rest.Config
 		expectedErr error
-		testVM      *vmopv1alpha1.VirtualMachine
+		testVM      *vmopv1.VirtualMachine
 	}{
 		{
 			name:        "NewZone: when everything is ok",
@@ -53,7 +53,7 @@ func TestZonesByProviderID(t *testing.T) {
 		name           string
 		expectedResult string
 		expectedErr    error
-		testVM         *vmopv1alpha1.VirtualMachine
+		testVM         *vmopv1.VirtualMachine
 	}{
 		{
 			name:           "TestZonesByProviderID should return true",
@@ -93,7 +93,7 @@ func TestZonesByNodeName(t *testing.T) {
 		name           string
 		expectedResult string
 		expectedErr    error
-		testVM         *vmopv1alpha1.VirtualMachine
+		testVM         *vmopv1.VirtualMachine
 		vmName         types.NodeName
 	}{
 		{
@@ -131,23 +131,23 @@ func TestZonesByNodeName(t *testing.T) {
 	}
 }
 
-func initVMopClient(testVM *vmopv1alpha1.VirtualMachine) (zones, *dynamicfake.FakeDynamicClient, error) {
+func initVMopClient(testVM *vmopv1.VirtualMachine) (zones, *dynamicfake.FakeDynamicClient, error) {
 	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
+	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
 	fcw := vmopclient.NewFakeClientSet(fc)
 	zone := zones{
 		vmClient:  fcw,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fcw.V1alpha1().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	_, err := fcw.V1alpha2().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
 	return zone, fc, err
 }
 
-func createTestVMWithZone(name, namespace string) *vmopv1alpha1.VirtualMachine {
+func createTestVMWithZone(name, namespace string) *vmopv1.VirtualMachine {
 	labels := make(map[string]string)
 	labels["topology.kubernetes.io/zone"] = "zone-a"
-	return &vmopv1alpha1.VirtualMachine{
+	return &vmopv1.VirtualMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -156,16 +156,16 @@ func createTestVMWithZone(name, namespace string) *vmopv1alpha1.VirtualMachine {
 	}
 }
 
-func createTestVMWithZoneID(name, namespace, biosUUID string) *vmopv1alpha1.VirtualMachine {
+func createTestVMWithZoneID(name, namespace, biosUUID string) *vmopv1.VirtualMachine {
 	labels := make(map[string]string)
 	labels["topology.kubernetes.io/zone"] = "zone-a"
-	return &vmopv1alpha1.VirtualMachine{
+	return &vmopv1.VirtualMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 			Labels:    labels,
 		},
-		Status: vmopv1alpha1.VirtualMachineStatus{
+		Status: vmopv1.VirtualMachineStatus{
 			BiosUUID: biosUUID,
 		},
 	}

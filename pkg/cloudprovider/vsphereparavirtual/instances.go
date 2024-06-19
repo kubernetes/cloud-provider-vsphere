@@ -31,7 +31,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/klog/v2"
 
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
 )
@@ -64,13 +64,13 @@ func checkError(err error) bool {
 
 // discoverNodeByProviderID takes a ProviderID and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func (i instances) discoverNodeByProviderID(ctx context.Context, providerID string) (*vmopv1alpha1.VirtualMachine, error) {
+func (i instances) discoverNodeByProviderID(ctx context.Context, providerID string) (*vmopv1.VirtualMachine, error) {
 	return discoverNodeByProviderID(ctx, providerID, i.namespace, i.vmClient)
 }
 
 // discoverNodeByName takes a node name and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func (i instances) discoverNodeByName(ctx context.Context, name types.NodeName) (*vmopv1alpha1.VirtualMachine, error) {
+func (i instances) discoverNodeByName(ctx context.Context, name types.NodeName) (*vmopv1.VirtualMachine, error) {
 	return discoverNodeByName(ctx, name, i.namespace, i.vmClient)
 }
 
@@ -88,15 +88,26 @@ func NewInstances(clusterNS string, kcfg *rest.Config) (cloudprovider.Instances,
 	}, nil
 }
 
-func createNodeAddresses(vm *vmopv1alpha1.VirtualMachine) []v1.NodeAddress {
-	if vm.Status.VmIp == "" {
+func createNodeAddresses(vm *vmopv1.VirtualMachine) []v1.NodeAddress {
+	// TODO: Currently, dual-stack (IPv4 and IPv6) is not supported.
+	// Cluster will be assumed as IPv4 Primary by default.
+	// In the future, when dual-stack support is implemented, this code should be updated to
+	// dynamically determine the IP format based on the cluster's IP family.
+	// https://github.com/kubernetes/cloud-provider-vsphere/issues/1129
+	if vm.Status.Network == nil || (vm.Status.Network.PrimaryIP4 == "" && vm.Status.Network.PrimaryIP6 == "") {
 		klog.V(4).Info("instance found, but no address yet")
 		return []v1.NodeAddress{}
 	}
+
+	address := vm.Status.Network.PrimaryIP4
+	if address == "" {
+		address = vm.Status.Network.PrimaryIP6
+	}
+
 	return []v1.NodeAddress{
 		{
 			Type:    v1.NodeInternalIP,
-			Address: vm.Status.VmIp,
+			Address: address,
 		},
 		{
 			Type:    v1.NodeHostName,
@@ -202,7 +213,7 @@ func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID
 		klog.V(4).Info("instances.InstanceShutdownByProviderID() InstanceNotFound ", providerID)
 		return false, cloudprovider.InstanceNotFound
 	}
-	return vm.Status.PowerState == vmopv1alpha1.VirtualMachinePoweredOff, nil
+	return vm.Status.PowerState == vmopv1.VirtualMachinePowerStateOff, nil
 }
 
 func (i *instances) AddSSHKeyToAllInstances(ctx context.Context, user string, keyData []byte) error {

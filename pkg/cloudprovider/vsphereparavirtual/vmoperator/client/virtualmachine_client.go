@@ -3,7 +3,8 @@ package client
 import (
 	"context"
 
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -19,14 +20,14 @@ type virtualMachines struct {
 	ns     string
 }
 
-func newVirtualMachines(c vmoperator.V1alpha1Interface, namespace string) *virtualMachines {
+func newVirtualMachines(c vmoperator.V1alpha2Interface, namespace string) *virtualMachines {
 	return &virtualMachines{
 		client: c.Client(),
 		ns:     namespace,
 	}
 }
 
-func (v *virtualMachines) Create(ctx context.Context, virtualMachine *vmopv1alpha1.VirtualMachine, opts v1.CreateOptions) (*vmopv1alpha1.VirtualMachine, error) {
+func (v *virtualMachines) Create(ctx context.Context, virtualMachine *vmopv1.VirtualMachine, opts v1.CreateOptions) (*vmopv1.VirtualMachine, error) {
 	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(virtualMachine)
 	if err != nil {
 		return nil, err
@@ -37,14 +38,14 @@ func (v *virtualMachines) Create(ctx context.Context, virtualMachine *vmopv1alph
 		return nil, err
 	}
 
-	createdVirtualMachine := &vmopv1alpha1.VirtualMachine{}
+	createdVirtualMachine := &vmopv1.VirtualMachine{}
 	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), createdVirtualMachine); err != nil {
 		return nil, err
 	}
 	return createdVirtualMachine, nil
 }
 
-func (v *virtualMachines) Update(ctx context.Context, virtualMachine *vmopv1alpha1.VirtualMachine, opts v1.UpdateOptions) (*vmopv1alpha1.VirtualMachine, error) {
+func (v *virtualMachines) Update(ctx context.Context, virtualMachine *vmopv1.VirtualMachine, opts v1.UpdateOptions) (*vmopv1.VirtualMachine, error) {
 	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(virtualMachine)
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func (v *virtualMachines) Update(ctx context.Context, virtualMachine *vmopv1alph
 		return nil, err
 	}
 
-	updatedVirtualMachine := &vmopv1alpha1.VirtualMachine{}
+	updatedVirtualMachine := &vmopv1.VirtualMachine{}
 	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), updatedVirtualMachine); err != nil {
 		return nil, err
 	}
@@ -66,8 +67,8 @@ func (v *virtualMachines) Delete(ctx context.Context, name string, opts v1.Delet
 	return v.client.Resource(VirtualMachineGVR).Namespace(v.ns).Delete(ctx, name, opts)
 }
 
-func (v *virtualMachines) Get(ctx context.Context, name string, opts v1.GetOptions) (*vmopv1alpha1.VirtualMachine, error) {
-	virtualMachine := &vmopv1alpha1.VirtualMachine{}
+func (v *virtualMachines) Get(ctx context.Context, name string, opts v1.GetOptions) (*vmopv1.VirtualMachine, error) {
+	virtualMachine := &vmopv1.VirtualMachine{}
 	if obj, err := v.client.Resource(VirtualMachineGVR).Namespace(v.ns).Get(ctx, name, opts); err != nil {
 		return nil, err
 	} else if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), virtualMachine); err != nil {
@@ -76,8 +77,8 @@ func (v *virtualMachines) Get(ctx context.Context, name string, opts v1.GetOptio
 	return virtualMachine, nil
 }
 
-func (v *virtualMachines) List(ctx context.Context, opts v1.ListOptions) (*vmopv1alpha1.VirtualMachineList, error) {
-	virtualMachineList := &vmopv1alpha1.VirtualMachineList{}
+func (v *virtualMachines) List(ctx context.Context, opts v1.ListOptions) (*vmopv1.VirtualMachineList, error) {
+	virtualMachineList := &vmopv1.VirtualMachineList{}
 	if obj, err := v.client.Resource(VirtualMachineGVR).Namespace(v.ns).List(ctx, opts); err != nil {
 		return nil, err
 	} else if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), virtualMachineList); err != nil {
