@@ -71,7 +71,12 @@ log-ccm:
 	kubectl -n kube-system logs vsphere-cloud-controller-manager
 
 build-ccm-image:
-	../../hack/release.sh -t pr
+	docker build \
+	-f ../../cluster/images/controller-manager/Dockerfile \
+	-t $(CCM_IMAGE) \
+	--build-arg "VERSION=${VERSION}" \
+	--build-arg "GOPROXY=${GOPROXY}" \
+	../..
 
 load-ccm-image: | $(DOCKER_SOCK)
 	kind load docker-image --name "$(CLUSTER_NAME)" $(CCM_IMAGE)
