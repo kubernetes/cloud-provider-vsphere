@@ -62,17 +62,21 @@ jobs:
           else
             second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${STABLE_RELEASE_SEMVER_REGEX} | awk "p{print; exit} /${latest_tag}/{p=1}")
             echo "${latest_tag} is a stable release, return second stable release tag ${second_latest_release_tag}"
+            echo "pre_release=0" >> $GITHUB_OUTPUT
           fi
           
           echo "second_latest_release_tag=${second_latest_release_tag}" >> $GITHUB_OUTPUT
 
-      - name: Generate Release Note
-        if: ${{ steps.check.outputs.valid }} == 0
+      - name: Generate Pre Release Note
+        if: ${{ steps.check.outputs.valid }} == 0 && ${{ steps.find.outputs.pre_release }} == 1
         run: |
-          if [ -n ${{ steps.find.outputs.pre_release }} ]; then
-            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }} --prerelease
-          else
-            gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }}
-          fi
+          gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }} --prerelease
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Generate Release Note
+        if: ${{ steps.check.outputs.valid }} == 0 && ${{ steps.find.outputs.pre_release }} == 0
+        run: |
+          gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }}
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
