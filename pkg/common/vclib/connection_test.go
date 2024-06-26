@@ -18,7 +18,7 @@ package vclib_test
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -71,7 +71,7 @@ func createTestServer(
 	}
 	x509LeafCert := server.TLS.Certificates[0].Certificate[0]
 	var tpString string
-	for i, b := range sha1.Sum(x509LeafCert) {
+	for i, b := range sha256.Sum256(x509LeafCert) {
 		if i > 0 {
 			tpString += ":"
 		}
