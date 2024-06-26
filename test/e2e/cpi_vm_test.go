@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/types"
@@ -118,7 +118,7 @@ func WaitForWorkerNodeReadiness(readiness corev1.ConditionStatus) func() error {
 		if err != nil {
 			return err
 		}
-		if DoesNodeHasReadiness(node, readiness) {
+		if !DoesNodeHasReadiness(node, readiness) {
 			return errors.New("worker node ready status is not " + string(readiness))
 		}
 		return nil
@@ -213,7 +213,7 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 		Eventually(WaitForVMPowerState(workerVM.Name(), types.VirtualMachinePowerStatePoweredOff))
 
 		By("Wait for node " + workerNode.Name + " to become not ready")
-		Eventually(WaitForWorkerNodeReadiness(corev1.ConditionFalse), 5*time.Minute, 2*time.Second).Should(BeNil())
+		Eventually(WaitForWorkerNodeReadiness(corev1.ConditionUnknown), 5*time.Minute, 2*time.Second).Should(BeNil())
 
 		By("Power on VM "+workerVM.Name(), func() {
 			task, err := workerVM.PowerOn(ctx)

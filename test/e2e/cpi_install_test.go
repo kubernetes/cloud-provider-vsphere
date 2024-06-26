@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,8 +39,8 @@ func findVSphereCPIDaemonsetInList(daemonList *appsv1.DaemonSetList) (*appsv1.Da
 }
 
 /*
-	CPI should be installable from the helm chart. Its daemon set will eventually
-	become ready with number equals to the desired pods.
+CPI should be installable from the helm chart. Its daemon set will eventually
+become ready with number equals to the desired pods.
 */
 var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 	It("should have running CPI daemon set", func() {
@@ -54,6 +54,7 @@ var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 				return errors.New("CPI daemon list is empty")
 			}
 			daemon, err := findVSphereCPIDaemonsetInList(daemonList)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			By("CPI daemon should be running")
 			if daemon.Status.NumberReady != daemon.Status.DesiredNumberScheduled {
