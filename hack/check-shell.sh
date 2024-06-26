@@ -54,5 +54,5 @@ shift $((OPTIND-1))
 if [ ! "${DO_DOCKER-}" ] && command -v shellcheck >/dev/null 2>&1; then
   find . -path ./vendor -prune -o -name "*.*sh" -type f -print0 | xargs -0 shellcheck
 else
-  docker run --rm -t -v "$(pwd)":/build:ro gcr.io/cluster-api-provider-vsphere/extra/shellcheck
+  docker run --rm -t -v "$(pwd)":/build:ro gcr.io/k8s-staging-cloud-pv-vsphere/extra/shellcheck
 fi
