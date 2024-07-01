@@ -3,7 +3,7 @@ package vsphereparavirtual
 import (
 	"context"
 
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -73,13 +73,13 @@ func (z zones) GetZoneByNodeName(ctx context.Context, nodeName types.NodeName) (
 
 // discoverNodeByProviderID takes a ProviderID and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func (z zones) discoverNodeByProviderID(ctx context.Context, providerID string) (*vmopv1alpha1.VirtualMachine, error) {
+func (z zones) discoverNodeByProviderID(ctx context.Context, providerID string) (*vmopv1.VirtualMachine, error) {
 	return discoverNodeByProviderID(ctx, providerID, z.namespace, z.vmClient)
 }
 
 // discoverNodeByName takes a node name and returns a VirtualMachine if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func (z zones) discoverNodeByName(ctx context.Context, name types.NodeName) (*vmopv1alpha1.VirtualMachine, error) {
+func (z zones) discoverNodeByName(ctx context.Context, name types.NodeName) (*vmopv1.VirtualMachine, error) {
 	return discoverNodeByName(ctx, name, z.namespace, z.vmClient)
 }
 

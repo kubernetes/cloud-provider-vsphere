@@ -28,7 +28,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/pkg/errors"
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
 )
@@ -160,7 +160,7 @@ func (l *loadBalancer) EnsureLoadBalancerDeleted(ctx context.Context, clusterNam
 	return nil
 }
 
-func toStatus(vmService *vmopv1alpha1.VirtualMachineService) *v1.LoadBalancerStatus {
+func toStatus(vmService *vmopv1.VirtualMachineService) *v1.LoadBalancerStatus {
 
 	if len(vmService.Status.LoadBalancer.Ingress) > 0 {
 		return &v1.LoadBalancerStatus{

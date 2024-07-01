@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
@@ -16,37 +16,37 @@ import (
 
 func initVMServiceTest() (*virtualMachineServices, *dynamicfake.FakeDynamicClient) {
 	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
+	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	vms := newVirtualMachineServices(NewFakeClientSet(fc).V1alpha1(), "test-ns")
+	vms := newVirtualMachineServices(NewFakeClientSet(fc).V1alpha2(), "test-ns")
 	return vms, fc
 }
 
 func TestVMServiceCreate(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		virtualMachineService *vmopv1alpha1.VirtualMachineService
+		virtualMachineService *vmopv1.VirtualMachineService
 		createFunc            func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVMService     *vmopv1alpha1.VirtualMachineService
+		expectedVMService     *vmopv1.VirtualMachineService
 		expectedErr           bool
 	}{
 		{
 			name: "Create: when everything is ok",
-			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+			virtualMachineService: &vmopv1.VirtualMachineService{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
-			expectedVMService: &vmopv1alpha1.VirtualMachineService{
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+			expectedVMService: &vmopv1.VirtualMachineService{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
 		},
 		{
 			name: "Create: when create error",
-			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+			virtualMachineService: &vmopv1.VirtualMachineService{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
@@ -78,48 +78,48 @@ func TestVMServiceCreate(t *testing.T) {
 func TestVMServiceUpdate(t *testing.T) {
 	testCases := []struct {
 		name              string
-		oldVMService      *vmopv1alpha1.VirtualMachineService
-		newVMService      *vmopv1alpha1.VirtualMachineService
+		oldVMService      *vmopv1.VirtualMachineService
+		newVMService      *vmopv1.VirtualMachineService
 		updateFunc        func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVMService *vmopv1alpha1.VirtualMachineService
+		expectedVMService *vmopv1.VirtualMachineService
 		expectedErr       bool
 	}{
 		{
 			name: "Update: when everything is ok",
-			oldVMService: &vmopv1alpha1.VirtualMachineService{
+			oldVMService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
-			newVMService: &vmopv1alpha1.VirtualMachineService{
+			newVMService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
-			expectedVMService: &vmopv1alpha1.VirtualMachineService{
+			expectedVMService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
 		},
 		{
 			name: "Update: when update error",
-			oldVMService: &vmopv1alpha1.VirtualMachineService{
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+			oldVMService: &vmopv1.VirtualMachineService{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
-			newVMService: &vmopv1alpha1.VirtualMachineService{
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+			newVMService: &vmopv1.VirtualMachineService{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
@@ -153,28 +153,28 @@ func TestVMServiceUpdate(t *testing.T) {
 func TestVMServiceDelete(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		virtualMachineService *vmopv1alpha1.VirtualMachineService
+		virtualMachineService *vmopv1.VirtualMachineService
 		deleteFunc            func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
 		expectedErr           bool
 	}{
 		{
 			name: "Delete: when everything is ok",
-			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
 		},
 		{
 			name: "Delete: when delete error",
-			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
@@ -206,37 +206,37 @@ func TestVMServiceDelete(t *testing.T) {
 func TestVMServiceGet(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		virtualMachineService *vmopv1alpha1.VirtualMachineService
+		virtualMachineService *vmopv1.VirtualMachineService
 		getFunc               func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
-		expectedVMService     *vmopv1alpha1.VirtualMachineService
+		expectedVMService     *vmopv1.VirtualMachineService
 		expectedErr           bool
 	}{
 		{
 			name: "Get: when everything is ok",
-			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
-			expectedVMService: &vmopv1alpha1.VirtualMachineService{
+			expectedVMService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
 		},
 		{
 			name: "Get: when get error",
-			virtualMachineService: &vmopv1alpha1.VirtualMachineService{
+			virtualMachineService: &vmopv1.VirtualMachineService{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-vm-error",
 				},
-				Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+				Spec: vmopv1.VirtualMachineServiceSpec{
 					Type: "NodePort",
 				},
 			},
@@ -270,20 +270,20 @@ func TestVMServiceGet(t *testing.T) {
 func TestVMServiceList(t *testing.T) {
 	testCases := []struct {
 		name                      string
-		virtualMachineServiceList *vmopv1alpha1.VirtualMachineServiceList
+		virtualMachineServiceList *vmopv1.VirtualMachineServiceList
 		listFunc                  func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error)
 		expectedVMServiceNum      int
 		expectedErr               bool
 	}{
 		{
 			name: "List: when there is one virtual machine service, list should be ok",
-			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
-				Items: []vmopv1alpha1.VirtualMachineService{
+			virtualMachineServiceList: &vmopv1.VirtualMachineServiceList{
+				Items: []vmopv1.VirtualMachineService{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-vm",
 						},
-						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+						Spec: vmopv1.VirtualMachineServiceSpec{
 							Type: "NodePort",
 						},
 					},
@@ -293,13 +293,13 @@ func TestVMServiceList(t *testing.T) {
 		},
 		{
 			name: "List: when there is 2 virtual machine services, list should be ok",
-			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
-				Items: []vmopv1alpha1.VirtualMachineService{
+			virtualMachineServiceList: &vmopv1.VirtualMachineServiceList{
+				Items: []vmopv1.VirtualMachineService{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-vm",
 						},
-						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+						Spec: vmopv1.VirtualMachineServiceSpec{
 							Type: "NodePort",
 						},
 					},
@@ -307,7 +307,7 @@ func TestVMServiceList(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-vm-2",
 						},
-						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+						Spec: vmopv1.VirtualMachineServiceSpec{
 							Type: "NodePort",
 						},
 					},
@@ -317,20 +317,20 @@ func TestVMServiceList(t *testing.T) {
 		},
 		{
 			name: "List: when there is 0 virtual machine service, list should be ok",
-			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
-				Items: []vmopv1alpha1.VirtualMachineService{},
+			virtualMachineServiceList: &vmopv1.VirtualMachineServiceList{
+				Items: []vmopv1.VirtualMachineService{},
 			},
 			expectedVMServiceNum: 0,
 		},
 		{
 			name: "List: when list error",
-			virtualMachineServiceList: &vmopv1alpha1.VirtualMachineServiceList{
-				Items: []vmopv1alpha1.VirtualMachineService{
+			virtualMachineServiceList: &vmopv1.VirtualMachineServiceList{
+				Items: []vmopv1.VirtualMachineService{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-vm",
 						},
-						Spec: vmopv1alpha1.VirtualMachineServiceSpec{
+						Spec: vmopv1.VirtualMachineServiceSpec{
 							Type: "NodePort",
 						},
 					},

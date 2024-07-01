@@ -35,7 +35,7 @@ import (
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
 
-	vmopv1alpha1 "github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 
 	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
@@ -55,7 +55,7 @@ var (
 
 func newTestLoadBalancer() (cloudprovider.LoadBalancer, *dynamicfake.FakeDynamicClient) {
 	scheme := runtime.NewScheme()
-	_ = vmopv1alpha1.AddToScheme(scheme)
+	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
 	fcw := vmopclient.NewFakeClientSet(fc)
 
@@ -202,10 +202,10 @@ func TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal(t *testing.T) {
 	}
 
 	fc.PrependReactor("create", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-		unstructuredObj, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(&vmopv1alpha1.VirtualMachineService{
-			Status: vmopv1alpha1.VirtualMachineServiceStatus{
-				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
-					Ingress: []vmopv1alpha1.LoadBalancerIngress{
+		unstructuredObj, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(&vmopv1.VirtualMachineService{
+			Status: vmopv1.VirtualMachineServiceStatus{
+				LoadBalancer: vmopv1.LoadBalancerStatus{
+					Ingress: []vmopv1.LoadBalancerIngress{
 						{
 							IP: "10.10.10.10",
 						},
@@ -232,14 +232,14 @@ func TestEnsureLoadBalancer(t *testing.T) {
 		{
 			name: "when VMService is created but IP not found",
 			createFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &vmopv1alpha1.VirtualMachineService{}, fmt.Errorf(vmservice.ErrVMServiceIPNotFound.Error())
+				return true, &vmopv1.VirtualMachineService{}, fmt.Errorf(vmservice.ErrVMServiceIPNotFound.Error())
 			},
 			expectErr: vmservice.ErrVMServiceIPNotFound,
 		},
 		{
 			name: "when VMService creation failed",
 			createFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &vmopv1alpha1.VirtualMachineService{}, fmt.Errorf(vmservice.ErrCreateVMService.Error())
+				return true, &vmopv1.VirtualMachineService{}, fmt.Errorf(vmservice.ErrCreateVMService.Error())
 			},
 			expectErr: vmservice.ErrCreateVMService,
 		},
@@ -275,10 +275,10 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 	}
 	// Ensure that the client Create call returns a VMService with a valid IP
 	fc.PrependReactor("create", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-		unstructuredObj, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(&vmopv1alpha1.VirtualMachineService{
-			Status: vmopv1alpha1.VirtualMachineServiceStatus{
-				LoadBalancer: vmopv1alpha1.LoadBalancerStatus{
-					Ingress: []vmopv1alpha1.LoadBalancerIngress{
+		unstructuredObj, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(&vmopv1.VirtualMachineService{
+			Status: vmopv1.VirtualMachineServiceStatus{
+				LoadBalancer: vmopv1.LoadBalancerStatus{
+					Ingress: []vmopv1.LoadBalancerIngress{
 						{
 							IP: "10.10.10.10",
 						},
@@ -291,9 +291,9 @@ func TestEnsureLoadBalancer_VMServiceCreatedIPFound(t *testing.T) {
 					testOwnerReference,
 				},
 			},
-			Spec: vmopv1alpha1.VirtualMachineServiceSpec{
-				Type: vmopv1alpha1.VirtualMachineServiceTypeLoadBalancer,
-				Ports: []vmopv1alpha1.VirtualMachineServicePort{
+			Spec: vmopv1.VirtualMachineServiceSpec{
+				Type: vmopv1.VirtualMachineServiceTypeLoadBalancer,
+				Ports: []vmopv1.VirtualMachineServicePort{
 					{
 						Name:       "test-port",
 						Port:       80,
@@ -328,7 +328,7 @@ func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 		{
 			name: "should ignore not found error",
 			deleteFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, nil, apierrors.NewNotFound(vmopv1alpha1.Resource("virtualmachineservice"), testClustername)
+				return true, nil, apierrors.NewNotFound(vmopv1.SchemeGroupVersion.WithResource("virtualmachineservice").GroupResource(), testClustername)
 			},
 		},
 		{
