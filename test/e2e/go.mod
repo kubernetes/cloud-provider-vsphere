@@ -4,6 +4,8 @@ go 1.22.0
 
 toolchain go1.22.3
 
+replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-provider-vsphere v1.10.0-rc.1.0.20240521132953-469f652e57ae
+
 require (
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
