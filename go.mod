@@ -5,14 +5,14 @@ go 1.20
 require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.16.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/vm-operator-api v0.1.4-0.20201118171008-5ca641b0e126
-	github.com/vmware/govmomi v0.30.6
+	github.com/vmware/govmomi v0.37.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.11.0
@@ -58,7 +58,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/cel-go v0.16.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2 // indirect
