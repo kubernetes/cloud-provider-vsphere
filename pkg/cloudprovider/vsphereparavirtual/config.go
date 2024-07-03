@@ -25,6 +25,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/nsxipmanager"
 )
 
 const (
@@ -47,10 +49,6 @@ const (
 	SupervisorServiceAccountNameEnv string = "SUPERVISOR_CLUSTER_SERVICEACCOUNT_SECRET_NAME"
 	// SupervisorAPIServerFQDN reads supervisor service API server's fully qualified domain name from env
 	SupervisorAPIServerFQDN string = "supervisor.default.svc"
-	// PublicIPPoolType allows Pod IP address routable outside of Tier 0 router.
-	PublicIPPoolType = "Public"
-	// PrivateIPPoolType allows Pod IP address routable within VPC router.
-	PrivateIPPoolType = "Private"
 )
 
 // SupervisorEndpoint is the supervisor cluster endpoint
@@ -146,7 +144,7 @@ func checkPodIPPoolType(vpcModeEnabled bool, podIPPoolType string) error {
 			return errors.New("--pod-ip-pool-type is required in the NSX-T VPC network")
 		}
 
-		if podIPPoolType != PublicIPPoolType && podIPPoolType != PrivateIPPoolType {
+		if podIPPoolType != nsxipmanager.PublicIPPoolType && podIPPoolType != nsxipmanager.PrivateIPPoolType {
 			return errors.New("--pod-ip-pool-type can be either Public or Private in NSX-T VPC network, " + podIPPoolType + " is not supported")
 
 		}
