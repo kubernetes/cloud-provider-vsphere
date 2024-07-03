@@ -15,13 +15,11 @@ package ippool
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -32,12 +30,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/utils"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager"
 )
 
 const (
-	controllerName    = "ippool-controller"
-	cidrUpdateRetries = 3
+	controllerName = "ippool-controller"
 	// Interval of synchronizing ippool status from apiserver
 	ippoolSyncPeriod = 30 * time.Second
 )
@@ -197,70 +195,14 @@ func (c *Controller) processIPPoolCreateOrUpdate(subnets map[string]string) erro
 	for _, n := range nodes.Items {
 		if v, ok := subnets[n.Name]; ok {
 			// Set or overwrite the podCIDR on current node
-			if err := c.patchNodeCIDRWithRetry(types.NodeName(n.Name), v); err == nil {
+			if err := utils.PatchNodeCIDRWithRetry(ctx, c.kubeclientset, &n, v, c.recorder); err == nil {
 				// continue to next node if this one succeeded
 				continue
 			}
-			klog.Errorf("Failed to update node %v PodCIDR to %v after multiple attempts: %v", n.Name, v, err)
-			c.recordNodeStatusChange(&n, "CIDRAssignmentFailed")
-			klog.Errorf("CIDR assignment for node %v failed: %v. Try again in next reconcile", n.Name, err)
 
 			return err
 		}
 	}
 
 	return nil
-}
-
-type nodeForCIDRMergePatch struct {
-	Spec nodeSpecForMergePatch `json:"spec"`
-}
-
-type nodeSpecForMergePatch struct {
-	PodCIDR  string   `json:"podCIDR"`
-	PodCIDRs []string `json:"podCIDRs,omitempty"`
-}
-
-// patchNodeCIDRWithRetry patches the specified node's CIDR to the given value with retries
-func (c *Controller) patchNodeCIDRWithRetry(node types.NodeName, cidr string) error {
-	var err error
-	for i := 0; i < cidrUpdateRetries; i++ {
-		if err = c.patchNodeCIDR(node, cidr); err == nil {
-			klog.V(4).Infof("Set node %v PodCIDR to %v", node, cidr)
-			return nil
-		}
-	}
-	return err
-}
-
-// patchNodeCIDR patches the specified node's CIDR to the given value.
-func (c *Controller) patchNodeCIDR(node types.NodeName, cidr string) error {
-	patch := nodeForCIDRMergePatch{
-		Spec: nodeSpecForMergePatch{
-			PodCIDR:  cidr,
-			PodCIDRs: []string{cidr},
-		},
-	}
-	patchBytes, err := json.Marshal(&patch)
-	if err != nil {
-		return fmt.Errorf("failed to json.Marshal CIDR: %v", err)
-	}
-
-	if _, err := c.kubeclientset.CoreV1().Nodes().Patch(context.TODO(), string(node), types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{}); err != nil {
-		return fmt.Errorf("failed to patch node CIDR: %v", err)
-	}
-	return nil
-}
-
-// recordNodeStatusChange records a event related to a node status change. (Common to lifecycle and ipam)
-func (c *Controller) recordNodeStatusChange(node *corev1.Node, newStatus string) {
-	ref := &corev1.ObjectReference{
-		APIVersion: "v1",
-		Kind:       "Node",
-		Name:       node.Name,
-		UID:        node.UID,
-		Namespace:  "",
-	}
-	klog.V(2).Infof("Recording status change %s event message for node %s", newStatus, node.Name)
-	c.recorder.Eventf(ref, corev1.EventTypeNormal, newStatus, "Node %s status is now: %s", node.Name, newStatus)
 }

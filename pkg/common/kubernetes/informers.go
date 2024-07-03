@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/net/context"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
 	informerv1 "k8s.io/client-go/informers/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -122,4 +124,9 @@ func (im *InformerManager) IsNodeInformerSynced() cache.InformerSynced {
 // already been initialized, it will not re-init them. Only new non-init Listers will be initialized.
 func (im *InformerManager) Listen() {
 	go im.informerFactory.Start(im.stopCh)
+}
+
+// GetContext returns a context that is cancelled when the stop channel is closed
+func (im *InformerManager) GetContext() context.Context {
+	return wait.ContextForChannel(im.stopCh)
 }
