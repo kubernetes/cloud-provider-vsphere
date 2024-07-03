@@ -2,13 +2,12 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	vpcnetworkingapis "github.com/vmware-tanzu/nsx-operator/pkg/apis/nsx.vmware.com/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	t1networkingapis "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
 	faket1networkingclients "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/fake"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
@@ -167,16 +166,6 @@ func TestGetIPPoolSubnets(t *testing.T) {
 			},
 			expectedSubs: map[string]string{},
 			expectedErr:  nil,
-		},
-		{
-			name: "IPPool type is wrong",
-			ipp: &vpcnetworkingapis.IPPool{
-				Status: vpcnetworkingapis.IPPoolStatus{
-					Subnets: []vpcnetworkingapis.SubnetResult{},
-				},
-			},
-			expectedSubs: nil,
-			expectedErr:  fmt.Errorf("unknown ippool type"),
 		},
 	}
 
@@ -356,32 +345,6 @@ func TestDiffIPPoolSubnets(t *testing.T) {
 						{
 							PrefixLength: 24,
 							IPFamily:     "ipv4",
-							Name:         testNodeName1,
-						},
-					},
-				},
-			},
-			expectedDiff: false,
-		},
-		{
-			name: "IPPool with wrong type used",
-			old: &vpcnetworkingapis.IPPool{
-				Spec: vpcnetworkingapis.IPPoolSpec{
-					Subnets: []vpcnetworkingapis.SubnetRequest{
-						{
-							PrefixLength: 24,
-							IPFamily:     "IPv4",
-							Name:         testNodeName1,
-						},
-					},
-				},
-			},
-			cur: &vpcnetworkingapis.IPPool{
-				Spec: vpcnetworkingapis.IPPoolSpec{
-					Subnets: []vpcnetworkingapis.SubnetRequest{
-						{
-							PrefixLength: 24,
-							IPFamily:     "IPv4",
 							Name:         testNodeName1,
 						},
 					},

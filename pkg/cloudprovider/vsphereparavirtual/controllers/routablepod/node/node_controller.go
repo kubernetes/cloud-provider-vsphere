@@ -29,9 +29,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager"
-	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 	"k8s.io/klog/v2"
+
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/nsxipmanager"
+	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 // whenever a node is added/updated/removed.
 // Create a ippool if there isn't one for current cluster.
 type Controller struct {
-	ippoolManager ippoolmanager.IPPoolManager
+	nsxIPManager nsxipmanager.NSXIPManager
 
 	nodesLister      corelisters.NodeLister
 	nodeListerSynced cache.InformerSynced
@@ -59,7 +60,7 @@ type Controller struct {
 // NewController returns controller that reconciles node
 func NewController(
 	kubeClient kubernetes.Interface,
-	ippoolManager ippoolmanager.IPPoolManager,
+	nsxIPManager nsxipmanager.NSXIPManager,
 	informerManager *k8s.InformerManager,
 	clusterName string,
 	clusterNS string,
@@ -71,7 +72,7 @@ func NewController(
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerName})
 
 	c := &Controller{
-		ippoolManager:    ippoolManager,
+		nsxIPManager:     nsxIPManager,
 		nodesLister:      informerManager.GetNodeLister(),
 		nodeListerSynced: informerManager.IsNodeInformerSynced(),
 
@@ -199,59 +200,16 @@ func (c *Controller) syncNode(key string) error {
 	node, err := c.nodesLister.Get(name)
 	switch {
 	case apierrors.IsNotFound(err):
-		// node absence in store means watcher caught the deletion, ensure the request in ippool is deleted info is cleaned
-		err = c.processNodeDelete(name)
+		// node absence in store means watcher caught the deletion, ensure Pod CIDR of this Node is released
+		klog.V(4).Infof("Node %s is not found, releasing Pod CIDR %s", node.Name, node.Spec.PodCIDR)
+		err = c.nsxIPManager.ReleasePodCIDR(node)
 	case err != nil:
 		utilruntime.HandleError(fmt.Errorf("unable to retrieve node %v from store: %v", key, err))
 	default:
-		err = c.processNodeCreateOrUpdate(node)
+		// node exists in store, ensure Pod CIDR of this Node is claimed
+		klog.V(4).Infof("Node %s is found, ensuring Pod CIDR claimed", node.Name)
+		err = c.nsxIPManager.ClaimPodCIDR(node)
 	}
 
 	return err
-}
-
-// remove the node subnet allocation request from ippool's spec
-// if ippool is not found, skip the removing
-func (c *Controller) processNodeDelete(name string) error {
-	ippool, err := c.ippoolManager.GetIPPool(c.clusterNS, c.clusterName)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			klog.V(4).Info("ippool is gone, no need to remove the node request")
-			return nil
-		}
-		return fmt.Errorf("fail to get ippool in namespace %s for cluster %s", c.clusterNS, c.clusterName)
-	}
-
-	err = c.ippoolManager.DeleteSubnetFromIPPool(name, ippool)
-	if err != nil {
-		return fmt.Errorf("fail to delete subnet in IPPool for node %s, err: %v", name, err)
-	}
-
-	klog.V(4).Infof("deleted the subnet in IPPool for node %s", name)
-	return nil
-}
-
-// when a node is created or updated, check if the node has podCIDR field set.
-// if node's podCIDR is empty, add the node CIDR allocation request to ippool spec.
-func (c *Controller) processNodeCreateOrUpdate(node *corev1.Node) error {
-	ippool, err := c.ippoolManager.GetIPPool(c.clusterNS, c.clusterName)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("fail to get ippool in namespace %s for cluster %s", c.clusterNS, c.clusterName)
-		}
-		// if ippool does not exist, create one
-		klog.V(4).Info("creating ippool")
-		if ippool, err = c.ippoolManager.CreateIPPool(c.clusterNS, c.clusterName, c.ownerRef); err != nil {
-			klog.Error("error creating ippool")
-			return err
-		}
-	}
-
-	err = c.ippoolManager.AddSubnetToIPPool(node, ippool, c.ownerRef)
-	if err != nil {
-		return fmt.Errorf("fail to add subnet in IPPool for node %s, err: %v", node.Name, err)
-	}
-
-	klog.V(4).Infof("added the subnet in IPPool for node %s", node.Name)
-	return nil
 }
