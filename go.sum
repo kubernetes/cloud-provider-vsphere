@@ -138,8 +138,8 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/onsi/ginkgo/v2 v2.19.0 h1:9Cnnf7UHo57Hy3k6/m5k3dRfGTMXGvxhHFvkDTCTpvA=
-github.com/onsi/ginkgo/v2 v2.19.0/go.mod h1:rlwLi9PilAFJ8jCg9UE1QP6VBpd6/xj3SRC0d6TU0To=
+github.com/onsi/ginkgo/v2 v2.17.2 h1:7eMhcy3GimbsA3hEnVKdw/PQM9XN9krpKVXsZdph0/g=
+github.com/onsi/ginkgo/v2 v2.17.2/go.mod h1:nP2DPOQoNsQmsVyv5rDA8JkXQoCs6goXIvr/PRJ1eCc=
 github.com/onsi/gomega v1.33.1 h1:dsYjIxxSR755MDmKVsaFQTE22ChNBcuuTWgkUDSubOk=
 github.com/onsi/gomega v1.33.1/go.mod h1:U4R44UsT+9eLIaYRB2a5qajjtQYn0hauxvRm16AVYg0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
@@ -182,8 +182,8 @@ github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20231227030711-34390278f3cd
 github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20231227030711-34390278f3cd/go.mod h1:Q4JzNkNMvjo7pXtlB5/R3oME4Nhah7fAObWgghVmtxk=
 github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240103020117-417d1d01f14b h1:QRC2/l0VwKDVpe5bQFYR4oX1Fad6Ch5FlDaQmkgLW1g=
 github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240103020117-417d1d01f14b/go.mod h1:dzob8tUzpAREQPtbbjQs4b1UyQDR37B2TiIdg8WJSRM=
-github.com/vmware-tanzu/vm-operator/api v1.8.7-0.20240625173706-a93aa9f0bda0 h1:PJYsetjTAFskQFjcaY0Kr4oTM1Y2LFSPH7nBl3SKc9o=
-github.com/vmware-tanzu/vm-operator/api v1.8.7-0.20240625173706-a93aa9f0bda0/go.mod h1:IrcgSXXeY8eEVPAPMZyMvN4JZRf+VQSmfiuI622WdlM=
+github.com/vmware-tanzu/vm-operator/api v1.8.6 h1:NIndORjcnSmIlQsCMIewpIwg/ocRVDh2lYjOroTVLrU=
+github.com/vmware-tanzu/vm-operator/api v1.8.6/go.mod h1:HHA2SNI9B5Yqtyp5t+Gt9WTWBi/fIkM6+MukDDSf11A=
 github.com/vmware/govmomi v0.38.0 h1:UvQpLAOjDpO0JUxoPCXnEzOlEa/9kejO6K58qOFr6cM=
 github.com/vmware/govmomi v0.38.0/go.mod h1:mtGWtM+YhTADHlCgJBiskSRPOZRsN9MSjPzaZLte/oQ=
 github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0 h1:pT+oqJ8FD5eUBQkl+e7LZwwtbwPvW5kDyyGXvt66gOM=

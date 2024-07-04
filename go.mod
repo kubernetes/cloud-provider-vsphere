@@ -1,8 +1,10 @@
 module k8s.io/cloud-provider-vsphere
 
-go 1.22.4
+go 1.22.0
 
-replace github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels => github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels v1.8.7-0.20240625173706-a93aa9f0bda0
+toolchain go1.22.3
+
+replace github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels => github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels v1.8.6
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0
@@ -15,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20231227030711-34390278f3cd
 	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240103020117-417d1d01f14b
-	github.com/vmware-tanzu/vm-operator/api v1.8.7-0.20240625173706-a93aa9f0bda0
+	github.com/vmware-tanzu/vm-operator/api v1.8.6
 	github.com/vmware/govmomi v0.38.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0
@@ -75,6 +77,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/onsi/ginkgo/v2 v2.17.2 // indirect
 	github.com/onsi/gomega v1.33.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
