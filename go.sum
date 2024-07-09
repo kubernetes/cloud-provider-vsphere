@@ -332,8 +332,8 @@ github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8
 github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75 h1:6fotK7otjonDflCTK0BCfls4SPy3NcCVb5dqqmbRknE=
 github.com/vmware-tanzu/vm-operator-api v0.1.4-0.20201118171008-5ca641b0e126 h1:kDAAVFnTW9YHGuUTMGQoWz9AV7aZo3+wCbtzyenVktI=
 github.com/vmware-tanzu/vm-operator-api v0.1.4-0.20201118171008-5ca641b0e126/go.mod h1:mubK0QMyaA2TbeAmGsu2GVfiqDFppNUAUqoMPoKFgzM=
-github.com/vmware/govmomi v0.37.0 h1:xX5AnIrVn4yfH0fYSjyjMg/Kq6q7cNxA+vyfV5YcF70=
-github.com/vmware/govmomi v0.37.0/go.mod h1:mtGWtM+YhTADHlCgJBiskSRPOZRsN9MSjPzaZLte/oQ=
+github.com/vmware/govmomi v0.37.3 h1:L2y2Ba09tYiZwdPtdF64Ox9QZeJ8vlCUGcAF9SdODn4=
+github.com/vmware/govmomi v0.37.3/go.mod h1:mtGWtM+YhTADHlCgJBiskSRPOZRsN9MSjPzaZLte/oQ=
 github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0 h1:pT+oqJ8FD5eUBQkl+e7LZwwtbwPvW5kDyyGXvt66gOM=
 github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0/go.mod h1:f3+6YVZpNcK2pYyiQ94BoHWmjMj9BnYav0vNFuTiDVM=
 github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0 h1:pSBxa9Agh6bgW8Hr0A1eQxuwnxGTnuAVox8iQb023hg=
