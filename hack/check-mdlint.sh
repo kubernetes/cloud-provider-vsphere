@@ -23,4 +23,4 @@ set -o pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 docker run --rm -v "$(pwd)":/build \
-  gcr.io/cluster-api-provider-vsphere/extra/mdlint:0.17.0 /md/lint -i vendor -i docs/book/node_modules .
+  gcr.io/k8s-staging-cloud-pv-vsphere/extra/mdlint:0.17.0 /md/lint -i vendor -i docs/book/node_modules .
