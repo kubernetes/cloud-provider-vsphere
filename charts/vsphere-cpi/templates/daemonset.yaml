@@ -40,13 +40,13 @@ spec:
         {{- toYaml .Values.daemonset.podLabels | nindent 8 }}
         {{- end }}
     spec:
-    {{- with .Values.daemonset.tolerations }}
+    {{- if .Values.daemonset.tolerations }}
       tolerations:
-{{- toYaml . | indent 8 }}
+        {{- toYaml .Values.daemonset.tolerations | nindent 8 }}
     {{- end }}
-    {{- with .Values.daemonset.affinity }}
+    {{- if .Values.daemonset.affinity }}
       affinity:
-{{- toYaml . | indent 8 }}
+        {{- toYaml .Values.daemonset.affinity | nindent 8 }}
     {{- end }}
       {{- if .Values.securityContext.enabled }}
       securityContext:
