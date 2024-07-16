@@ -40,25 +40,14 @@ spec:
         {{- toYaml .Values.daemonset.podLabels | nindent 8 }}
         {{- end }}
     spec:
+    {{- with .Values.daemonset.tolerations }}
       tolerations:
-      - key: node.cloudprovider.kubernetes.io/uninitialized
-        value: "true"
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
-        operator: Exists
-      - key: node-role.kubernetes.io/control-plane
-        effect: NoSchedule
-        operator: Exists
-      - key: node.kubernetes.io/not-ready
-        effect: NoSchedule
-        operator: Exists
-      - key: CriticalAddonsOnly
-        effect: NoExecute
-        operator: Exists
-      {{- if .Values.daemonset.tolerations }}
-      {{- toYaml .Values.daemonset.tolerations | nindent 6 }}
-      {{- end }}
+{{- toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.daemonset.affinity }}
+      affinity:
+{{- toYaml . | indent 8 }}
+    {{- end }}
       {{- if .Values.securityContext.enabled }}
       securityContext:
         fsGroup: {{ .Values.securityContext.fsGroup }}
@@ -91,13 +80,3 @@ spec:
         - name: vsphere-config-volume
           configMap:
             name: {{ if $config.enabled }}{{- $config.name }}{{- else }}cloud-config{{- end }}
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: node-role.kubernetes.io/control-plane
-                operator: Exists
-            - matchExpressions:
-              - key: node-role.kubernetes.io/master
-                operator: Exists

@@ -77,5 +77,31 @@ daemonset:
   ## Additional pod labels
   ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
   podLabels: {}
-  ## Allows for the default tolerations to be replaced with user-defined ones
-  tolerations: []
+  ## Allows for the default tolerations to be updated or replaced with user-defined ones
+  tolerations:
+    - key: node.cloudprovider.kubernetes.io/uninitialized
+      value: "true"
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/master
+      effect: NoSchedule
+      operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      effect: NoSchedule
+      operator: Exists
+    - key: node.kubernetes.io/not-ready
+      effect: NoSchedule
+      operator: Exists
+    - key: CriticalAddonsOnly
+      effect: NoExecute
+      operator: Exists
+  ## Allows for the default affinities to be updated or replaced with user-defined ones
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+        - matchExpressions:
+          - key: node-role.kubernetes.io/master
+            operator: Exists
