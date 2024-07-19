@@ -17,7 +17,6 @@ require (
 	sigs.k8s.io/cluster-api v1.7.0-rc.0.0.20240528063443-2568aa2997bc
 	sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0-rc.1.0.20240521132953-469f652e57ae
 	sigs.k8s.io/cluster-api/test v1.7.0-rc.0.0.20240528063443-2568aa2997bc
-	sigs.k8s.io/controller-runtime v0.18.4
 )
 
 require (
@@ -142,6 +141,7 @@ require (
 	k8s.io/component-base v0.30.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661 // indirect
+	sigs.k8s.io/controller-runtime v0.18.4 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kind v0.23.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect

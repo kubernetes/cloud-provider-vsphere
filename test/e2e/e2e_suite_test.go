@@ -45,8 +45,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	vsphereframework "sigs.k8s.io/cluster-api-provider-vsphere/test/framework"
 )
 
@@ -140,8 +138,6 @@ func TestE2E(t *testing.T) {
 
 // Create a kind cluster that shared across all the tests
 var _ = SynchronizedBeforeSuite(func() []byte {
-	// This line prevents controller-runtime from complaining about log.SetLogger never being called
-	ctrl.SetLogger(klog.Background())
 
 	By("Load e2e config file", func() {
 		Expect(configPath).To(BeAnExistingFile(), "invalid test suite argument. e2e.config should be an existing file.")
