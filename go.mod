@@ -24,12 +24,12 @@ require (
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.12.0
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.31.0-rc.0
-	k8s.io/apimachinery v0.31.0-rc.0
-	k8s.io/client-go v0.31.0-rc.0
-	k8s.io/cloud-provider v0.31.0-rc.0
-	k8s.io/code-generator v0.31.0-rc.0
-	k8s.io/component-base v0.31.0-rc.0
+	k8s.io/api v0.31.0-rc.1
+	k8s.io/apimachinery v0.31.0-rc.1
+	k8s.io/client-go v0.31.0-rc.1
+	k8s.io/cloud-provider v0.31.0-rc.1
+	k8s.io/code-generator v0.31.0-rc.1
+	k8s.io/component-base v0.31.0-rc.1
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -119,11 +119,11 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.31.0-alpha.3 // indirect
-	k8s.io/apiserver v0.31.0-rc.0 // indirect
-	k8s.io/component-helpers v0.31.0-rc.0 // indirect
-	k8s.io/controller-manager v0.31.0-rc.0 // indirect
+	k8s.io/apiserver v0.31.0-rc.1 // indirect
+	k8s.io/component-helpers v0.31.0-rc.1 // indirect
+	k8s.io/controller-manager v0.31.0-rc.1 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240310015720-9cff6334dab4 // indirect
-	k8s.io/kms v0.31.0-rc.0 // indirect
+	k8s.io/kms v0.31.0-rc.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.3 // indirect
