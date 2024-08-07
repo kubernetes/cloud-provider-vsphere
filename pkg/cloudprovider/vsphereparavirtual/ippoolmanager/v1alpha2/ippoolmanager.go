@@ -10,7 +10,6 @@ import (
 	vpcnetworkinginformers "github.com/vmware-tanzu/nsx-operator/pkg/client/informers/externalversions"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -195,6 +194,6 @@ func (p *IPPoolManager) GetIPPoolListerSynced() cache.InformerSynced {
 }
 
 // StartIPPoolInformers starts ippool informer
-func (p *IPPoolManager) StartIPPoolInformers() {
-	p.informerFactory.Start(wait.NeverStop)
+func (p *IPPoolManager) StartIPPoolInformers(stopCh <-chan struct{}) {
+	p.informerFactory.Start(stopCh)
 }

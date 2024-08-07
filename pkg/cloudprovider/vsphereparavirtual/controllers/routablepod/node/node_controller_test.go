@@ -24,10 +24,13 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+
 	t1networkingapis "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
 	faket1networkingclients "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/fake"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
 	ippmv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/nsxipmanager"
+
 	"k8s.io/klog/v2"
 )
 
@@ -58,8 +61,15 @@ func newController() (*Controller, *faket1networkingclients.Clientset) {
 	informerFactory := informers.NewSharedInformerFactory(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
+	ownerRef := &metav1.OwnerReference{
+		APIVersion: "cluster.x-k8s.io/v1beta1",
+		Kind:       "Cluster",
+		Name:       "test-cluster",
+		UID:        "1234",
+	}
+	nsxIPManager := nsxipmanager.NewNSXT1IPManager(ippManager, testClusterName, testClusterNS, ownerRef)
 	c := &Controller{
-		ippoolManager:    ippManager,
+		nsxIPManager:     nsxIPManager,
 		nodesLister:      nodeInformer.Lister(),
 		nodeListerSynced: nodeInformer.Informer().HasSynced,
 
@@ -126,12 +136,12 @@ func TestProcessNodeCreateOrUpdate(t *testing.T) {
 			ippc, ippcs := newController()
 			// create nodes and run process processNodeCreateOrUpdate
 			for _, n := range tc.nodes {
-				if err := ippc.processNodeCreateOrUpdate(&n); err != nil {
+				if err := ippc.nsxIPManager.ClaimPodCIDR(&n); err != nil {
 					t.Errorf("failed to create test node %s: %v", n.Name, err)
 				}
 			}
 			for _, n := range tc.nodesUpdate {
-				if err := ippc.processNodeCreateOrUpdate(&n); err != nil {
+				if err := ippc.nsxIPManager.ClaimPodCIDR(&n); err != nil {
 					t.Errorf("failed to create test node %s: %v", n.Name, err)
 				}
 			}
@@ -228,7 +238,7 @@ func TestProcessNodeDelete(t *testing.T) {
 
 			// delete node
 			for _, n := range tc.nodesToBeDeleted {
-				if err := ippc.processNodeDelete(n.Name); err != nil {
+				if err := ippc.nsxIPManager.ReleasePodCIDR(&n); err != nil {
 					t.Errorf("failed to create test node %s: %v", n.Name, err)
 				}
 			}
