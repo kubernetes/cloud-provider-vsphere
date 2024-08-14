@@ -8,14 +8,14 @@ Note that YAML files from [manifests/controller-manager repo](https://github.com
 
 ## Example workflow
 
-In this tutorial, we will be installing the latest version of cloud provider vsphere(v1.30.1) freshly. If you have an older version of CPI already installed, the steps to deploy and upgrade CPI stay the same. With our `RollingUpdate` update strategy, after you update a DaemonSet template, old DaemonSet pods will be killed, and new DaemonSet pods will be created automatically.
+In this tutorial, we will be installing the latest version of cloud provider vsphere(v1.31.0) freshly. If you have an older version of CPI already installed, the steps to deploy and upgrade CPI stay the same. With our `RollingUpdate` update strategy, after you update a DaemonSet template, old DaemonSet pods will be killed, and new DaemonSet pods will be created automatically.
 
 ### Step 1: find the kubernetes major version you are using
 
-For example, the major version of '1.30.x' is '1.30', then run:
+For example, the major version of '1.31.x' is '1.31', then run:
 
 ```bash
-VERSION=1.30
+VERSION=1.31
 wget https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/release-$VERSION/releases/v$VERSION/vsphere-cloud-controller-manager.yaml
 ```
 
