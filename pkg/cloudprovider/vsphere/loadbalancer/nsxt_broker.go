@@ -408,5 +408,5 @@ func nicerVapiErrorData(errorMsg string, apiErrorDataValue *data.StructValue, me
 			details += fmt.Sprintf("%s (code %v)", *relatedErr.ErrorMessage, relatedErr.ErrorCode)
 		}
 	}
-	return fmt.Errorf(details)
+	return errors.New(details)
 }

@@ -18,7 +18,7 @@ package vsphereparavirtual
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -174,9 +174,9 @@ func TestListRoutes(t *testing.T) {
 }
 
 func TestListRoutesFailed(t *testing.T) {
-	r, fcw := initRouteTest()
-	fcw.ListFunc = func(ctx context.Context, opts metav1.ListOptions) (result *v1alpha1.RouteSetList, err error) {
-		return nil, fmt.Errorf(ErrListRouteSet.Error())
+	r, fcw, _ := initRouteTest()
+	fcw.ListFunc = func(ctx context.Context, opts metav1.ListOptions) (result *t1networkingapis.RouteSetList, err error) {
+		return nil, errors.New(helper.ErrListRouteCR.Error())
 	}
 
 	routes, err := r.ListRoutes(context.TODO(), testClustername)
@@ -304,7 +304,7 @@ func TestDeleteRouteFailed(t *testing.T) {
 	assert.NotEqual(t, routeSetCR, nil)
 
 	fcw.DeleteFunc = func(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-		return fmt.Errorf(ErrDeleteRouteSet.Error())
+		return errors.New(helper.ErrDeleteRouteCR.Error())
 	}
 	err = r.DeleteRoute(context.TODO(), testClustername, &route)
 	if err != nil {

@@ -18,6 +18,7 @@ package vsphereparavirtual
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -235,13 +236,16 @@ func TestEnsureLoadBalancer(t *testing.T) {
 		expectErr  error
 	}{
 		{
-			name:      "when VMService is created but IP not found",
+			name: "when VMService is created but IP not found",
+			createFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &vmopv1.VirtualMachineService{}, errors.New(vmservice.ErrVMServiceIPNotFound.Error())
+			},
 			expectErr: vmservice.ErrVMServiceIPNotFound,
 		},
 		{
 			name: "when VMService creation failed",
-			createFunc: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-				return fmt.Errorf(vmservice.ErrCreateVMService.Error())
+			createFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &vmopv1.VirtualMachineService{}, errors.New(vmservice.ErrCreateVMService.Error())
 			},
 			expectErr: vmservice.ErrCreateVMService,
 		},
