@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"time"
 
-	nsxapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/nsx.vmware.com/v1alpha1"
-	nsxinformerv1 "github.com/vmware-tanzu/nsx-operator/pkg/client/informers/externalversions/nsx.vmware.com/v1alpha1"
-	nsxlisterv1alpha1 "github.com/vmware-tanzu/nsx-operator/pkg/client/listers/nsx.vmware.com/v1alpha1"
+	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
+	vpcinformerv1 "github.com/vmware-tanzu/nsx-operator/pkg/client/informers/externalversions/vpc/v1alpha1"
+	vpclisterv1alpha1 "github.com/vmware-tanzu/nsx-operator/pkg/client/listers/vpc/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -51,7 +51,7 @@ type Controller struct {
 
 	nodesLister                listerv1.NodeLister
 	nodesSynced                cache.InformerSynced
-	ipAddressAllocationsLister nsxlisterv1alpha1.IPAddressAllocationLister
+	ipAddressAllocationsLister vpclisterv1alpha1.IPAddressAllocationLister
 	ipAddressAllocationsSynced cache.InformerSynced
 
 	recorder  record.EventRecorder
@@ -64,11 +64,11 @@ func NewController(
 	kubeclientset kubernetes.Interface,
 	nodesLister listerv1.NodeLister,
 	nodesSynced cache.InformerSynced,
-	ipAddressAllocationInformer nsxinformerv1.IPAddressAllocationInformer) *Controller {
+	ipAddressAllocationInformer vpcinformerv1.IPAddressAllocationInformer) *Controller {
 	logger := klog.FromContext(ctx)
 
 	// Create event broadcaster
-	utilruntime.Must(nsxapisv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(vpcapisv1.AddToScheme(scheme.Scheme))
 	logger.V(4).Info("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartStructuredLogging(0)
@@ -244,11 +244,11 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 
 // processIPAddressAllocationCreateOrUpdate will get CIDR from the IPAddressAllocation status and update it to the
 // PodCIDR of the same name Node.
-func (c *Controller) processIPAddressAllocationCreateOrUpdate(ctx context.Context, ipAddressAllocation *nsxapisv1.IPAddressAllocation) error {
+func (c *Controller) processIPAddressAllocationCreateOrUpdate(ctx context.Context, ipAddressAllocation *vpcapisv1.IPAddressAllocation) error {
 
 	var podCIDR string
 	for _, condition := range ipAddressAllocation.Status.Conditions {
-		if condition.Type == nsxapisv1.Ready {
+		if condition.Type == vpcapisv1.Ready {
 			if condition.Status != corev1.ConditionTrue {
 				return fmt.Errorf("IPAddressAllocation %v is not ready", ipAddressAllocation.Name)
 			}

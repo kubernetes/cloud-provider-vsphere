@@ -3,7 +3,7 @@ package nsxipmanager
 import (
 	"context"
 
-	nsxapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/nsx.vmware.com/v1alpha1"
+	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
 	nsxclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned"
 	nsxinformers "github.com/vmware-tanzu/nsx-operator/pkg/client/informers/externalversions"
 	corev1 "k8s.io/api/core/v1"
@@ -27,7 +27,7 @@ type NSXVPCIPManager struct {
 
 func (m *NSXVPCIPManager) createIPAddressAllocation(name string) error {
 	klog.V(4).Infof("Creating IPAddressAllocation CR %s/%s", m.svNamespace, name)
-	ipAddressAllocation := &nsxapisv1.IPAddressAllocation{
+	ipAddressAllocation := &vpcapisv1.IPAddressAllocation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: m.svNamespace,
@@ -35,12 +35,12 @@ func (m *NSXVPCIPManager) createIPAddressAllocation(name string) error {
 				*m.ownerRef,
 			},
 		},
-		Spec: nsxapisv1.IPAddressAllocationSpec{
+		Spec: vpcapisv1.IPAddressAllocationSpec{
 			IPAddressBlockVisibility: convertToIPAddressVisibility(m.podIPPoolType),
 			AllocationSize:           allocationSize,
 		},
 	}
-	_, err := m.client.NsxV1alpha1().IPAddressAllocations(m.svNamespace).Create(context.Background(), ipAddressAllocation, metav1.CreateOptions{})
+	_, err := m.client.CrdV1alpha1().IPAddressAllocations(m.svNamespace).Create(context.Background(), ipAddressAllocation, metav1.CreateOptions{})
 	return err
 }
 
@@ -52,7 +52,7 @@ func (m *NSXVPCIPManager) ClaimPodCIDR(node *corev1.Node) error {
 		return nil
 	}
 
-	if _, err := m.informerFactory.Nsx().V1alpha1().IPAddressAllocations().Lister().IPAddressAllocations(m.svNamespace).Get(node.Name); err != nil {
+	if _, err := m.informerFactory.Crd().V1alpha1().IPAddressAllocations().Lister().IPAddressAllocations(m.svNamespace).Get(node.Name); err != nil {
 		if apierrors.IsNotFound(err) {
 			return m.createIPAddressAllocation(node.Name)
 		}
@@ -65,7 +65,7 @@ func (m *NSXVPCIPManager) ClaimPodCIDR(node *corev1.Node) error {
 
 // ReleasePodCIDR will release pod cidr for the node by deleting IPAddressAllocation CR.
 func (m *NSXVPCIPManager) ReleasePodCIDR(node *corev1.Node) error {
-	if _, err := m.informerFactory.Nsx().V1alpha1().IPAddressAllocations().Lister().IPAddressAllocations(m.svNamespace).Get(node.Name); err != nil {
+	if _, err := m.informerFactory.Crd().V1alpha1().IPAddressAllocations().Lister().IPAddressAllocations(m.svNamespace).Get(node.Name); err != nil {
 		if apierrors.IsNotFound(err) {
 			klog.V(4).Infof("IPAddressAllocations %s not found, no need to delete it", node.Name)
 			return nil
@@ -73,16 +73,16 @@ func (m *NSXVPCIPManager) ReleasePodCIDR(node *corev1.Node) error {
 		return err
 	}
 
-	return m.client.NsxV1alpha1().IPAddressAllocations(m.svNamespace).Delete(context.Background(), node.Name, metav1.DeleteOptions{})
+	return m.client.CrdV1alpha1().IPAddressAllocations(m.svNamespace).Delete(context.Background(), node.Name, metav1.DeleteOptions{})
 }
 
 // convertToIPAddressVisibility converts the ip pool type to the ip address visibility. This is needed because the nsx
 // does not unify names yet. Public equals to External. TODO: remove this once nsx unifies names.
-func convertToIPAddressVisibility(ipPoolType string) nsxapisv1.IPAddressVisibility {
+func convertToIPAddressVisibility(ipPoolType string) vpcapisv1.IPAddressVisibility {
 	if ipPoolType == PublicIPPoolType {
-		return nsxapisv1.IPAddressVisibilityExternal
+		return vpcapisv1.IPAddressVisibilityExternal
 	}
-	return nsxapisv1.IPAddressVisibilityPrivate
+	return vpcapisv1.IPAddressVisibilityPrivate
 }
 
 // NewNSXVPCIPManager returns a new NSXVPCIPManager object.

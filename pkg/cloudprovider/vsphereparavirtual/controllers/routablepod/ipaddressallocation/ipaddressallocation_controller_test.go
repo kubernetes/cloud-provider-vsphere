@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	nsxapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/nsx.vmware.com/v1alpha1"
+	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -58,7 +58,7 @@ type fixture struct {
 	client     *nsxfake.Clientset
 	kubeclient *k8sfake.Clientset
 	// Objects to put in the store.
-	ipAddressAllocationsLister []*nsxapisv1.IPAddressAllocation
+	ipAddressAllocationsLister []*vpcapisv1.IPAddressAllocation
 	nodesLister                []*corev1.Node
 	// Actions expected to happen on the client.
 	kubeactions []core.Action
@@ -92,22 +92,22 @@ func newNode(name string, podCIDR string, podCIDRs []string) *corev1.Node {
 	}
 }
 
-func newIPAddressAllocation(name string, ipAddressBlockVisibility nsxapisv1.IPAddressVisibility, cidr string, conditionStatus corev1.ConditionStatus) *nsxapisv1.IPAddressAllocation {
-	return &nsxapisv1.IPAddressAllocation{
-		TypeMeta: metav1.TypeMeta{APIVersion: nsxapisv1.SchemeGroupVersion.String()},
+func newIPAddressAllocation(name string, ipAddressBlockVisibility vpcapisv1.IPAddressVisibility, cidr string, conditionStatus corev1.ConditionStatus) *vpcapisv1.IPAddressAllocation {
+	return &vpcapisv1.IPAddressAllocation{
+		TypeMeta: metav1.TypeMeta{APIVersion: vpcapisv1.SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: nsxapisv1.IPAddressAllocationSpec{
+		Spec: vpcapisv1.IPAddressAllocationSpec{
 			IPAddressBlockVisibility: ipAddressBlockVisibility,
 			AllocationSize:           24,
 		},
-		Status: nsxapisv1.IPAddressAllocationStatus{
+		Status: vpcapisv1.IPAddressAllocationStatus{
 			CIDR: cidr,
-			Conditions: []nsxapisv1.Condition{
+			Conditions: []vpcapisv1.Condition{
 				{
-					Type:   nsxapisv1.Ready,
+					Type:   vpcapisv1.Ready,
 					Status: conditionStatus,
 				},
 			},
@@ -131,7 +131,7 @@ func (f *fixture) newController(ctx context.Context) (*Controller, nsxinformers.
 	k8sI := kubeinformers.NewSharedInformerFactory(f.kubeclient, noResyncPeriodFunc())
 
 	nodeInformer := k8sI.Core().V1().Nodes()
-	ipAddressAllocationInformer := i.Nsx().V1alpha1().IPAddressAllocations()
+	ipAddressAllocationInformer := i.Crd().V1alpha1().IPAddressAllocations()
 	c := NewController(ctx, f.kubeclient, nodeInformer.Lister(), nodeInformer.Informer().HasSynced, ipAddressAllocationInformer)
 
 	c.ipAddressAllocationsSynced = alwaysReady
@@ -200,7 +200,7 @@ func (f *fixture) expectPatchNodeAction(name string, patchType types.PatchType, 
 	f.kubeactions = append(f.kubeactions, action)
 }
 
-func getKey(ipAddressAllocation *nsxapisv1.IPAddressAllocation, t *testing.T) string {
+func getKey(ipAddressAllocation *vpcapisv1.IPAddressAllocation, t *testing.T) string {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(ipAddressAllocation)
 	if err != nil {
 		t.Errorf("Unexpected error getting key for IPAddressAllocation %v: %v", ipAddressAllocation.Name, err)
@@ -213,7 +213,7 @@ func TestPatchNodeCIDR(t *testing.T) {
 	name := "node-1"
 	cidr := "192.168.5.0/24"
 	f := newFixture(t)
-	ipAddressAllocation := newIPAddressAllocation(name, nsxapisv1.IPAddressVisibilityPrivate, cidr, corev1.ConditionTrue)
+	ipAddressAllocation := newIPAddressAllocation(name, vpcapisv1.IPAddressVisibilityPrivate, cidr, corev1.ConditionTrue)
 	node := newNode(name, "", nil)
 	_, ctx := ktesting.NewTestContext(t)
 
@@ -241,7 +241,7 @@ func TestIPAddressAllocationNotReady(t *testing.T) {
 	f := newFixture(t)
 	_, ctx := ktesting.NewTestContext(t)
 
-	ipAddressAllocation := newIPAddressAllocation(name, nsxapisv1.IPAddressVisibilityPrivate, "192.168.5.0/24", corev1.ConditionFalse)
+	ipAddressAllocation := newIPAddressAllocation(name, vpcapisv1.IPAddressVisibilityPrivate, "192.168.5.0/24", corev1.ConditionFalse)
 	f.ipAddressAllocationsLister = append(f.ipAddressAllocationsLister, ipAddressAllocation)
 	f.objects = append(f.objects, ipAddressAllocation)
 
@@ -252,7 +252,7 @@ func TestIPAddressAllocationEmptyCIDR(t *testing.T) {
 	f := newFixture(t)
 	_, ctx := ktesting.NewTestContext(t)
 
-	ipAddressAllocation := newIPAddressAllocation(name, nsxapisv1.IPAddressVisibilityPrivate, "", corev1.ConditionTrue)
+	ipAddressAllocation := newIPAddressAllocation(name, vpcapisv1.IPAddressVisibilityPrivate, "", corev1.ConditionTrue)
 	f.ipAddressAllocationsLister = append(f.ipAddressAllocationsLister, ipAddressAllocation)
 	f.objects = append(f.objects, ipAddressAllocation)
 
@@ -263,7 +263,7 @@ func TestNodeNotExist(t *testing.T) {
 	name := "node-1"
 	cidr := "192.168.5.0/24"
 	f := newFixture(t)
-	ipAddressAllocation := newIPAddressAllocation(name, nsxapisv1.IPAddressVisibilityPrivate, cidr, corev1.ConditionTrue)
+	ipAddressAllocation := newIPAddressAllocation(name, vpcapisv1.IPAddressVisibilityPrivate, cidr, corev1.ConditionTrue)
 	node := newNode("node-2", "", nil)
 	_, ctx := ktesting.NewTestContext(t)
 
@@ -278,7 +278,7 @@ func TestPatchNodeCIDRFailed(t *testing.T) {
 	name := "node-1"
 	cidr := "192.168.5.0/24"
 	f := newFixture(t)
-	ipAddressAllocation := newIPAddressAllocation(name, nsxapisv1.IPAddressVisibilityPrivate, cidr, corev1.ConditionTrue)
+	ipAddressAllocation := newIPAddressAllocation(name, vpcapisv1.IPAddressVisibilityPrivate, cidr, corev1.ConditionTrue)
 	node := newNode(name, "", nil)
 	_, ctx := ktesting.NewTestContext(t)
 

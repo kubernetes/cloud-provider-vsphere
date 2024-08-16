@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	vpcnetworkingapis "github.com/vmware-tanzu/nsx-operator/pkg/apis/nsx.vmware.com/v1alpha1"
+	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
 	fakevpcnetworkingclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
+
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/helper"
 )
 
@@ -58,12 +59,12 @@ func TestCreateRouteCR(t *testing.T) {
 	routeCR, err := rs.CreateRouteCR(context.TODO(), fakeRouteInfo)
 	assert.NoError(t, err)
 	assert.NotEqual(t, routeCR, nil)
-	staticRouteCR, ok := routeCR.(*vpcnetworkingapis.StaticRoute)
+	staticRouteCR, ok := routeCR.(*vpcapisv1.StaticRoute)
 	assert.Equal(t, ok, true)
 
-	expectedStaticRouteSpec := vpcnetworkingapis.StaticRouteSpec{
+	expectedStaticRouteSpec := vpcapisv1.StaticRouteSpec{
 		Network: testCIDR,
-		NextHops: []vpcnetworkingapis.NextHop{
+		NextHops: []vpcapisv1.NextHop{
 			{
 				IPAddress: testNodeIP,
 			},
@@ -119,23 +120,23 @@ func TestWaitRouteCR(t *testing.T) {
 func TestGetRouteCRCondition(t *testing.T) {
 	testcases := []struct {
 		name              string
-		routeStatus       vpcnetworkingapis.StaticRouteStatus
-		expectedCondition *vpcnetworkingapis.StaticRouteCondition
+		routeStatus       vpcapisv1.StaticRouteStatus
+		expectedCondition *vpcapisv1.StaticRouteCondition
 	}{
 		{
 			name: "StaticRoute status with RouteConditionTypeReady",
-			routeStatus: vpcnetworkingapis.StaticRouteStatus{
-				Conditions: []vpcnetworkingapis.StaticRouteCondition{
+			routeStatus: vpcapisv1.StaticRouteStatus{
+				Conditions: []vpcapisv1.StaticRouteCondition{
 					{
-						Type:    vpcnetworkingapis.Ready,
+						Type:    vpcapisv1.Ready,
 						Status:  v1.ConditionTrue,
 						Reason:  "StaticRouteCreated",
 						Message: "StaticRoute CR created",
 					},
 				},
 			},
-			expectedCondition: &vpcnetworkingapis.StaticRouteCondition{
-				Type:    vpcnetworkingapis.Ready,
+			expectedCondition: &vpcapisv1.StaticRouteCondition{
+				Type:    vpcapisv1.Ready,
 				Status:  v1.ConditionTrue,
 				Reason:  "StaticRouteCreated",
 				Message: "StaticRoute CR created",
@@ -143,8 +144,8 @@ func TestGetRouteCRCondition(t *testing.T) {
 		},
 		{
 			name: "StaticRoute status with RouteConditionTypeFailure",
-			routeStatus: vpcnetworkingapis.StaticRouteStatus{
-				Conditions: []vpcnetworkingapis.StaticRouteCondition{
+			routeStatus: vpcapisv1.StaticRouteStatus{
+				Conditions: []vpcapisv1.StaticRouteCondition{
 					{
 						Type:    "Failure",
 						Status:  v1.ConditionFalse,
@@ -153,18 +154,18 @@ func TestGetRouteCRCondition(t *testing.T) {
 					},
 				},
 			},
-			expectedCondition: (*vpcnetworkingapis.StaticRouteCondition)(nil),
+			expectedCondition: (*vpcapisv1.StaticRouteCondition)(nil),
 		},
 		{
 			name:              "empty StaticRoute status",
-			routeStatus:       vpcnetworkingapis.StaticRouteStatus{},
-			expectedCondition: (*vpcnetworkingapis.StaticRouteCondition)(nil),
+			routeStatus:       vpcapisv1.StaticRouteStatus{},
+			expectedCondition: (*vpcapisv1.StaticRouteCondition)(nil),
 		},
 	}
 
 	for _, testCase := range testcases {
 		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.expectedCondition, GetRouteCRCondition(&testCase.routeStatus, vpcnetworkingapis.Ready))
+			assert.Equal(t, testCase.expectedCondition, GetRouteCRCondition(&testCase.routeStatus, vpcapisv1.Ready))
 		})
 	}
 }
@@ -172,24 +173,24 @@ func TestGetRouteCRCondition(t *testing.T) {
 func TestCreateCPRoutes(t *testing.T) {
 	testcases := []struct {
 		name           string
-		rs             vpcnetworkingapis.StaticRouteList
+		rs             vpcapisv1.StaticRouteList
 		expectedRoutes []*cloudprovider.Route
 	}{
 		{
 			name: "There is 2 ready route",
-			rs: vpcnetworkingapis.StaticRouteList{
-				Items: []vpcnetworkingapis.StaticRoute{
+			rs: vpcapisv1.StaticRouteList{
+				Items: []vpcapisv1.StaticRoute{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: testNodeName,
 						},
-						Spec: vpcnetworkingapis.StaticRouteSpec{
+						Spec: vpcapisv1.StaticRouteSpec{
 							Network: testCIDR,
 						},
-						Status: vpcnetworkingapis.StaticRouteStatus{
-							Conditions: []vpcnetworkingapis.StaticRouteCondition{
+						Status: vpcapisv1.StaticRouteStatus{
+							Conditions: []vpcapisv1.StaticRouteCondition{
 								{
-									Type:    vpcnetworkingapis.Ready,
+									Type:    vpcapisv1.Ready,
 									Status:  v1.ConditionTrue,
 									Reason:  "StaticRouteCreated",
 									Message: "StaticRoute CR created",
@@ -201,13 +202,13 @@ func TestCreateCPRoutes(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: testNodeName,
 						},
-						Spec: vpcnetworkingapis.StaticRouteSpec{
+						Spec: vpcapisv1.StaticRouteSpec{
 							Network: testCIDR,
 						},
-						Status: vpcnetworkingapis.StaticRouteStatus{
-							Conditions: []vpcnetworkingapis.StaticRouteCondition{
+						Status: vpcapisv1.StaticRouteStatus{
+							Conditions: []vpcapisv1.StaticRouteCondition{
 								{
-									Type:    vpcnetworkingapis.Ready,
+									Type:    vpcapisv1.Ready,
 									Status:  v1.ConditionTrue,
 									Reason:  "StaticRouteCreated",
 									Message: "StaticRoute CR created",
@@ -231,17 +232,17 @@ func TestCreateCPRoutes(t *testing.T) {
 		},
 		{
 			name: "There is no ready route",
-			rs: vpcnetworkingapis.StaticRouteList{
-				Items: []vpcnetworkingapis.StaticRoute{
+			rs: vpcapisv1.StaticRouteList{
+				Items: []vpcapisv1.StaticRoute{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: testNodeName,
 						},
-						Spec: vpcnetworkingapis.StaticRouteSpec{
+						Spec: vpcapisv1.StaticRouteSpec{
 							Network: testCIDR,
 						},
-						Status: vpcnetworkingapis.StaticRouteStatus{
-							Conditions: []vpcnetworkingapis.StaticRouteCondition{
+						Status: vpcapisv1.StaticRouteStatus{
+							Conditions: []vpcapisv1.StaticRouteCondition{
 								{
 									Type:    "Failure",
 									Status:  v1.ConditionFalse,
