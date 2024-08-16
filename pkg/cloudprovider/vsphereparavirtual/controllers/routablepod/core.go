@@ -81,7 +81,7 @@ func startIPAddressAllocationController(ctx context.Context, client kubernetes.I
 		client,
 		informerManager.GetNodeLister(),
 		informerManager.IsNodeInformerSynced(),
-		nsxInformerFactory.Nsx().V1alpha1().IPAddressAllocations())
+		nsxInformerFactory.Crd().V1alpha1().IPAddressAllocations())
 	go ipAddressAllocationController.Run(ctx, 1)
 	nsxInformerFactory.Start(ctx.Done())
 }

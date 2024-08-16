@@ -1,8 +1,8 @@
 module k8s.io/cloud-provider-vsphere
 
-go 1.22.0
+go 1.22.5
 
-toolchain go1.22.3
+toolchain go1.22.6
 
 replace github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels => github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels v1.8.6
 
@@ -15,8 +15,8 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
-	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240722023446-b3932c52a8d9
-	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240722023446-b3932c52a8d9
+	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240816024231-ca8ea47d918d
+	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240816024231-ca8ea47d918d
 	github.com/vmware-tanzu/vm-operator/api v1.8.6
 	github.com/vmware/govmomi v0.39.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0

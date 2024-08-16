@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	nsxapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/nsx.vmware.com/v1alpha1"
+	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
 	nsxfake "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned/fake"
 	nsxinformers "github.com/vmware-tanzu/nsx-operator/pkg/client/informers/externalversions"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +35,7 @@ type testCase struct {
 	podIPPoolType string
 	node          *corev1.Node
 	// Objects to put in the store.
-	ipAddressAllocationsLister []*nsxapisv1.IPAddressAllocation
+	ipAddressAllocationsLister []*vpcapisv1.IPAddressAllocation
 	// Actions expected to happen on the client.
 	actions []core.Action
 	// Objects from here preloaded into NewSimpleFake.
@@ -56,7 +56,7 @@ func initTest(tc *testCase, ns string, ownerRef *metav1.OwnerReference, t *testi
 	}
 	i := nsxinformers.NewSharedInformerFactory(client, noResyncPeriodFunc())
 	for _, obj := range tc.ipAddressAllocationsLister {
-		i.Nsx().V1alpha1().IPAddressAllocations().Informer().GetIndexer().Add(obj)
+		i.Crd().V1alpha1().IPAddressAllocations().Informer().GetIndexer().Add(obj)
 	}
 	_, ctx := ktesting.NewTestContext(t)
 	i.Start(ctx.Done())
@@ -113,9 +113,9 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 			podIPPoolType: PublicIPPoolType,
 			actions: []core.Action{
 				core.NewCreateAction(
-					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: nsxapisv1.GroupVersion.Group, Version: nsxapisv1.GroupVersion.Version},
+					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: vpcapisv1.GroupVersion.Group, Version: vpcapisv1.GroupVersion.Version},
 					ns,
-					&nsxapisv1.IPAddressAllocation{
+					&vpcapisv1.IPAddressAllocation{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      nodeName,
 							Namespace: ns,
@@ -123,8 +123,8 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 								*ownerRef,
 							},
 						},
-						Spec: nsxapisv1.IPAddressAllocationSpec{
-							IPAddressBlockVisibility: nsxapisv1.IPAddressVisibilityExternal,
+						Spec: vpcapisv1.IPAddressAllocationSpec{
+							IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityExternal,
 							AllocationSize:           allocationSize,
 						},
 					},
@@ -138,9 +138,9 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 			podIPPoolType: PrivateIPPoolType,
 			actions: []core.Action{
 				core.NewCreateAction(
-					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: nsxapisv1.GroupVersion.Group, Version: nsxapisv1.GroupVersion.Version},
+					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: vpcapisv1.GroupVersion.Group, Version: vpcapisv1.GroupVersion.Version},
 					ns,
-					&nsxapisv1.IPAddressAllocation{
+					&vpcapisv1.IPAddressAllocation{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      nodeName,
 							Namespace: ns,
@@ -148,8 +148,8 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 								*ownerRef,
 							},
 						},
-						Spec: nsxapisv1.IPAddressAllocationSpec{
-							IPAddressBlockVisibility: nsxapisv1.IPAddressVisibilityPrivate,
+						Spec: vpcapisv1.IPAddressAllocationSpec{
+							IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityPrivate,
 							AllocationSize:           allocationSize,
 						},
 					},
@@ -169,9 +169,9 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 			podIPPoolType: PrivateIPPoolType,
 			actions: []core.Action{
 				core.NewCreateAction(
-					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: nsxapisv1.GroupVersion.Group, Version: nsxapisv1.GroupVersion.Version},
+					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: vpcapisv1.GroupVersion.Group, Version: vpcapisv1.GroupVersion.Version},
 					ns,
-					&nsxapisv1.IPAddressAllocation{
+					&vpcapisv1.IPAddressAllocation{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      nodeName,
 							Namespace: ns,
@@ -179,8 +179,8 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 								*ownerRef,
 							},
 						},
-						Spec: nsxapisv1.IPAddressAllocationSpec{
-							IPAddressBlockVisibility: nsxapisv1.IPAddressVisibilityPrivate,
+						Spec: vpcapisv1.IPAddressAllocationSpec{
+							IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityPrivate,
 							AllocationSize:           allocationSize,
 						},
 					},
@@ -203,7 +203,7 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 			svNamespace:   ns,
 			node:          nodeBeforeSet,
 			podIPPoolType: PrivateIPPoolType,
-			ipAddressAllocationsLister: []*nsxapisv1.IPAddressAllocation{
+			ipAddressAllocationsLister: []*vpcapisv1.IPAddressAllocation{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      nodeName,
@@ -212,8 +212,8 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 							*ownerRef,
 						},
 					},
-					Spec: nsxapisv1.IPAddressAllocationSpec{
-						IPAddressBlockVisibility: nsxapisv1.IPAddressVisibilityPrivate,
+					Spec: vpcapisv1.IPAddressAllocationSpec{
+						IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityPrivate,
 						AllocationSize:           allocationSize,
 					},
 				},
@@ -254,13 +254,13 @@ func TestNSXVPCIPManager_ReleasePodCIDR(t *testing.T) {
 			},
 		},
 	}
-	ipa := &nsxapisv1.IPAddressAllocation{
+	ipa := &vpcapisv1.IPAddressAllocation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeName,
 			Namespace: ns,
 		},
-		Spec: nsxapisv1.IPAddressAllocationSpec{
-			IPAddressBlockVisibility: nsxapisv1.IPAddressVisibilityExternal,
+		Spec: vpcapisv1.IPAddressAllocationSpec{
+			IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityExternal,
 			AllocationSize:           allocationSize,
 		},
 	}
@@ -285,12 +285,12 @@ func TestNSXVPCIPManager_ReleasePodCIDR(t *testing.T) {
 			objects: []runtime.Object{
 				ipa,
 			},
-			ipAddressAllocationsLister: []*nsxapisv1.IPAddressAllocation{
+			ipAddressAllocationsLister: []*vpcapisv1.IPAddressAllocation{
 				ipa,
 			},
 			actions: []core.Action{
 				core.NewDeleteAction(
-					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: nsxapisv1.GroupVersion.Group, Version: nsxapisv1.GroupVersion.Version},
+					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: vpcapisv1.GroupVersion.Group, Version: vpcapisv1.GroupVersion.Version},
 					ns,
 					ipa.Name,
 				),
@@ -304,12 +304,12 @@ func TestNSXVPCIPManager_ReleasePodCIDR(t *testing.T) {
 			objects: []runtime.Object{
 				ipa,
 			},
-			ipAddressAllocationsLister: []*nsxapisv1.IPAddressAllocation{
+			ipAddressAllocationsLister: []*vpcapisv1.IPAddressAllocation{
 				ipa,
 			},
 			actions: []core.Action{
 				core.NewDeleteAction(
-					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: nsxapisv1.GroupVersion.Group, Version: nsxapisv1.GroupVersion.Version},
+					schema.GroupVersionResource{Resource: "ipaddressallocations", Group: vpcapisv1.GroupVersion.Group, Version: vpcapisv1.GroupVersion.Version},
 					ns,
 					ipa.Name,
 				),
