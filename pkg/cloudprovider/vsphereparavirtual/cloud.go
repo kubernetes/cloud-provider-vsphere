@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"io"
 
+	yaml "gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/yaml"
 
 	cloudprovider "k8s.io/cloud-provider"
 
