@@ -14,10 +14,10 @@ require (
 	k8s.io/apimachinery v0.30.3
 	k8s.io/client-go v0.30.3
 	k8s.io/klog/v2 v2.130.1
-	sigs.k8s.io/cluster-api v1.7.0-rc.0.0.20240528063443-2568aa2997bc
-	sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0-rc.1.0.20240521132953-469f652e57ae
-	sigs.k8s.io/cluster-api/test v1.7.0-rc.0.0.20240528063443-2568aa2997bc
-	sigs.k8s.io/controller-runtime v0.18.4
+	sigs.k8s.io/cluster-api v1.7.5
+	sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.2
+	sigs.k8s.io/cluster-api/test v1.7.5
+	sigs.k8s.io/controller-runtime v0.18.5
 )
 
 require (
