@@ -155,11 +155,11 @@ func TestProcessIPPoolCreateOrUpdate(t *testing.T) {
 			}
 
 			if err := updateIPPoolCIDRAndVerifyNodeCIDR(tc.subnetAllocated, c); err != nil {
-				t.Errorf(err.Error())
+				t.Error(err.Error())
 			}
 
 			if err := updateIPPoolCIDRAndVerifyNodeCIDR(tc.subnetAfterRevoked, c); err != nil {
-				t.Errorf(err.Error())
+				t.Error(err.Error())
 			}
 
 			// verify the number of patch request to nodes to update cidr section
