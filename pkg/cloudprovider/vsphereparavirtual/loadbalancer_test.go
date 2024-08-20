@@ -18,6 +18,7 @@ package vsphereparavirtual
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -241,7 +242,7 @@ func TestEnsureLoadBalancer(t *testing.T) {
 		{
 			name: "when VMService creation failed",
 			createFunc: func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-				return fmt.Errorf(vmservice.ErrCreateVMService.Error())
+				return errors.New(vmservice.ErrCreateVMService.Error())
 			},
 			expectErr: vmservice.ErrCreateVMService,
 		},
