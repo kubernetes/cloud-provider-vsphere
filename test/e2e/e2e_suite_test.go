@@ -211,9 +211,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		}
 		workloadResult = &clusterctl.ApplyClusterTemplateAndWaitResult{}
 		resolveK8sVersion()
-		// if use dev k8s version, install-on-bootstrap is needed to install Kubernetes on bootstrap
+		// if use dev k8s version, fast-rollout is needed to install Kubernetes on bootstrap
 		if useLatestK8sVersion {
-			workloadInput.ConfigCluster.Flavor = "install-on-bootstrap"
+			workloadInput.ConfigCluster.Flavor = "fast-rollout"
 		} else {
 			workloadInput.ConfigCluster.KubernetesVersion = e2eConfig.GetVariable("KUBERNETES_VERSION")
 		}
