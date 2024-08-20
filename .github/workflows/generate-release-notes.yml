@@ -55,7 +55,7 @@ jobs:
 
           latest_tag=${{ steps.check.outputs.latest_tag }}
 
-          if [[ latest_tag =~ ${PRERELEASE_SEMVER_REGEX} ]]; then
+          if [[ ${latest_tag} =~ ${PRERELEASE_SEMVER_REGEX} ]]; then
             second_latest_release_tag=$(git tag --sort=-v:refname | grep -E ${SEMVER_REGEX} | awk "p{print; exit} /${latest_tag}/{p=1}")
             echo "${latest_tag} is a pre-release, return second latest release tag ${second_latest_release_tag}"
             echo "pre_release=1" >> $GITHUB_OUTPUT
