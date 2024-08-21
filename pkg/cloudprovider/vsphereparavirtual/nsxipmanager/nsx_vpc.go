@@ -77,12 +77,12 @@ func (m *NSXVPCIPManager) ReleasePodCIDR(node *corev1.Node) error {
 }
 
 // convertToIPAddressVisibility converts the ip pool type to the ip address visibility. This is needed because the nsx
-// does not unify names yet. Public equals to External. TODO: remove this once nsx unifies names.
+// does not unify names yet. Public equals to External.
 func convertToIPAddressVisibility(ipPoolType string) vpcapisv1.IPAddressVisibility {
 	if ipPoolType == PublicIPPoolType {
-		return vpcapisv1.IPAddressVisibilityExternal
+		return "External"
 	}
-	return vpcapisv1.IPAddressVisibilityPrivate
+	return "Private"
 }
 
 // NewNSXVPCIPManager returns a new NSXVPCIPManager object.
