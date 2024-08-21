@@ -13,7 +13,7 @@ require (
 	sigs.k8s.io/cluster-api v1.7.1
 	sigs.k8s.io/cluster-api-provider-vsphere/test v1.10.0-rc.1.0.20240521132953-469f652e57ae
 	sigs.k8s.io/cluster-api/test v1.7.1
-	sigs.k8s.io/controller-runtime v0.17.5
+	sigs.k8s.io/controller-runtime v0.17.6
 )
 
 require (
