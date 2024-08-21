@@ -12,7 +12,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const allocationSize = 24
+const allocationSize = 256
 
 var _ NSXIPManager = &NSXVPCIPManager{}
 
