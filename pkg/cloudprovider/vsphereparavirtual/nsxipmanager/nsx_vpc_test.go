@@ -124,7 +124,7 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 							},
 						},
 						Spec: vpcapisv1.IPAddressAllocationSpec{
-							IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityExternal,
+							IPAddressBlockVisibility: "External",
 							AllocationSize:           allocationSize,
 						},
 					},
@@ -149,7 +149,7 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 							},
 						},
 						Spec: vpcapisv1.IPAddressAllocationSpec{
-							IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityPrivate,
+							IPAddressBlockVisibility: "Private",
 							AllocationSize:           allocationSize,
 						},
 					},
@@ -180,7 +180,7 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 							},
 						},
 						Spec: vpcapisv1.IPAddressAllocationSpec{
-							IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityPrivate,
+							IPAddressBlockVisibility: "Private",
 							AllocationSize:           allocationSize,
 						},
 					},
@@ -213,7 +213,7 @@ func TestNSXVPCIPManager_ClaimPodCIDR(t *testing.T) {
 						},
 					},
 					Spec: vpcapisv1.IPAddressAllocationSpec{
-						IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityPrivate,
+						IPAddressBlockVisibility: "Private",
 						AllocationSize:           allocationSize,
 					},
 				},
@@ -260,7 +260,7 @@ func TestNSXVPCIPManager_ReleasePodCIDR(t *testing.T) {
 			Namespace: ns,
 		},
 		Spec: vpcapisv1.IPAddressAllocationSpec{
-			IPAddressBlockVisibility: vpcapisv1.IPAddressVisibilityExternal,
+			IPAddressBlockVisibility: "External",
 			AllocationSize:           allocationSize,
 		},
 	}
