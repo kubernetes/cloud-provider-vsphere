@@ -206,9 +206,15 @@ func (c *Controller) syncNode(key string) error {
 	case err != nil:
 		utilruntime.HandleError(fmt.Errorf("unable to retrieve node %v from store: %v", key, err))
 	default:
-		// node exists in store, ensure Pod CIDR of this Node is claimed
-		klog.V(4).Infof("Node %s is found, ensuring Pod CIDR claimed", node.Name)
-		err = c.nsxIPManager.ClaimPodCIDR(node)
+		if !node.DeletionTimestamp.IsZero() {
+			// node is being deleted, ensure Pod CIDR of this Node is released
+			klog.V(4).Infof("Node %s is being deleted, releasing Pod CIDR %s", node.Name, node.Spec.PodCIDR)
+			err = c.nsxIPManager.ReleasePodCIDR(node)
+		} else {
+			// node exists in store, ensure Pod CIDR of this Node is claimed
+			klog.V(4).Infof("Node %s is found, ensuring Pod CIDR claimed", node.Name)
+			err = c.nsxIPManager.ClaimPodCIDR(node)
+		}
 	}
 
 	return err
