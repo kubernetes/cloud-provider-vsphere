@@ -201,20 +201,14 @@ func (c *Controller) syncNode(key string) error {
 	switch {
 	case apierrors.IsNotFound(err):
 		// node absence in store means watcher caught the deletion, ensure Pod CIDR of this Node is released
-		klog.V(4).Infof("Node %s is not found, releasing Pod CIDR %s", node.Name, node.Spec.PodCIDR)
-		err = c.nsxIPManager.ReleasePodCIDR(node)
+		klog.V(4).Infof("Node %s is not found, releasing its Pod CIDR", name)
+		err = c.nsxIPManager.ReleasePodCIDR(&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: name}})
 	case err != nil:
-		utilruntime.HandleError(fmt.Errorf("unable to retrieve node %v from store: %v", key, err))
+		utilruntime.HandleError(fmt.Errorf("unable to retrieve node %v from store: %v", name, err))
 	default:
-		if !node.DeletionTimestamp.IsZero() {
-			// node is being deleted, ensure Pod CIDR of this Node is released
-			klog.V(4).Infof("Node %s is being deleted, releasing Pod CIDR %s", node.Name, node.Spec.PodCIDR)
-			err = c.nsxIPManager.ReleasePodCIDR(node)
-		} else {
-			// node exists in store, ensure Pod CIDR of this Node is claimed
-			klog.V(4).Infof("Node %s is found, ensuring Pod CIDR claimed", node.Name)
-			err = c.nsxIPManager.ClaimPodCIDR(node)
-		}
+		// node exists in store, ensure Pod CIDR of this Node is claimed
+		klog.V(4).Infof("Node %s is found, ensuring Pod CIDR claimed", name)
+		err = c.nsxIPManager.ClaimPodCIDR(node)
 	}
 
 	return err
