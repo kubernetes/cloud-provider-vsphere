@@ -269,8 +269,9 @@ func initializeWatch(_ *appconfig.CompletedConfig, paths []string) (watch *fsnot
 			case err := <-watch.Errors:
 				klog.Warningf("watcher receives err: %v\n", err)
 			case event := <-watch.Events:
-				if event.Op != fsnotify.Chmod {
-					klog.Fatalf("restarting pod because received event %v\n", event)
+				// only restart pod when monitor an update event or replace event on watched file
+				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove {
+					klog.Errorf("restarting pod because received event %v\n", event)
 					stopCh <- struct{}{}
 				} else {
 					klog.V(5).Infof("watcher receives %s on the mounted file %s\n", event.Op.String(), event.Name)
