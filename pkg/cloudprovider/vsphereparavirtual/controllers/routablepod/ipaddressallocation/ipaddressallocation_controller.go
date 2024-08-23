@@ -239,6 +239,11 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 		return err
 	}
 
+	if !ipAddressAllocation.DeletionTimestamp.IsZero() {
+		logger.V(4).Info(fmt.Sprintf("IPAddressAllocation %s/%s is being deleted, skip", ipAddressAllocation.Namespace, ipAddressAllocation.Name))
+		return nil
+	}
+
 	return c.processIPAddressAllocationCreateOrUpdate(ctx, ipAddressAllocation)
 }
 
