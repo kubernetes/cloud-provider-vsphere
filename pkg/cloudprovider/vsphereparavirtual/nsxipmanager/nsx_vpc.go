@@ -26,7 +26,7 @@ type NSXVPCIPManager struct {
 }
 
 func (m *NSXVPCIPManager) createIPAddressAllocation(name string) error {
-	klog.V(4).Infof("Creating IPAddressAllocation CR %s/%s", m.svNamespace, name)
+	klog.V(4).Infof("Creating IPAddressAllocation %s/%s", m.svNamespace, name)
 	ipAddressAllocation := &vpcapisv1.IPAddressAllocation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -73,6 +73,7 @@ func (m *NSXVPCIPManager) ReleasePodCIDR(node *corev1.Node) error {
 		return err
 	}
 
+	klog.V(4).Infof("Deleting IPAddressAllocations %s/%s", m.svNamespace, node.Name)
 	return m.client.CrdV1alpha1().IPAddressAllocations(m.svNamespace).Delete(context.Background(), node.Name, metav1.DeleteOptions{})
 }
 
