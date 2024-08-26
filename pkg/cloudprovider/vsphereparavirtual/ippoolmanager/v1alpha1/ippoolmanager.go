@@ -7,14 +7,14 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
+
 	t1networkingapis "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
 	t1networkingclients "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned"
 	t1networkinginformers "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/informers/externalversions"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
-	"k8s.io/klog/v2"
 )
 
 // IPPoolManager defines an ippool manager working with v1alpha1 ippool CR
@@ -189,6 +189,6 @@ func (p *IPPoolManager) GetIPPoolListerSynced() cache.InformerSynced {
 }
 
 // StartIPPoolInformers starts ippool informers
-func (p *IPPoolManager) StartIPPoolInformers() {
-	p.informerFactory.Start(wait.NeverStop)
+func (p *IPPoolManager) StartIPPoolInformers(stopCh <-chan struct{}) {
+	p.informerFactory.Start(stopCh)
 }
