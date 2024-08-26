@@ -4,26 +4,27 @@ import (
 	"context"
 	"fmt"
 
-	vpcnetworkingapis "github.com/vmware-tanzu/nsx-operator/pkg/apis/nsx.vmware.com/v1alpha1"
-	vpcnetworkingclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned"
+	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
+	nsxclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
+
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/helper"
 )
 
 // RouteManager defines a route manager working with static route CR
 type RouteManager struct {
-	clients   vpcnetworkingclients.Interface
+	clients   nsxclients.Interface
 	namespace string
 }
 
 // NewRouteManager initializes a RouteManager
 func NewRouteManager(config *rest.Config, clusterNS string) (*RouteManager, error) {
-	routeClient, err := vpcnetworkingclients.NewForConfig(config)
+	routeClient, err := nsxclients.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create route clients: %w", err)
 	}
@@ -35,7 +36,7 @@ func NewRouteManager(config *rest.Config, clusterNS string) (*RouteManager, erro
 }
 
 // NewRouteManagerWithClients initializes a RouteManager with clientset
-func NewRouteManagerWithClients(clients vpcnetworkingclients.Interface, clusterNS string) (*RouteManager, error) {
+func NewRouteManagerWithClients(clients nsxclients.Interface, clusterNS string) (*RouteManager, error) {
 	return &RouteManager{
 		clients:   clients,
 		namespace: clusterNS,
@@ -44,14 +45,14 @@ func NewRouteManagerWithClients(clients vpcnetworkingclients.Interface, clusterN
 
 // ListRouteCR lists Route CRs belongd to the namespace and the labelselector
 func (sr *RouteManager) ListRouteCR(ctx context.Context, ls metav1.LabelSelector) (helper.RouteCRList, error) {
-	return sr.clients.NsxV1alpha1().StaticRoutes(sr.namespace).List(ctx, metav1.ListOptions{
+	return sr.clients.CrdV1alpha1().StaticRoutes(sr.namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.Set(ls.MatchLabels).String(),
 	})
 }
 
 // CreateCPRoutes creates cloudprovider Routes based on Route CR
 func (sr *RouteManager) CreateCPRoutes(staticroutes helper.RouteCRList) ([]*cloudprovider.Route, error) {
-	routeList, ok := staticroutes.(*vpcnetworkingapis.StaticRouteList)
+	routeList, ok := staticroutes.(*vpcapisv1.StaticRouteList)
 	if !ok {
 		return nil, fmt.Errorf("unknow static route list struct")
 	}
@@ -59,7 +60,7 @@ func (sr *RouteManager) CreateCPRoutes(staticroutes helper.RouteCRList) ([]*clou
 	var routes []*cloudprovider.Route
 	for _, staticroute := range routeList.Items {
 		// only return cloudprovider.RouteInfo if RouteSet CR status 'Ready' is true
-		condition := GetRouteCRCondition(&(staticroute.Status), vpcnetworkingapis.Ready)
+		condition := GetRouteCRCondition(&(staticroute.Status), vpcapisv1.Ready)
 		if condition != nil && condition.Status == v1.ConditionTrue {
 			// one RouteSet per node, so we can use nodeName as the name of RouteSet CR
 			nodeName := staticroute.Name
@@ -77,7 +78,7 @@ func (sr *RouteManager) CreateCPRoutes(staticroutes helper.RouteCRList) ([]*clou
 
 // GetRouteCRCondition extracts the provided condition from the given StaticRouteStatus and returns that.
 // Returns nil if the condition is not present.
-func GetRouteCRCondition(status *vpcnetworkingapis.StaticRouteStatus, conditionType vpcnetworkingapis.ConditionType) *vpcnetworkingapis.StaticRouteCondition {
+func GetRouteCRCondition(status *vpcapisv1.StaticRouteStatus, conditionType vpcapisv1.ConditionType) *vpcapisv1.StaticRouteCondition {
 	if status == nil {
 		return nil
 	}
@@ -92,11 +93,11 @@ func GetRouteCRCondition(status *vpcnetworkingapis.StaticRouteStatus, conditionT
 
 // WaitRouteCR validates if route CR condition is Ready
 func (sr *RouteManager) WaitRouteCR(name string) error {
-	staticroute, err := sr.clients.NsxV1alpha1().StaticRoutes(sr.namespace).Get(context.Background(), name, metav1.GetOptions{})
+	staticroute, err := sr.clients.CrdV1alpha1().StaticRoutes(sr.namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Route CR %s: %w", name, err)
 	}
-	condition := GetRouteCRCondition(&(staticroute.Status), vpcnetworkingapis.Ready)
+	condition := GetRouteCRCondition(&(staticroute.Status), vpcapisv1.Ready)
 	if condition != nil && condition.Status == v1.ConditionTrue {
 		return nil
 	}
@@ -106,13 +107,13 @@ func (sr *RouteManager) WaitRouteCR(name string) error {
 
 // CreateRouteCR creates the RouteManager CR
 func (sr *RouteManager) CreateRouteCR(ctx context.Context, routeInfo *helper.RouteInfo) (helper.RouteCR, error) {
-	staticrouteSpec := vpcnetworkingapis.StaticRouteSpec{
+	staticrouteSpec := vpcapisv1.StaticRouteSpec{
 		Network: routeInfo.Cidr,
-		NextHops: []vpcnetworkingapis.NextHop{
+		NextHops: []vpcapisv1.NextHop{
 			{IPAddress: routeInfo.NodeIP},
 		},
 	}
-	staticRoute := &vpcnetworkingapis.StaticRoute{
+	staticRoute := &vpcapisv1.StaticRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            routeInfo.Name,
 			OwnerReferences: routeInfo.Owner,
@@ -122,15 +123,15 @@ func (sr *RouteManager) CreateRouteCR(ctx context.Context, routeInfo *helper.Rou
 		Spec: staticrouteSpec,
 	}
 
-	return sr.clients.NsxV1alpha1().StaticRoutes(sr.namespace).Create(ctx, staticRoute, metav1.CreateOptions{})
+	return sr.clients.CrdV1alpha1().StaticRoutes(sr.namespace).Create(ctx, staticRoute, metav1.CreateOptions{})
 }
 
 // DeleteRouteCR deletes corresponding RouteSet CR when there is a node deleted
 func (sr *RouteManager) DeleteRouteCR(nodeName string) error {
-	return sr.clients.NsxV1alpha1().StaticRoutes(sr.namespace).Delete(context.Background(), nodeName, metav1.DeleteOptions{})
+	return sr.clients.CrdV1alpha1().StaticRoutes(sr.namespace).Delete(context.Background(), nodeName, metav1.DeleteOptions{})
 }
 
 // GetClients get clientsets. It's used in unit tests
-func (sr *RouteManager) GetClients() vpcnetworkingclients.Interface {
+func (sr *RouteManager) GetClients() nsxclients.Interface {
 	return sr.clients
 }

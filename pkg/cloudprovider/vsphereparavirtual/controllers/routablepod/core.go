@@ -17,14 +17,19 @@ import (
 	"context"
 	"fmt"
 
+	nsxclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned"
+	nsxinformers "github.com/vmware-tanzu/nsx-operator/pkg/client/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ipaddressallocation"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ippool"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/node"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
+	ippmv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/nsxipmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
 
@@ -42,18 +47,59 @@ func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
 
 	klog.V(2).Info("Routable pod controllers start with VPC mode enabled: ", vpcModeEnabled)
 
-	ippManager, err := ippoolmanager.GetIPPoolManager(vpcModeEnabled, scCfg, clusterNS, podIPPoolType)
-	if err != nil {
-		return fmt.Errorf("fail to get ippool manager or start ippool controller: %w", err)
+	ctx := informerManager.GetContext()
+	var nsxIPManager nsxipmanager.NSXIPManager
+	if vpcModeEnabled {
+		nsxClient, nsxInformerFactory, err := getNSXClientAndInformer(scCfg, clusterNS)
+		if err != nil {
+			return fmt.Errorf("fail to get NSX client or informer factory: %w", err)
+		}
+
+		startIPAddressAllocationController(ctx, client, informerManager, nsxInformerFactory)
+
+		nsxIPManager = nsxipmanager.NewNSXVPCIPManager(nsxClient, nsxInformerFactory, clusterNS, podIPPoolType, ownerRef)
+	} else {
+		ippManager, err := ippmv1alpha1.NewIPPoolManager(scCfg, clusterNS)
+		if err != nil {
+			return fmt.Errorf("fail to get ippool manager or start ippool controller: %w", err)
+		}
+
+		startIPPoolController(ctx, client, ippManager)
+
+		nsxIPManager = nsxipmanager.NewNSXT1IPManager(ippManager, clusterName, clusterNS, ownerRef)
 	}
 
-	ippoolController := ippool.NewController(client, ippManager)
-	go ippoolController.Run(context.Background().Done())
-
-	ippManager.StartIPPoolInformers()
-
-	nodeController := node.NewController(client, ippManager, informerManager, clusterName, clusterNS, ownerRef)
+	nodeController := node.NewController(client, nsxIPManager, informerManager, clusterName, clusterNS, ownerRef)
 	go nodeController.Run(context.Background().Done())
 
 	return nil
+}
+
+func startIPAddressAllocationController(ctx context.Context, client kubernetes.Interface, informerManager *k8s.InformerManager, nsxInformerFactory nsxinformers.SharedInformerFactory) {
+	ipAddressAllocationController := ipaddressallocation.NewController(
+		ctx,
+		client,
+		informerManager.GetNodeLister(),
+		informerManager.IsNodeInformerSynced(),
+		nsxInformerFactory.Crd().V1alpha1().IPAddressAllocations())
+	go ipAddressAllocationController.Run(ctx, 1)
+	nsxInformerFactory.Start(ctx.Done())
+}
+
+func startIPPoolController(ctx context.Context, client kubernetes.Interface, ippManager *ippmv1alpha1.IPPoolManager) {
+	ippoolController := ippool.NewController(client, ippManager)
+	go ippoolController.Run(ctx.Done())
+	ippManager.StartIPPoolInformers(ctx.Done())
+}
+
+func getNSXClientAndInformer(svCfg *rest.Config, svNamespace string) (nsxclients.Interface, nsxinformers.SharedInformerFactory, error) {
+	client, err := nsxclients.NewForConfig(svCfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error building nsx-operator clientset: %w", err)
+	}
+
+	informerFactory := nsxinformers.NewSharedInformerFactoryWithOptions(client,
+		helper.DefaultResyncTime, nsxinformers.WithNamespace(svNamespace))
+
+	return client, informerFactory, nil
 }
