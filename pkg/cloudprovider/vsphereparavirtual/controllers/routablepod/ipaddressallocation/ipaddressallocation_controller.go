@@ -257,7 +257,7 @@ func (c *Controller) processIPAddressAllocationCreateOrUpdate(ctx context.Contex
 			if condition.Status != corev1.ConditionTrue {
 				return fmt.Errorf("IPAddressAllocation %v is not ready", ipAddressAllocation.Name)
 			}
-			podCIDR = ipAddressAllocation.Status.CIDR
+			podCIDR = ipAddressAllocation.Status.AllocationIPs
 		}
 	}
 	if podCIDR == "" {
