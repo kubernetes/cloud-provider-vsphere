@@ -63,6 +63,27 @@ secret-namespace = "kube-system"
 # port, insecure-flag will be used from Global section.
 `
 
+const missingServerConfigINI = `
+[Global]
+port = 443
+user = user
+password = password
+insecure-flag = true
+datacenters = us-west
+ca-file = /some/path/to/a/ca.pem
+`
+
+const badConfigINI = `
+[Global]]
+server = 0.0.0.0
+port = 443
+user = user
+password = password
+insecure-flag = true
+datacenters = us-west
+ca-file = /some/path/to/a/ca.pem
+`
+
 func TestReadConfigINIGlobal(t *testing.T) {
 	_, err := ReadConfigINI([]byte(""))
 	if err == nil {
