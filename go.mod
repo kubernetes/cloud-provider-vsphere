@@ -15,8 +15,8 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
-	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240816024231-ca8ea47d918d
-	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240816024231-ca8ea47d918d
+	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240827061921-8f0982975508
+	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240827061921-8f0982975508
 	github.com/vmware-tanzu/vm-operator/api v1.8.6
 	github.com/vmware/govmomi v0.42.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0

@@ -104,7 +104,7 @@ func newIPAddressAllocation(name string, ipAddressBlockVisibility vpcapisv1.IPAd
 			AllocationSize:           24,
 		},
 		Status: vpcapisv1.IPAddressAllocationStatus{
-			CIDR: cidr,
+			AllocationIPs: cidr,
 			Conditions: []vpcapisv1.Condition{
 				{
 					Type:   vpcapisv1.Ready,
