@@ -67,40 +67,66 @@ func setupSignalHandler() (stopCh <-chan struct{}) {
 }
 
 // NewInformer creates a newk8s client based on a service account
-func NewInformer(client clientset.Interface, singleWatcher bool) *InformerManager {
+func NewInformer(client clientset.Interface, namespaces ...string) *InformerManager {
 	onceForInformer.Do(func() {
 		signalHandler = setupSignalHandler()
 		informerFactory = informers.NewSharedInformerFactory(client, noResyncPeriodFunc())
 	})
 
+	informerFactories := map[string]informers.SharedInformerFactory{
+		defaultInformerFactoryNamespace: informerFactory,
+	}
+
+	for _, ns := range namespaces {
+		informerFactories[ns] = informers.NewSharedInformerFactoryWithOptions(client, noResyncPeriodFunc(), informers.WithNamespace(ns))
+	}
+
 	return &InformerManager{
-		client:          client,
-		stopCh:          signalHandler,
-		informerFactory: informerFactory,
+		client:                      client,
+		stopCh:                      signalHandler,
+		namespacedInformerFactories: informerFactories,
+		namespacedSecretInformer:    make(map[string]informerv1.SecretInformer),
 	}
 }
 
 // GetSecretLister creates a lister to use
-func (im *InformerManager) GetSecretLister() listerv1.SecretLister {
-	if im.secretInformer == nil {
-		im.secretInformer = im.informerFactory.Core().V1().Secrets()
-	}
-
-	return im.secretInformer.Lister()
+func (im *InformerManager) GetSecretLister(namespace string) listerv1.SecretLister {
+	return im.getSecretInformer(namespace).Lister()
 }
 
 // GetSecretInformer gets secret informer
-func (im *InformerManager) GetSecretInformer() informerv1.SecretInformer {
-	if im.secretInformer == nil {
-		im.secretInformer = im.informerFactory.Core().V1().Secrets()
+func (im *InformerManager) GetSecretInformer(namespace string) informerv1.SecretInformer {
+	return im.getSecretInformer(namespace)
+}
+
+func (im *InformerManager) getSecretInformer(namespace string) informerv1.SecretInformer {
+	secretInformer, ok := im.namespacedSecretInformer[namespace]
+	if ok {
+		return secretInformer
 	}
-	return im.secretInformer
+
+	factory, ok := im.namespacedInformerFactories[namespace]
+	if !ok {
+		factory = informers.NewSharedInformerFactoryWithOptions(im.client, noResyncPeriodFunc(), informers.WithNamespace(namespace))
+		im.namespacedInformerFactories[namespace] = factory
+		go factory.Start(im.stopCh)
+	}
+
+	secretInformer = factory.Core().V1().Secrets()
+	im.namespacedSecretInformer[namespace] = secretInformer
+
+	return secretInformer
 }
 
 // AddNodeListener hooks up add, update, delete callbacks
 func (im *InformerManager) AddNodeListener(add, remove func(obj interface{}), update func(oldObj, newObj interface{})) {
 	if im.nodeInformer == nil {
-		im.nodeInformer = im.informerFactory.Core().V1().Nodes().Informer()
+		factory, ok := im.namespacedInformerFactories[defaultInformerFactoryNamespace]
+		if !ok {
+			panic("no default informer factory")
+		}
+
+		im.nodeInformer = factory.Core().V1().Nodes().Informer()
 	}
 
 	im.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -112,18 +138,29 @@ func (im *InformerManager) AddNodeListener(add, remove func(obj interface{}), up
 
 // GetNodeLister creates a lister to use
 func (im *InformerManager) GetNodeLister() listerv1.NodeLister {
-	return im.informerFactory.Core().V1().Nodes().Lister()
+	factory, ok := im.namespacedInformerFactories[defaultInformerFactoryNamespace]
+	if !ok {
+		panic("no default informer factory")
+	}
+	return factory.Core().V1().Nodes().Lister()
 }
 
 // IsNodeInformerSynced returns whether node informer is synced
 func (im *InformerManager) IsNodeInformerSynced() cache.InformerSynced {
-	return im.informerFactory.Core().V1().Nodes().Informer().HasSynced
+	factory, ok := im.namespacedInformerFactories[defaultInformerFactoryNamespace]
+	if !ok {
+		panic("no default informer factory")
+	}
+
+	return factory.Core().V1().Nodes().Informer().HasSynced
 }
 
 // Listen starts the Informers. Based on client-go informer package, if the Lister has
 // already been initialized, it will not re-init them. Only new non-init Listers will be initialized.
 func (im *InformerManager) Listen() {
-	go im.informerFactory.Start(im.stopCh)
+	for _, factory := range im.namespacedInformerFactories {
+		go factory.Start(im.stopCh)
+	}
 }
 
 // GetContext returns a context that is cancelled when the stop channel is closed
