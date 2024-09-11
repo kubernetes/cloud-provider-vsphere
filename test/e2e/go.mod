@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.22.3
 
 require (
-	github.com/onsi/ginkgo/v2 v2.20.1
+	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/vmware/govmomi v0.37.3
 	k8s.io/api v0.30.4
