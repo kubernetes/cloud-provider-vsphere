@@ -227,3 +227,14 @@ func ReadConfigYAML(byConfig []byte) (*Config, error) {
 
 	return cfg.CreateConfig(), nil
 }
+
+func isConfigYaml(byConfig []byte) error {
+	cfg := CommonConfigYAML{
+		Vcenter: make(map[string]*VirtualCenterConfigYAML),
+	}
+
+	if err := yaml.Unmarshal(byConfig, &cfg); err != nil {
+		return err
+	}
+	return nil
+}

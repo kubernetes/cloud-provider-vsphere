@@ -65,6 +65,28 @@ vcenter:
     secretNamespace: kube-system
 `
 
+const missingServerConfigYAML = `
+global:
+  port: 443
+  user: user
+  password: password
+  insecureFlag: true
+  datacenters:
+    - us-west
+  caFile: /some/path/to/a/ca.pem
+`
+
+const badConfigYAML = `
+global:
+  server: 0.0.0.0
+  port: 443
+  user: password: 
+  insecureFlag: true
+  datacenters:
+    - us-west
+  caFile: /some/path/to/a/ca.pem
+`
+
 func TestReadConfigYAMLGlobal(t *testing.T) {
 	_, err := ReadConfigYAML([]byte(""))
 	if err == nil {
@@ -135,5 +157,27 @@ func TestTenantRefsYAML(t *testing.T) {
 	}
 	if !strings.EqualFold(vcConfig3.SecretRef, "kube-system/eu-secret") {
 		t.Errorf("vcConfig3 SecretRef should be kube-system/eu-secret but actual=%s", vcConfig3.SecretRef)
+	}
+}
+
+func TestIsConfigYAML(t *testing.T) {
+	if err := isConfigYaml([]byte(basicConfigYAML)); err != nil {
+		t.Error("YAML config should be valid")
+	}
+
+	if err := isConfigYaml([]byte(basicConfigINI)); err == nil {
+		t.Error("INI config should be invalid")
+	}
+
+	if err := isConfigYaml([]byte(badConfigYAML)); err == nil {
+		t.Error("Bad config YAML config should be invalid")
+	}
+
+	if err := isConfigYaml([]byte(badConfigINI)); err == nil {
+		t.Error("Bad config YAML config should be invalid")
+	}
+
+	if err := isConfigYaml([]byte(invalidFormat)); err == nil {
+		t.Error("Generic text file should be invalid")
 	}
 }
