@@ -18,7 +18,7 @@ require (
 	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240827061921-8f0982975508
 	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240827061921-8f0982975508
 	github.com/vmware-tanzu/vm-operator/api v1.8.6
-	github.com/vmware/govmomi v0.43.0
+	github.com/vmware/govmomi v0.44.1
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.12.0
@@ -107,7 +107,7 @@ require (
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
