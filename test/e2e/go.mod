@@ -14,9 +14,9 @@ require (
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.1
 	k8s.io/klog/v2 v2.130.1
-	sigs.k8s.io/cluster-api v1.8.3
-	sigs.k8s.io/cluster-api-provider-vsphere/test v1.11.1
-	sigs.k8s.io/cluster-api/test v1.8.3
+	sigs.k8s.io/cluster-api v1.8.4
+	sigs.k8s.io/cluster-api-provider-vsphere/test v1.11.2
+	sigs.k8s.io/cluster-api/test v1.8.4
 	sigs.k8s.io/controller-runtime v0.19.0
 )
 
