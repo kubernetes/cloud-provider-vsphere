@@ -37,15 +37,33 @@ type Datacenter struct {
 	*object.Datacenter
 }
 
-// GetDatacenter returns the DataCenter Object for the given datacenterPath
+// GetDatacenter returns the DataCenter Object for the given datacenterPath or datacenter MOID.
 // If datacenter is located in a folder, include full path to datacenter else just provide the datacenter name
 func GetDatacenter(ctx context.Context, connection *VSphereConnection, datacenterPath string) (*Datacenter, error) {
-	finder := find.NewFinder(connection.Client, false)
-	datacenter, err := finder.Datacenter(ctx, datacenterPath)
-	if err != nil {
-		klog.Errorf("Failed to find the datacenter: %s. err: %+v", datacenterPath, err)
-		return nil, err
+	var datacenter *object.Datacenter
+	var err error
+
+	// Try to get an object reference based on the requested datacenter name.
+	// eg.: if datacenterPath == Datacenter:datacenter-3, this is a valid MOID
+	// so dcRef will not be null.
+	dcRef := object.ReferenceFromString(datacenterPath)
+	if dcRef != nil {
+		datacenter = object.NewDatacenter(connection.Client, *dcRef)
+		datacenter.InventoryPath, err = find.InventoryPath(ctx, connection.Client, dcRef.Reference())
+		if err != nil {
+			klog.Errorf("Failed to find datacenter by MOID: %s. err: %+v", datacenterPath, err)
+			return nil, err
+		}
+		klog.Infof("Datacenter found by Moid: %s", datacenter.InventoryPath)
+	} else {
+		finder := find.NewFinder(connection.Client, false)
+		datacenter, err = finder.Datacenter(ctx, datacenterPath)
+		if err != nil {
+			klog.Errorf("Failed to find the datacenter: %s. err: %+v", datacenterPath, err)
+			return nil, err
+		}
 	}
+
 	dc := Datacenter{datacenter}
 	return &dc, nil
 }
