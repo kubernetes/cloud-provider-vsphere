@@ -18,6 +18,7 @@ package vclib
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/vmware/govmomi"
@@ -49,131 +50,147 @@ func TestDatacenter(t *testing.T) {
 
 	vc := &VSphereConnection{Client: c.Client}
 
+	runDatacenterTest := func(t *testing.T, dc *Datacenter) {
+		_, err = dc.GetVMByUUID(ctx, testNameNotFound)
+		if err == nil || err != ErrNoVMFound {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetVMByUUID(ctx, avm.Summary.Config.Uuid)
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = dc.GetVMByPath(ctx, testNameNotFound)
+		if err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Error("expected error")
+		}
+
+		vm, err := dc.GetVMByPath(ctx, TestDefaultDatacenter+"/vm/"+avm.Name)
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = dc.GetDatastoreByPath(ctx, testNameNotFound) // invalid format
+		if err == nil || !strings.Contains(err.Error(), "Failed to parse vmDiskPath") {
+			t.Error("expected error")
+		}
+
+		invalidPath := object.DatastorePath{
+			Datastore: testNameNotFound,
+			Path:      testNameNotFound,
+		}
+
+		_, err = dc.GetDatastoreByPath(ctx, invalidPath.String())
+		if err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetDatastoreByPath(ctx, avm.Summary.Config.VmPathName)
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = dc.GetDatastoreByName(ctx, testNameNotFound)
+		if err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Error("expected error")
+		}
+
+		ds, err := dc.GetDatastoreByName(ctx, TestDefaultDatastore)
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = dc.GetFolderByPath(ctx, testNameNotFound)
+		if err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetFolderByPath(ctx, TestDefaultDatacenter+"/vm")
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = dc.GetVMMoList(ctx, nil, nil)
+		if err == nil || !strings.Contains(err.Error(), "VirtualMachine Object list is empty") {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetVMMoList(ctx, []*VirtualMachine{vm}, []string{testNameNotFound}) // invalid property
+		if err == nil || !strings.Contains(err.Error(), "InvalidProperty") {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetVMMoList(ctx, []*VirtualMachine{vm}, []string{"summary"})
+		if err != nil {
+			t.Error(err)
+		}
+
+		diskPath := ds.Datastore.Path(avm.Name + "/disk1.vmdk")
+
+		_, err = dc.GetVirtualDiskPage83Data(ctx, diskPath+testNameNotFound)
+		if err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetVirtualDiskPage83Data(ctx, diskPath)
+		if err != nil {
+			t.Errorf("GetVirtualDiskPage83Data: %v", err)
+		}
+
+		_, err = dc.GetDatastoreMoList(ctx, nil, nil)
+		if err == nil || !strings.Contains(err.Error(), "Datastore Object list is empty") {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds.Datastore}, []string{testNameNotFound}) // invalid property
+		if err == nil || !strings.Contains(err.Error(), "InvalidProperty") {
+			t.Error("expected error")
+		}
+
+		_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds.Datastore}, []string{DatastoreInfoProperty})
+		if err != nil {
+			t.Error(err)
+		}
+
+		nodeVolumes := map[string][]string{
+			avm.Name: {testNameNotFound, diskPath},
+		}
+
+		attached, err := dc.CheckDisksAttached(ctx, nodeVolumes)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if attached[avm.Name][testNameNotFound] {
+			t.Error("should not be attached")
+		}
+
+		if !attached[avm.Name][diskPath] {
+			t.Errorf("%s should be attached", diskPath)
+		}
+	}
+
 	_, err = GetDatacenter(ctx, vc, testNameNotFound)
 	if err == nil {
 		t.Error("expected error")
 	}
 
-	dc, err := GetDatacenter(ctx, vc, TestDefaultDatacenter)
-	if err != nil {
-		t.Error(err)
-	}
+	t.Run("should get objects using Datacenter path", func(t *testing.T) {
+		dc, err := GetDatacenter(ctx, vc, TestDefaultDatacenter)
+		if err != nil {
+			t.Error(err)
+		}
+		runDatacenterTest(t, dc)
+	})
 
-	_, err = dc.GetVMByUUID(ctx, testNameNotFound)
-	if err == nil {
-		t.Error("expected error")
-	}
+	t.Run("should get objects using Datacenter MOID", func(t *testing.T) {
+		dcRef := simulator.Map.Any("Datacenter")
+		dc, err := GetDatacenter(ctx, vc, dcRef.Reference().String())
+		if err != nil {
+			t.Error(err)
+		}
+		runDatacenterTest(t, dc)
+	})
 
-	_, err = dc.GetVMByUUID(ctx, avm.Summary.Config.Uuid)
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, err = dc.GetVMByPath(ctx, testNameNotFound)
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	vm, err := dc.GetVMByPath(ctx, TestDefaultDatacenter+"/vm/"+avm.Name)
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, err = dc.GetDatastoreByPath(ctx, testNameNotFound) // invalid format
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	invalidPath := object.DatastorePath{
-		Datastore: testNameNotFound,
-		Path:      testNameNotFound,
-	}
-	_, err = dc.GetDatastoreByPath(ctx, invalidPath.String())
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	_, err = dc.GetDatastoreByPath(ctx, avm.Summary.Config.VmPathName)
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, err = dc.GetDatastoreByName(ctx, testNameNotFound)
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	ds, err := dc.GetDatastoreByName(ctx, TestDefaultDatastore)
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, err = dc.GetFolderByPath(ctx, testNameNotFound)
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	_, err = dc.GetFolderByPath(ctx, TestDefaultDatacenter+"/vm")
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, err = dc.GetVMMoList(ctx, nil, nil)
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	_, err = dc.GetVMMoList(ctx, []*VirtualMachine{vm}, []string{testNameNotFound}) // invalid property
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	_, err = dc.GetVMMoList(ctx, []*VirtualMachine{vm}, []string{"summary"})
-	if err != nil {
-		t.Error(err)
-	}
-
-	diskPath := ds.Datastore.Path(avm.Name + "/disk1.vmdk")
-
-	_, err = dc.GetVirtualDiskPage83Data(ctx, diskPath+testNameNotFound)
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	_, err = dc.GetVirtualDiskPage83Data(ctx, diskPath)
-	if err != nil {
-		t.Errorf("GetVirtualDiskPage83Data: %v", err)
-	}
-
-	_, err = dc.GetDatastoreMoList(ctx, nil, nil)
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds.Datastore}, []string{testNameNotFound}) // invalid property
-	if err == nil {
-		t.Error("expected error")
-	}
-
-	_, err = dc.GetDatastoreMoList(ctx, []*Datastore{ds.Datastore}, []string{DatastoreInfoProperty})
-	if err != nil {
-		t.Error(err)
-	}
-
-	nodeVolumes := map[string][]string{
-		avm.Name: {testNameNotFound, diskPath},
-	}
-
-	attached, err := dc.CheckDisksAttached(ctx, nodeVolumes)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if attached[avm.Name][testNameNotFound] {
-		t.Error("should not be attached")
-	}
-
-	if !attached[avm.Name][diskPath] {
-		t.Errorf("%s should be attached", diskPath)
-	}
 }
