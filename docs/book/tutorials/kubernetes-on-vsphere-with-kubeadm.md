@@ -35,7 +35,7 @@ VMware distributes and recommends the following images:
 ```bash
 gcr.io/cloud-provider-vsphere/csi/release/driver:v3.2.0
 gcr.io/cloud-provider-vsphere/csi/release/syncer:v3.2.0
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.2
 ```
 
 In addition, you can use the following images or any of the open source or commercially available container images appropriate for the CSI deployment. Note that the tags reference the version of various components. This will change with future versions:
