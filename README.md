@@ -89,7 +89,7 @@ $ git clone https://github.com/kubernetes/cloud-provider-vsphere && \
 
 ---
 
-As part of the overall Kubernetes project image registry migration, starting with the v1.30.1 release, the cloud-provider-vsphere images will be hosted exclusively on the community-owned `registry.k8s.io` registry. These images will no longer be available on the previous `gcr.io/cloud-provider-vsphere/release` registry.
+As part of the overall Kubernetes project image registry migration, starting with the v1.30.2 release, the cloud-provider-vsphere images will be hosted exclusively on the community-owned `registry.k8s.io` registry. These images will no longer be available on the previous `gcr.io/cloud-provider-vsphere/release` registry.
 
 Additionally, images for the following versions of cloud-provider-vsphere have already been migrated to registry.k8s.io:
 
@@ -98,6 +98,7 @@ registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.28.0
 registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.29.0
 registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.0
 registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.2
 ...
 ```
 
@@ -106,7 +107,7 @@ registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
 Official releases of the vSphere Cloud Controller Manager container image can be found at:
 
 ```bash
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1 # <== latest version
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.2 # <== latest version
 ```
 
 The very latest builds from the tip of master, which may not be stable, can be found at:
