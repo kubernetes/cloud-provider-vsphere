@@ -89,41 +89,41 @@ See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command docu
 
 The following table lists the configurable parameters of the vSphere CPI chart and their default values.
 
-|             Parameter                    |            Description              |                  Default               |
-|------------------------------------------|-------------------------------------|----------------------------------------|
-| `podSecurityPolicy.enabled`              | Enable pod sec policy (k8s > 1.17)  |  true                                  |
-| `podSecurityPolicy.annotations`          | Annotations for pd sec policy       |  nil                                   |
-| `securityContext.enabled`                | Enable sec context for container    |  false                                 |
-| `securityContext.runAsUser`              | RunAsUser. Default is `nobody` in   |  1001                                  |
-|                                          |    distroless image                 |                                        |
-| `securityContext.fsGroup`                | FsGroup. Default is `nobody` in     |  1001                                  |
-|                                          |    distroless image                 |                                        |
-| `config.enabled`                         | Create a simple single VC config    |  false                                 |
-| `config.name`                            | Name of the created VC configmap    |  false                                 |
-| `config.vcenter`                         | FQDN or IP of vCenter               |  vcenter.local                         |
-| `config.username`                        | vCenter username                    |  user                                  |
-| `config.password`                        | vCenter password                    |  pass                                  |
-| `config.datacenter`                      | Datacenters within the vCenter      |  dc                                    |
-| `config.secret.create`                   | Create secret for VC config         |  true                                  |
-| `config.secret.name`                     | Name of the created VC secret       |  vsphere-cloud-secret                  |
-| `rbac.create`                            | Create roles and role bindings      |  true                                  |
-| `serviceAccount.create`                  | Create the service account          |  true                                  |
-| `serviceAccount.name`                    | Name of the created service account |  cloud-controller-manager              |
-| `daemonset.annotations`                  | Annotations for CPI pod             |  nil                                   |
-| `daemonset.image`                        | Image for vSphere CPI               |  gcr.io/cloud-provider-vsphere/        |
-|                                          |                                     |       vsphere-cloud-controller-manager |
-| `daemonset.tag`                          | Tag for vSphere CPI                 |  latest                                |
-| `daemonset.pullPolicy`                   | CPI image pullPolicy                |  IfNotPresent                          |
-| `daemonset.dnsPolicy`                    | CPI dnsPolicy                       |  ClusterFirst                          |
-| `daemonset.cmdline.logging`              | Logging level                       |  2                                     |
-| `daemonset.cmdline.cloudConfig.dir`      | vSphere conf directory              |  /etc/cloud                            |
-| `daemonset.cmdline.cloudConfig.file`     | vSphere conf filename               |  vsphere.conf                          |
-| `daemonset.replicaCount`                 | Node resources                      | `[]`                                   |
-| `daemonset.resources`                    | Node resources                      | `[]`                                   |
-| `daemonset.podAnnotations`               | Annotations for CPI pod             |  nil                                   |
-| `daemonset.podLabels`                    | Labels for CPI pod                  |  nil                                   |
-| `daemonset.nodeSelector`                 | User-defined node selectors         |  nil                                   |
-| `daemonset.tolerations`                  | User-defined tolerations            |  nil                                   |
+|             Parameter                    |            Description              | Default                             |
+|------------------------------------------|-------------------------------------|-------------------------------------|
+| `podSecurityPolicy.enabled`              | Enable pod sec policy (k8s > 1.17)  | true                                |
+| `podSecurityPolicy.annotations`          | Annotations for pd sec policy       | nil                                 |
+| `securityContext.enabled`                | Enable sec context for container    | false                               |
+| `securityContext.runAsUser`              | RunAsUser. Default is `nobody` in   | 1001                                |
+|                                          |    distroless image                 |                                     |
+| `securityContext.fsGroup`                | FsGroup. Default is `nobody` in     | 1001                                |
+|                                          |    distroless image                 |                                     |
+| `config.enabled`                         | Create a simple single VC config    | false                               |
+| `config.name`                            | Name of the created VC configmap    | false                               |
+| `config.vcenter`                         | FQDN or IP of vCenter               | vcenter.local                       |
+| `config.username`                        | vCenter username                    | user                                |
+| `config.password`                        | vCenter password                    | pass                                |
+| `config.datacenter`                      | Datacenters within the vCenter      | dc                                  |
+| `config.secret.create`                   | Create secret for VC config         | true                                |
+| `config.secret.name`                     | Name of the created VC secret       | vsphere-cloud-secret                |
+| `rbac.create`                            | Create roles and role bindings      | true                                |
+| `serviceAccount.create`                  | Create the service account          | true                                |
+| `serviceAccount.name`                    | Name of the created service account | cloud-controller-manager            |
+| `daemonset.annotations`                  | Annotations for CPI pod             | nil                                 |
+| `daemonset.image`                        | Image for vSphere CPI               | registry.k8s.io/cloud-pv-vsphere/   |
+|                                          |                                     | cloud-provider-vsphere              |
+| `daemonset.tag`                          | Tag for vSphere CPI                 | latest                              |
+| `daemonset.pullPolicy`                   | CPI image pullPolicy                | IfNotPresent                        |
+| `daemonset.dnsPolicy`                    | CPI dnsPolicy                       | ClusterFirst                        |
+| `daemonset.cmdline.logging`              | Logging level                       | 2                                   |
+| `daemonset.cmdline.cloudConfig.dir`      | vSphere conf directory              | /etc/cloud                          |
+| `daemonset.cmdline.cloudConfig.file`     | vSphere conf filename               | vsphere.conf                        |
+| `daemonset.replicaCount`                 | Node resources                      | `[]`                                |
+| `daemonset.resources`                    | Node resources                      | `[]`                                |
+| `daemonset.podAnnotations`               | Annotations for CPI pod             | nil                                 |
+| `daemonset.podLabels`                    | Labels for CPI pod                  | nil                                 |
+| `daemonset.nodeSelector`                 | User-defined node selectors         | nil                                 |
+| `daemonset.tolerations`                  | User-defined tolerations            | nil                                 |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` using Helm v3.X. For example,
 
@@ -149,7 +149,7 @@ helm repo add vsphere-cpi https://kubernetes.github.io/cloud-provider-vsphere
 helm repo update
 
 # Package CPI Chart
-VERSION=1.30.0
+VERSION=1.31.1
 cd charts
 helm package vsphere-cpi --version $VERSION --app-version $VERSION
 
