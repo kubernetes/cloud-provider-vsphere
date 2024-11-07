@@ -6,6 +6,9 @@ on:
 
   workflow_dispatch: # Use for manaully trigger to debug
 
+permissions:
+  contents: write
+
 jobs:
   bump-k8s-dep-to-latest-pre-release:
     runs-on: ubuntu-latest
