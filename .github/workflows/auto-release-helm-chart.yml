@@ -10,6 +10,10 @@ on:
 
   workflow_dispatch: # Use for manaully trigger to debug
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   release-helm-chart:
     runs-on: ubuntu-latest
