@@ -46,7 +46,7 @@ jobs:
           echo "valid=${valid}" >> $GITHUB_OUTPUT
 
       - name: Find Second Latest Release Tag
-        if: ${{ steps.check.outputs.valid }} == 0
+        if: ${{ steps.check.outputs.valid == '0' }}
         id: find
         run: |
           SEMVER_REGEX='^[[:space:]]{0,}v[[:digit:]]{1,}\.[[:digit:]]{1,}\.[[:digit:]]{1,}(-(alpha|beta|rc)\.[[:digit:]]{1,}){0,1}[[:space:]]{0,}$'
@@ -68,14 +68,14 @@ jobs:
           echo "second_latest_release_tag=${second_latest_release_tag}" >> $GITHUB_OUTPUT
 
       - name: Generate Pre Release Note
-        if: ${{ steps.check.outputs.valid }} == 0 && ${{ steps.find.outputs.pre_release }} == 1
+        if: ${{ steps.check.outputs.valid == '0' && steps.find.outputs.pre_release == '1' }}
         run: |
           gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }} --prerelease
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Generate Release Note
-        if: ${{ steps.check.outputs.valid }} == 0 && ${{ steps.find.outputs.pre_release }} == 0
+        if: ${{ steps.check.outputs.valid == '0' && steps.find.outputs.pre_release == '0' }}
         run: |
           gh release create ${{ steps.check.outputs.latest_tag }} --verify-tag --generate-notes --notes-start-tag ${{ steps.find.outputs.second_latest_release_tag }}
         env:
