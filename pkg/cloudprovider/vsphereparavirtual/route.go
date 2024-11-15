@@ -20,13 +20,13 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	listerv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/klog/v2"
@@ -39,21 +39,18 @@ import (
 // RoutesProvider is the interface definition for Routes functionality
 type RoutesProvider interface {
 	cloudprovider.Routes
-	AddNode(*v1.Node)
-	DeleteNode(*v1.Node)
 }
 
 type routesProvider struct {
 	routeManager routemanager.RouteManager
-	nodeMap      map[string]*v1.Node
-	nodeMapLock  sync.RWMutex
 	ownerRefs    []metav1.OwnerReference
+	nodeLister   listerv1.NodeLister
 }
 
 var _ RoutesProvider = &routesProvider{}
 
 // NewRoutes returns an implementation of RoutesProvider
-func NewRoutes(clusterNS string, kcfg *rest.Config, ownerRef metav1.OwnerReference, vpcModeEnabled bool) (RoutesProvider, error) {
+func NewRoutes(clusterNS string, kcfg *rest.Config, ownerRef metav1.OwnerReference, vpcModeEnabled bool, nodeLister listerv1.NodeLister) (RoutesProvider, error) {
 	routeManager, err := routemanager.GetRouteManager(vpcModeEnabled, kcfg, clusterNS)
 	if err != nil {
 		return nil, err
@@ -65,7 +62,7 @@ func NewRoutes(clusterNS string, kcfg *rest.Config, ownerRef metav1.OwnerReferen
 
 	return &routesProvider{
 		routeManager: routeManager,
-		nodeMap:      make(map[string]*v1.Node),
+		nodeLister:   nodeLister,
 		ownerRefs:    ownerRefs,
 	}, nil
 }
@@ -173,7 +170,7 @@ func (r *routesProvider) DeleteRoute(ctx context.Context, clusterName string, ro
 // The order is to choose node internal IP first, then external IP
 // Return the first IP address as node IP
 func (r *routesProvider) getNodeIPAddress(nodeName string, isIPv4 bool) (string, error) {
-	node, err := r.getNode(nodeName)
+	node, err := r.nodeLister.Get(nodeName)
 	if err != nil {
 		klog.Errorf("getting node %s failed: %v", nodeName, err)
 		return "", err
@@ -207,35 +204,4 @@ func (r *routesProvider) getNodeIPAddress(nodeName string, isIPv4 bool) (string,
 	}
 
 	return "", fmt.Errorf("node %s does not have the same IP family with podCIDR", nodeName)
-}
-
-// AddNode adds v1.Node in nodeMap
-func (r *routesProvider) AddNode(node *v1.Node) {
-	r.nodeMapLock.Lock()
-	r.nodeMap[node.Name] = node
-	klog.V(6).Infof("Added node %s into nodeMap", node.Name)
-	r.nodeMapLock.Unlock()
-}
-
-// DeleteNode deletes v1.Node from nodeMap and removes corresponding RouteSet CR
-func (r *routesProvider) DeleteNode(node *v1.Node) {
-	r.nodeMapLock.Lock()
-	delete(r.nodeMap, node.Name)
-	klog.V(6).Infof("Deleted node %s from nodeMap", node.Name)
-	r.nodeMapLock.Unlock()
-
-	err := r.routeManager.DeleteRouteCR(node.Name)
-	if err != nil {
-		klog.Errorf("failed to delete Route CR for node %s: %v", node.Name, err)
-	}
-}
-
-// getNode returns v1.Node from nodeMap
-func (r *routesProvider) getNode(nodeName string) (*v1.Node, error) {
-	r.nodeMapLock.Lock()
-	defer r.nodeMapLock.Unlock()
-	if r.nodeMap[nodeName] != nil {
-		return r.nodeMap[nodeName], nil
-	}
-	return nil, fmt.Errorf("node %s not found", nodeName)
 }
