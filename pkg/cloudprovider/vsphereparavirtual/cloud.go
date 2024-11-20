@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 
@@ -134,13 +133,11 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 		klog.Fatalf("Failed to get cluster namespace: %v", err)
 	}
 
-	routes, err := NewRoutes(clusterNS, kcfg, *cp.ownerReference, vpcModeEnabled)
+	routes, err := NewRoutes(clusterNS, kcfg, *cp.ownerReference, vpcModeEnabled, cp.informMgr.GetNodeLister())
 	if err != nil {
 		klog.Errorf("Failed to init Route: %v", err)
 	}
 	cp.routes = routes
-
-	cp.informMgr.AddNodeListener(cp.nodeAdded, cp.nodeDeleted, nil)
 
 	lb, err := NewLoadBalancer(clusterNS, kcfg, cp.ownerReference)
 	if err != nil {
@@ -225,32 +222,4 @@ func (cp *VSphereParavirtual) ProviderName() string {
 // HasClusterID returns true if a ClusterID is required and set/
 func (cp *VSphereParavirtual) HasClusterID() bool {
 	return true
-}
-
-// Notification handler when node is added into k8s cluster.
-func (cp *VSphereParavirtual) nodeAdded(obj interface{}) {
-	node, ok := obj.(*v1.Node)
-	if node == nil || !ok {
-		klog.Warningf("nodeAdded: unrecognized object %+v", obj)
-		return
-	}
-
-	if cp.routes != nil {
-		klog.V(6).Infof("adding node: %s", node.Name)
-		cp.routes.AddNode(node)
-	}
-}
-
-// Notification handler when node is removed from k8s cluster.
-func (cp *VSphereParavirtual) nodeDeleted(obj interface{}) {
-	node, ok := obj.(*v1.Node)
-	if node == nil || !ok {
-		klog.Warningf("nodeDeleted: unrecognized object %+v", obj)
-		return
-	}
-
-	if cp.routes != nil {
-		klog.V(6).Infof("deleting node: %s", node.Name)
-		cp.routes.DeleteNode(node)
-	}
 }

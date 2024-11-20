@@ -22,11 +22,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	k8sinformers "k8s.io/client-go/informers"
+	informerv1 "k8s.io/client-go/informers/core/v1"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
+
 	t1networkingapis "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/apis/nsxnetworking/v1alpha1"
 	faket1networkingclients "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/client/clientset/versioned/fake"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/helper"
@@ -41,20 +45,22 @@ const (
 	testNameHint = "62d347a4-1b70-435e-b92a-9a61453843ee"
 )
 
-func initRouteTest() (*routesProvider, *util.FakeRouteSetClientWrapper, *faket1networkingclients.Clientset) {
+func initRouteTest() (*routesProvider, *util.FakeRouteSetClientWrapper, *faket1networkingclients.Clientset, informerv1.NodeInformer) {
 	// create the fake client
 	// test with non-vpc mode
 	fc := faket1networkingclients.NewSimpleClientset()
 	fcw := util.NewFakeRouteSetClientWrapper(fc)
 
+	informer := k8sinformers.NewSharedInformerFactory(k8sfake.NewClientset(), 0)
+
 	routeManager, _ := routeset.NewRouteManagerWithClients(fc, testClusterNameSpace)
 
 	routesProvider := &routesProvider{
 		routeManager: routeManager,
-		nodeMap:      make(map[string]*v1.Node),
+		nodeLister:   informer.Core().V1().Nodes().Lister(),
 		ownerRefs:    []metav1.OwnerReference{},
 	}
-	return routesProvider, fcw, fc
+	return routesProvider, fcw, fc, informer.Core().V1().Nodes()
 }
 
 func buildFakeNode(nodeName string) *v1.Node {
@@ -136,22 +142,19 @@ func createFakeRouteSetCR(fc *faket1networkingclients.Clientset, clusterName str
 }
 
 func TestListRoutes(t *testing.T) {
-	r, _, fc := initRouteTest()
+	r, _, fc, _ := initRouteTest()
 
 	// create 3 fake Routes
 	fakeNode1 := buildFakeNode("fakeNode1")
-	r.AddNode(fakeNode1)
 	fakeRouteInfo1 := buildFakeRouteInfo(testClustername, testNameHint, "100.96.0.0/24", "fakeNode1", testNodeIP)
 	routeSet1, err := r.routeManager.CreateRouteCR(context.TODO(), fakeRouteInfo1)
 	assert.NoError(t, err)
 	assert.NotEqual(t, routeSet1, nil)
 	fakeNode2 := buildFakeNode("fakeNode2")
-	r.AddNode(fakeNode2)
 	routeSet2, err := createFakeRouteSetCR(fc, testClustername, testNameHint, "fakeNode2", "100.96.1.0/24", testNodeIP)
 	assert.NoError(t, err)
 	assert.NotEqual(t, routeSet2, nil)
 	fakeNode3 := buildFakeNode("fakeNode3")
-	r.AddNode(fakeNode3)
 	fakeRouteInfo3 := buildFakeRouteInfo("another-cluster-name", testNameHint, "100.96.2.0/24", "fakeNode3", testNodeIP)
 	routeSet3, err := r.routeManager.CreateRouteCR(context.TODO(), fakeRouteInfo3)
 	assert.NoError(t, err)
@@ -171,7 +174,7 @@ func TestListRoutes(t *testing.T) {
 }
 
 func TestListRoutesFailed(t *testing.T) {
-	r, fcw, _ := initRouteTest()
+	r, fcw, _, _ := initRouteTest()
 	fcw.ListFunc = func(ctx context.Context, opts metav1.ListOptions) (result *t1networkingapis.RouteSetList, err error) {
 		return nil, errors.New(helper.ErrListRouteCR.Error())
 	}
@@ -184,9 +187,10 @@ func TestListRoutesFailed(t *testing.T) {
 }
 
 func TestCreateRouteFailed(t *testing.T) {
-	r, _, _ := initRouteTest()
+	r, _, _, i := initRouteTest()
 	node := buildFakeNode(testNodeName)
-	r.nodeMap[testNodeName] = node
+	_ = i.Informer().GetIndexer().Add(node)
+
 	route := cloudprovider.Route{
 		Name:            helper.GetRouteName(testNodeName, testCIDR, testClustername),
 		TargetNode:      types.NodeName(testNodeName),
@@ -204,9 +208,9 @@ func TestCreateRouteFailed(t *testing.T) {
 }
 
 func TestCreateRouteFailedWithAlreadyExisting(t *testing.T) {
-	r, _, fc := initRouteTest()
+	r, _, fc, i := initRouteTest()
 	node := buildFakeNode(testNodeName)
-	r.nodeMap[testNodeName] = node
+	_ = i.Informer().GetIndexer().Add(node)
 	routeSetCR, err := createFakeRouteSetCR(fc, testClustername, testNameHint, testNodeName, testCIDR, testNodeIP)
 	assert.NoError(t, err)
 	assert.NotEqual(t, routeSetCR, nil)
@@ -228,9 +232,7 @@ func TestCreateRouteFailedWithAlreadyExisting(t *testing.T) {
 }
 
 func TestDeleteRoute(t *testing.T) {
-	r, _, _ := initRouteTest()
-	node := buildFakeNode(testNodeName)
-	r.nodeMap[testNodeName] = node
+	r, _, _, _ := initRouteTest()
 	route := cloudprovider.Route{
 		Name:            helper.GetRouteName(testNodeName, testCIDR, testClustername),
 		TargetNode:      types.NodeName(testNodeName),
@@ -247,9 +249,7 @@ func TestDeleteRoute(t *testing.T) {
 }
 
 func TestDeleteRouteFailed(t *testing.T) {
-	r, fcw, _ := initRouteTest()
-	node := buildFakeNode(testNodeName)
-	r.nodeMap[testNodeName] = node
+	r, fcw, _, _ := initRouteTest()
 	route := cloudprovider.Route{
 		Name:            helper.GetRouteName(testNodeName, testCIDR, testClustername),
 		TargetNode:      types.NodeName(testNodeName),
@@ -270,38 +270,9 @@ func TestDeleteRouteFailed(t *testing.T) {
 	}
 }
 
-func TestAddNode(t *testing.T) {
-	r := &routesProvider{
-		nodeMap: make(map[string]*v1.Node),
-	}
-	node := buildFakeNode(testNodeName)
-	r.AddNode(node)
-	assert.Equal(t, node, r.nodeMap[testNodeName])
-}
-
-func TestDeleteNode(t *testing.T) {
-	r, _, _ := initRouteTest()
-	node := buildFakeNode(testNodeName)
-	r.nodeMap[testNodeName] = node
-	r.DeleteNode(node)
-	assert.Equal(t, (*v1.Node)(nil), r.nodeMap[testNodeName])
-}
-
-func TestGetNode(t *testing.T) {
-	r := &routesProvider{
-		nodeMap: make(map[string]*v1.Node),
-	}
-	node := buildFakeNode(testNodeName)
-	r.nodeMap[testNodeName] = node
-	nodeInMap, err := r.getNode(testNodeName)
-	assert.Equal(t, node, nodeInMap)
-	assert.NoError(t, err)
-}
-
 func TestCheckStaticRouteRealizedState(t *testing.T) {
-	r, _, fc := initRouteTest()
+	r, _, fc, _ := initRouteTest()
 	node := buildFakeNode(testNodeName)
-	r.nodeMap[testNodeName] = node
 	fakeRouteInfo := buildFakeRouteInfo(testClustername, testNameHint, testCIDR, testNodeName, testNodeIP)
 	routeSet1, err := r.routeManager.CreateRouteCR(context.TODO(), fakeRouteInfo)
 	assert.NoError(t, err)
@@ -312,7 +283,6 @@ func TestCheckStaticRouteRealizedState(t *testing.T) {
 	assert.Equal(t, "timed out waiting for static route fakeNode1", err.Error())
 
 	fakeNode2 := buildFakeNode("fakeNode2")
-	r.AddNode(fakeNode2)
 	routeSet2, err := createFakeRouteSetCR(fc, testClustername, testNameHint, "fakeNode2", "100.96.1.0/24", testNodeIP)
 	assert.NoError(t, err)
 	assert.NotEqual(t, routeSet2, nil)
