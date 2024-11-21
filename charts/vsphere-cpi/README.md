@@ -118,15 +118,15 @@ The following table lists the configurable parameters of the vSphere CPI chart a
 | `daemonset.cmdline.logging`              | Logging level                       |  2                                     |
 | `daemonset.cmdline.cloudConfig.dir`      | vSphere conf directory              |  /etc/cloud                            |
 | `daemonset.cmdline.cloudConfig.file`     | vSphere conf filename               |  vsphere.conf                          |
-| `daemonset.replicaCount`                 | Node resources                      | `[]`                                   |
+| `daemonset.replicaCount`                 | Node resources                      | 1                                      |
 | `daemonset.resources`                    | Node resources                      | `[]`                                   |
 | `daemonset.podAnnotations`               | Annotations for CPI pod             |  nil                                   |
 | `daemonset.podLabels`                    | Labels for CPI pod                  |  nil                                   |
 | `daemonset.nodeSelector`                 | User-defined node selectors         |  nil                                   |
 | `daemonset.tolerations`                  | User-defined tolerations            |  nil                                   |
 | `daemonset.affinity`                     | User-defined affinities             |  nil                                   |
-| `daemonset.extraVolumes`                 | User-defined volumes                |  nil                                   |
-| `daemonset.extraVolumeMounts`            | User-defined volume mounts          |  nil                                   |
+| `daemonset.extraVolumes`                 | User-defined volumes                |  `[]`                                  |
+| `daemonset.extraVolumeMounts`            | User-defined volume mounts          |  `[]`                                  |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` using Helm v3.X. For example,
 
