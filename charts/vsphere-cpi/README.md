@@ -124,6 +124,9 @@ The following table lists the configurable parameters of the vSphere CPI chart a
 | `daemonset.podLabels`                    | Labels for CPI pod                  |  nil                                   |
 | `daemonset.nodeSelector`                 | User-defined node selectors         |  nil                                   |
 | `daemonset.tolerations`                  | User-defined tolerations            |  nil                                   |
+| `daemonset.affinity`                     | User-defined affinities             |  nil                                   |
+| `daemonset.extraVolumes`                 | User-defined volumes                |  nil                                   |
+| `daemonset.extraVolumeMounts`            | User-defined volume mounts          |  nil                                   |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` using Helm v3.X. For example,
 

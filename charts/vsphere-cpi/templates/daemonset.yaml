@@ -72,6 +72,9 @@ spec:
           - mountPath: {{ .Values.daemonset.cmdline.cloudConfig.dir }}
             name: vsphere-config-volume
             readOnly: true
+        {{- if .Values.daemonset.extraVolumeMounts }}
+          {{- toYaml .Values.daemonset.extraVolumeMounts | nindent 10 }}
+        {{- end }}
         {{- if .Values.daemonset.resources }}
         resources:
           {{- toYaml .Values.daemonset.resources | nindent 10 }}
@@ -80,3 +83,6 @@ spec:
         - name: vsphere-config-volume
           configMap:
             name: {{ if $config.enabled }}{{- $config.name }}{{- else }}cloud-config{{- end }}
+      {{- if .Values.daemonset.extraVolumes }}
+        {{- toYaml .Values.daemonset.extraVolumes | nindent 8 }}
+      {{- end }}
