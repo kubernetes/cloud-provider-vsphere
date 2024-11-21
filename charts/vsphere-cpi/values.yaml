@@ -12,6 +12,7 @@ config:
   region: "k8s-region"
   zone: "k8s-zone"
   thumbprint: ""
+  caFile: "" # Path to the ca-file if it has been mounted into the pod.
   secret:
     # Specifies whether Secret should be created from config values
     create: true
