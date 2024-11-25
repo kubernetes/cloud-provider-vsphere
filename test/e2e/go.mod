@@ -9,7 +9,7 @@ replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-prov
 require (
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
-	github.com/vmware/govmomi v0.45.1
+	github.com/vmware/govmomi v0.46.1
 	k8s.io/api v0.31.1
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.1
