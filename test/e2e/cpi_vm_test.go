@@ -1,7 +1,9 @@
 package e2e
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -14,6 +16,8 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/test/framework"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const machineNamespace = "default"
@@ -110,6 +114,19 @@ func getWorkerVM(name string) (*object.VirtualMachine, error) {
 	return workerVMs[0], nil
 }
 
+// updateClusterSpecPaused update the Cluster.Spec.Paused field with desired value.
+func updateClusterSpecPaused(ctx context.Context, name string, namespace string, desired string) {
+	workloadCluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+		Getter:    proxy.GetClient(),
+		Namespace: namespace,
+		Name:      name,
+	})
+
+	patch := ctrlclient.RawPatch(k8stypes.MergePatchType, []byte(fmt.Sprintf("{\"spec\":{\"paused\":%s}}", desired)))
+	err = proxy.GetClient().Patch(ctx, workloadCluster, patch)
+	Expect(err).ToNot(HaveOccurred())
+}
+
 // WaitForWorkerNodeReadiness returns a function for Eventually that
 // retrieves the latest node and asserts its readiness
 func WaitForWorkerNodeReadiness(readiness corev1.ConditionStatus) func() error {
@@ -201,6 +218,19 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 		providerID := getProviderIDFromNode(workerNode)
 
+		By("Pause reconcile for workload cluster", func() {
+			updateClusterSpecPaused(ctx, workloadResult.Cluster.Name, workloadResult.Cluster.Namespace, "true")
+			Eventually(func() bool {
+				wldCluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+					Getter:    proxy.GetClient(),
+					Namespace: workloadResult.Cluster.Namespace,
+					Name:      workloadResult.Cluster.Name,
+				})
+
+				return wldCluster.Spec.Paused
+			}, 180*time.Second, 10*time.Second).Should(BeTrue(), "Failed to pause the Workload Cluster")
+		})
+
 		By("Shutdown VM "+workerVM.Name(), func() {
 			task, err := workerVM.PowerOff(ctx)
 			Expect(err).ToNot(HaveOccurred(), "cannot power off vm")
@@ -228,6 +258,19 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 		By("Wait for node " + workerNode.Name + " to become ready")
 		Eventually(WaitForWorkerNodeReadiness(corev1.ConditionTrue), 5*time.Minute, 5*time.Second).Should(BeNil())
+
+		By("Unpause reconcile for workload cluster", func() {
+			updateClusterSpecPaused(ctx, workloadResult.Cluster.Name, workloadResult.Cluster.Namespace, "false")
+			Eventually(func() bool {
+				wldCluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+					Getter:    proxy.GetClient(),
+					Namespace: workloadResult.Cluster.Namespace,
+					Name:      workloadResult.Cluster.Name,
+				})
+
+				return wldCluster.Spec.Paused
+			}, 180*time.Second, 10*time.Second).Should(BeFalse(), "Failed to unpause the Workload Cluster")
+		})
 
 		By("Assert that externalIP, internalIP and providerID are preserved after VM restarts", func() {
 			Eventually(func() error {
