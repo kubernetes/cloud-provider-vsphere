@@ -6,7 +6,7 @@ toolchain go1.23.3
 
 require (
 	github.com/onsi/ginkgo/v2 v2.22.0
-	sigs.k8s.io/kind v0.24.0
+	sigs.k8s.io/kind v0.25.0
 )
 
 require (
