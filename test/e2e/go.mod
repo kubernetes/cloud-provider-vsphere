@@ -14,7 +14,7 @@ replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.9.0-rc.1
 
 require (
 	github.com/onsi/ginkgo/v2 v2.22.0
-	github.com/onsi/gomega v1.36.0
+	github.com/onsi/gomega v1.36.1
 	github.com/vmware/govmomi v0.46.2
 	k8s.io/api v0.31.3
 	k8s.io/apimachinery v0.31.3
