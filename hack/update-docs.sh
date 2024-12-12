@@ -85,10 +85,10 @@ update_readme_table() {
 }
 
 update_readme_files() {
-    sed -i "s/latest version of cloud provider vsphere(\(.*\))/latest version of cloud provider vsphere(${release_version})/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "s/the major version of '[0-9]\+\.[0-9]\+.x' is '[0-9]\+\.[0-9]\+'/the major version of '${major_minor_version:1}.x' is '${major_minor_version:1}'/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "s/VERSION=[0-9]\+\.[0-9]\+/VERSION=${major_minor_version:1}/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "/<== latest version/c\\registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${release_version} # <== latest version" "${REPO_ROOT}"/README.md
+    gsed -i "s/latest version of cloud provider vsphere(\(.*\))/latest version of cloud provider vsphere(${release_version})/g" "${REPO_ROOT}"/releases/README.md
+    gsed -i "s/the major version of '[0-9]\+\.[0-9]\+.x' is '[0-9]\+\.[0-9]\+'/the major version of '${major_minor_version:1}.x' is '${major_minor_version:1}'/g" "${REPO_ROOT}"/releases/README.md
+    gsed -i "s/VERSION=[0-9]\+\.[0-9]\+/VERSION=${major_minor_version:1}/g" "${REPO_ROOT}"/releases/README.md
+    gsed -i "/<== latest version/c\\registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${release_version} # <== latest version" "${REPO_ROOT}"/README.md
     if ! grep -q "${major_minor_version}.X" "${REPO_ROOT}/README.md"; then
         echo "updating README for release branch release-${major_minor_version:1}"
         update_readme_table
@@ -99,8 +99,8 @@ update_release_folder() {
     git fetch --tags
     if [ ! -e "${REPO_ROOT}/releases/${major_minor_version}/vsphere-cloud-controller-manager.yaml" ]; then  
         mkdir -p "${REPO_ROOT}"/releases/"${major_minor_version}"
-        latest_release=$(git tag --sort=-v:refname | grep -E "${SEMVER_REGEX}" | sed -n '1p' | cut -d '.' -f 1,2)
-        cp  "${REPO_ROOT}"/releases/"${latest_release}"/vsphere-cloud-controller-manager.yaml "${REPO_ROOT}"/releases/"${major_minor_version}"/vsphere-cloud-controller-manager.yaml
+        latest_release=$(git tag --sort=-v:refname | grep -E "${SEMVER_REGEX}" | gsed -n '1p' | cut -d '.' -f 1,2)
+        cp  "${REPO_ROOT}"/releases/v1.31/vsphere-cloud-controller-manager.yaml "${REPO_ROOT}"/releases/"${major_minor_version}"/vsphere-cloud-controller-manager.yaml
     fi
 
     yq -i "(. | select(.kind == \"DaemonSet\")).spec.template.spec.containers[0].image = \"registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${release_version}\"" \
@@ -173,7 +173,7 @@ echo "updating release folder files..."
 update_release_folder
 
 echo "updating Dockerfile..."
-sed -i "s/ARG VERSION=.*/ARG VERSION=${release_version:1}/g" "${REPO_ROOT}"/cluster/images/controller-manager/Dockerfile
+gsed -i "s/ARG VERSION=.*/ARG VERSION=${release_version:1}/g" "${REPO_ROOT}"/cluster/images/controller-manager/Dockerfile
 
 echo "updating helm chart..."
 update_helm_chart
