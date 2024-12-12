@@ -119,7 +119,7 @@ submit_pr() {
 
     git add .
 
-    git commit -m "update docuemnt for ${release_version} release"
+    git commit -m "update documents for ${release_version} release"
 
     git push -u origin "${NEW_BRANCH}"
 
