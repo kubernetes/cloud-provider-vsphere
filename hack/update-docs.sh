@@ -85,10 +85,10 @@ update_readme_table() {
 }
 
 update_readme_files() {
-    sed -i "s/latest version of cloud provider vsphere(\(.*\))/latest version of cloud provider vsphere(${release_version})/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "s/the major version of '[0-9]\+\.[0-9]\+.x' is '[0-9]\+\.[0-9]\+'/the major version of '${major_minor_version:1}.x' is '${major_minor_version:1}'/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "s/VERSION=[0-9]\+\.[0-9]\+/VERSION=${major_minor_version:1}/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "/<== latest version/c\\registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${release_version} # <== latest version" "${REPO_ROOT}"/README.md
+    gsed -i "s/latest version of cloud provider vsphere(\(.*\))/latest version of cloud provider vsphere(${release_version})/g" "${REPO_ROOT}"/releases/README.md
+    gsed -i "s/the major version of '[0-9]\+\.[0-9]\+.x' is '[0-9]\+\.[0-9]\+'/the major version of '${major_minor_version:1}.x' is '${major_minor_version:1}'/g" "${REPO_ROOT}"/releases/README.md
+    gsed -i "s/VERSION=[0-9]\+\.[0-9]\+/VERSION=${major_minor_version:1}/g" "${REPO_ROOT}"/releases/README.md
+    gsed -i "/<== latest version/c\\registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${release_version} # <== latest version" "${REPO_ROOT}"/README.md
     if ! grep -q "${major_minor_version}.X" "${REPO_ROOT}/README.md"; then
         echo "updating README for release branch release-${major_minor_version:1}"
         update_readme_table
@@ -109,7 +109,13 @@ update_release_folder() {
 
 update_helm_chart() {
     cd "${REPO_ROOT}"/charts
-    helm package vsphere-cpi --version "${release_version}" --app-version "${release_version}"
+    # Check if release_version starts with 'v' and remove it
+    if [[ "$release_version" == v* ]]; then
+        clean_release_version="${release_version#v}"
+    else
+        clean_release_version="$release_version"
+    fi
+    helm package vsphere-cpi --version "${clean_release_version}" --app-version "${clean_release_version}"
     cd ..
     helm repo index . --url https://kubernetes.github.io/cloud-provider-vsphere
 }
@@ -173,7 +179,7 @@ echo "updating release folder files..."
 update_release_folder
 
 echo "updating Dockerfile..."
-sed -i "s/ARG VERSION=.*/ARG VERSION=${release_version:1}/g" "${REPO_ROOT}"/cluster/images/controller-manager/Dockerfile
+gsed -i "s/ARG VERSION=.*/ARG VERSION=${release_version:1}/g" "${REPO_ROOT}"/cluster/images/controller-manager/Dockerfile
 
 echo "updating helm chart..."
 update_helm_chart

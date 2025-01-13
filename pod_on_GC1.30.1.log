@@ -1,0 +1,336 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      backup.velero.io/backup-volumes-excludes: migration-nfs
+      checksum/logback: d0ee555858f28e966fb874d68f46a28ab8bfd453aed9658e7ffcbf3dc543752b
+      checksum/properties: 4c1946ad2b4736d85b6579921589a06a42d17ba12a4fa973853d0860bfb24358
+      checksum/scripts: 338c468dd06f3593ef8f964e5afd4457afca10e138e71024ef303b8f6ecfcde6
+      telegraf.influxdata.com/class: nexus
+      telegraf.influxdata.com/volume-mounts: '{"data":"/nexus-data"}'
+    creationTimestamp: "2024-12-13T09:09:13Z"
+    generateName: nexus3-
+    labels:
+      app.kubernetes.io/component: repository
+      app.kubernetes.io/instance: nexus3
+      app.kubernetes.io/name: nexus3
+      apps.kubernetes.io/pod-index: "0"
+      controller-revision-hash: nexus3-56b6b98474
+      statefulset.kubernetes.io/pod-name: nexus3-0
+    name: nexus3-0
+    namespace: artifacts
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: StatefulSet
+      name: nexus3
+      uid: 8993f86e-af9a-45cd-9306-5dd461e30faf
+    resourceVersion: "43580"
+    uid: e432bdaa-e90c-4913-9e70-c7d0f74cfa87
+  spec:
+    containers:
+    - env:
+      - name: INSTALL4J_ADD_VM_PARAMS
+        value: -Djava.util.prefs.userRoot=${NEXUS_DATA}/javaprefs -Xms4G -Xmx4G -XX:MaxDirectMemorySize=2048m
+          -XX:+UseG1GC
+      - name: NEXUS_SECURITY_RANDOMPASSWORD
+        value: "true"
+      - name: NEXUS_DATASTORE_NEXUS_JDBCURL
+        value: jdbc:postgresql://platform-db-artifacts:5432/nexus?prepareThreshold=0
+      - name: NEXUS_DATASTORE_NEXUS_USERNAME
+        valueFrom:
+          secretKeyRef:
+            key: username
+            name: nexus.platform-db-artifacts.credentials.postgresql.acid.zalan.do
+      - name: NEXUS_DATASTORE_NEXUS_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: password
+            name: nexus.platform-db-artifacts.credentials.postgresql.acid.zalan.do
+      image: docker.io/sonatype/nexus3:3.73.0
+      imagePullPolicy: IfNotPresent
+      livenessProbe:
+        failureThreshold: 6
+        httpGet:
+          path: /
+          port: http
+          scheme: HTTP
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      name: nexus3
+      ports:
+      - containerPort: 8081
+        name: http
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 6
+        httpGet:
+          path: /service/rest/v1/status
+          port: http
+          scheme: HTTP
+        periodSeconds: 60
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "3"
+          memory: 16G
+        requests:
+          cpu: "3"
+          memory: 16G
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 200
+        runAsNonRoot: true
+        runAsUser: 200
+      startupProbe:
+        failureThreshold: 180
+        httpGet:
+          path: /
+          port: http
+          scheme: HTTP
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /tmp
+        name: temp
+      - mountPath: /nexus-data
+        name: data
+      - mountPath: /opt/sonatype/nexus/etc/logback
+        name: logback
+      - mountPath: /nexus-data/etc/nexus.properties
+        name: properties
+        subPath: nexus.properties
+      - mountPath: /var/opt/sonatype/nexus.license
+        name: license
+        readOnly: true
+        subPath: nexus.license
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mdfnw
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    hostname: nexus3-0
+    imagePullSecrets:
+    - name: regcred
+    initContainers:
+    - args:
+      - /scripts/chown-data-dir.sh
+      env:
+      - name: NEXUS_DATASTORE_NEXUS_JDBCURL
+        value: jdbc:postgresql://platform-db-artifacts:5432/nexus?prepareThreshold=0
+      - name: NEXUS_DATASTORE_NEXUS_USERNAME
+        valueFrom:
+          secretKeyRef:
+            key: username
+            name: nexus.platform-db-artifacts.credentials.postgresql.acid.zalan.do
+      - name: NEXUS_DATASTORE_NEXUS_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: password
+            name: nexus.platform-db-artifacts.credentials.postgresql.acid.zalan.do
+      image: cgr.dev/chainguard/bash:latest
+      imagePullPolicy: IfNotPresent
+      name: chown-data-dir
+      resources: {}
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /scripts/chown-data-dir.sh
+        name: scripts
+        subPath: chown-data-dir.sh
+      - mountPath: /nexus-data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mdfnw
+        readOnly: true
+    - args:
+      - /scripts/tail-logs.sh
+      env:
+      - name: LOG_FILE
+        value: /nexus-data/log/request.log
+      image: cgr.dev/chainguard/bash:latest
+      imagePullPolicy: IfNotPresent
+      name: tail-request-log
+      resources: {}
+      restartPolicy: Always
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 200
+        runAsNonRoot: true
+        runAsUser: 200
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /scripts/tail-logs.sh
+        name: scripts
+        subPath: tail-logs.sh
+      - mountPath: /nexus-data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mdfnw
+        readOnly: true
+    - args:
+      - /scripts/tail-logs.sh
+      env:
+      - name: LOG_FILE
+        value: /nexus-data/log/audit/audit.log
+      image: cgr.dev/chainguard/bash:latest
+      imagePullPolicy: IfNotPresent
+      name: tail-audit-log
+      resources: {}
+      restartPolicy: Always
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 200
+        runAsNonRoot: true
+        runAsUser: 200
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /scripts/tail-logs.sh
+        name: scripts
+        subPath: tail-logs.sh
+      - mountPath: /nexus-data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mdfnw
+        readOnly: true
+    - args:
+      - /scripts/tail-logs.sh
+      env:
+      - name: LOG_FILE
+        value: /nexus-data/log/tasks/allTasks.log
+      image: cgr.dev/chainguard/bash:latest
+      imagePullPolicy: IfNotPresent
+      name: tail-tasks-log
+      resources: {}
+      restartPolicy: Always
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 200
+        runAsNonRoot: true
+        runAsUser: 200
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /scripts/tail-logs.sh
+        name: scripts
+        subPath: tail-logs.sh
+      - mountPath: /nexus-data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mdfnw
+        readOnly: true
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext:
+      fsGroup: 200
+      runAsGroup: 200
+      runAsNonRoot: true
+      runAsUser: 200
+      seccompProfile:
+        type: RuntimeDefault
+    serviceAccount: nexus3
+    serviceAccountName: nexus3
+    subdomain: nexus3
+    terminationGracePeriodSeconds: 120
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: data-nexus3-0
+    - emptyDir: {}
+      name: temp
+    - configMap:
+        defaultMode: 365
+        name: nexus3-scripts
+      name: scripts
+    - configMap:
+        defaultMode: 292
+        name: nexus3-logback
+      name: logback
+    - configMap:
+        defaultMode: 292
+        name: nexus3-props
+      name: properties
+    - name: license
+      secret:
+        defaultMode: 420
+        secretName: nexus-license
+    - name: kube-api-access-mdfnw
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2024-12-13T09:09:13Z"
+      message: '0/2 nodes are available: pod has unbound immediate PersistentVolumeClaims.
+        preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.'
+      reason: Unschedulable
+      status: "False"
+      type: PodScheduled
+    phase: Pending
+    qosClass: Burstable
+kind: List
+metadata:
+  resourceVersion: ""
