@@ -141,7 +141,7 @@ YQ_BINARY=yq_linux_amd64
 release_version=${1:-}
 
 if [ -z "${release_version}" ]; then
-    echo "Error: No release version provided."
+    echo "Error: No release version provided, for e.g v1.32.0"
     exit 1
 fi
 
