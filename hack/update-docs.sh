@@ -108,8 +108,14 @@ update_release_folder() {
 }
 
 update_helm_chart() {
+    # Check if release_version starts with 'v' and remove it
+    if [[ "$release_version" == v* ]]; then
+        clean_release_version="${release_version#v}"
+    else
+        clean_release_version="$release_version"
+    fi
     cd "${REPO_ROOT}"/charts
-    helm package vsphere-cpi --version "${release_version}" --app-version "${release_version}"
+    helm package vsphere-cpi --version "${clean_release_version}" --app-version "${clean_release_version}"
     cd ..
     helm repo index . --url https://kubernetes.github.io/cloud-provider-vsphere
 }
