@@ -18,7 +18,7 @@ require (
 	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240827061921-8f0982975508
 	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240827061921-8f0982975508
 	github.com/vmware-tanzu/vm-operator/api v1.8.6
-	github.com/vmware/govmomi v0.46.2
+	github.com/vmware/govmomi v0.46.3
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.12.0
