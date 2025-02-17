@@ -65,6 +65,10 @@ const (
 	// configuration to the supervisor cluster.
 	AnnotationServiceHealthCheckNodePortKey = "virtualmachineservice.vmoperator.vmware.com/service.healthCheckNodePort"
 
+	// AnnotationVMServiceClusterRole is used to allow the service owner to define what cluster.role should be used
+	// on the VMService selector. If unset, the default behavior is to set the selector to "node"
+	AnnotationVMServiceClusterRole = "virtualmachineservice.vmoperator.vmware.com/cluster.role"
+
 	// MaxCheckSumLen is the maximum length of vmservice suffix: vsphere paravirtual name length cannot exceed 41 bytes in total, so we need to make sure vmservice suffix is 21 bytes (63 - 41 -1 = 21)
 	// https://gitlab.eng.vmware.com/core-build/guest-cluster-controller/blob/master/webhooks/validation/tanzukubernetescluster_validator.go#L56
 	MaxCheckSumLen = 21
@@ -295,6 +299,13 @@ func findPorts(service *v1.Service) ([]vmopv1.VirtualMachineServicePort, error) 
 }
 
 func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error) {
+
+	nodeSelector := NodeRole
+	role, ok := service.GetAnnotations()[AnnotationVMServiceClusterRole]
+	if ok {
+		nodeSelector = role
+	}
+
 	ports, err := findPorts(service)
 	if err != nil {
 		return nil, err
@@ -304,7 +315,7 @@ func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string
 		Ports: ports,
 		Selector: map[string]string{
 			ClusterSelectorKey: clusterName,
-			NodeSelectorKey:    NodeRole,
+			NodeSelectorKey:    nodeSelector,
 		},
 		// When service has spec.loadBalancerIP specified, pass it to the
 		// corresponding VirtualMachineService
@@ -317,7 +328,7 @@ func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string
 	if IsLegacy {
 		vmServiceSpec.Selector = map[string]string{
 			LegacyClusterSelectorKey: clusterName,
-			LegacyNodeSelectorKey:    NodeRole,
+			LegacyNodeSelectorKey:    nodeSelector,
 		}
 	}
 

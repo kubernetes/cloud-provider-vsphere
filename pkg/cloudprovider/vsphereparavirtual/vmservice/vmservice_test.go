@@ -173,6 +173,30 @@ func TestCreateVMService(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCreateVMServiceWithDifferentRole(t *testing.T) {
+	testK8sService, vms, _ := initTest()
+	svcAnnotation := map[string]string{
+		AnnotationVMServiceClusterRole: "controlplane",
+	}
+	testK8sService.SetAnnotations(svcAnnotation)
+	ports, _ := findPorts(testK8sService)
+	expectedSpec := vmopv1.VirtualMachineServiceSpec{
+		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
+		Ports: ports,
+		Selector: map[string]string{
+			ClusterSelectorKey: testClustername,
+			NodeSelectorKey:    "controlplane",
+		},
+	}
+
+	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
+	assert.Equal(t, (*vmServiceObj).Spec, expectedSpec)
+
+	err = vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.NoError(t, err)
+}
+
 func TestCreateVMServiceWithLegacySelector(t *testing.T) {
 	testK8sService, vms, _ := initTest()
 	ports, _ := findPorts(testK8sService)
