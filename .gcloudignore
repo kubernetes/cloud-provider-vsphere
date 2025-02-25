@@ -4,10 +4,11 @@
 # Ignore tooling binaries.
 /hack/tools/bin
 
-# Ignore vendor at the root of the project. Please note that
+# Ignore vendor at the root and test of the project. Please note that
 # /vendor/bitbucket.org/ww/goautoneg is versioned forcefully in order to
 # bypass a build issue.
 /vendor
+/test/e2e/vendor
 
 *.json
 *.sublime-project

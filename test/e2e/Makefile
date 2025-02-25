@@ -40,8 +40,8 @@ E2E_CHART ?= ${REPO_ROOT}/charts/vsphere-cpi
 # E2E_DATA_DIR contains provider manifests needed to create the bootsrap cluster, required by the E2E_CONF_FILE
 E2E_DATA_DIR := ${REPO_ROOT}/test/e2e/data
 
-# E2E_DATA_CAPV_VER defines the providers from which version of CAPV to use
-E2E_DATA_CAPV_VER ?= release-1.11
+# E2E_DATA_CAPV_TAG defines the providers from which tag of CAPV to use
+E2E_DATA_CAPV_TAG ?= v1.12.0
 
 # VERSION_DEV is the version of the image used for development
 VERSION_DEV ?= $(VERSION)
@@ -55,7 +55,9 @@ $(TOOLING_BINARIES):
 	make -C $(TOOLS_DIR) $(@F)
 
 $(TMP_CAPV_DIR):
-	git clone -b $(E2E_DATA_CAPV_VER) https://github.com/kubernetes-sigs/cluster-api-provider-vsphere.git $(TMP_CAPV_DIR)
+	git clone https://github.com/kubernetes-sigs/cluster-api-provider-vsphere.git $(TMP_CAPV_DIR); \
+	cd "$(TMP_CAPV_DIR)"; \
+	git checkout tags/$(E2E_DATA_CAPV_TAG) -b $(E2E_DATA_CAPV_TAG)
 
 $(E2E_DATA_DIR): $(TMP_CAPV_DIR)
 	$(MAKE) -C $(TMP_CAPV_DIR) generate-e2e-templates && cp -r $(TMP_CAPV_DIR)/test/e2e/data $(E2E_DATA_DIR) && \
