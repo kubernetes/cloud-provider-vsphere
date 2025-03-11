@@ -29,7 +29,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/vmware/govmomi/vim25/soap"
 
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib/fixtures"
@@ -134,7 +134,9 @@ func TestWithVerificationWithoutCaCertOrThumbprint(t *testing.T) {
 
 	_, err := connection.NewClient(context.Background())
 
-	verifyWrappedX509UnkownAuthorityErr(t, err)
+	if !soap.IsCertificateUntrusted(err) {
+		t.Fatalf("Expected soap.IsCertificateUntrusted, got: '%s' (%#v)", err.Error(), err)
+	}
 }
 
 func TestWithValidThumbprint(t *testing.T) {
@@ -181,21 +183,6 @@ func TestInvalidCaCert(t *testing.T) {
 
 	if msg := err.Error(); !strings.Contains(msg, "invalid certificate") {
 		t.Fatalf("Expected invalid certificate error, got '%s'", msg)
-	}
-}
-
-func verifyWrappedX509UnkownAuthorityErr(t *testing.T, err error) {
-	urlErr, ok := err.(*url.Error)
-	if !ok {
-		t.Fatalf("Expected to receive an url.Error, got '%s' (%#v)", err.Error(), err)
-	}
-	x509Err := &x509.UnknownAuthorityError{}
-	ok = errors.As(urlErr.Err, x509Err)
-	if !ok {
-		t.Fatalf("Expected to receive a wrapped x509.UnknownAuthorityError, got: '%s' (%#v)", urlErr.Error(), urlErr)
-	}
-	if msg := x509Err.Error(); msg != "x509: certificate signed by unknown authority" {
-		t.Fatalf("Expected 'signed by unknown authority' error, got: '%s'", msg)
 	}
 }
 
