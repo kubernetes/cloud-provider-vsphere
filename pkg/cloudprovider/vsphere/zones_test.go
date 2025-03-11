@@ -45,7 +45,7 @@ func TestZones(t *testing.T) {
 	cfg.Global.Password = localhostKey
 
 	// Create configuration object
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(nil, connMgr)
@@ -59,7 +59,7 @@ func TestZones(t *testing.T) {
 	vsi := connMgr.VsphereInstanceMap[cfg.Global.VCenterIP]
 
 	// Get a simulator VM
-	myvm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	myvm := cfg.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	myvm.Guest.HostName = myvm.Name
 	myvm.Guest.Net = []types.GuestNicInfo{
 		{
@@ -72,7 +72,7 @@ func TestZones(t *testing.T) {
 	k8sUUID := ConvertK8sUUIDtoNormal(UUID)
 
 	// Get a simulator DC
-	mydc := simulator.Map.Any("Datacenter").(*simulator.Datacenter)
+	mydc := cfg.Map.Any("Datacenter").(*simulator.Datacenter)
 
 	// Add the node to the NodeManager
 	node := &v1.Node{

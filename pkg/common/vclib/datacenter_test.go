@@ -41,7 +41,7 @@ func TestDatacenter(t *testing.T) {
 	s := model.Service.NewServer()
 	defer s.Close()
 
-	avm := simulator.Map.Any(VirtualMachineType).(*simulator.VirtualMachine)
+	avm := model.Map().Any(VirtualMachineType).(*simulator.VirtualMachine)
 
 	c, err := govmomi.NewClient(ctx, s.URL, true)
 	if err != nil {
@@ -185,7 +185,7 @@ func TestDatacenter(t *testing.T) {
 	})
 
 	t.Run("should get objects using Datacenter MOID", func(t *testing.T) {
-		dcRef := simulator.Map.Any("Datacenter")
+		dcRef := model.Map().Any("Datacenter")
 		dc, err := GetDatacenter(ctx, vc, dcRef.Reference().String())
 		if err != nil {
 			t.Error(err)
