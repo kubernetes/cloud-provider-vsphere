@@ -30,11 +30,11 @@ func TestWhichVCandDCByNodeIdByUUID(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil, nil)
+	connMgr := NewConnectionManager(&config.Config, nil, nil)
 	defer connMgr.Logout()
 
 	// setup
-	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm := config.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
 	vm.Guest.HostName = strings.ToLower(name)
 	UUID := vm.Config.Uuid
@@ -62,11 +62,11 @@ func TestWhichVCandDCByNodeIdByName(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil, nil)
+	connMgr := NewConnectionManager(&config.Config, nil, nil)
 	defer connMgr.Logout()
 
 	// setup
-	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm := config.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := vm.Name
 	vm.Guest.HostName = strings.ToLower(name)
 	UUID := vm.Config.Uuid
@@ -94,7 +94,7 @@ func TestWhichVCandDCByFCDId(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil, nil)
+	connMgr := NewConnectionManager(&config.Config, nil, nil)
 	defer connMgr.Logout()
 
 	// context
@@ -104,7 +104,7 @@ func TestWhichVCandDCByFCDId(t *testing.T) {
 	 * Setup
 	 */
 	// Get a simulator DS
-	myds := simulator.Map.Any("Datastore").(*simulator.Datastore)
+	myds := config.Map.Any("Datastore").(*simulator.Datastore)
 
 	items, err := connMgr.ListAllVCandDCPairs(ctx)
 	if err != nil {

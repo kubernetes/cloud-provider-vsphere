@@ -62,17 +62,23 @@ bGWObufAR8Ni4QIgWpILjW8dkGg8GOUZ0zaNA6Nvt6TIv2UWGJ4v5PoV98kCIQDx
 rIiZs5QbKdycsv9gQJzwQAogC8o04X3Zz3dsoX+h4A==
 -----END RSA PRIVATE KEY-----`
 
+type TestConfig struct {
+	vcfg.Config
+
+	Map *simulator.Registry
+}
+
 // configFromSim starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with an empty tls.Config.
-func configFromSim(multiDc bool) (*vcfg.Config, func()) {
+func configFromSim(multiDc bool) (*TestConfig, func()) {
 	return configFromSimWithTLS(new(tls.Config), true, multiDc)
 }
 
 // configFromSimWithTLS starts a vcsim instance and returns config for use against the vcsim instance.
 // The vcsim instance is configured with a tls.Config. The returned client
 // config can be configured to allow/decline insecure connections.
-func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc bool) (*vcfg.Config, func()) {
-	cfg := &vcfg.Config{}
+func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc bool) (*TestConfig, func()) {
+	cfg := &TestConfig{}
 	model := simulator.VPX()
 
 	if multiDc {
@@ -86,6 +92,8 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	cfg.Map = model.Map()
 
 	// Adds vAPI, STS, Lookup Service endpoints to vcsim
 	model.Service.RegisterEndpoints = true
@@ -128,7 +136,7 @@ func configFromSimWithTLS(tlsConfig *tls.Config, insecureAllowed bool, multiDc b
 }
 
 // configFromEnvOrSim builds a config from configFromSim and overrides using configFromEnv
-func configFromEnvOrSim(multiDc bool) (*vcfg.Config, func()) {
+func configFromEnvOrSim(multiDc bool) (*TestConfig, func()) {
 	cfg, fin := configFromSim(multiDc)
 	if err := cfg.FromEnv(); err != nil {
 		return nil, nil
@@ -152,7 +160,7 @@ func TestVSphereLogin(t *testing.T) {
 	initCfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 	cfg := &ccfg.CPIConfig{}
-	cfg.Config = *initCfg
+	cfg.Config = initCfg.Config
 
 	// Create vSphere configuration object
 	vs, err := newVSphere(cfg, nil, nil, nil)
@@ -183,7 +191,7 @@ func TestVSphereLoginByToken(t *testing.T) {
 	initCfg, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 	cfg := &ccfg.CPIConfig{}
-	cfg.Config = *initCfg
+	cfg.Config = initCfg.Config
 
 	// Configure for SAML token auth
 	cfg.Global.User = localhostCert
