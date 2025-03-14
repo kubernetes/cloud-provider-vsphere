@@ -282,7 +282,7 @@ func findPorts(service *v1.Service) ([]vmopv1.VirtualMachineServicePort, error) 
 	var ports []vmopv1.VirtualMachineServicePort
 	for _, port := range service.Spec.Ports {
 		if port.NodePort == 0 {
-			return nil, errors.Wrapf(ErrNodePortNotFound, fmt.Sprintf("port %s", port.Name))
+			return nil, errors.Wrapf(ErrNodePortNotFound, "port %s", port.Name)
 		}
 		ports = append(ports, vmopv1.VirtualMachineServicePort{
 			Name:       port.Name,
