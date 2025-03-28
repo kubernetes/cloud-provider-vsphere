@@ -40,11 +40,12 @@ import (
 )
 
 var (
-	testClusterNameSpace    = "test-guest-cluster-ns"
-	testClustername         = "test-cluster"
-	testK8sServiceName      = "test-lb-service"
-	testK8sServiceNameSpace = "test-service-ns"
-	testOwnerReference      = metav1.OwnerReference{
+	testClusterNameSpace                    = "test-guest-cluster-ns"
+	testClustername                         = "test-cluster"
+	testK8sServiceName                      = "test-lb-service"
+	testK8sServiceNameSpace                 = "test-service-ns"
+	testServiceAnnotationPropagationEnabled = false
+	testOwnerReference                      = metav1.OwnerReference{
 		APIVersion: "v1alpha1",
 		Kind:       "TanzuKubernetesCluster",
 		Name:       testClustername,
@@ -54,7 +55,7 @@ var (
 	fakeLBIP = "1.1.1.1"
 )
 
-func initTest() (*v1.Service, VMService, *dynamicfake.FakeDynamicClient) {
+func initTest(serviceAnnotationPropagationEnabled bool) (*v1.Service, VMService, *dynamicfake.FakeDynamicClient) {
 	testK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -79,7 +80,7 @@ func initTest() (*v1.Service, VMService, *dynamicfake.FakeDynamicClient) {
 	scheme := runtime.NewScheme()
 	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	vms = NewVMService(vmopclient.NewFakeClientSet(fc), testClusterNameSpace, &testOwnerReference)
+	vms = NewVMService(vmopclient.NewFakeClientSet(fc), testClusterNameSpace, &testOwnerReference, serviceAnnotationPropagationEnabled)
 	return testK8sService, vms, fc
 }
 
@@ -102,14 +103,14 @@ func TestNewVMService(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotEqual(t, client, nil)
 
-			realVms := NewVMService(client, testClusterNameSpace, &testOwnerReference)
+			realVms := NewVMService(client, testClusterNameSpace, &testOwnerReference, false)
 			assert.NotEqual(t, realVms, nil)
 		})
 	}
 }
 
 func TestGetVMServiceName(t *testing.T) {
-	_, vms, _ := initTest()
+	_, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	k8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -123,7 +124,7 @@ func TestGetVMServiceName(t *testing.T) {
 }
 
 func TestGetVMService_ReturnNil(t *testing.T) {
-	_, vms, _ := initTest()
+	_, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	k8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -136,7 +137,7 @@ func TestGetVMService_ReturnNil(t *testing.T) {
 }
 
 func TestGetVMService(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	k8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -154,7 +155,7 @@ func TestGetVMService(t *testing.T) {
 }
 
 func TestCreateVMService(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	ports, _ := findPorts(testK8sService)
 	expectedSpec := vmopv1.VirtualMachineServiceSpec{
 		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
@@ -174,7 +175,7 @@ func TestCreateVMService(t *testing.T) {
 }
 
 func TestCreateVMServiceWithLegacySelector(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	ports, _ := findPorts(testK8sService)
 	expectedSpec := vmopv1.VirtualMachineServiceSpec{
 		Type:  vmopv1.VirtualMachineServiceTypeLoadBalancer,
@@ -196,7 +197,7 @@ func TestCreateVMServiceWithLegacySelector(t *testing.T) {
 }
 
 func TestCreateVMService_ZeroNodeport(t *testing.T) {
-	_, vms, _ := initTest()
+	_, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	k8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -222,7 +223,7 @@ func TestCreateVMService_ZeroNodeport(t *testing.T) {
 }
 
 func TestCreateDuplicateVMService(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
 	assert.NotEqual(t, vmServiceObj, (*vmopv1.VirtualMachineService)(nil))
 	assert.NoError(t, err)
@@ -233,7 +234,7 @@ func TestCreateDuplicateVMService(t *testing.T) {
 }
 
 func TestCreateVMService_LBConfigs(t *testing.T) {
-	_, vms, _ := initTest()
+	_, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	testCases := []struct {
 		name           string
 		testK8sService *v1.Service
@@ -322,7 +323,7 @@ func TestCreateVMService_LBConfigs(t *testing.T) {
 }
 
 func TestCreateVMService_ExternalTrafficPolicyTypeLocal(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
 	testK8sService.Spec.HealthCheckNodePort = 30012
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
@@ -342,7 +343,7 @@ func TestCreateVMService_ExternalTrafficPolicyTypeLocal(t *testing.T) {
 }
 
 func TestCreateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeCluster
 	vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
 	assert.NoError(t, err)
@@ -359,7 +360,7 @@ func TestCreateVMService_ExternalTrafficPolicyTypeCluster(t *testing.T) {
 }
 
 func TestCreateOrUpdateVMService(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	testCases := []struct {
 		name        string
 		k8sService  *v1.Service
@@ -418,7 +419,7 @@ func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			testK8sService, vms, fc := initTest()
+			testK8sService, vms, fc := initTest(testServiceAnnotationPropagationEnabled)
 			// Redefine Get in the client to return an error
 			fc.PrependReactor("get", "virtualmachineservices", testCase.getFunc)
 			_, err := vms.CreateOrUpdate(context.Background(), testK8sService, testClustername)
@@ -428,7 +429,7 @@ func TestCreateOrUpdateVMService_RedefineGetFunc(t *testing.T) {
 }
 
 func TestCreateOrUpdateVMService_RedefineCreateFunc(t *testing.T) {
-	testK8sService, vms, fc := initTest()
+	testK8sService, vms, fc := initTest(testServiceAnnotationPropagationEnabled)
 	// Redefine Create in the client to return an error
 	fc.PrependReactor("create", "virtualmachineservices", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, fmt.Errorf("failed to create VirtualMachineService")
@@ -438,7 +439,7 @@ func TestCreateOrUpdateVMService_RedefineCreateFunc(t *testing.T) {
 }
 
 func TestVMService_AlreadyExists(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testK8sServiceName,
@@ -481,7 +482,7 @@ func TestVMService_AlreadyExists(t *testing.T) {
 }
 
 func TestUpdateVMService_NoChange(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	createdVMService, _ := vms.Create(context.Background(), testK8sService, testClustername)
 	_, err := vms.Update(context.Background(), testK8sService, testClustername, createdVMService)
 	assert.NoError(t, err)
@@ -491,7 +492,7 @@ func TestUpdateVMService_NoChange(t *testing.T) {
 }
 
 func TestUpdateVMService_NodePortChanges(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := testK8sService.DeepCopy()
 	oldK8sService.Spec.Ports[0].NodePort = 30500
 	ports, _ := findPorts(testK8sService)
@@ -515,7 +516,7 @@ func TestUpdateVMService_NodePortChanges(t *testing.T) {
 }
 
 func TestUpdateVMService_LBIPAdded(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.LoadBalancerIP = fakeLBIP
 	ports, _ := findPorts(testK8sService)
@@ -540,7 +541,7 @@ func TestUpdateVMService_LBIPAdded(t *testing.T) {
 }
 
 func TestUpdateVMService_LBIPChanges(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.LoadBalancerIP = fakeLBIP
 	oldK8sService.Spec.LoadBalancerIP = "2.2.2.2"
@@ -566,7 +567,7 @@ func TestUpdateVMService_LBIPChanges(t *testing.T) {
 }
 
 func TestUpdateVMService_LBSourceRangesAdded(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.LoadBalancerSourceRanges = []string{"1.1.1.0/24"}
 	ports, _ := findPorts(testK8sService)
@@ -591,7 +592,7 @@ func TestUpdateVMService_LBSourceRangesAdded(t *testing.T) {
 }
 
 func TestUpdateVMService_LBSourceRangesChanges(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.LoadBalancerSourceRanges = []string{"1.1.1.0/24"}
 	oldK8sService.Spec.LoadBalancerSourceRanges = []string{"2.2.2.0/24"}
@@ -617,7 +618,7 @@ func TestUpdateVMService_LBSourceRangesChanges(t *testing.T) {
 }
 
 func TestUpdateVMService_ExternalTrafficPolicyLocal(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
 	testK8sService.Spec.HealthCheckNodePort = 31234
@@ -648,7 +649,7 @@ func TestUpdateVMService_ExternalTrafficPolicyLocal(t *testing.T) {
 
 func TestUpdateVMService_ExternalTrafficPolicyCluster(t *testing.T) {
 	// test when external traffic policy is set to cluster from local
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	oldK8sService := testK8sService.DeepCopy()
 	testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeCluster
 	testK8sService.Spec.HealthCheckNodePort = 31234
@@ -674,8 +675,170 @@ func TestUpdateVMService_ExternalTrafficPolicyCluster(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCreateVMService_ServiceAnnotationPropagation(t *testing.T) {
+	testCases := []struct {
+		name                                string
+		serviceAnnotationPropagationEnabled bool
+		serviceAnnotations                  map[string]string
+		expectedAnnotations                 map[string]string
+	}{
+		{
+			name:                                "annotation propagation disabled with service annotations",
+			serviceAnnotationPropagationEnabled: false,
+			serviceAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			expectedAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+			},
+		},
+		{
+			name:                                "annotation propagation enabled with service annotations",
+			serviceAnnotationPropagationEnabled: true,
+			serviceAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			expectedAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+			},
+		},
+		{
+			name:                                "annotation propagation enabled with conflicting keys",
+			serviceAnnotationPropagationEnabled: true,
+			serviceAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: "conflict-value",
+				"key": "value",
+			},
+			expectedAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+				"key":                                     "value",
+			},
+		},
+		{
+			name:                                "annotation propagation enabled with excluded key",
+			serviceAnnotationPropagationEnabled: true,
+			serviceAnnotations: map[string]string{
+				AnnotationLastAppliedConfiguration: "fake-value",
+				"key":                              "value",
+			},
+			expectedAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+				"key":                                     "value",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testK8sService, vms, _ := initTest(tc.serviceAnnotationPropagationEnabled)
+			testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
+			testK8sService.Spec.HealthCheckNodePort = 12345
+			testK8sService.Annotations = tc.serviceAnnotations
+			vmServiceObj, err := vms.Create(context.Background(), testK8sService, testClustername)
+			assert.NoError(t, err)
+			assert.Equal(t, (*vmServiceObj).Annotations, tc.expectedAnnotations)
+			err = vms.Delete(context.Background(), testK8sService, testClustername)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestUpdateVMService_ServiceAnnotationPropagation(t *testing.T) {
+	testCases := []struct {
+		name                                string
+		serviceAnnotationPropagationEnabled bool
+		serviceAnnotations                  map[string]string
+		expectedAnnotations                 map[string]string
+	}{
+		{
+			name:                                "annotation propagation disabled with service annotations",
+			serviceAnnotationPropagationEnabled: false,
+			serviceAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			expectedAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+			},
+		},
+		{
+			name:                                "annotation propagation enabled with service annotations",
+			serviceAnnotationPropagationEnabled: true,
+			serviceAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			expectedAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+			},
+		},
+		{
+			name:                                "annotation propagation enabled with conflicting keys",
+			serviceAnnotationPropagationEnabled: true,
+			serviceAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: "conflict-value",
+				"key": "value",
+			},
+			expectedAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+				"key":                                     "value",
+			},
+		},
+		{
+			name:                                "annotation propagation enabled with excluded key",
+			serviceAnnotationPropagationEnabled: true,
+			serviceAnnotations: map[string]string{
+				AnnotationLastAppliedConfiguration: "fake-value",
+				"key":                              "value",
+			},
+			expectedAnnotations: map[string]string{
+				AnnotationServiceExternalTrafficPolicyKey: string(v1.ServiceExternalTrafficPolicyTypeLocal),
+				AnnotationServiceHealthCheckNodePortKey:   "12345",
+				"key":                                     "value",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testK8sService, vms, _ := initTest(tc.serviceAnnotationPropagationEnabled)
+			oldK8sService := testK8sService.DeepCopy()
+			testK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
+			testK8sService.Spec.HealthCheckNodePort = 12345
+			testK8sService.Annotations = tc.serviceAnnotations
+			oldK8sService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeCluster
+			oldK8sService.Annotations = map[string]string{
+				"oldKey1": "oldValue1",
+				"oldKey2": "oldValue2",
+			}
+			// create an old VMService
+			createdVMService, _ := vms.Create(context.Background(), oldK8sService, testClustername)
+
+			vmServiceObj, err := vms.Update(context.Background(), testK8sService, testClustername, createdVMService)
+			assert.NoError(t, err)
+			assert.Equal(t, (*vmServiceObj).Annotations, tc.expectedAnnotations)
+
+			err = vms.Delete(context.Background(), testK8sService, testClustername)
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func TestDeleteVMService(t *testing.T) {
-	testK8sService, vms, _ := initTest()
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	_, _ = vms.Create(context.Background(), testK8sService, testClustername)
 	err := vms.Delete(context.Background(), testK8sService, testClustername)
 	assert.NoError(t, err)
