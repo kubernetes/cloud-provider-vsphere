@@ -39,7 +39,7 @@ type loadBalancer struct {
 }
 
 // NewLoadBalancer returns an implementation of cloudprovider.LoadBalancer
-func NewLoadBalancer(clusterNS string, kcfg *rest.Config, ownerRef *metav1.OwnerReference) (cloudprovider.LoadBalancer, error) {
+func NewLoadBalancer(clusterNS string, kcfg *rest.Config, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled bool) (cloudprovider.LoadBalancer, error) {
 	klog.V(1).Info("Create load balancer for vsphere paravirtual cloud provider")
 
 	client, err := vmservice.GetVmopClient(kcfg)
@@ -47,7 +47,7 @@ func NewLoadBalancer(clusterNS string, kcfg *rest.Config, ownerRef *metav1.Owner
 		klog.Errorf("failed to create load balancer: %v", err)
 		return nil, err
 	}
-	vmService := vmservice.NewVMService(client, clusterNS, ownerRef)
+	vmService := vmservice.NewVMService(client, clusterNS, ownerRef, serviceAnnotationPropagationEnabled)
 	return &loadBalancer{
 		vmService: vmService,
 	}, nil
