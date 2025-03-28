@@ -62,6 +62,9 @@ var (
 
 	// podIPPoolType specifies if Pod IP addresses are public or private.
 	podIPPoolType string
+
+	// serviceAnnotationPropagationEnabled if set to true, will propagate the service annotation to resource in supervisor cluster.
+	serviceAnnotationPropagationEnabled bool
 )
 
 func init() {
@@ -89,6 +92,7 @@ func init() {
 	flag.BoolVar(&vmservice.IsLegacy, "is-legacy-paravirtual", false, "If true, machine label selector will start with capw.vmware.com. By default, it's false, machine label selector will start with capv.vmware.com.")
 	flag.BoolVar(&vpcModeEnabled, "enable-vpc-mode", false, "If true, routable pod controller will start with VPC mode. It is useful only when route controller is enabled in vsphereparavirtual mode")
 	flag.StringVar(&podIPPoolType, "pod-ip-pool-type", "", "Specify if Pod IP address is Public or Private routable in VPC network. Valid values are Public and Private")
+	flag.BoolVar(&serviceAnnotationPropagationEnabled, "enable-service-annotation-propagation", false, "If true, will propagate the service annotation to resource in supervisor cluster.")
 }
 
 // Creates new Controller node interface and returns
@@ -139,7 +143,7 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	}
 	cp.routes = routes
 
-	lb, err := NewLoadBalancer(clusterNS, kcfg, cp.ownerReference)
+	lb, err := NewLoadBalancer(clusterNS, kcfg, cp.ownerReference, serviceAnnotationPropagationEnabled)
 	if err != nil {
 		klog.Errorf("Failed to init LoadBalancer: %v", err)
 	}

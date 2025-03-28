@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -65,10 +66,20 @@ const (
 	// configuration to the supervisor cluster.
 	AnnotationServiceHealthCheckNodePortKey = "virtualmachineservice.vmoperator.vmware.com/service.healthCheckNodePort"
 
+	// AnnotationLastAppliedConfiguration is used by kubectl as a legacy mechanism to track changes.
+	// That mechanism has been superseded by Server-side apply.
+	AnnotationLastAppliedConfiguration = "kubectl.kubernetes.io/last-applied-configuration"
+
 	// MaxCheckSumLen is the maximum length of vmservice suffix: vsphere paravirtual name length cannot exceed 41 bytes in total, so we need to make sure vmservice suffix is 21 bytes (63 - 41 -1 = 21)
 	// https://gitlab.eng.vmware.com/core-build/guest-cluster-controller/blob/master/webhooks/validation/tanzukubernetescluster_validator.go#L56
 	MaxCheckSumLen = 21
 )
+
+var excludedAnnotations = []string{
+	AnnotationLastAppliedConfiguration,
+	AnnotationServiceExternalTrafficPolicyKey,
+	AnnotationServiceHealthCheckNodePortKey,
+}
 
 // A list of possible error messages
 var (
@@ -93,11 +104,12 @@ func GetVmopClient(config *rest.Config) (vmop.Interface, error) {
 }
 
 // NewVMService creates a vmService object
-func NewVMService(vmClient vmop.Interface, ns string, ownerRef *metav1.OwnerReference) VMService {
+func NewVMService(vmClient vmop.Interface, ns string, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled bool) VMService {
 	return &vmService{
-		vmClient:       vmClient,
-		namespace:      ns,
-		ownerReference: ownerRef,
+		vmClient:                            vmClient,
+		namespace:                           ns,
+		ownerReference:                      ownerRef,
+		serviceAnnotationPropagationEnabled: serviceAnnotationPropagationEnabled,
 	}
 }
 
@@ -226,7 +238,7 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 		service.Spec.LoadBalancerSourceRanges = []string{}
 	}
 
-	annotations := getVMServiceAnnotations(vmService, service)
+	annotations := getVMServiceAnnotations(vmService, service, s.serviceAnnotationPropagationEnabled)
 
 	// VMService only has a few fields to be kept in sync so we will simply
 	// iterate over them
@@ -342,14 +354,14 @@ func (s *vmService) lbServiceToVMService(service *v1.Service, clusterName string
 		Spec: vmServiceSpec,
 	}
 
-	if annotations := getVMServiceAnnotations(vmService, service); len(annotations) != 0 {
+	if annotations := getVMServiceAnnotations(vmService, service, s.serviceAnnotationPropagationEnabled); len(annotations) != 0 {
 		vmService.Annotations = annotations
 	}
 
 	return vmService, nil
 }
 
-func getVMServiceAnnotations(vmService *vmopv1.VirtualMachineService, service *v1.Service) map[string]string {
+func getVMServiceAnnotations(vmService *vmopv1.VirtualMachineService, service *v1.Service, serviceAnnotationPropagationEnabled bool) map[string]string {
 	var annotations map[string]string
 	// When ExternalTrafficPolicy is set to Local in the Service, add its
 	// value and the healthCheckNodePort to VirtualMachineService
@@ -362,6 +374,21 @@ func getVMServiceAnnotations(vmService *vmopv1.VirtualMachineService, service *v
 		annotations[AnnotationServiceExternalTrafficPolicyKey] = string(service.Spec.ExternalTrafficPolicy)
 		annotations[AnnotationServiceHealthCheckNodePortKey] = strconv.Itoa(int(service.Spec.HealthCheckNodePort))
 	}
+
+	// Annotation propagation logic
+	if serviceAnnotationPropagationEnabled {
+		// Initialize annotations map if empty
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+		// Merge service annotations
+		for k, v := range service.Annotations {
+			if !slices.Contains(excludedAnnotations, k) {
+				annotations[k] = v
+			}
+		}
+	}
+
 	return annotations
 }
 
