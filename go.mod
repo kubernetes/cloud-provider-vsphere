@@ -2,6 +2,8 @@ module k8s.io/cloud-provider-vsphere
 
 go 1.24.0
 
+toolchain go1.24.1
+
 replace github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels => github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels v1.8.6
 
 require (
@@ -20,7 +22,7 @@ require (
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.12.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.33.0-beta.0
