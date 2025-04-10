@@ -28,6 +28,9 @@ func getWorkerNode() (*corev1.Node, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	klog.Infof("zhanggbj: The nodes for testing %d\n", len(nodes.Items))
+
 	return getFirstWorkerNodeFromList(nodes)
 }
 
@@ -58,6 +61,7 @@ func deleteWorkerMachine(name string) error {
 // We assume all the name of worker node contains substring `-md-`
 func getFirstWorkerNodeFromList(nodes *corev1.NodeList) (*corev1.Node, error) {
 	for _, node := range nodes.Items {
+		klog.Infof("zhanggbj: The node for testing is %s\n", node.Name)
 		if strings.Contains(node.Name, "-md-") {
 			return &node, nil
 		}
