@@ -10,13 +10,13 @@ providers:
 - name: cluster-api
   type: CoreProvider
   versions:
-  - name: v1.9.1
+  - name: v1.10.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.9.1/core-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.0-rc.0/core-components.yaml"
     type: "url"
     contract: v1beta1
     files:
-    - sourcePath: "../data/shared/capi/v1.9/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.10/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -24,13 +24,13 @@ providers:
 - name: kubeadm
   type: BootstrapProvider
   versions:
-  - name: v1.9.1
+  - name: v1.10.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.9.1/bootstrap-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.0-rc.0/bootstrap-components.yaml"
     type: "url"
     contract: v1beta1
     files:
-    - sourcePath: "../data/shared/capi/v1.9/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.10/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -38,13 +38,13 @@ providers:
 - name: kubeadm
   type: ControlPlaneProvider
   versions:
-  - name: v1.9.1
+  - name: v1.10.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.9.1/control-plane-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.0-rc.0/control-plane-components.yaml"
     type: "url"
     contract: v1beta1
     files:
-    - sourcePath: "../data/shared/capi/v1.9/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.10/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -52,9 +52,9 @@ providers:
 - name: vsphere
   type: InfrastructureProvider
   versions:
-  - name: v1.12.0
+  - name: v1.13.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.12.0/infrastructure-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.13.0-rc.0/infrastructure-components.yaml"
     type: "url"
     contract: v1beta1
     files:
@@ -65,15 +65,15 @@ providers:
     - sourcePath: "../data/shared/capv/main/metadata.yaml"
 
 variables:
-  KUBERNETES_VERSION: "v1.32.0"
+  KUBERNETES_VERSION: "v1.33.0-beta.0"
   #! KUBERNETES_VERSION_LATEST_CI can have the following formats:
   #! * v1.28.0 => will return the same version for convenience
   #! * stable-1.28 => will return the latest patch release for v1.28, e.g. v1.28.5
   #! * ci/latest-1.28 => will return the latest built version from the release branch, e.g. v1.28.5-26+72feddd3acde14
-  KUBERNETES_VERSION_LATEST_CI: "ci/latest-1.32"
-  KUBERNETES_VERSION_UPGRADE_FROM: "v1.31.0"
-  KUBERNETES_VERSION_UPGRADE_TO: "v1.32.0"
-  CPI_IMAGE_K8S_VERSION: "v1.32.0"
+  KUBERNETES_VERSION_LATEST_CI: "ci/latest-1.33"
+  KUBERNETES_VERSION_UPGRADE_FROM: "v1.32.0"
+  KUBERNETES_VERSION_UPGRADE_TO: "v1.33.0-beta.0"
+  CPI_IMAGE_K8S_VERSION: "v1.33.0-beta.0"
   CNI: "./data/cni/calico/calico.yaml"
   EXP_CLUSTER_RESOURCE_SET: "true"
   EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
