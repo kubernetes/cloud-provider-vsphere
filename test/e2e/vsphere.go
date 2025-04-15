@@ -41,10 +41,10 @@ type VSphereTestClient struct {
 
 // initVSphereTestClient creates an VSphereTestClient when config is provided
 func initVSphereTestClient(ctx context.Context, e2eConfig *clusterctl.E2EConfig) (*VSphereTestClient, error) {
-	server := e2eConfig.GetVariable("VSPHERE_SERVER")
-	username := e2eConfig.GetVariable("VSPHERE_USERNAME")
-	password := e2eConfig.GetVariable("VSPHERE_PASSWORD")
-	datacenter := e2eConfig.GetVariable("VSPHERE_DATACENTER")
+	server := e2eConfig.MustGetVariable("VSPHERE_SERVER")
+	username := e2eConfig.MustGetVariable("VSPHERE_USERNAME")
+	password := e2eConfig.MustGetVariable("VSPHERE_PASSWORD")
+	datacenter := e2eConfig.MustGetVariable("VSPHERE_DATACENTER")
 
 	serverURL, err := soap.ParseURL(server)
 	if err != nil {

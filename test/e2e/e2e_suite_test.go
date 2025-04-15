@@ -129,6 +129,7 @@ var (
 func defaultScheme() *runtime.Scheme {
 	sc := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(sc)
+	
 	return sc
 }
 
@@ -201,8 +202,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
 				ClusterName:              workloadName,
 				Namespace:                workloadKubeconfigNamespace,
-				ControlPlaneMachineCount: e2eConfig.GetInt64PtrVariable("CONTROL_PLANE_MACHINE_COUNT"),
-				WorkerMachineCount:       e2eConfig.GetInt64PtrVariable("WORKER_MACHINE_COUNT"),
+				ControlPlaneMachineCount: e2eConfig.MustGetInt64PtrVariable("CONTROL_PLANE_MACHINE_COUNT"),
+				WorkerMachineCount:       e2eConfig.MustGetInt64PtrVariable("WORKER_MACHINE_COUNT"),
 				Flavor:                   clusterctl.DefaultFlavor,
 			},
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(proxy.GetName(), "wait-cluster"),
@@ -215,10 +216,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		if useLatestK8sVersion {
 			workloadInput.ConfigCluster.Flavor = "fast-rollout"
 		} else {
-			workloadInput.ConfigCluster.KubernetesVersion = e2eConfig.GetVariable("KUBERNETES_VERSION")
+			workloadInput.ConfigCluster.KubernetesVersion = e2eConfig.MustGetVariable("KUBERNETES_VERSION")
 		}
 		clusterctl.ApplyClusterTemplateAndWait(ctx, workloadInput, workloadResult)
-		klog.Infof("Created k8s %s workload cluster %s\n", e2eConfig.GetVariable("KUBERNETES_VERSION"), workloadName)
+		klog.Infof("Created k8s %s workload cluster %s\n", e2eConfig.MustGetVariable("KUBERNETES_VERSION"), workloadName)
 	})
 
 	By("Grab workload cluster kubeconfig", func() {
@@ -261,10 +262,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 			"--namespace", namespace,
 			"--set", "config.enabled=true",
 			"--set", "config.name=cloud-config",
-			"--set", "config.vcenter=" + e2eConfig.GetVariable("VSPHERE_SERVER"),
-			"--set", "config.username=" + e2eConfig.GetVariable("VSPHERE_USERNAME"),
-			"--set", "config.password=" + e2eConfig.GetVariable("VSPHERE_PASSWORD"),
-			"--set", "config.datacenter=" + e2eConfig.GetVariable("VSPHERE_DATACENTER"),
+			"--set", "config.vcenter=" + e2eConfig.MustGetVariable("VSPHERE_SERVER"),
+			"--set", "config.username=" + e2eConfig.MustGetVariable("VSPHERE_USERNAME"),
+			"--set", "config.password=" + e2eConfig.MustGetVariable("VSPHERE_PASSWORD"),
+			"--set", "config.datacenter=" + e2eConfig.MustGetVariable("VSPHERE_DATACENTER"),
 			"--set", "config.region=" + "",
 			"--set", "config.zone=" + "",
 			"--set", "daemonset.image=" + image,
@@ -312,15 +313,18 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 	if !skipCleanup {
 		By("Dump all resources to artifacts", func() {
 			framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-				Lister:    proxy.GetClient(),
-				Namespace: "default",
-				LogPath:   filepath.Join(artifactFolder, "clusters", proxy.GetName(), "resources"),
+				Lister:               proxy.GetClient(),
+				KubeConfigPath:       proxy.GetKubeconfigPath(),
+				ClusterctlConfigPath: clusterctlConfigPath,
+				Namespace:            "default",
+				LogPath:              filepath.Join(artifactFolder, "clusters", proxy.GetName(), "resources"),
 			})
 		})
 		By("Tear down the workload cluster", func() {
 			framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-				Client:    proxy.GetClient(),
-				Namespace: "default",
+				ClusterProxy:         proxy,
+				ClusterctlConfigPath: clusterctlConfigPath,
+				Namespace:            "default",
 			}, e2eConfig.GetIntervals(proxy.GetName(), "wait-delete-cluster")...)
 			klog.Infof("Deleted workload cluster %s/%s\n", workloadResult.Cluster.Namespace, workloadResult.Cluster.Name)
 		})
@@ -343,7 +347,7 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 
 	// Ensuring a CNI file is defined in the config and register a FileTransformation to inject the referenced file in place of the CNI_RESOURCES envSubst variable.
 	Expect(config.Variables).To(HaveKey(e2e.CNIPath), "Missing %s variable in the config", e2e.CNIPath)
-	cniPath := config.GetVariable(e2e.CNIPath)
+	cniPath := config.MustGetVariable(e2e.CNIPath)
 	Expect(cniPath).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", e2e.CNIPath)
 
 	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPath, e2e.CNIResources)
@@ -394,9 +398,9 @@ func resolveK8sVersion() {
 	var kubernetesVersion string
 	var err error
 	if useLatestK8sVersion {
-		kubernetesVersion, err = kubernetesversions.ResolveVersion(ctx, e2eConfig.GetVariable("KUBERNETES_VERSION_LATEST_CI"))
+		kubernetesVersion, err = kubernetesversions.ResolveVersion(ctx, e2eConfig.MustGetVariable("KUBERNETES_VERSION_LATEST_CI"))
 	} else {
-		kubernetesVersion, err = kubernetesversions.ResolveVersion(ctx, e2eConfig.GetVariable("KUBERNETES_VERSION"))
+		kubernetesVersion, err = kubernetesversions.ResolveVersion(ctx, e2eConfig.MustGetVariable("KUBERNETES_VERSION"))
 	}
 	Expect(err).NotTo(HaveOccurred())
 	Expect(os.Setenv("KUBERNETES_VERSION", kubernetesVersion)).To(Succeed())
