@@ -41,12 +41,12 @@ func TestRegUnregNode(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(nil, connMgr)
 
-	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm := cfg.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	vm.Guest.HostName = vm.Name
 	vm.Guest.Net = []vimtypes.GuestNicInfo{
 		{
@@ -99,12 +99,12 @@ func TestDiscoverNodeByName(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(nil, connMgr)
 
-	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm := cfg.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
 	vm.Guest.Net = []vimtypes.GuestNicInfo{
 		{
@@ -137,12 +137,12 @@ func TestDiscoverNodeByNameWithNamesClash(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(nil, connMgr)
 
-	vms := simulator.Map.All("VirtualMachine")
+	vms := cfg.Map.All("VirtualMachine")
 	vmOne := vms[0].(*simulator.VirtualMachine)
 	vmOne.Guest.HostName = vmHostname
 	vmTwo := vms[1].(*simulator.VirtualMachine)
@@ -167,12 +167,12 @@ func TestDiscoverNodeWithMultiIFByName(t *testing.T) {
 	cfg, ok := configFromEnvOrSim(true)
 	defer ok()
 
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 	defer connMgr.Logout()
 
 	nm := newNodeManager(nil, connMgr)
 
-	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm := cfg.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
 	expectedIP := "10.10.108.12"
 	vm.Guest.Net = []vimtypes.GuestNicInfo{
@@ -1828,12 +1828,12 @@ func TestDiscoverNodeIPs(t *testing.T) {
 			defer fin()
 
 			cfg.VirtualCenter[cfg.Global.VCenterIP].IPFamilyPriority = testcase.setup.ipFamilyPriority
-			connMgr := cm.NewConnectionManager(cfg, nil, nil)
+			connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 			defer connMgr.Logout()
 
 			nm := newNodeManager(testcase.setup.cpiConfig, connMgr)
 
-			vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+			vm := cfg.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 			vm.Guest.HostName = strings.ToLower(vm.Name) // simulator.SearchIndex.FindByDnsName matches against the guest.hostName property
 			vm.Guest.Net = testcase.setup.networks
 			if testcase.setup.guestinfo != "" {

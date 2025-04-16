@@ -75,11 +75,11 @@ func TestInstance(t *testing.T) {
 	/*
 	 * Setup
 	 */
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 	nm := newMyNodeManager(connMgr)
 	instances := newInstances(&nm.NodeManager)
 
-	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	vm := cfg.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := strings.ToLower(vm.Name)
 	vm.Guest.HostName = name
 	vm.Guest.Net = []vimtypes.GuestNicInfo{
@@ -160,7 +160,7 @@ func TestInvalidInstance(t *testing.T) {
 	/*
 	 * Setup
 	 */
-	connMgr := cm.NewConnectionManager(cfg, nil, nil)
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
 	nm := newMyNodeManager(connMgr)
 	instances := newInstances(&nm.NodeManager)
 

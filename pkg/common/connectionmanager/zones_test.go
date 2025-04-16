@@ -33,7 +33,7 @@ func TestWhichVCandDCByZoneSingleDC(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil, nil)
+	connMgr := NewConnectionManager(&config.Config, nil, nil)
 	defer connMgr.Logout()
 
 	// context
@@ -56,7 +56,7 @@ func TestWhichVCandDCByZoneMultiDC(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(true)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil, nil)
+	connMgr := NewConnectionManager(&config.Config, nil, nil)
 	defer connMgr.Logout()
 
 	// context
@@ -163,7 +163,7 @@ func TestLookupZoneByMoref(t *testing.T) {
 	config, cleanup := configFromEnvOrSim(false)
 	defer cleanup()
 
-	connMgr := NewConnectionManager(config, nil, nil)
+	connMgr := NewConnectionManager(&config.Config, nil, nil)
 	defer connMgr.Logout()
 
 	// context
@@ -190,7 +190,7 @@ func TestLookupZoneByMoref(t *testing.T) {
 	 * START SETUP
 	 */
 	// Get a simulator Host
-	myHost := simulator.Map.Any("HostSystem").(*simulator.HostSystem)
+	myHost := config.Map.Any("HostSystem").(*simulator.HostSystem)
 
 	// Create a region category
 	regionID, err := m.CreateCategory(ctx, &tags.Category{Name: config.Labels.Region})

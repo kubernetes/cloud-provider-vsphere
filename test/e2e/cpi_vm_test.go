@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,6 +11,7 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/types"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -20,30 +20,47 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const machineNamespace = "default"
+const (
+	machineNamespace      = "default"
+	ControlPlaneNodeLabel = "node-role.kubernetes.io/control-plane"
+)
 
-// getWorkerNode retrieves the worker node object for the E2E testing using workload cluster's clientset
+// getWorkerNode retrieves the first worker node object for the E2E testing using workload cluster's clientset
+// Only control plane Node has ControlPlaneNodeLabel.
 func getWorkerNode() (*corev1.Node, error) {
 	nodes, err := workloadClientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return getFirstWorkerNodeFromList(nodes)
-}
 
-// getWorkerNode retrieves the CAPV machine object with name from the boostrap cluster
-func getWorkerMachine(name string) (*v1beta1.Machine, error) {
-	machine := &v1beta1.Machine{}
-	if err := proxy.GetClient().Get(ctx, k8stypes.NamespacedName{
-		Name:      name,
-		Namespace: machineNamespace,
-	}, machine); err != nil {
-		return nil, err
+	for _, node := range nodes.Items {
+		if _, ok := node.GetLabels()[ControlPlaneNodeLabel]; !ok {
+			// get the first worker node
+			return &node, nil
+		}
+
 	}
-	return machine, err
+	return nil, errors.New("worker node not found")
 }
 
-// deleteWorkerMachine deletes the CAPV machine object with name from the boostrap cluster
+// getWorkerMachine retrieves the CAPI machine object with name from the boostrap cluster
+func getWorkerMachine(name string) (*v1beta1.Machine, error) {
+	machineList := &v1beta1.MachineList{}
+	err := proxy.GetClient().List(ctx, machineList)
+	if err != nil {
+		return nil, errors.New("failed to list Machines")
+	}
+
+	for _, machine := range machineList.Items {
+		if machine.Status.NodeRef.Name == name {
+			return &machine, nil
+		}
+	}
+
+	return nil, errors.New("machine not found")
+}
+
+// deleteWorkerMachine deletes the CAPI machine object with name from the boostrap cluster
 func deleteWorkerMachine(name string) error {
 	machine := &v1beta1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -52,17 +69,6 @@ func deleteWorkerMachine(name string) error {
 		},
 	}
 	return proxy.GetClient().Delete(ctx, machine)
-}
-
-// getFirstWorkerNodeFromList searches the first worker node that forms the cluster.
-// We assume all the name of worker node contains substring `-md-`
-func getFirstWorkerNodeFromList(nodes *corev1.NodeList) (*corev1.Node, error) {
-	for _, node := range nodes.Items {
-		if strings.Contains(node.Name, "-md-") {
-			return &node, nil
-		}
-	}
-	return nil, errors.New("worker node not found")
 }
 
 // getExternalIPFromNode returns the external IP from Node.status.addresses, given a node object
@@ -306,14 +312,14 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 		providerID := getProviderIDFromNode(workerNode)
 
 		By("Delete machine object", func() {
-			err := deleteWorkerMachine(workerNode.Name)
+			err := deleteWorkerMachine(workerMachine.Name)
 			Expect(err).To(BeNil(), "cannot delete machine object")
 		})
 
 		By("Eventually original node will be gone")
 		Eventually(func() bool {
-			_, err = getWorkerNode()
-			return err != nil && err.Error() == "worker node not found"
+			_, err := workloadClientset.CoreV1().Nodes().Get(ctx, workerNode.Name, metav1.GetOptions{})
+			return err != nil && apierrors.IsNotFound(err)
 		}, 5*time.Minute, 5*time.Second).Should(BeTrue())
 
 		By("Eventually new node will be created")
@@ -357,7 +363,7 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 		err = task.Wait(ctx)
 		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power off")
 
-		By("Delete VM fron VC")
+		By("Delete VM from VC")
 		task, err = workerVM.Destroy(ctx)
 		Expect(err).ToNot(HaveOccurred(), "cannot destroy vm")
 
@@ -366,8 +372,8 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 		By("Eventually original node will be gone")
 		Eventually(func() bool {
-			_, err = getWorkerNode()
-			return err != nil && err.Error() == "worker node not found"
+			_, err := workloadClientset.CoreV1().Nodes().Get(ctx, workerNode.Name, metav1.GetOptions{})
+			return err != nil && apierrors.IsNotFound(err)
 		}, 5*time.Minute, 5*time.Second).Should(BeTrue())
 	})
 })

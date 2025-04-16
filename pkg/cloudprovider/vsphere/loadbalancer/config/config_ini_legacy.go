@@ -75,39 +75,39 @@ func (lbc *LBConfigINI) isEnabled() bool {
 func (lbc *LBConfigINI) validateConfig() error {
 	if lbc.LoadBalancer.LBServiceID == "" && lbc.LoadBalancer.Tier1GatewayPath == "" {
 		msg := "either load balancer service id or T1 gateway path required"
-		klog.Errorf(msg)
+		klog.Error(msg)
 		return errors.New(msg)
 	}
 	if lbc.LoadBalancer.TCPAppProfileName == "" && lbc.LoadBalancer.TCPAppProfilePath == "" {
 		msg := "either load balancer TCP application profile name or path required"
-		klog.Errorf(msg)
+		klog.Error(msg)
 		return errors.New(msg)
 	}
 	if lbc.LoadBalancer.UDPAppProfileName == "" && lbc.LoadBalancer.UDPAppProfilePath == "" {
 		msg := "either load balancer UDP application profile name or path required"
-		klog.Errorf(msg)
+		klog.Error(msg)
 		return errors.New(msg)
 	}
 	if !LoadBalancerSizes.Has(lbc.LoadBalancer.Size) {
 		msg := fmt.Sprintf("load balancer size is invalid. Valid values are: %s", strings.Join(LoadBalancerSizes.List(), ","))
-		klog.Errorf(msg)
+		klog.Error(msg)
 		return errors.New(msg)
 	}
 	if lbc.LoadBalancer.IPPoolID == "" && lbc.LoadBalancer.IPPoolName == "" {
 		class, ok := lbc.LoadBalancerClass[DefaultLoadBalancerClass]
 		if !ok {
 			msg := "no default load balancer class defined"
-			klog.Errorf(msg)
+			klog.Error(msg)
 			return errors.New(msg)
 		} else if class.IPPoolName == "" && class.IPPoolID == "" {
 			msg := "default load balancer class: ipPoolName and ipPoolID is empty"
-			klog.Errorf(msg)
+			klog.Error(msg)
 			return errors.New(msg)
 		}
 	} else {
 		if lbc.LoadBalancer.IPPoolName != "" && lbc.LoadBalancer.IPPoolID != "" {
 			msg := "either load balancer ipPoolName or ipPoolID can be set"
-			klog.Errorf(msg)
+			klog.Error(msg)
 			return errors.New(msg)
 		}
 	}
