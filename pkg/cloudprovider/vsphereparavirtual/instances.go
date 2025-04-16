@@ -152,17 +152,22 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 
 // InstanceID returns the cloud provider ID of the named instance if one exists, otherwise an empty string
 func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (string, error) {
+	klog.V(4).Infof("zhanggbj: enter InstanceID nodeName: %v", nodeName)
 	vm, err := i.discoverNodeByName(ctx, nodeName)
 	if err != nil {
 		klog.Errorf("Error trying to find VM: %v", err)
 		return "", err
 	}
+
+	klog.V(4).Infof("zhanggbj: discoverNodeByName err is nil")
 	if vm == nil {
 		klog.V(4).Info("instances.InstanceID() InstanceNotFound ", nodeName)
 		return "", cloudprovider.InstanceNotFound
 	}
 
+	klog.V(4).Infof("zhanggbj: ivm.Status.BiosUUID: %v", vm.Status.BiosUUID)
 	if vm.Status.BiosUUID == "" {
+		klog.V(4).Infof("zhanggbj: return empty and errBiosUUIDEmpty: %v", errBiosUUIDEmpty)
 		return "", errBiosUUIDEmpty
 	}
 
