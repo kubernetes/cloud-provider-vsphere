@@ -25,6 +25,7 @@ Version matrix:
 
 | Kubernetes Version | vSphere Cloud Provider Release Version | Cloud Provider Branch |
 |--------------------|----------------------------------------|-----------------------|
+| v1.33.X            | v1.33.X                                | release-1.33          |
 | v1.32.X            | v1.32.X                                | release-1.32          |
 | v1.31.X            | v1.31.X                                | release-1.31          |
 | v1.30.X            | v1.30.X                                | release-1.30          |
@@ -108,7 +109,7 @@ registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.30.1
 Official releases of the vSphere Cloud Controller Manager container image can be found at:
 
 ```bash
-registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.32.1 # <== latest version
+registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:v1.33.0 # <== latest version
 ```
 
 The very latest builds from the tip of master, which may not be stable, can be found at:
