@@ -2,13 +2,13 @@ module k8s.io/cloud-provider-vsphere/test/e2e
 
 go 1.23.0
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.0-rc.0
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.0
 
-replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-provider-vsphere v1.13.0-rc.0
+replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-provider-vsphere v1.13.0-rc.1
 
-replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api-provider-vsphere/test v1.13.0-rc.0
+replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api-provider-vsphere/test v1.13.0-rc.1
 
-replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.10.0-rc.0
+replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.10.0
 
 require (
 	github.com/onsi/ginkgo/v2 v2.23.4
@@ -130,14 +130,14 @@ require (
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
-	golang.org/x/tools v0.31.0 // indirect
+	golang.org/x/tools v0.32.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
