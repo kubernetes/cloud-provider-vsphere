@@ -22,7 +22,7 @@ data:
       {{- if $config.thumbprint }}
       thumbprint: {{ $config.thumbprint }}
       {{- else if $config.caFile }}
-      ca-file = {{ $config.caFile }}
+      ca-file: {{ $config.caFile }}
       {{- else }}
       # set insecure-flag to true if the vCenter uses a self-signed cert
       insecureFlag: true
