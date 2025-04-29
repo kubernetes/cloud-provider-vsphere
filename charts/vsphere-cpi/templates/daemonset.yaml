@@ -48,6 +48,10 @@ spec:
       affinity:
         {{- toYaml .Values.daemonset.affinity | nindent 8 }}
     {{- end }}
+    {{- if .Values.daemonset.hostAliases }}
+      hostAliases:
+        {{- toYaml .Values.daemonset.hostAliases | nindent 8 }}
+    {{- end }}
       {{- if .Values.securityContext.enabled }}
       securityContext:
         fsGroup: {{ .Values.securityContext.fsGroup }}

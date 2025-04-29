@@ -127,6 +127,7 @@ The following table lists the configurable parameters of the vSphere CPI chart a
 | `daemonset.affinity`                     | User-defined affinities             |  nil                                   |
 | `daemonset.extraVolumes`                 | User-defined volumes                |  `[]`                                  |
 | `daemonset.extraVolumeMounts`            | User-defined volume mounts          |  `[]`                                  |
+| `daemonset.hostAliases`                  | User-defined host aliases           |  `[]`                                  |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` using Helm v3.X. For example,
 
