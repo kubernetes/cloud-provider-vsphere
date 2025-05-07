@@ -29,16 +29,20 @@ import (
 
 func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 	var (
-		userKey             = "username"
-		passwordKey         = "password"
-		testUser            = "user"
-		testPassword        = "password"
-		testServer          = "0.0.0.0"
-		testServer2         = "0.0.1.1"
-		testIPv6Server      = "fd01::1"
-		testUserServer2     = "user1"
-		testPasswordServer2 = "password1"
-		testIncorrectServer = "1.1.1.1"
+		userKey                 = "username"
+		passwordKey             = "password"
+		vcSessionURL            = "vc-session-manager-url"
+		vcSessionToken          = "vc-session-manager-token"
+		testUser                = "user"
+		testPassword            = "password"
+		testServer              = "0.0.0.0"
+		testServer2             = "0.0.1.1"
+		testIPv6Server          = "fd01::1"
+		testUserServer2         = "user1"
+		testPasswordServer2     = "password1"
+		testIncorrectServer     = "1.1.1.1"
+		testSessionManagerURL   = "https://somemanager.tld/session"
+		testSessionManagerToken = "token"
 	)
 	var (
 		secretName      = "vsconf"
@@ -50,10 +54,12 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 		deleteSecretOp   = "DELETE_SECRET_OP"
 	)
 	type GetCredentialsTest struct {
-		server   string
-		username string
-		password string
-		err      error
+		server         string
+		username       string
+		password       string
+		vcSessionURL   string
+		vcSessionToken string
+		err            error
 	}
 	type OpSecretTest struct {
 		secret *corev1.Secret
@@ -85,6 +91,16 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 			testServer + "." + passwordKey:  []byte(testPassword),
 			testServer2 + "." + userKey:     []byte(testUserServer2),
 			testServer2 + "." + passwordKey: []byte(testPasswordServer2),
+		},
+	}
+
+	multiVCSecretMixedWithSessionManager := &corev1.Secret{
+		ObjectMeta: metaObj,
+		Data: map[string][]byte{
+			testServer + "." + userKey:         []byte(testUser),
+			testServer + "." + passwordKey:     []byte(testPassword),
+			testServer2 + "." + vcSessionURL:   []byte(testSessionManagerURL),
+			testServer2 + "." + vcSessionToken: []byte(testSessionManagerToken),
 		},
 	}
 
@@ -195,6 +211,20 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 			},
 		},
 		{
+			testName: "GetCredential for multi-vc with session manager",
+			ops:      []string{addSecretOp, getCredentialsOp},
+			expectedValues: []interface{}{
+				OpSecretTest{
+					secret: multiVCSecretMixedWithSessionManager,
+				},
+				GetCredentialsTest{
+					server:         testServer2,
+					vcSessionURL:   testSessionManagerURL,
+					vcSessionToken: testSessionManagerToken,
+				},
+			},
+		},
+		{
 			testName: "GetCredential for alternative IPv6 server address compatable format",
 			ops:      []string{addSecretOp, getCredentialsOp},
 			expectedValues: []interface{}{
@@ -259,7 +289,9 @@ func TestSecretCredentialManagerK8s_GetCredential(t *testing.T) {
 				}
 				if expected.err == nil {
 					if expected.username != credential.User ||
-						expected.password != credential.Password {
+						expected.password != credential.Password ||
+						expected.vcSessionToken != credential.VCSessionManagerToken ||
+						expected.vcSessionURL != credential.VCSessionManagerURL {
 						t.Fatalf("Received credentials %v "+
 							"are different than actual credential user:%s password:%s", credential, expected.username,
 							expected.password)
@@ -351,6 +383,43 @@ func TestParseSecretConfig(t *testing.T) {
 				},
 			},
 			expectedError: ErrCredentialMissing,
+		},
+		{
+			testName: "Missing session manager token",
+			data: map[string][]byte{
+				"10.20.30.40.vc-session-manager-url": []byte("https://something.tld/session"),
+			},
+			config: map[string]*Credential{
+				testIP: {
+					VCSessionManagerURL: "https://something.tld/session",
+				},
+			},
+			expectedError: ErrCredentialMissing,
+		},
+		{
+			testName: "Missing session manager url",
+			data: map[string][]byte{
+				"10.20.30.40.vc-session-manager-token": []byte("token"),
+			},
+			config: map[string]*Credential{
+				testIP: {
+					VCSessionManagerToken: "token",
+				},
+			},
+			expectedError: ErrCredentialMissing,
+		},
+		{
+			testName: "Valid session manager configuration",
+			data: map[string][]byte{
+				"10.20.30.40.vc-session-manager-url":   []byte("https://something.tld/session"),
+				"10.20.30.40.vc-session-manager-token": []byte("token"),
+			},
+			config: map[string]*Credential{
+				testIP: {
+					VCSessionManagerURL:   "https://something.tld/session",
+					VCSessionManagerToken: "token",
+				},
+			},
 		},
 		{
 			testName: "IP with unknown key",

@@ -193,19 +193,35 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 	}
 	unknownKeys := map[string][]byte{}
 	for credentialKey, credentialValue := range data {
-		if strings.HasSuffix(credentialKey, "password") {
+		switch {
+		case strings.HasSuffix(credentialKey, "password"):
 			vcServer := strings.Split(credentialKey, ".password")[0]
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
 			config[vcServer].Password = strings.TrimSuffix(string(credentialValue), "\n")
-		} else if strings.HasSuffix(credentialKey, "username") {
+
+		case strings.HasSuffix(credentialKey, "username"):
 			vcServer := strings.Split(credentialKey, ".username")[0]
 			if _, ok := config[vcServer]; !ok {
 				config[vcServer] = &Credential{}
 			}
 			config[vcServer].User = strings.TrimSuffix(string(credentialValue), "\n")
-		} else {
+
+		case strings.HasSuffix(credentialKey, "vc-session-manager-url"):
+			vcServer := strings.Split(credentialKey, ".vc-session-manager-url")[0]
+			if _, ok := config[vcServer]; !ok {
+				config[vcServer] = &Credential{}
+			}
+			config[vcServer].VCSessionManagerURL = strings.TrimSuffix(string(credentialValue), "\n")
+
+		case strings.HasSuffix(credentialKey, "vc-session-manager-token"):
+			vcServer := strings.Split(credentialKey, ".vc-session-manager-token")[0]
+			if _, ok := config[vcServer]; !ok {
+				config[vcServer] = &Credential{}
+			}
+			config[vcServer].VCSessionManagerToken = strings.TrimSuffix(string(credentialValue), "\n")
+		default:
 			unknownKeys[credentialKey] = credentialValue
 		}
 	}
@@ -287,10 +303,13 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 	}
 
 	for vcServer, credential := range config {
-		if credential.User == "" || credential.Password == "" {
-			klog.Errorf("Username/Password is missing for server %s", vcServer)
+		if (credential.User == "" || credential.Password == "") &&
+			(credential.VCSessionManagerURL == "" || credential.VCSessionManagerToken == "") {
+
+			klog.Errorf("Username/Password or shared session manager URL/Token directives are missing for server %s", vcServer)
 			return ErrCredentialMissing
 		}
+
 	}
 	return nil
 }
