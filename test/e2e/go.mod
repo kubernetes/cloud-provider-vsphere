@@ -2,13 +2,13 @@ module k8s.io/cloud-provider-vsphere/test/e2e
 
 go 1.23.0
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.0
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.1
 
-replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-provider-vsphere v1.13.0-rc.1
+replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-provider-vsphere v1.13.0
 
-replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api-provider-vsphere/test v1.13.0-rc.1
+replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api-provider-vsphere/test v1.13.0
 
-replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.10.0
+replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.10.1
 
 require (
 	github.com/onsi/ginkgo/v2 v2.23.4
