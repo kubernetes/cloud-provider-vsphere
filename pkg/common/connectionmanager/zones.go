@@ -292,6 +292,11 @@ func (cm *ConnectionManager) getDIFromMultiVCorDC(ctx context.Context,
 
 func withTagsClient(ctx context.Context, connection *vclib.VSphereConnection, f func(c *rest.Client) error) error {
 	c := rest.NewClient(connection.Client)
+	if connection.SessionManagerURL != "" && connection.SessionManagerToken != "" {
+		c.SessionID(connection.Client.SessionCookie().Value)
+		return nil
+	}
+
 	signer, err := connection.Signer(ctx, connection.Client)
 	if err != nil {
 		return err
@@ -307,6 +312,11 @@ func withTagsClient(ctx context.Context, connection *vclib.VSphereConnection, f 
 	}
 
 	defer func() {
+		// When using shared session manager we don't need to logout
+		if connection.SessionManagerURL != "" && connection.SessionManagerToken != "" {
+			return
+		}
+
 		if err := c.Logout(ctx); err != nil {
 			klog.Errorf("failed to logout: %v", err)
 		}
