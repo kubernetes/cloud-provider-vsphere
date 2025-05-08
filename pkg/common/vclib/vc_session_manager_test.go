@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/cloud-provider-vsphere/pkg/common/vclib"
 )
 
@@ -74,11 +76,11 @@ func TestGetSharedToken(t *testing.T) {
 			assert.ErrorContains(t, err, "URL of session manager cannot be empty")
 		})
 
-		t.Run("should fail when no token is passed", func(t *testing.T) {
+		t.Run("should fail when no token is passed and SA token cannot be read", func(t *testing.T) {
 			_, err := vclib.GetSharedToken(ctx, vclib.SharedTokenOptions{
-				URL: "https://some-session-manager.tld/session",
+				URL: "http://something.tld/lala",
 			})
-			assert.ErrorContains(t, err, "token of session manager cannot be empty")
+			assert.ErrorContains(t, err, "failed reading token from service account: open /var/run/secrets/kubernetes.io/serviceaccount/token: no such file or directory")
 		})
 
 		t.Run("should fail when passed URL is invalid", func(t *testing.T) {
@@ -161,6 +163,22 @@ func TestGetSharedToken(t *testing.T) {
 				URL:                 reqURL,
 				TrustedCertificates: certpool,
 				Token:               validToken,
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, validResponse, token)
+		})
+
+		t.Run("should return a valid token when using a file as a token", func(t *testing.T) {
+			tokenFile, err := os.CreateTemp("", "")
+			require.NoError(t, err)
+			require.NoError(t, tokenFile.Close())
+			require.NoError(t, os.WriteFile(tokenFile.Name(), []byte(validToken), 0755))
+
+			reqURL := fmt.Sprintf("%s/session", server.URL)
+			token, err := vclib.GetSharedToken(ctx, vclib.SharedTokenOptions{
+				URL:                 reqURL,
+				TrustedCertificates: certpool,
+				TokenFile:           tokenFile.Name(),
 			})
 			assert.NoError(t, err)
 			assert.Equal(t, validResponse, token)

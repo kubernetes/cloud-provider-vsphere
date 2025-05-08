@@ -303,8 +303,7 @@ func parseConfig(data map[string][]byte, config map[string]*Credential) error {
 	}
 
 	for vcServer, credential := range config {
-		if (credential.User == "" || credential.Password == "") &&
-			(credential.VCSessionManagerURL == "" || credential.VCSessionManagerToken == "") {
+		if (credential.User == "" || credential.Password == "") && credential.VCSessionManagerURL == "" {
 
 			klog.Errorf("Username/Password or shared session manager URL/Token directives are missing for server %s", vcServer)
 			return ErrCredentialMissing

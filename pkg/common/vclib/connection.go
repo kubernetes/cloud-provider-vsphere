@@ -134,7 +134,7 @@ func (connection *VSphereConnection) login(ctx context.Context, client *vim25.Cl
 	connection.credentialsLock.Lock()
 	defer connection.credentialsLock.Unlock()
 
-	if connection.SessionManagerURL != "" && connection.SessionManagerToken != "" {
+	if connection.SessionManagerURL != "" {
 		token, err := GetSharedToken(ctx, SharedTokenOptions{
 			URL:   connection.SessionManagerURL,
 			Token: connection.SessionManagerToken,

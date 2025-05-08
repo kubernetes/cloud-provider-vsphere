@@ -394,7 +394,7 @@ func TestParseSecretConfig(t *testing.T) {
 					VCSessionManagerURL: "https://something.tld/session",
 				},
 			},
-			expectedError: ErrCredentialMissing,
+			expectedError: nil,
 		},
 		{
 			testName: "Missing session manager url",

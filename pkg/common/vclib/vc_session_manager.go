@@ -7,7 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
+)
+
+const (
+	saFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
 // SharedSessionResponse is the expected structure for a session manager valid
@@ -28,6 +33,8 @@ type SharedTokenOptions struct {
 	InsecureSkipVerify bool
 	// Timeout defines the client timeout. Defaults to 5 seconds
 	Timeout time.Duration
+	// TokenFile defines a file with token content. Defaults to Kubernetes Service Account file
+	TokenFile string
 }
 
 // GetSharedToken executes an http request on session manager and gets the session manager
@@ -36,8 +43,18 @@ func GetSharedToken(ctx context.Context, options SharedTokenOptions) (string, er
 	if options.URL == "" {
 		return "", fmt.Errorf("URL of session manager cannot be empty")
 	}
+
+	if options.TokenFile == "" {
+		options.TokenFile = saFile
+	}
+
+	// If the token is empty, we should use service account from the Pod instead
 	if options.Token == "" {
-		return "", fmt.Errorf("token of session manager cannot be empty")
+		saValue, err := os.ReadFile(options.TokenFile)
+		if err != nil {
+			return "", fmt.Errorf("failed reading token from service account: %w", err)
+		}
+		options.Token = string(saValue)
 	}
 
 	timeout := 5 * time.Second
