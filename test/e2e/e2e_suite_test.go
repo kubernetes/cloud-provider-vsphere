@@ -129,7 +129,6 @@ var (
 func defaultScheme() *runtime.Scheme {
 	sc := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(sc)
-	
 	return sc
 }
 
@@ -321,6 +320,7 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 			})
 		})
 		By("Tear down the workload cluster", func() {
+			Expect(workloadResult).NotTo(BeNil())
 			framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
 				ClusterProxy:         proxy,
 				ClusterctlConfigPath: clusterctlConfigPath,
