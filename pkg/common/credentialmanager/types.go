@@ -36,6 +36,9 @@ type SecretCache struct {
 type Credential struct {
 	User     string `gcfg:"user"`
 	Password string `gcfg:"password"`
+	// VC shared session manager directives
+	VCSessionManagerURL   string `gcfg:"vc-session-manager-url"`
+	VCSessionManagerToken string `gcfg:"vc-session-manager-token"`
 }
 
 // CredentialManager is used to manage vCenter credentials stored as

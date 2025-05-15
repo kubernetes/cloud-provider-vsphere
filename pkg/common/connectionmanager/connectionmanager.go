@@ -161,7 +161,7 @@ func (connMgr *ConnectionManager) Connect(ctx context.Context, vcInstance *VSphe
 		klog.Error("Failed to get credentials from Secret Credential Manager with err:", err)
 		return err
 	}
-	vcInstance.Conn.UpdateCredentials(credentials.User, credentials.Password)
+	vcInstance.Conn.UpdateCredentials(credentials.User, credentials.Password, credentials.VCSessionManagerURL, credentials.VCSessionManagerToken)
 	return vcInstance.Conn.Connect(ctx)
 }
 
