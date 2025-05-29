@@ -37,16 +37,18 @@ const (
 
 // VSphereConnection contains information for connecting to vCenter
 type VSphereConnection struct {
-	Client            *vim25.Client
-	Username          string
-	Password          string
-	Hostname          string
-	Port              string
-	CACert            string
-	Thumbprint        string
-	Insecure          bool
-	RoundTripperCount uint
-	credentialsLock   sync.Mutex
+	Client              *vim25.Client
+	Username            string
+	Password            string
+	Hostname            string
+	Port                string
+	CACert              string
+	Thumbprint          string
+	Insecure            bool
+	SessionManagerURL   string
+	SessionManagerToken string
+	RoundTripperCount   uint
+	credentialsLock     sync.Mutex
 }
 
 var (
@@ -132,6 +134,22 @@ func (connection *VSphereConnection) login(ctx context.Context, client *vim25.Cl
 	connection.credentialsLock.Lock()
 	defer connection.credentialsLock.Unlock()
 
+	if connection.SessionManagerURL != "" {
+		token, err := GetSharedToken(ctx, SharedTokenOptions{
+			URL:   connection.SessionManagerURL,
+			Token: connection.SessionManagerToken,
+		})
+		if err != nil {
+			klog.Errorf("error getting shared session token: %s", err)
+			return err
+		}
+		if err := m.CloneSession(ctx, token); err != nil {
+			klog.Errorf("error getting shared cloned session token: %s", err)
+			return err
+		}
+		return nil
+	}
+
 	signer, err := connection.Signer(ctx, client)
 	if err != nil {
 		return err
@@ -196,9 +214,11 @@ func (connection *VSphereConnection) NewClient(ctx context.Context) (*vim25.Clie
 
 // UpdateCredentials updates username and password.
 // Note: Updated username and password will be used when there is no session active
-func (connection *VSphereConnection) UpdateCredentials(username string, password string) {
+func (connection *VSphereConnection) UpdateCredentials(username string, password string, sessionmgrURL string, sessionmgrToken string) {
 	connection.credentialsLock.Lock()
 	defer connection.credentialsLock.Unlock()
 	connection.Username = username
 	connection.Password = password
+	connection.SessionManagerURL = sessionmgrURL
+	connection.SessionManagerToken = sessionmgrToken
 }
