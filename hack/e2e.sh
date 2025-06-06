@@ -93,6 +93,13 @@ on_exit() {
 
 trap on_exit EXIT
 
+# Sanitize input envvars to not contain newline
+GOVC_USERNAME=$(echo "${GOVC_USERNAME}" | tr -d "\n")
+GOVC_PASSWORD=$(echo "${GOVC_PASSWORD}" | tr -d "\n")
+GOVC_URL=$(echo "${GOVC_URL}" | tr -d "\n")
+VSPHERE_TLS_THUMBPRINT=$(echo "${VSPHERE_TLS_THUMBPRINT:-}" | tr -d "\n")
+BOSKOS_HOST=$(echo "${BOSKOS_HOST:-}" | tr -d "\n")
+
 # convert vsphere credentials from test-infra to e2e config format
 export VSPHERE_SERVER="${GOVC_URL}"
 export VSPHERE_USERNAME="${GOVC_USERNAME}"
