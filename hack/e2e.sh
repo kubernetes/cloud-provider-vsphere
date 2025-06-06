@@ -36,10 +36,6 @@ if [[ "${JOB_NAME}" != "" ]]; then
   export BOSKOS_RESOURCE_OWNER="${JOB_NAME}/${BUILD_ID}"
 fi
 export BOSKOS_RESOURCE_TYPE="gcve-vsphere-project"
-# Fallback for mirror-prow.
-if [[ "${GOVC_URL:-}" == "10.2.224.4" ]]; then
-  export BOSKOS_RESOURCE_TYPE=vsphere-project-cloud-provider
-fi
 
 on_exit() {
   # Stop boskos heartbeat
@@ -96,7 +92,7 @@ trap on_exit EXIT
 # Sanitize input envvars to not contain newline
 GOVC_USERNAME=$(echo "${GOVC_USERNAME}" | tr -d "\n")
 GOVC_PASSWORD=$(echo "${GOVC_PASSWORD}" | tr -d "\n")
-GOVC_URL=$(echo "${GOVC_URL}" | tr -d "\n")
+GOVC_URL=$(echo "${GOVC_URL:-}" | tr -d "\n")
 VSPHERE_TLS_THUMBPRINT=$(echo "${VSPHERE_TLS_THUMBPRINT:-}" | tr -d "\n")
 BOSKOS_HOST=$(echo "${BOSKOS_HOST:-}" | tr -d "\n")
 
@@ -111,12 +107,6 @@ VSPHERE_SSH_PRIVATE_KEY="${SSH_KEY_DIR}/ssh-key"
 ssh-keygen -t ed25519 -f "${VSPHERE_SSH_PRIVATE_KEY}" -N ""
 export VSPHERE_SSH_AUTHORIZED_KEY
 VSPHERE_SSH_AUTHORIZED_KEY="$(cat "${VSPHERE_SSH_PRIVATE_KEY}.pub")"
-
-# Fallback for mirror-prow.
-if [[ "${GOVC_URL:-}" == "10.2.224.4" ]]; then
-  export VSPHERE_SSH_AUTHORIZED_KEY="${VM_SSH_PUB_KEY:-}"
-  export VSPHERE_SSH_PRIVATE_KEY="/root/ssh/.private-key/private-key"
-fi
 
 # If BOSKOS_HOST is set then acquire a vsphere-project from Boskos.
 if [ -n "${BOSKOS_HOST:-}" ]; then
