@@ -110,19 +110,6 @@ func recordvSphereOperationMetric(actionName string, requestTime time.Time, err 
 	}
 }
 
-// RecordCreateVolumeMetric records the Create Volume metric
-func RecordCreateVolumeMetric(volumeOptions *VolumeOptions, requestTime time.Time, err error) {
-	var actionName string
-	if volumeOptions.StoragePolicyName != "" {
-		actionName = OperationCreateVolumeWithPolicy
-	} else if volumeOptions.VSANStorageProfileData != "" {
-		actionName = OperationCreateVolumeWithRawVSANPolicy
-	} else {
-		actionName = OperationCreateVolume
-	}
-	RecordvSphereMetric(actionName, requestTime, err)
-}
-
 func calculateTimeTaken(requestBeginTime time.Time) (timeTaken float64) {
 	if !requestBeginTime.IsZero() {
 		timeTaken = time.Since(requestBeginTime).Seconds()
