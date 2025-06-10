@@ -123,6 +123,7 @@ var (
 	kubeconfig string
 
 	workloadName   string
+	workloadProxy  framework.ClusterProxy
 	workloadResult *clusterctl.ApplyClusterTemplateAndWaitResult
 )
 
@@ -284,7 +285,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	})
 
 	By("Watching vsphere-cpi daemonset logs", func() {
-		workloadProxy := proxy.GetWorkloadCluster(ctx, workloadKubeconfigNamespace, workloadName)
+		workloadProxy = proxy.GetWorkloadCluster(ctx, workloadKubeconfigNamespace, workloadName)
 
 		framework.WatchDaemonSetLogsByLabelSelector(ctx, framework.WatchDaemonSetLogsByLabelSelectorInput{
 			GetLister: workloadProxy.GetClient(),
@@ -310,13 +311,22 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = SynchronizedAfterSuite(func() {}, func() {
 	// after all parallel test cases finish
 	if !skipCleanup {
-		By("Dump all resources to artifacts", func() {
+		By("Dump bootstrap resources to artifacts", func() {
 			framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
 				Lister:               proxy.GetClient(),
 				KubeConfigPath:       proxy.GetKubeconfigPath(),
 				ClusterctlConfigPath: clusterctlConfigPath,
 				Namespace:            "default",
 				LogPath:              filepath.Join(artifactFolder, "clusters", proxy.GetName(), "resources"),
+			})
+		})
+		By("Dump workload resources to artifacts", func() {
+			framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
+				Lister:               workloadProxy.GetClient(),
+				KubeConfigPath:       workloadProxy.GetKubeconfigPath(),
+				ClusterctlConfigPath: workloadKubeconfig,
+				Namespace:            "kube-system",
+				LogPath:              filepath.Join(artifactFolder, "clusters", workloadProxy.GetName(), "resources"),
 			})
 		})
 		By("Tear down the workload cluster", func() {
