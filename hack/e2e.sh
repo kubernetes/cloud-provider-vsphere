@@ -35,7 +35,7 @@ export BOSKOS_RESOURCE_OWNER=cloud-provider-vsphere
 if [[ "${JOB_NAME}" != "" ]]; then
   export BOSKOS_RESOURCE_OWNER="${JOB_NAME}/${BUILD_ID}"
 fi
-export BOSKOS_RESOURCE_TYPE=vsphere-project-cloud-provider
+export BOSKOS_RESOURCE_TYPE="gcve-vsphere-project"
 
 on_exit() {
   # Stop boskos heartbeat
@@ -44,11 +44,15 @@ on_exit() {
   # If Boskos is being used then release the vsphere project.
   [ -z "${BOSKOS_HOST:-}" ] || docker run -e VSPHERE_USERNAME -e VSPHERE_PASSWORD gcr.io/k8s-staging-capi-vsphere/extra/boskosctl:latest release --boskos-host="${BOSKOS_HOST}" --resource-owner="${BOSKOS_RESOURCE_OWNER}" --resource-name="${BOSKOS_RESOURCE_NAME}" --vsphere-server="${VSPHERE_SERVER}" --vsphere-tls-thumbprint="${VSPHERE_TLS_THUMBPRINT}" --vsphere-folder="${BOSKOS_RESOURCE_FOLDER}" --vsphere-resource-pool="${BOSKOS_RESOURCE_POOL}"
 
-  # kill the VPN
-  docker kill vpn
-
   # Cleanup VSPHERE_PASSWORD from temporary artifacts directory.
   if [[ "${ORIGINAL_ARTIFACTS}" != "" ]]; then
+    # unpack pod-logs.tar.gz files to replace secrets in them
+    find "${ARTIFACTS}" -type f -name pod-logs.tar.gz | while IFS= read -r tarball; do
+      echo "Unpacking ${tarball} for secrets replacement"
+      mkdir -p "${tarball}-unpacked"
+      tar -xzf "${tarball}" -C "${tarball}-unpacked"
+      rm "${tarball}"
+    done
     # Delete non-text files from artifacts directory to not leak files accidentially
     find "${ARTIFACTS}" -type f -exec file --mime-type {} \; | grep -v -E -e "text/plain|text/xml|application/json|inode/x-empty" | while IFS= read -r line
     do
@@ -71,6 +75,13 @@ on_exit() {
         sed -i "s/${VSPHERE_PASSWORD_B64}/REDACTED/g" "${file}"
       done || true
     fi
+    # re-packing pod-logs.tar.gz-unpacked
+    find "${ARTIFACTS}" -type d -name pod-logs.tar.gz-unpacked | while IFS= read -r tarballDirectory; do
+      tarball="${tarballDirectory%-unpacked}"
+      echo "Packing ${tarballDirectory} to ${tarball} after secrets replacement"
+      tar -czf "${tarball}" -C . "${tarballDirectory}"
+      rm -r "${tarballDirectory}"
+    done
     # Move all artifacts to the original artifacts location.
     mv "${ARTIFACTS}"/* "${ORIGINAL_ARTIFACTS}/"
   fi
@@ -78,35 +89,24 @@ on_exit() {
 
 trap on_exit EXIT
 
+# Sanitize input envvars to not contain newline
+GOVC_USERNAME=$(echo "${GOVC_USERNAME}" | tr -d "\n")
+GOVC_PASSWORD=$(echo "${GOVC_PASSWORD}" | tr -d "\n")
+GOVC_URL=$(echo "${GOVC_URL:-}" | tr -d "\n")
+VSPHERE_TLS_THUMBPRINT=$(echo "${VSPHERE_TLS_THUMBPRINT:-}" | tr -d "\n")
+BOSKOS_HOST=$(echo "${BOSKOS_HOST:-}" | tr -d "\n")
+
 # convert vsphere credentials from test-infra to e2e config format
 export VSPHERE_SERVER="${GOVC_URL}"
 export VSPHERE_USERNAME="${GOVC_USERNAME}"
 export VSPHERE_PASSWORD="${GOVC_PASSWORD}"
-export VSPHERE_SSH_AUTHORIZED_KEY="${VM_SSH_PUB_KEY}"
-export VSPHERE_SSH_PRIVATE_KEY="/root/ssh/.private-key/private-key"
 
-# Run the vpn client in container
-docker run --rm -d --name vpn -v "${HOME}/.openvpn/:${HOME}/.openvpn/" \
-  -w "${HOME}/.openvpn/" --cap-add=NET_ADMIN --net=host --device=/dev/net/tun \
-  gcr.io/k8s-staging-capi-vsphere/extra/openvpn:latest
-
-# Tail the vpn logs
-docker logs vpn
-
-# Wait until the VPN connection is active.
-function wait_for_vpn_up() {
-  local n=0
-  until [ $n -ge 30 ]; do
-    curl "https://${VSPHERE_SERVER}" --connect-timeout 2 -k && RET=$? || RET=$?
-    if [[ "$RET" -eq 0 ]]; then
-      break
-    fi
-    n=$((n + 1))
-    sleep 1
-  done
-  return "$RET"
-}
-wait_for_vpn_up
+SSH_KEY_DIR=$(mktemp -d)
+export VSPHERE_SSH_PRIVATE_KEY
+VSPHERE_SSH_PRIVATE_KEY="${SSH_KEY_DIR}/ssh-key"
+ssh-keygen -t ed25519 -f "${VSPHERE_SSH_PRIVATE_KEY}" -N ""
+export VSPHERE_SSH_AUTHORIZED_KEY
+VSPHERE_SSH_AUTHORIZED_KEY="$(cat "${VSPHERE_SSH_PRIVATE_KEY}.pub")"
 
 # If BOSKOS_HOST is set then acquire a vsphere-project from Boskos.
 if [ -n "${BOSKOS_HOST:-}" ]; then
