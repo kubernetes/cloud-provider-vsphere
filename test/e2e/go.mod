@@ -14,9 +14,9 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/vmware/govmomi v0.50.0
-	k8s.io/api v0.32.3
-	k8s.io/apimachinery v0.32.3
-	k8s.io/client-go v0.32.3
+	k8s.io/api v0.32.5
+	k8s.io/apimachinery v0.32.5
+	k8s.io/client-go v0.32.5
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/cluster-api v0.0.0
 	sigs.k8s.io/cluster-api-provider-vsphere/test v0.0.0-00010101000000-000000000000
