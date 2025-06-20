@@ -129,7 +129,7 @@ func getRestConfig(svConfigPath string) (*rest.Config, error) {
 	}
 
 	return &rest.Config{
-		Host: "https://" + net.JoinHostPort(svEndpoint.Endpoint, svEndpoint.Port),
+		Host: "https://" + net.JoinHostPort(SupervisorAPIServerFQDN, svEndpoint.Port),
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData:     rootCA,
 			ServerName: SupervisorAPIServerFQDN,
