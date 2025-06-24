@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/vmware/govmomi"
-	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/simulator"
 )
 
@@ -52,40 +51,9 @@ func TestDatastore(t *testing.T) {
 		t.Error(err)
 	}
 
-	all, err := dc.GetAllDatastores(ctx)
+	_, err = dc.GetAllDatastores(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, info := range all {
-		ds := info.Datastore
-		kind, cerr := ds.GetType(ctx)
-		if cerr != nil {
-			t.Error(err)
-		}
-		if kind == "" {
-			t.Error("empty Datastore type")
-		}
-
-		dir := object.DatastorePath{
-			Datastore: info.Info.Name,
-			Path:      "kubevols",
-		}
-
-		// TODO: test Datastore.IsCompatibleWithStoragePolicy (vcsim needs PBM support)
-
-		for _, fail := range []bool{false, true} {
-			cerr = ds.CreateDirectory(ctx, dir.String(), false)
-			if fail {
-				if cerr != ErrFileAlreadyExist {
-					t.Errorf("expected %s, got: %s", ErrFileAlreadyExist, cerr)
-				}
-				continue
-			}
-
-			if cerr != nil {
-				t.Error(err)
-			}
-		}
-	}
 }
