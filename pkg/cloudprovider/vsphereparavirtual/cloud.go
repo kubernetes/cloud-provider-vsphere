@@ -27,6 +27,7 @@ import (
 
 	cloudprovider "k8s.io/cloud-provider"
 
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/config"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
 	cpcfg "k8s.io/cloud-provider-vsphere/pkg/common/config"
@@ -108,12 +109,12 @@ func newVSphereParavirtual(cfg *cpcfg.Config) (*VSphereParavirtual, error) {
 func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
 	klog.V(0).Info("Initing vSphere Paravirtual Cloud Provider")
 
-	err := checkPodIPPoolType(vpcModeEnabled, podIPPoolType)
+	err := config.CheckPodIPPoolType(vpcModeEnabled, podIPPoolType)
 	if err != nil {
 		klog.Fatalf("Invalid IP pool type: %v", err)
 	}
 
-	ownerRef, err := readOwnerRef(VsphereParavirtualCloudProviderConfigPath)
+	ownerRef, err := config.ReadOwnerRef(config.VsphereParavirtualCloudProviderConfigPath)
 	if err != nil {
 		klog.Fatalf("Failed to read ownerRef:%s", err)
 	}
@@ -127,12 +128,12 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	cp.informMgr = k8s.NewInformer(client)
 	cp.ownerReference = ownerRef
 
-	kcfg, err := getRestConfig(SupervisorClusterConfigPath)
+	kcfg, err := config.GetRestConfig(config.SupervisorClusterConfigPath)
 	if err != nil {
 		klog.Fatalf("Failed to create rest config to communicate with supervisor: %v", err)
 	}
 
-	clusterNS, err := getNameSpace(SupervisorClusterConfigPath)
+	clusterNS, err := config.GetNameSpace(config.SupervisorClusterConfigPath)
 	if err != nil {
 		klog.Fatalf("Failed to get cluster namespace: %v", err)
 	}
