@@ -34,6 +34,7 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual"
+	pvconfig "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/config"
 	"k8s.io/cloud-provider/app"
 	appconfig "k8s.io/cloud-provider/app/config"
 	"k8s.io/cloud-provider/names"
@@ -192,9 +193,9 @@ func main() {
 
 		pathsToMonitor := []string{cloudConfig}
 		if cloudProvider == vsphereparavirtual.RegisteredProviderName {
-			pathsToMonitor = append(pathsToMonitor, SupervisorServiceAccountPath)
+			pathsToMonitor = append(pathsToMonitor, SupervisorServiceAccountPath, pvconfig.VsphereParavirtualCloudProviderConfigPath)
 		}
-		watch, stop, err := initializeWatch(completedConfig, pathsToMonitor)
+		watch, stop, err := initializeWatch(pathsToMonitor)
 		if err != nil {
 			klog.Fatalf("fail to initialize watch on config map %s: %v\n", cloudConfig, err)
 		}
@@ -257,7 +258,7 @@ func shouldEnableRouteController(controllersFlag, cloudProviderFlag *pflag.Value
 // set up a filesystem watcher for the mounted files
 // which include cloud-config and projected service account.
 // reboot the app whenever there is an update via the returned stopCh.
-func initializeWatch(_ *appconfig.CompletedConfig, paths []string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
+func initializeWatch(paths []string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
 	stopCh = make(chan struct{})
 	watch, err = fsnotify.NewWatcher()
 	if err != nil {

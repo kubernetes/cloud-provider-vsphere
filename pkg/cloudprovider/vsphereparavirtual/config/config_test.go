@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vsphereparavirtual
+package config
 
 import (
 	"encoding/json"
@@ -82,7 +82,7 @@ func TestReadOwnerRef(t *testing.T) {
 			if err := tmpfile.Close(); err != nil {
 				t.Errorf("Should be able to write to tmpfile: %s", err)
 			}
-			ownerRef, err := readOwnerRef(tmpfile.Name())
+			ownerRef, err := ReadOwnerRef(tmpfile.Name())
 			if err != nil {
 				t.Fatalf("Should succeed when a valid config is provided: %s", err)
 			}
@@ -100,7 +100,7 @@ func TestReadOwnerRef(t *testing.T) {
 				t.Errorf("incorrect uid: %s", ownerRef.UID)
 			}
 		} else {
-			_, err := readOwnerRef("non-exists")
+			_, err := ReadOwnerRef("non-exists")
 			if err == nil {
 				t.Errorf("Should fail when an invalid config is provided")
 			}
@@ -167,7 +167,7 @@ func TestGetNameSpace(t *testing.T) {
 			if err := tmpfile.Close(); err != nil {
 				t.Errorf("Should be able to write to tmpfile: %s", err)
 			}
-			ns, err := getNameSpace(dir)
+			ns, err := GetNameSpace(dir)
 			if err != nil {
 				t.Fatalf("Should succeed when a valid SV endpoint config is provided: %s", err)
 			}
@@ -175,7 +175,7 @@ func TestGetNameSpace(t *testing.T) {
 				t.Fatalf("incorrect namespace: %s", ns)
 			}
 		} else {
-			_, err := getNameSpace("non-exits")
+			_, err := GetNameSpace("non-exits")
 			if err == nil {
 				t.Errorf("Should fail when an invalid supervisor config is provided")
 			}
@@ -239,7 +239,7 @@ func TestGetRestConfig(t *testing.T) {
 			defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
 			defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
 
-			cfg, err := getRestConfig(dir)
+			cfg, err := GetRestConfig(dir)
 			if err != nil {
 				t.Fatalf("Should succeed when a valid SV endpoint config is provided: %s", err)
 			}
@@ -263,7 +263,7 @@ func TestGetRestConfig(t *testing.T) {
 			defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
 			defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
 
-			_, err = getRestConfig(dir)
+			_, err = GetRestConfig(dir)
 			if err == nil {
 				t.Errorf("Should fail when an invalid supervisor config is provided")
 			}
@@ -317,7 +317,7 @@ func TestCheckPodIPPoolType(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		err := checkPodIPPoolType(test.vpcModeEnabled, test.podIPPoolType)
+		err := CheckPodIPPoolType(test.vpcModeEnabled, test.podIPPoolType)
 		if test.expectedErrorMsg == "" {
 			assert.Equal(t, err, nil)
 		} else {
