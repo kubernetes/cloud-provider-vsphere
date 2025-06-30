@@ -186,6 +186,7 @@ func TestGetNameSpace(t *testing.T) {
 func TestGetRestConfig(t *testing.T) {
 	tests := []struct {
 		fileExists bool
+		fqdn       string
 		endpoint   string
 		port       string
 		token      string
@@ -193,14 +194,16 @@ func TestGetRestConfig(t *testing.T) {
 	}{
 		{
 			fileExists: false,
-			endpoint:   "test.sv.proxy",
+			fqdn:       "supervisor.default.svc",
+			endpoint:   "192.163.1.100",
 			port:       "6443",
 			token:      "test-token",
 			ca:         "test-ca",
 		},
 		{
 			fileExists: true,
-			endpoint:   "test.sv.proxy",
+			fqdn:       "supervisor.default.svc",
+			endpoint:   "192.163.1.200",
 			port:       "6443",
 			token:      "test-token",
 			ca:         "test-ca",
@@ -240,7 +243,7 @@ func TestGetRestConfig(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Should succeed when a valid SV endpoint config is provided: %s", err)
 			}
-			if cfg.Host != "https://"+net.JoinHostPort(test.endpoint, test.port) {
+			if cfg.Host != "https://"+net.JoinHostPort(test.fqdn, test.port) {
 				t.Fatalf("incorrect Host: %s", cfg.Host)
 			}
 			if cfg.BearerToken != test.token {
