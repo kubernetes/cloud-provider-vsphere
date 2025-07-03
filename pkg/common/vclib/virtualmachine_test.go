@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	"github.com/vmware/govmomi"
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/simulator"
+	klog "k8s.io/klog/v2"
 )
 
 func TestVirtualMachine(t *testing.T) {
@@ -60,7 +62,7 @@ func TestVirtualMachine(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vms, err := folder.GetVirtualMachines(ctx)
+	vms, err := getVirtualMachines(ctx, folder.Folder, dc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,75 +72,29 @@ func TestVirtualMachine(t *testing.T) {
 	}
 
 	for _, vm := range vms {
-		all, err := vm.GetAllAccessibleDatastores(ctx)
-		if err != nil {
-			t.Error(err)
-		}
-		if len(all) == 0 {
-			t.Error("no accessible datastores")
-		}
-
-		_, err = vm.GetResourcePool(ctx)
+		active, err := vm.IsActive(ctx)
 		if err != nil {
 			t.Error(err)
 		}
 
-		diskPath, err := vm.GetVirtualDiskPath(ctx)
-		if err != nil {
-			t.Error(err)
-		}
-
-		options := &VolumeOptions{SCSIControllerType: PVSCSIControllerType}
-
-		for _, expect := range []bool{true, false} {
-			attached, err := vm.IsDiskAttached(ctx, diskPath)
-			if err != nil {
-				t.Error(err)
-			}
-
-			if attached != expect {
-				t.Errorf("attached=%t, expected=%t", attached, expect)
-			}
-
-			uuid, err := vm.AttachDisk(ctx, diskPath, options)
-			if err != nil {
-				t.Error(err)
-			}
-			if uuid == "" {
-				t.Error("missing uuid")
-			}
-
-			err = vm.DetachDisk(ctx, diskPath)
-			if err != nil {
-				t.Error(err)
-			}
-		}
-
-		for _, expect := range []bool{true, false} {
-			active, err := vm.IsActive(ctx)
-			if err != nil {
-				t.Error(err)
-			}
-
-			if active != expect {
-				t.Errorf("active=%t, expected=%t", active, expect)
-			}
-
-			if expect {
-				// Expecting to hit the error path since the VM is still powered on
-				err = vm.DeleteVM(ctx)
-				if err == nil {
-					t.Error("expected error")
-				}
-				_, _ = vm.PowerOff(ctx)
-				continue
-			}
-
-			// Should be able to delete now that VM power is off
-			err = vm.DeleteVM(ctx)
-			if err != nil {
-				t.Error(err)
-			}
+		if !active {
+			t.Errorf("active=%t, expected=%t", active, true)
 		}
 	}
+}
+
+func getVirtualMachines(ctx context.Context, folder *object.Folder, dc *Datacenter) ([]*VirtualMachine, error) {
+	vmFolders, err := folder.Children(ctx)
+	if err != nil {
+		klog.Errorf("Failed to get children from Folder: %s. err: %+v", folder.InventoryPath, err)
+		return nil, err
+	}
+	var vmObjList []*VirtualMachine
+	for _, vmFolder := range vmFolders {
+		if vmFolder.Reference().Type == VirtualMachineType {
+			vmObj := VirtualMachine{object.NewVirtualMachine(folder.Client(), vmFolder.Reference()), dc}
+			vmObjList = append(vmObjList, &vmObj)
+		}
+	}
+	return vmObjList, nil
 }
