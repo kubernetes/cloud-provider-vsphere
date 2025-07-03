@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vsphereparavirtual
+package config
 
 import (
 	"encoding/json"
@@ -59,7 +59,8 @@ type SupervisorEndpoint struct {
 	Port string
 }
 
-func readOwnerRef(path string) (*metav1.OwnerReference, error) {
+// ReadOwnerRef read the OwnerReference config file
+func ReadOwnerRef(path string) (*metav1.OwnerReference, error) {
 	ownerRef := &metav1.OwnerReference{}
 	d, err := os.ReadFile(path)
 	if err != nil {
@@ -95,7 +96,8 @@ func readSupervisorConfig() (*SupervisorEndpoint, error) {
 
 }
 
-func getNameSpace(svConfigPath string) (string, error) {
+// GetNameSpace read namespace from namespace file
+func GetNameSpace(svConfigPath string) (string, error) {
 	namespaceFile := svConfigPath + "/" + SupervisorClusterAccessNamespaceFile
 	namespace, err := os.ReadFile(namespaceFile)
 	if err != nil {
@@ -105,7 +107,8 @@ func getNameSpace(svConfigPath string) (string, error) {
 	return string(namespace), nil
 }
 
-func getRestConfig(svConfigPath string) (*rest.Config, error) {
+// GetRestConfig get the supervisor endpoint info from env
+func GetRestConfig(svConfigPath string) (*rest.Config, error) {
 	svEndpoint, err := readSupervisorConfig()
 	if err != nil {
 		klog.Errorf("Failed to read supervisor endpoint info from env: %v", err)
@@ -137,7 +140,8 @@ func getRestConfig(svConfigPath string) (*rest.Config, error) {
 	}, nil
 }
 
-func checkPodIPPoolType(vpcModeEnabled bool, podIPPoolType string) error {
+// CheckPodIPPoolType check IPPool type specified by --pod-ip-pool-type against network provider
+func CheckPodIPPoolType(vpcModeEnabled bool, podIPPoolType string) error {
 	if vpcModeEnabled {
 		if podIPPoolType == "" {
 			return errors.New("--pod-ip-pool-type is required in the NSX-T VPC network")
