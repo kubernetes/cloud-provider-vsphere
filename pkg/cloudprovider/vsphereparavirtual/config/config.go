@@ -31,7 +31,7 @@ import (
 
 const (
 	// VsphereParavirtualCloudProviderConfigPath is the path for vsphere paravirtual cloud provider config file
-	VsphereParavirtualCloudProviderConfigPath string = "/etc/kubernetes/guestclusters/tanzukubernetescluster/ownerref.json"
+	VsphereParavirtualCloudProviderConfigPath string = "/etc/kubernetes/guestclusters/cluster/ownerref.json"
 	// SupervisorClusterConfigPath is the path for supervisor access related files,
 	// like secret related file
 	SupervisorClusterConfigPath = "/etc/cloud/ccm-provider"

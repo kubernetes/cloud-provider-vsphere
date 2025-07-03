@@ -38,8 +38,8 @@ func TestReadOwnerRef(t *testing.T) {
 	}{
 		{
 			true,
-			"v1alpha1",
-			"TanzuKubernetesCluster",
+			"v1beta2",
+			"Cluster",
 			"my-cluster",
 			"798ea504-0a4d-4e3b-a67c-77812c89071c",
 		},
