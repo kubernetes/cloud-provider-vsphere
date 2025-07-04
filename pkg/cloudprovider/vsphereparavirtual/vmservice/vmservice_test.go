@@ -46,8 +46,8 @@ var (
 	testK8sServiceNameSpace                 = "test-service-ns"
 	testServiceAnnotationPropagationEnabled = false
 	testOwnerReference                      = metav1.OwnerReference{
-		APIVersion: "v1alpha1",
-		Kind:       "TanzuKubernetesCluster",
+		APIVersion: "v1beta2",
+		Kind:       "Cluster",
 		Name:       testClustername,
 		UID:        "1bbf49a7-fbce-4502-bb4c-4c3544cacc9e",
 	}
