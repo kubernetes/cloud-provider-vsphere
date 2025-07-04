@@ -24,6 +24,44 @@ install_yq() {
 }
 
 install_tools() {
+    # sed
+    # Detect macOS and install GNU sed if needed
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      SED_INSTALL_DIR="$HOME/.local/gsed"
+      SED_BIN="${SED_INSTALL_DIR}/bin/sed"
+      echo "Detected macOS. Checking for gsed..."
+
+      if ! command -v gsed >/dev/null 2>&1; then
+        echo "GNU sed not found. Installing from source..."
+
+        TMP_DIR=$(mktemp -d)
+        pushd "$TMP_DIR"
+
+        # Download GNU sed source
+        curl -LO https://ftp.gnu.org/gnu/sed/sed-4.9.tar.gz
+        tar -xzf sed-4.9.tar.gz
+        cd sed-4.9
+
+        # Configure, build, install into target dir
+        ./configure --prefix="${SED_INSTALL_DIR}"
+        make -j"$(sysctl -n hw.logicalcpu)"
+        make install
+
+        popd
+        rm -rf "$TMP_DIR"
+
+        echo "GNU sed installed to ${SED_INSTALL_DIR}"
+      else
+        echo "gsed already installed."
+        SED_BIN=$(command -v gsed)
+      fi
+
+      export PATH="${SED_INSTALL_DIR}/bin:$PATH"
+    else
+      echo "Detected Linux. Using system sed."
+      SED_BIN="sed"
+    fi
+
     # yq
     if ! command -v yq &> /dev/null; then
         echo "yq is not installed."
@@ -85,10 +123,10 @@ update_readme_table() {
 }
 
 update_readme_files() {
-    sed -i "s/latest version of cloud provider vsphere(\(.*\))/latest version of cloud provider vsphere(${release_version})/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "s/the major version of '[0-9]\+\.[0-9]\+.x' is '[0-9]\+\.[0-9]\+'/the major version of '${major_minor_version:1}.x' is '${major_minor_version:1}'/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "s/VERSION=[0-9]\+\.[0-9]\+/VERSION=${major_minor_version:1}/g" "${REPO_ROOT}"/releases/README.md
-    sed -i "/<== latest version/c\\registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${release_version} # <== latest version" "${REPO_ROOT}"/README.md
+    "${SED_BIN}" "s/latest version of cloud provider vsphere(\(.*\))/latest version of cloud provider vsphere(${release_version})/g" "${REPO_ROOT}/releases/README.md"
+    "${SED_BIN}" "s/the major version of '[0-9]\+\.[0-9]\+.x' is '[0-9]\+\.[0-9]\+'/the major version of '${major_minor_version:1}.x' is '${major_minor_version:1}'/g" "${REPO_ROOT}/releases/README.md"
+    "${SED_BIN}" "s/VERSION=[0-9]\+\.[0-9]\+/VERSION=${major_minor_version:1}/g" "${REPO_ROOT}/releases/README.md"
+    "${SED_BIN}" "/<== latest version/c\\registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${release_version} # <== latest version" "${REPO_ROOT}/README.md"
     if ! grep -q "${major_minor_version}.X" "${REPO_ROOT}/README.md"; then
         echo "updating README for release branch release-${major_minor_version:1}"
         update_readme_table
@@ -108,8 +146,10 @@ update_release_folder() {
 }
 
 update_helm_chart() {
+    ## generate helm chart without prefix "v"
+    stripped_version="${release_version#v}"
     cd "${REPO_ROOT}"/charts
-    helm package vsphere-cpi --version "${release_version}" --app-version "${release_version}"
+    helm package vsphere-cpi --version "${stripped_version}" --app-version "${stripped_version}"
     cd ..
     helm repo index . --url https://kubernetes.github.io/cloud-provider-vsphere
 }
@@ -173,7 +213,7 @@ echo "updating release folder files..."
 update_release_folder
 
 echo "updating Dockerfile..."
-sed -i "s/ARG VERSION=.*/ARG VERSION=${release_version:1}/g" "${REPO_ROOT}"/cluster/images/controller-manager/Dockerfile
+"${SED_BIN}" "s/ARG VERSION=.*/ARG VERSION=${release_version:1}/g" "${REPO_ROOT}"/cluster/images/controller-manager/Dockerfile
 
 echo "updating helm chart..."
 update_helm_chart
