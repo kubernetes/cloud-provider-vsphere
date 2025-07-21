@@ -10,13 +10,13 @@ providers:
 - name: cluster-api
   type: CoreProvider
   versions:
-  - name: v1.10.1
+  - name: v1.11.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.1/core-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.0-alpha.2/core-components.yaml"
     type: "url"
-    contract: v1beta1
+    contract: v1beta2
     files:
-    - sourcePath: "../data/shared/capi/v1.10/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.11/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -24,13 +24,13 @@ providers:
 - name: kubeadm
   type: BootstrapProvider
   versions:
-  - name: v1.10.1
+  - name: v1.11.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.1/bootstrap-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.0-alpha.2/bootstrap-components.yaml"
     type: "url"
-    contract: v1beta1
+    contract: v1beta2
     files:
-    - sourcePath: "../data/shared/capi/v1.10/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.11/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -38,13 +38,13 @@ providers:
 - name: kubeadm
   type: ControlPlaneProvider
   versions:
-  - name: v1.10.1
+  - name: v1.11.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.1/control-plane-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.0-alpha.2/control-plane-components.yaml"
     type: "url"
-    contract: v1beta1
+    contract: v1beta2
     files:
-    - sourcePath: "../data/shared/capi/v1.10/metadata.yaml"
+    - sourcePath: "../data/shared/capi/v1.11/metadata.yaml"
     replacements:
     - old: "imagePullPolicy: Always"
       new: "imagePullPolicy: IfNotPresent"
@@ -52,9 +52,9 @@ providers:
 - name: vsphere
   type: InfrastructureProvider
   versions:
-  - name: v1.13.0
+  - name: v1.14.99
     # Use manifest from source files
-    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.13.0/infrastructure-components.yaml"
+    value: "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/download/v1.14.0-alpha.2/infrastructure-components.yaml"
     type: "url"
     contract: v1beta1
     files:
