@@ -120,6 +120,12 @@ KIND := $(TOOLS_BIN_DIR)/kind
 TOOLING_BINARIES := $(GINKGO) $(KIND)
 E2E_DIR := $(abspath test/e2e)
 
+KPROMO_VER := 5ab0dbc74b0228c22a93d240596dff77464aee8f
+KPROMO_BIN := kpromo
+KPROMO :=  $(abspath $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER))
+# KPROMO_PKG may have to be changed if KPROMO_VER increases its major version.
+KPROMO_PKG := sigs.k8s.io/promo-tools/v4/cmd/kpromo
+
 ################################################################################
 ##                                   DIST                                     ##
 ################################################################################
@@ -402,6 +408,10 @@ VERSION ?=$(shell git describe --dirty --always)
 IMAGE_PATH := $(STAGING_REGISTRY)/$(IMAGE_NAME):$(VERSION)
 BINARY_PATH := gs://$(STAGING_BUCKET)/$(VERSION)/bin/$(GOOS)/$(GOARCH)
 LOCAL_BINARY_PATH := $(abspath $(BIN_OUT))/vsphere-cloud-controller-manager.$(GOOS)_$(GOARCH)
+## latest git tag for the commit, e.g., v0.3.10
+RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
+## Hardcode active reviews
+IMAGE_REVIEWERS="@chenlin07 @DanielXiao @fabriziopandini @sbueringer @silvery1622 @zhanggbj"
 
 .PHONY: docker-build-and-push
 docker-build-and-push: 
@@ -442,3 +452,14 @@ release-staging:
 	$(MAKE) docker-build-and-push
 	$(MAKE) build-bins
 	$(MAKE) ccm-bin-push
+
+.PHONY: promote-images
+promote-images: $(KPROMO)
+ifeq ($(strip $(USER_FORK)),)
+	$(error USER_FORK is required. Usage: make deploy USER_FORK=githubid)
+endif
+	@echo "Promoting image using fork repo of: $(USER_FORK)"
+	$(KPROMO) pr --project cloud-pv-vsphere --tag $(RELEASE_TAG) --reviewers "$(IMAGE_REVIEWERS)" --fork $(USER_FORK) --image cloud-provider-vsphere
+
+$(KPROMO):
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(KPROMO_PKG) $(KPROMO_BIN) $(KPROMO_VER)
