@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -233,7 +234,7 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 					Name:      workloadResult.Cluster.Name,
 				})
 
-				return wldCluster.Spec.Paused
+				return ptr.Deref(wldCluster.Spec.Paused, false)
 			}, 180*time.Second, 10*time.Second).Should(BeTrue(), "Failed to pause the Workload Cluster")
 		})
 
@@ -274,7 +275,7 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 					Name:      workloadResult.Cluster.Name,
 				})
 
-				return wldCluster.Spec.Paused
+				return ptr.Deref(wldCluster.Spec.Paused, false)
 			}, 180*time.Second, 10*time.Second).Should(BeFalse(), "Failed to unpause the Workload Cluster")
 		})
 
