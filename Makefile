@@ -21,6 +21,21 @@ export ARTIFACTS ?= $(BUILD_OUT)/artifacts
 # BRANCH_NAME is the name of current branch.
 export BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
+# Enables shell script tracing. Enable by running: TRACE=1 make <target>
+TRACE ?= 0
+
+# Directories.
+TEST_DIR := test
+TOOLS_DIR := $(abspath hack/tools)
+TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
+
+# Binaries
+GO_INSTALL := ./hack/go-install.sh
+TRIVY_VER := 0.49.1
+GOVULNCHECK_BIN := govulncheck
+GOVULNCHECK_VER := v1.1.4
+GOVULNCHECK := $(abspath $(TOOLS_BIN_DIR)/$(GOVULNCHECK_BIN)-$(GOVULNCHECK_VER))
+GOVULNCHECK_PKG := golang.org/x/vuln/cmd/govulncheck
 
 ################################################################################
 ##                             VERIFY GO VERSION                              ##
@@ -100,8 +115,6 @@ build-with-docker:
 	hack/make.sh
 
 # Tooling binaries for e2e
-TOOLS_DIR := $(abspath hack/tools)
-TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GINKGO := $(TOOLS_BIN_DIR)/ginkgo
 KIND := $(TOOLS_BIN_DIR)/kind
 TOOLING_BINARIES := $(GINKGO) $(KIND)
@@ -293,7 +306,7 @@ quick-conformance-test: export E2E_FOCUS=should provide DNS for the cluster[[:sp
 quick-conformance-test: conformance-test
 
 ################################################################################
-##                                 LINTING                                    ##
+##                                LINT & VERIFY                               ##
 ################################################################################
 .PHONY: fmt vet lint mdlint shellcheck staticcheck check
 check: fmt lint mdlint shellcheck staticcheck vet
@@ -315,6 +328,32 @@ staticcheck:
 
 vet:
 	hack/check-vet.sh
+
+.PHONY: verify-container-images
+verify-container-images: ## Verify container images
+	TRACE=$(TRACE) ./hack/verify-container-images.sh  $(TRIVY_VER)
+
+.PHONY: verify-security
+verify-security: ## Verify code and images for vulnerabilities
+	$(MAKE) verify-container-images && R1=$$? || R1=$$?; \
+	$(MAKE) verify-govulncheck && R2=$$? || R2=$$?; \
+	if [ "$$R1" -ne "0" ] || [ "$$R2" -ne "0" ]; then \
+	  echo "Check for vulnerabilities failed! There are vulnerabilities to be fixed"; \
+		exit 1; \
+	fi
+
+.PHONY: verify-govulncheck
+$(GOVULNCHECK): # Build govulncheck.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOVULNCHECK_PKG) $(GOVULNCHECK_BIN) $(GOVULNCHECK_VER)
+
+# If there are vulnerabilities, govulncheck will exit with 3. Only check vulnerabilities and ingore
+# other failures like internal errors.
+verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
+	$(GOVULNCHECK) ./... && R1=$$? || R1=$$?; \
+	$(GOVULNCHECK) -C "$(TEST_DIR)" ./... && R2=$$? || R2=$$?; \
+	if [ "$$R1" -eq "3" ] || [ "$$R2" -eq "3" ]; then \
+		exit 1; \
+	fi
 
 ################################################################################
 ##                                  CI IMAGE                                  ##
