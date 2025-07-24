@@ -96,7 +96,7 @@ func TestGetLoadBalancer_VMServiceNotFound(t *testing.T) {
 
 	_, exists, err := lb.GetLoadBalancer(context.Background(), testClustername, testK8sService)
 	assert.Equal(t, exists, false)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetLoadBalancer_VMServiceCreated(t *testing.T) {
