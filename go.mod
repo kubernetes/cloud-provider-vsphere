@@ -30,7 +30,7 @@ require (
 	k8s.io/code-generator v0.34.0-beta.0
 	k8s.io/component-base v0.34.0-beta.0
 	k8s.io/klog/v2 v2.130.1
-	sigs.k8s.io/yaml v1.5.0
+	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
