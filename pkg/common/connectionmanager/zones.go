@@ -294,7 +294,7 @@ func withTagsClient(ctx context.Context, connection *vclib.VSphereConnection, f 
 	c := rest.NewClient(connection.Client)
 	if connection.SessionManagerURL != "" {
 		c.SessionID(connection.Client.SessionCookie().Value)
-		return nil
+		return f(c)
 	}
 
 	signer, err := connection.Signer(ctx, connection.Client)
@@ -312,11 +312,6 @@ func withTagsClient(ctx context.Context, connection *vclib.VSphereConnection, f 
 	}
 
 	defer func() {
-		// When using shared session manager we don't need to logout
-		if connection.SessionManagerURL != "" {
-			return
-		}
-
 		if err := c.Logout(ctx); err != nil {
 			klog.Errorf("failed to logout: %v", err)
 		}
