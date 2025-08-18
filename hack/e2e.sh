@@ -50,7 +50,8 @@ on_exit() {
     find "${ARTIFACTS}" -type f -name pod-logs.tar.gz | while IFS= read -r tarball; do
       echo "Unpacking ${tarball} for secrets replacement"
       mkdir -p "${tarball}-unpacked"
-      tar -xzf "${tarball}" -C "${tarball}-unpacked"
+      # on_exit should not fail due to broken tarballs
+      tar -xzf "${tarball}" -C "${tarball}-unpacked" || true
       rm "${tarball}"
     done
     # Delete non-text files from artifacts directory to not leak files accidentially
@@ -79,7 +80,7 @@ on_exit() {
     find "${ARTIFACTS}" -type d -name pod-logs.tar.gz-unpacked | while IFS= read -r tarballDirectory; do
       tarball="${tarballDirectory%-unpacked}"
       echo "Packing ${tarballDirectory} to ${tarball} after secrets replacement"
-      tar -czf "${tarball}" -C . "${tarballDirectory}"
+      tar -czf "${tarball}" -C "${tarballDirectory}" .
       rm -r "${tarballDirectory}"
     done
     # Move all artifacts to the original artifacts location.
@@ -107,6 +108,32 @@ VSPHERE_SSH_PRIVATE_KEY="${SSH_KEY_DIR}/ssh-key"
 ssh-keygen -t ed25519 -f "${VSPHERE_SSH_PRIVATE_KEY}" -N ""
 export VSPHERE_SSH_AUTHORIZED_KEY
 VSPHERE_SSH_AUTHORIZED_KEY="$(cat "${VSPHERE_SSH_PRIVATE_KEY}.pub")"
+
+# Ensure vSphere is reachable
+function wait_for_vsphere_reachable() {
+  local n=0
+  until [ $n -ge 300 ]; do
+    curl -s -v "https://${VSPHERE_SERVER}/sdk" --connect-timeout 2 -k && RET=$? || RET=$?
+    if [[ "$RET" -eq 0 ]]; then
+      break
+    fi
+    n=$((n + 1))
+    echo "Failed to reach https://${VSPHERE_SERVER}/sdk. Retrying in 1s ($n/30)"
+    sleep 1
+  done
+  if [ "$RET" -ne 0 ]; then
+    # Output some debug information in case of failing connectivity.
+    echo "$ ip link"
+    ip link
+    echo "# installing tcptraceroute to check route"
+    apt-get update && apt-get install -y tcptraceroute
+    echo "$ tcptraceroute ${VSPHERE_SERVER} 443"
+    tcptraceroute "${VSPHERE_SERVER}" 443
+  fi
+  return "$RET"
+}
+
+wait_for_vsphere_reachable
 
 # If BOSKOS_HOST is set then acquire a vsphere-project from Boskos.
 if [ -n "${BOSKOS_HOST:-}" ]; then
