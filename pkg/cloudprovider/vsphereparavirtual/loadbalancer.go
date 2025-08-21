@@ -68,9 +68,11 @@ func (l *loadBalancer) GetLoadBalancer(ctx context.Context, clusterName string, 
 		return nil, false, err
 	}
 
+	// When err is nil and vmService is nil, it indicates VirtualMachineService not found, but it's not an error.
+	// Return nil so that cloud provider could move on and delete the LB service.
 	if vmService == nil {
-		klog.Errorf("failed to get load balancer for %s: VirtualMachineService not found", namespacedName(service))
-		return nil, false, errors.Errorf("VirtualMachineService not found")
+		klog.V(1).Infof("VirtualMachineService not found %s", namespacedName(service))
+		return nil, false, nil
 	}
 
 	return toStatus(vmService), true, nil
