@@ -184,10 +184,8 @@ func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
 }
 
 // InstancesV2 returns an implementation of cloudprovider.InstancesV2.
-//
-//	TODO: implement this for v1.20
 func (vs *VSphere) InstancesV2() (cloudprovider.InstancesV2, bool) {
-	return nil, false
+	return vs.instancesV2, true
 }
 
 // Zones returns a zones interface. Also returns true if the interface
@@ -262,6 +260,10 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 		nsxtSecretNamespace = nsxtcfg.SecretNamespace
 	}
 
+	instancesObj := newInstances(nm)
+	zonesObj := newZones(nm, cfg.Labels.Zone, cfg.Labels.Region)
+	instancesV2Obj := newInstancesV2(instancesObj, zonesObj)
+
 	vs := VSphere{
 		cfg:                 cfg,
 		cfgLB:               lbcfg,
@@ -270,8 +272,9 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 		nsxtSecretNamespace: nsxtSecretNamespace,
 		loadbalancer:        lb,
 		routes:              routes,
-		instances:           newInstances(nm),
-		zones:               newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
+		instances:           instancesObj,
+		instancesV2:         instancesV2Obj,
+		zones:               zonesObj,
 	}
 	return &vs, nil
 }
