@@ -20,7 +20,7 @@ jobs:
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -32,13 +32,13 @@ jobs:
 
       # Install Helm
       - name: Install Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
           version: v3.4.0
 
       # Run chart-releaser action (https://github.com/helm/chart-releaser-action)
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.6.0
+        uses: helm/chart-releaser-action@v1.7.0
         with:
           charts_dir: charts
         env:
