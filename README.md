@@ -25,22 +25,12 @@ Version matrix:
 
 | Kubernetes Version | vSphere Cloud Provider Release Version | Cloud Provider Branch |
 |--------------------|----------------------------------------|-----------------------|
+| v1.34.X            | v1.34.X                                | release-1.34          |
 | v1.33.X            | v1.33.X                                | release-1.33          |
 | v1.32.X            | v1.32.X                                | release-1.32          |
 | v1.31.X            | v1.31.X                                | release-1.31          |
 | v1.30.X            | v1.30.X                                | release-1.30          |
 | v1.29.X            | v1.29.X                                | release-1.29          |
-| v1.28.X            | v1.28.X                                | release-1.28          |
-| v1.27.X            | v1.27.X                                | release-1.27          |
-| v1.26.X            | v1.26.X                                | release-1.26          |
-| v1.25.X            | v1.25.X                                | release-1.25          |
-| v1.24.X            | v1.24.X                                | release-1.24          |
-| v1.23.X            | v1.23.X                                | release-1.23          |
-| v1.22.X            | v1.22.X                                | release-1.22          |
-| v1.21.X            | v1.21.X                                | release-1.21          |
-| v1.20.X            | v1.20.X                                | release-1.20          |
-| v1.19.X            | v1.19.X                                | release-1.19          |
-| v1.18.X            | v1.18.X                                | release-1.18          |
 
 Our current support policy is that when a new Kubernetes release comes out, we will bump our k8s dependencies to the new version and cut a new release for CPI, e.g. CPI v1.22.x was released after k8s v1.22 comes out.
 

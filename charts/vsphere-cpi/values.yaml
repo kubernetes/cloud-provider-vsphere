@@ -50,7 +50,7 @@ serviceAccount:
 daemonset:
   annotations: {}
   image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere
-  tag: v1.33.0
+  tag: v1.34.0
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
