@@ -46,8 +46,9 @@ type VSphere struct {
 	routes       route.RoutesProvider
 
 	// cloud provider interfaces
-	instances cloudprovider.Instances
-	zones     cloudprovider.Zones
+	instances   cloudprovider.Instances
+	zones       cloudprovider.Zones
+	instancesV2 cloudprovider.InstancesV2
 	/*
 		Interfaces end
 	*/
@@ -113,6 +114,11 @@ type zones struct {
 	nodeManager *NodeManager
 	zone        string
 	region      string
+}
+
+type instancesV2 struct {
+	instances cloudprovider.Instances
+	zones     cloudprovider.Zones
 }
 
 // GuestOSLookup is a table for quick lookup between guestOsIdentifier and a shorthand name

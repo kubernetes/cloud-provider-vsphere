@@ -30,9 +30,11 @@ import (
 	"syscall"
 	"time"
 
+	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer"
+	voptions "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/options"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual"
 	pvconfig "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/config"
 	"k8s.io/cloud-provider/app"
@@ -98,6 +100,8 @@ func main() {
 		globalflag.Register(namedFlagSets.FlagSet("generic"), "is-legacy-paravirtual")
 	}
 
+	voptions.AddFlags(namedFlagSets.FlagSet("cloud-node-controller"))
+
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)
 	}
@@ -157,6 +161,14 @@ func main() {
 	innerRun := func(cmd *cobra.Command, args []string) {
 		verflag.PrintAndExitIfRequested()
 		cliflag.PrintFlags(cmd.Flags())
+
+		// Validate --node-labels keys follow Kubernetes label key formatting
+		for key := range vsphere.AdditionalLabels {
+			errList := apivalidation.IsQualifiedName(key)
+			if len(errList) > 0 {
+				klog.Fatalf("invalid --node-labels key %q: %s", key, strings.Join(errList, "; "))
+			}
+		}
 
 		c, err := ccmOptions.Config(app.ControllerNames(app.DefaultInitFuncConstructors), app.ControllersDisabledByDefault.List(), names.CCMControllerAliases(), app.AllWebhooks, app.DisabledByDefaultWebhooks)
 		if err != nil {
