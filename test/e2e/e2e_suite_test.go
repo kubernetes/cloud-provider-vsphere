@@ -278,9 +278,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 		// Capture the output (stdout and stderr)
 		output, err := cmd.CombinedOutput()
+		klog.Infof("Command output: %s\n", string(output))
 		Expect(err).NotTo(HaveOccurred())
 
-		klog.Infof("Command output: %s\n", string(output))
 	})
 
 	By("Watching vsphere-cpi daemonset logs", func() {
