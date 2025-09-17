@@ -110,20 +110,24 @@ The following table lists the configurable parameters of the vSphere CPI chart a
 | `serviceAccount.create`                  | Create the service account          |  true                                  |
 | `serviceAccount.name`                    | Name of the created service account |  cloud-controller-manager              |
 | `daemonset.annotations`                  | Annotations for CPI pod             |  nil                                   |
-| `daemonset.image`                        | Image for vSphere CPI               |  gcr.io/cloud-provider-vsphere/        |
-|                                          |                                     |       vsphere-cloud-controller-manager |
+| `daemonset.image`                        | Image for vSphere CPI               |   registry.k8s.io/cloud-pv-vsphere/    |
+|                                          |                                     |       cloud-provider-vsphere           |
 | `daemonset.tag`                          | Tag for vSphere CPI                 |  latest                                |
 | `daemonset.pullPolicy`                   | CPI image pullPolicy                |  IfNotPresent                          |
 | `daemonset.dnsPolicy`                    | CPI dnsPolicy                       |  ClusterFirst                          |
 | `daemonset.cmdline.logging`              | Logging level                       |  2                                     |
 | `daemonset.cmdline.cloudConfig.dir`      | vSphere conf directory              |  /etc/cloud                            |
 | `daemonset.cmdline.cloudConfig.file`     | vSphere conf filename               |  vsphere.conf                          |
-| `daemonset.replicaCount`                 | Node resources                      | `[]`                                   |
+| `daemonset.replicaCount`                 | Node resources                      | 1                                      |
 | `daemonset.resources`                    | Node resources                      | `[]`                                   |
 | `daemonset.podAnnotations`               | Annotations for CPI pod             |  nil                                   |
 | `daemonset.podLabels`                    | Labels for CPI pod                  |  nil                                   |
 | `daemonset.nodeSelector`                 | User-defined node selectors         |  nil                                   |
 | `daemonset.tolerations`                  | User-defined tolerations            |  nil                                   |
+| `daemonset.affinity`                     | User-defined affinities             |  nil                                   |
+| `daemonset.extraVolumes`                 | User-defined volumes                |  `[]`                                  |
+| `daemonset.extraVolumeMounts`            | User-defined volume mounts          |  `[]`                                  |
+| `daemonset.hostAliases`                  | User-defined host aliases           |  `[]`                                  |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` using Helm v3.X. For example,
 
