@@ -27,7 +27,7 @@ ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian11:latest
 FROM ${GOLANG_IMAGE} as builder
 
 # This build arg is the version to embed in the CPI binary
-ARG VERSION=1.33.5
+ARG VERSION=1.33.1
 
 # This build arg controls the GOPROXY setting
 ARG GOPROXY
