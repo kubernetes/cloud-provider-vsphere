@@ -11,7 +11,7 @@ replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api
 replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.11.0
 
 require (
-	github.com/onsi/ginkgo/v2 v2.26.0
+	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	github.com/vmware/govmomi v0.52.0
 	k8s.io/api v0.34.2
@@ -108,7 +108,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.27.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
