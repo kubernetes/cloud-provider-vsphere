@@ -20,7 +20,7 @@ jobs:
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
 
