@@ -2,21 +2,21 @@ module k8s.io/cloud-provider-vsphere/test/e2e
 
 go 1.24.0
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.11.0
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.11.1
 
-replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-provider-vsphere v1.14.0-rc.1
+replace sigs.k8s.io/cluster-api-provider-vsphere => sigs.k8s.io/cluster-api-provider-vsphere v1.14.0
 
-replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api-provider-vsphere/test v1.14.0-rc.1
+replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api-provider-vsphere/test v1.14.0
 
-replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.11.0
+replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.11.1
 
 require (
 	github.com/onsi/ginkgo/v2 v2.27.3
 	github.com/onsi/gomega v1.38.3
 	github.com/vmware/govmomi v0.52.0
-	k8s.io/api v0.34.2
-	k8s.io/apimachinery v0.34.2
-	k8s.io/client-go v0.34.2
+	k8s.io/api v0.34.3
+	k8s.io/apimachinery v0.34.3
+	k8s.io/client-go v0.34.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/cluster-api v0.0.0
@@ -57,7 +57,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobuffalo/flect v1.0.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/btree v1.1.3 // indirect
@@ -132,7 +132,7 @@ require (
 	k8s.io/component-base v0.33.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
-	sigs.k8s.io/kind v0.29.0 // indirect
+	sigs.k8s.io/kind v0.30.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
