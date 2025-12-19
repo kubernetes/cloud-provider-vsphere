@@ -12,10 +12,10 @@ In this tutorial, we will be installing the latest version of cloud provider vsp
 
 ### Step 1: find the kubernetes major version you are using
 
-For example, the major version of '1.34.x' is '1.34', then run:
+For example, the major version of '1.35.x' is '1.35', then run:
 
 ```bash
-VERSION=1.34
+VERSION=1.35
 wget https://raw.githubusercontent.com/kubernetes/cloud-provider-vsphere/release-$VERSION/releases/v$VERSION/vsphere-cloud-controller-manager.yaml
 ```
 
