@@ -17,37 +17,46 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/vmware/govmomi"
+	"github.com/vmware/govmomi/find"
+	"github.com/vmware/govmomi/vim25/mo"
+	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	vsphereframework "sigs.k8s.io/cluster-api-provider-vsphere/test/framework"
 )
 
 // Test Suite flags
@@ -251,7 +260,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	})
 
 	By("Load vsphere-cpi image", func() {
-		vsphereframework.LoadImagesFunc(ctx)(proxy.GetWorkloadCluster(ctx, workloadKubeconfigNamespace, workloadName))
+		// Use our custom image preloader that fixes runc v1.3.3+ mountpoint issues
+		// by using nsenter instead of mounting host root filesystem
+		sourceFile := os.Getenv("DOCKER_IMAGE_TAR")
+		Expect(sourceFile).ToNot(BeEmpty(), "DOCKER_IMAGE_TAR must be set")
+		loadImagesToCluster(ctx, sourceFile, proxy.GetWorkloadCluster(ctx, workloadKubeconfigNamespace, workloadName))
 	})
 
 	By("Install dev vsphere cpi using helm on workload cluster", func() {
@@ -318,6 +331,9 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 				Namespace:            "default",
 				LogPath:              filepath.Join(artifactFolder, "clusters", proxy.GetName(), "resources"),
 			})
+		})
+		By("Collect machine logs", func() {
+			collectMachineLogs(ctx, proxy, vsphere, artifactFolder)
 		})
 		By("Tear down the workload cluster", func() {
 			Expect(workloadResult).NotTo(BeNil())
@@ -404,4 +420,225 @@ func resolveK8sVersion() {
 	}
 	Expect(err).NotTo(HaveOccurred())
 	Expect(os.Setenv("KUBERNETES_VERSION", kubernetesVersion)).To(Succeed())
+}
+
+func collectMachineLogs(ctx context.Context, proxy framework.ClusterProxy, vsphere *VSphereTestClient, artifactFolder string) {
+	if workloadResult == nil || workloadResult.Cluster == nil {
+		klog.Info("Skipping machine log collection: no workload cluster")
+		return
+	}
+
+	// Import the log package
+	logCollector := &machineLogCollector{
+		Client: vsphere.Client,
+		Finder: vsphere.Finder,
+	}
+
+	// Get all machines in the workload cluster
+	machineList := &clusterv1.MachineList{}
+	if err := proxy.GetClient().List(ctx, machineList, client.InNamespace("default")); err != nil {
+		klog.Errorf("Failed to list machines: %v", err)
+		return
+	}
+
+	klog.Infof("Collecting logs from %d machines", len(machineList.Items))
+
+	for i := range machineList.Items {
+		machine := &machineList.Items[i]
+		klog.Infof("Collecting logs for machine %s", machine.Name)
+
+		logPath := filepath.Join(artifactFolder, "clusters", proxy.GetName(), "machines", machine.Name)
+		if err := logCollector.CollectMachineLog(ctx, proxy.GetClient(), machine, logPath); err != nil {
+			klog.Errorf("Failed to collect logs for machine %s: %v", machine.Name, err)
+		}
+	}
+}
+
+type machineLogCollector struct {
+	Client *govmomi.Client
+	Finder *find.Finder
+}
+
+func (c *machineLogCollector) CollectMachineLog(ctx context.Context, ctrlClient client.Client, m *clusterv1.Machine, outputPath string) error {
+	machineIPAddresses, err := c.machineIPAddresses(ctx, m)
+	if err != nil {
+		return err
+	}
+
+	captureLogs := func(hostFileName, command string, args ...string) func() error {
+		return func() error {
+			f, err := createOutputFile(filepath.Join(outputPath, hostFileName))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			var errs []error
+			// Try with all available IPs unless it succeeded.
+			for _, machineIPAddress := range machineIPAddresses {
+				if err := executeRemoteCommand(f, machineIPAddress, command, args...); err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				return nil
+			}
+
+			if err := kerrors.NewAggregate(errs); err != nil {
+				return fmt.Errorf("failed to run command %s for machine %s on ips [%s]: %w", command, m.Name, strings.Join(machineIPAddresses, ", "), err)
+			}
+			return nil
+		}
+	}
+
+	return aggregateConcurrent(
+		captureLogs("kubelet.log",
+			"sudo journalctl", "--no-pager", "--output=short-precise", "-u", "kubelet.service"),
+		captureLogs("containerd.log",
+			"sudo journalctl", "--no-pager", "--output=short-precise", "-u", "containerd.service"),
+		captureLogs("cloud-init.log",
+			"sudo", "cat", "/var/log/cloud-init.log"),
+		captureLogs("cloud-init-output.log",
+			"sudo", "cat", "/var/log/cloud-init-output.log"),
+	)
+}
+
+func (c *machineLogCollector) machineIPAddresses(ctx context.Context, m *clusterv1.Machine) ([]string, error) {
+	for _, address := range m.Status.Addresses {
+		if address.Type == clusterv1.MachineExternalIP {
+			return []string{address.Address}, nil
+		}
+	}
+
+	vmName := m.GetName()
+
+	vmObj, err := c.Finder.VirtualMachine(ctx, vmName)
+	if err != nil {
+		return nil, err
+	}
+
+	var vm mo.VirtualMachine
+
+	if err := c.Client.RetrieveOne(ctx, vmObj.Reference(), []string{"guest.net"}, &vm); err != nil {
+		return nil, fmt.Errorf("error retrieving properties for machine %s: %w", m.Name, err)
+	}
+
+	addresses := []string{}
+
+	// Return all IPs so we can try each of them until one succeeded.
+	for _, nic := range vm.Guest.Net {
+		if nic.IpConfig == nil {
+			continue
+		}
+		for _, ip := range nic.IpConfig.IpAddress {
+			netIP := net.ParseIP(ip.IpAddress)
+			ipv4 := netIP.To4()
+			if ipv4 != nil {
+				addresses = append(addresses, ip.IpAddress)
+			}
+		}
+	}
+
+	if len(addresses) == 0 {
+		return nil, fmt.Errorf("unable to find IP Addresses for Machine %s", m.Name)
+	}
+
+	return addresses, nil
+}
+
+func createOutputFile(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
+		return nil, err
+	}
+	return os.Create(filepath.Clean(path))
+}
+
+func executeRemoteCommand(f io.StringWriter, hostIPAddr, command string, args ...string) error {
+	config, err := newSSHConfig()
+	if err != nil {
+		return err
+	}
+	port := "22"
+
+	hostClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", hostIPAddr, port), config)
+	if err != nil {
+		return fmt.Errorf("dialing host IP address at %s: %w", hostIPAddr, err)
+	}
+	defer hostClient.Close()
+
+	session, err := hostClient.NewSession()
+	if err != nil {
+		return fmt.Errorf("opening SSH session: %w", err)
+	}
+	defer session.Close()
+
+	// Run the command and write the captured stdout to the file
+	var stdoutBuf bytes.Buffer
+	session.Stdout = &stdoutBuf
+	if len(args) > 0 {
+		command += " " + strings.Join(args, " ")
+	}
+	if err = session.Run(command); err != nil {
+		return fmt.Errorf("running command \"%s\": %w", command, err)
+	}
+	if _, err = f.WriteString(stdoutBuf.String()); err != nil {
+		return fmt.Errorf("writing output to file: %w", err)
+	}
+
+	return nil
+}
+
+// newSSHConfig returns a configuration to use for SSH connections to remote machines.
+func newSSHConfig() (*ssh.ClientConfig, error) {
+	sshPrivateKeyContent, err := readPrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	signer, err := ssh.ParsePrivateKey(sshPrivateKeyContent)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing private key: %w", err)
+	}
+
+	config := &ssh.ClientConfig{
+		User:            "capv",
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //nolint:gosec // Non-production code
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+	}
+
+	return config, nil
+}
+
+func readPrivateKey() ([]byte, error) {
+	privateKeyFilePath := os.Getenv("VSPHERE_SSH_PRIVATE_KEY")
+	if privateKeyFilePath == "" {
+		return nil, fmt.Errorf("private key information missing. Please set VSPHERE_SSH_PRIVATE_KEY environment variable")
+	}
+
+	return os.ReadFile(filepath.Clean(privateKeyFilePath))
+}
+
+// aggregateConcurrent runs fns concurrently, returning aggregated errors.
+func aggregateConcurrent(funcs ...func() error) error {
+	// run all fns concurrently
+	ch := make(chan error, len(funcs))
+	var wg sync.WaitGroup
+	for _, f := range funcs {
+		f := f
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ch <- f()
+		}()
+	}
+	wg.Wait()
+	close(ch)
+	// collect up and return errors
+	errs := []error{}
+	for err := range ch {
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return kerrors.NewAggregate(errs)
 }
