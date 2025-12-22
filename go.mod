@@ -13,8 +13,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240827061921-8f0982975508
-	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240827061921-8f0982975508
+	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.2
 	github.com/vmware-tanzu/vm-operator/api v1.8.6
 	github.com/vmware/govmomi v0.52.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
@@ -80,6 +79,7 @@ require (
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
+	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.etcd.io/etcd/api/v3 v3.6.5 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.5 // indirect
