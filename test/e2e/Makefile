@@ -41,7 +41,7 @@ E2E_CHART ?= ${REPO_ROOT}/charts/vsphere-cpi
 E2E_DATA_DIR := ${REPO_ROOT}/test/e2e/data
 
 # E2E_DATA_CAPV_TAG defines the providers from which tag of CAPV to use
-E2E_DATA_CAPV_TAG ?= v1.14.0-rc.1
+E2E_DATA_CAPV_TAG ?= v1.15.0
 
 # VERSION_DEV is the version of the image used for development
 VERSION_DEV ?= $(VERSION)
