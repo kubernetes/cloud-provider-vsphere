@@ -19,17 +19,15 @@ package vsphereparavirtual
 import (
 	"context"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/klog/v2"
 
-	"github.com/pkg/errors"
-	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
-
+	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
+	vmoptypes "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/types"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
 )
 
@@ -38,18 +36,20 @@ type loadBalancer struct {
 	vmService vmservice.VMService
 }
 
-// NewLoadBalancer returns an implementation of cloudprovider.LoadBalancer
-func NewLoadBalancer(clusterNS string, kcfg *rest.Config, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled bool) (cloudprovider.LoadBalancer, error) {
+// Compile-time assertion that loadBalancer implements cloudprovider.LoadBalancer.
+var _ cloudprovider.LoadBalancer = &loadBalancer{}
+
+// NewLoadBalancer returns an implementation of cloudprovider.LoadBalancer.
+// vmClient is the version-agnostic VM Operator interface constructed by the
+// caller via factory.NewAdapter; this constructor does not create its own
+// client so that the same versioned adapter can be shared with NewInstances
+// and NewZones.
+func NewLoadBalancer(clusterNS string, vmClient vmop.Interface, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled bool) (cloudprovider.LoadBalancer, error) {
 	klog.V(1).Info("Create load balancer for vsphere paravirtual cloud provider")
 
-	client, err := vmservice.GetVmopClient(kcfg)
-	if err != nil {
-		klog.Errorf("failed to create load balancer: %v", err)
-		return nil, err
-	}
-	vmService := vmservice.NewVMService(client, clusterNS, ownerRef, serviceAnnotationPropagationEnabled)
+	vmSvc := vmservice.NewVMService(vmClient, clusterNS, ownerRef, serviceAnnotationPropagationEnabled)
 	return &loadBalancer{
-		vmService: vmService,
+		vmService: vmSvc,
 	}, nil
 }
 
@@ -61,29 +61,27 @@ func NewLoadBalancer(clusterNS string, kcfg *rest.Config, ownerRef *metav1.Owner
 func (l *loadBalancer) GetLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (status *v1.LoadBalancerStatus, exists bool, err error) {
 	klog.V(1).Infof("Get load balancer for %s", namespacedName(service))
 
-	vmService, err := l.vmService.Get(ctx, service, clusterName)
+	vms, err := l.vmService.Get(ctx, service, clusterName)
 
 	if err != nil {
 		klog.Errorf("failed to get load balancer for %s: %v", namespacedName(service), err)
 		return nil, false, err
 	}
 
-	// When err is nil and vmService is nil, it indicates VirtualMachineService not found, but it's not an error.
+	// When err is nil and vms is nil, it indicates VirtualMachineService not found, but it's not an error.
 	// Return nil so that cloud provider could move on and delete the LB service.
-	if vmService == nil {
+	if vms == nil {
 		klog.V(1).Infof("VirtualMachineService not found %s", namespacedName(service))
 		return nil, false, nil
 	}
 
-	return toStatus(vmService), true, nil
+	return toStatus(vms), true, nil
 }
 
 // GetLoadBalancerName returns the name of the load balancer. Implementations must treat the
 // *v1.Service parameter as read-only and not modify it.
 func (l *loadBalancer) GetLoadBalancerName(ctx context.Context, clusterName string, service *v1.Service) string {
 	klog.V(1).Infof("Get load balancer name for service  %s", namespacedName(service))
-	//TODO: confirm what name should be used here: vmService name? the real lb name on nsx-t ?
-
 	return l.vmService.GetVMServiceName(service, clusterName)
 }
 
@@ -94,16 +92,16 @@ func (l *loadBalancer) GetLoadBalancerName(ctx context.Context, clusterName stri
 func (l *loadBalancer) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
 	klog.V(1).Infof("Ensure Load Balancer for %s", namespacedName(service))
 
-	vmService, err := l.vmService.CreateOrUpdate(ctx, service, clusterName)
+	vms, err := l.vmService.CreateOrUpdate(ctx, service, clusterName)
 
 	if err != nil {
 		klog.Errorf("failed to ensure virtual machine service for %s: %v", namespacedName(service), err)
 		return nil, err
 	}
 
-	klog.V(1).Infof("Ensured load balancer for %s with virtual machine service %s", namespacedName(service), vmService.Name)
+	klog.V(1).Infof("Ensured load balancer for %s with virtual machine service %s", namespacedName(service), vms.Name)
 
-	return toStatus(vmService), nil
+	return toStatus(vms), nil
 }
 
 // UpdateLoadBalancer updates hosts under the specified load balancer.
@@ -113,26 +111,26 @@ func (l *loadBalancer) EnsureLoadBalancer(ctx context.Context, clusterName strin
 func (l *loadBalancer) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
 	klog.V(1).Infof("Update load balancer for %s", namespacedName(service))
 
-	vmService, err := l.vmService.Get(ctx, service, clusterName)
+	vms, err := l.vmService.Get(ctx, service, clusterName)
 
 	if err != nil {
 		klog.Errorf("failed to update load balancer for %s: %v", namespacedName(service), err)
 		return err
 	}
 
-	if vmService == nil {
+	if vms == nil {
 		klog.Errorf("failed to update load balancer for %s: VirtualMachineService not found", namespacedName(service))
 		return errors.Errorf("VirtualMachineService not found")
 	}
 
-	vmService, err = l.vmService.Update(ctx, service, clusterName, vmService)
+	vms, err = l.vmService.Update(ctx, service, clusterName, vms)
 
 	if err != nil {
 		klog.Errorf("failed to update virtual machine service for %s: %v", namespacedName(service), err)
 		return err
 	}
 
-	klog.V(1).Infof("updated virtual machine service: %s", vmService.Name)
+	klog.V(1).Infof("updated virtual machine service: %s", vms.Name)
 	return nil
 }
 
@@ -162,13 +160,12 @@ func (l *loadBalancer) EnsureLoadBalancerDeleted(ctx context.Context, clusterNam
 	return nil
 }
 
-func toStatus(vmService *vmopv1.VirtualMachineService) *v1.LoadBalancerStatus {
-
-	if len(vmService.Status.LoadBalancer.Ingress) > 0 {
+func toStatus(vms *vmoptypes.VirtualMachineServiceInfo) *v1.LoadBalancerStatus {
+	if len(vms.Status.LoadBalancerIngress) > 0 {
 		return &v1.LoadBalancerStatus{
 			Ingress: []v1.LoadBalancerIngress{
 				{
-					IP: vmService.Status.LoadBalancer.Ingress[0].IP,
+					IP: vms.Status.LoadBalancerIngress[0].IP,
 				},
 			},
 		}

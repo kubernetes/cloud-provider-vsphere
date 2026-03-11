@@ -1,88 +1,62 @@
+/*
+Copyright 2021 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package client
 
 import (
 	"context"
 
 	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/dynamic"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 )
 
-// virtualMachines implements VirtualMachineInterface
-type virtualMachines struct {
-	client dynamic.Interface
-	ns     string
-}
-
-func newVirtualMachines(c vmoperator.V1alpha2Interface, namespace string) *virtualMachines {
-	return &virtualMachines{
-		client: c.Client(),
-		ns:     namespace,
-	}
-}
-
-func (v *virtualMachines) Create(ctx context.Context, virtualMachine *vmopv1.VirtualMachine, opts v1.CreateOptions) (*vmopv1.VirtualMachine, error) {
-	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(virtualMachine)
+// GetVirtualMachine fetches a VirtualMachine by namespace and name.
+func (c *Client) GetVirtualMachine(ctx context.Context, namespace, name string) (*vmopv1.VirtualMachine, error) {
+	obj, err := c.dynamicClient.Resource(VirtualMachineGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
+	vm := &vmopv1.VirtualMachine{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), vm); err != nil {
+		return nil, err
+	}
+	return vm, nil
+}
 
-	obj, err := v.client.Resource(VirtualMachineGVR).Namespace(v.ns).Create(ctx, &unstructured.Unstructured{Object: unstructuredObj}, opts)
+// ListVirtualMachines lists VirtualMachines in the given namespace.
+// ResourceVersion="0" is set when the caller passes an empty string so that the
+// API server serves the response from its watch cache rather than reading from etcd.
+func (c *Client) ListVirtualMachines(ctx context.Context, namespace string, opts metav1.ListOptions) (*vmopv1.VirtualMachineList, error) {
+	if opts.ResourceVersion == "" {
+		opts.ResourceVersion = "0"
+	}
+	obj, err := c.dynamicClient.Resource(VirtualMachineGVR).Namespace(namespace).List(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-
-	createdVirtualMachine := &vmopv1.VirtualMachine{}
-	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), createdVirtualMachine); err != nil {
-		return nil, err
+	list := &vmopv1.VirtualMachineList{
+		Items: make([]vmopv1.VirtualMachine, 0, len(obj.Items)),
 	}
-	return createdVirtualMachine, nil
-}
-
-func (v *virtualMachines) Update(ctx context.Context, virtualMachine *vmopv1.VirtualMachine, opts v1.UpdateOptions) (*vmopv1.VirtualMachine, error) {
-	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(virtualMachine)
-	if err != nil {
-		return nil, err
+	for i := range obj.Items {
+		vm := &vmopv1.VirtualMachine{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Items[i].UnstructuredContent(), vm); err != nil {
+			return nil, err
+		}
+		list.Items = append(list.Items, *vm)
 	}
-
-	obj, err := v.client.Resource(VirtualMachineGVR).Namespace(v.ns).Update(ctx, &unstructured.Unstructured{Object: unstructuredObj}, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	updatedVirtualMachine := &vmopv1.VirtualMachine{}
-	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), updatedVirtualMachine); err != nil {
-		return nil, err
-	}
-	return updatedVirtualMachine, nil
-}
-
-func (v *virtualMachines) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return v.client.Resource(VirtualMachineGVR).Namespace(v.ns).Delete(ctx, name, opts)
-}
-
-func (v *virtualMachines) Get(ctx context.Context, name string, opts v1.GetOptions) (*vmopv1.VirtualMachine, error) {
-	virtualMachine := &vmopv1.VirtualMachine{}
-	if obj, err := v.client.Resource(VirtualMachineGVR).Namespace(v.ns).Get(ctx, name, opts); err != nil {
-		return nil, err
-	} else if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), virtualMachine); err != nil {
-		return nil, err
-	}
-	return virtualMachine, nil
-}
-
-func (v *virtualMachines) List(ctx context.Context, opts v1.ListOptions) (*vmopv1.VirtualMachineList, error) {
-	virtualMachineList := &vmopv1.VirtualMachineList{}
-	if obj, err := v.client.Resource(VirtualMachineGVR).Namespace(v.ns).List(ctx, opts); err != nil {
-		return nil, err
-	} else if err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), virtualMachineList); err != nil {
-		return nil, err
-	}
-	return virtualMachineList, nil
+	return list, nil
 }
