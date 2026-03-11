@@ -23,22 +23,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
+	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/rest"
 	clientgotesting "k8s.io/client-go/testing"
 	cloudprovider "k8s.io/cloud-provider"
 
+	adapterv2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha2"
+	fakev2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha2/fake"
+	clientv2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/provider/v1alpha2"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
-
-	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
-
-	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
 
 var (
@@ -58,28 +56,25 @@ func newTestLoadBalancer() (cloudprovider.LoadBalancer, *dynamicfake.FakeDynamic
 	scheme := runtime.NewScheme()
 	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	fcw := vmopclient.NewFakeClientSet(fc)
+	vmopAdapter := adapterv2.NewWithFakeClient(clientv2.NewWithDynamicClient(fc))
 
-	vms := vmservice.NewVMService(fcw, testClusterNameSpace, &testOwnerReference, false)
+	vms := vmservice.NewVMService(vmopAdapter, testClusterNameSpace, &testOwnerReference, false)
 	return &loadBalancer{vmService: vms}, fc
 }
 
 func TestNewLoadBalancer(t *testing.T) {
 	testCases := []struct {
 		name                                string
-		config                              *rest.Config
 		serviceAnnotationPropagationEnabled bool
 		err                                 error
 	}{
 		{
 			name:                                "NewLoadBalancer: when serviceAnnotationPropagationEnabled is false",
-			config:                              &rest.Config{},
 			serviceAnnotationPropagationEnabled: false,
 			err:                                 nil,
 		},
 		{
 			name:                                "NewLoadBalancer: when serviceAnnotationPropagationEnabled is true",
-			config:                              &rest.Config{},
 			serviceAnnotationPropagationEnabled: true,
 			err:                                 nil,
 		},
@@ -87,7 +82,8 @@ func TestNewLoadBalancer(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := NewLoadBalancer(testClusterNameSpace, testCase.config, &testOwnerReference, testCase.serviceAnnotationPropagationEnabled)
+			fakeAdapter, _ := fakev2.NewAdapter()
+			_, err := NewLoadBalancer(testClusterNameSpace, fakeAdapter, &testOwnerReference, testCase.serviceAnnotationPropagationEnabled)
 			assert.Equal(t, testCase.err, err)
 		})
 	}
@@ -337,7 +333,7 @@ func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 		{
 			name: "should ignore not found error",
 			deleteFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, nil, apierrors.NewNotFound(vmopv1.GroupVersion.WithResource("virtualmachineservice").GroupResource(), testClustername)
+				return true, nil, apierrors.NewNotFound(clientv2.VirtualMachineServiceGVR.GroupResource(), testClustername)
 			},
 		},
 		{
