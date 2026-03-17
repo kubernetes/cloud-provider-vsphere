@@ -4,6 +4,10 @@
 {{- $config = mergeOverwrite (deepCopy .Values.config) .Values.global.config -}}
 {{- end -}}
 {{- end -}}
+{{- if and (eq $config.source "hostPath") (not $config.hostPath.path) }}
+{{ fail "config.hostPath.path must be set when config.source=hostPath" }}
+{{- end }}
+
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -84,9 +88,13 @@ spec:
           {{- toYaml .Values.daemonset.resources | nindent 10 }}
         {{- end }}
       volumes:
-        - name: vsphere-config-volume
-          configMap:
-            name: {{ if $config.enabled }}{{- $config.name }}{{- else }}cloud-config{{- end }}
-      {{- if .Values.daemonset.extraVolumes }}
-        {{- toYaml .Values.daemonset.extraVolumes | nindent 8 }}
+      {{- if eq $config.source "hostPath" }}
+              - name: vsphere-config-volume
+                hostPath:
+                  path: {{ $config.hostPath.path }}
+                  type: {{ $config.hostPath.type }}
+      {{- else }}
+              - name: vsphere-config-volume
+                configMap:
+                  name: {{ if $config.enabled }}{{- $config.name }}{{- else }}cloud-config{{- end }}
       {{- end }}
