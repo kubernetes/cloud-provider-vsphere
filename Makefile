@@ -29,6 +29,11 @@ TEST_DIR := test
 TOOLS_DIR := $(abspath hack/tools)
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 
+#
+# Go.
+#
+GO_VERSION ?= 1.25.8
+
 # Binaries
 GO_INSTALL := ./hack/go-install.sh
 TRIVY_VER := 0.49.1
