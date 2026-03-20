@@ -1,40 +1,59 @@
+/*
+Copyright 2026 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// Package vmoperator defines the version-agnostic interfaces used by CPI business
+// logic to interact with VM Operator resources. The concrete implementation is
+// chosen at startup by the factory package based on the --vm-operator-api-version flag.
 package vmoperator
 
 import (
 	"context"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
-
-	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/types"
 )
 
-// Interface has methods to work with Vmoperator resources.
+// Interface is the top-level entry point for VM Operator operations.
+// All CPI business logic must depend only on this interface and must not
+// import versioned VM Operator API packages directly.
 type Interface interface {
-	V1alpha2() V1alpha2Interface
+	VirtualMachines() VirtualMachineInterface
+	VirtualMachineServices() VirtualMachineServiceInterface
 }
 
-// V1alpha2Interface has methods to work with Vmoperator V1alpha2 resources.
-type V1alpha2Interface interface {
-	Client() dynamic.Interface
-	VirtualMachines(namespace string) VirtualMachineInterface
-	VirtualMachineServices(namespace string) VirtualMachineServiceInterface
-}
-
-// VirtualMachineInterface has methods to work with VirtualMachineService resources.
+// VirtualMachineInterface provides read access to VirtualMachine resources.
+// The CPI never writes VirtualMachine objects; it only reads them for node discovery.
 type VirtualMachineInterface interface {
-	Create(ctx context.Context, virtualMachine *vmopv1.VirtualMachine, opts v1.CreateOptions) (*vmopv1.VirtualMachine, error)
-	Update(ctx context.Context, virtualMachine *vmopv1.VirtualMachine, opts v1.UpdateOptions) (*vmopv1.VirtualMachine, error)
-	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*vmopv1.VirtualMachine, error)
-	List(ctx context.Context, opts v1.ListOptions) (*vmopv1.VirtualMachineList, error)
+	Get(ctx context.Context, namespace, name string) (*types.VirtualMachineInfo, error)
+	List(ctx context.Context, namespace string, opts types.ListOptions) ([]*types.VirtualMachineInfo, error)
+	// GetByBiosUUID returns the VM whose BiosUUID matches, or nil if none is found.
+	// BiosUUID is a status field and cannot be filtered server-side, so implementations
+	// must list all VMs in the namespace and scan in memory.
+	// Returns (nil, nil) immediately when biosUUID is empty to avoid false matches
+	// against VMs that have not yet been assigned a UUID by the hypervisor.
+	GetByBiosUUID(ctx context.Context, namespace, biosUUID string) (*types.VirtualMachineInfo, error)
 }
 
-// VirtualMachineServiceInterface has methods to work with VirtualMachineService resources.
+// VirtualMachineServiceInterface provides CRUD access to VirtualMachineService resources.
 type VirtualMachineServiceInterface interface {
-	Create(ctx context.Context, virtualMachineService *vmopv1.VirtualMachineService, opts v1.CreateOptions) (*vmopv1.VirtualMachineService, error)
-	Update(ctx context.Context, virtualMachineService *vmopv1.VirtualMachineService, opts v1.UpdateOptions) (*vmopv1.VirtualMachineService, error)
-	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*vmopv1.VirtualMachineService, error)
-	List(ctx context.Context, opts v1.ListOptions) (*vmopv1.VirtualMachineServiceList, error)
+	Get(ctx context.Context, namespace, name string) (*types.VirtualMachineServiceInfo, error)
+	List(ctx context.Context, namespace string, opts types.ListOptions) ([]*types.VirtualMachineServiceInfo, error)
+	Create(ctx context.Context, vms *types.VirtualMachineServiceInfo) (*types.VirtualMachineServiceInfo, error)
+	// Update applies the mutable fields from update to the existing object identified
+	// by namespace/name. It is a read-modify-write operation; callers should handle
+	// 409 Conflict by retrying on the next reconcile cycle.
+	Update(ctx context.Context, namespace, name string, update *types.VirtualMachineServiceInfo) (*types.VirtualMachineServiceInfo, error)
+	Delete(ctx context.Context, namespace, name string) error
 }

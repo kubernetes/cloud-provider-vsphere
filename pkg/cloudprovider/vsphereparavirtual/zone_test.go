@@ -7,12 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/rest"
 	cloudprovider "k8s.io/cloud-provider"
 
+	adapterv2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha2"
+	fakev2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha2/fake"
 	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 )
 
@@ -26,13 +28,11 @@ var (
 func TestNewZones(t *testing.T) {
 	testCases := []struct {
 		name        string
-		config      *rest.Config
 		expectedErr error
 		testVM      *vmopv1.VirtualMachine
 	}{
 		{
 			name:        "NewZone: when everything is ok",
-			config:      &rest.Config{},
 			testVM:      createTestVMWithZone(string(vmName), testClusterNameSpace),
 			expectedErr: nil,
 		},
@@ -40,8 +40,8 @@ func TestNewZones(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			//initVMopClient(testCase.testVM)
-			_, err := NewZones(testClusterNameSpace, testCase.config)
+			fakeAdapter, _ := fakev2.NewAdapter()
+			_, err := NewZones(testClusterNameSpace, fakeAdapter)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.expectedErr, err)
 		})
@@ -135,12 +135,19 @@ func initVMopClient(testVM *vmopv1.VirtualMachine) (zones, *dynamicfake.FakeDyna
 	scheme := runtime.NewScheme()
 	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	fcw := vmopclient.NewFakeClientSet(fc)
+	vmopAdapter := adapterv2.NewWithFakeClient(vmopclient.NewWithDynamicClient(fc))
 	zone := zones{
-		vmClient:  fcw,
+		vmClient:  vmopAdapter,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fcw.V1alpha2().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(testVM)
+	if err != nil {
+		return zones{}, nil, err
+	}
+	obj["apiVersion"] = vmopclient.VirtualMachineGVR.Group + "/" + vmopclient.VirtualMachineGVR.Version
+	obj["kind"] = "VirtualMachine"
+	_, err = fc.Resource(vmopclient.VirtualMachineGVR).Namespace(testVM.Namespace).Create(
+		context.TODO(), &unstructured.Unstructured{Object: obj}, metav1.CreateOptions{})
 	return zone, fc, err
 }
 
