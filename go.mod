@@ -29,7 +29,7 @@ require (
 	k8s.io/cloud-provider v0.35.0
 	k8s.io/code-generator v0.35.0
 	k8s.io/component-base v0.36.0-alpha.0
-	k8s.io/klog/v2 v2.130.1
+	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/yaml v1.6.0
 )
 
