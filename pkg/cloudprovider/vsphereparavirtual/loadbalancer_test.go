@@ -337,7 +337,7 @@ func TestEnsureLoadBalancer_DeleteLB(t *testing.T) {
 		{
 			name: "should ignore not found error",
 			deleteFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, nil, apierrors.NewNotFound(vmopv1.SchemeGroupVersion.WithResource("virtualmachineservice").GroupResource(), testClustername)
+				return true, nil, apierrors.NewNotFound(vmopv1.GroupVersion.WithResource("virtualmachineservice").GroupResource(), testClustername)
 			},
 		},
 		{
