@@ -23,8 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2/klogr"
 
-	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
+	vmoptypes "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/types"
 )
 
 var log = klogr.New().WithName("vmservice")
@@ -32,10 +32,10 @@ var log = klogr.New().WithName("vmservice")
 // VMService is an interface for VirtualMachineService operations
 type VMService interface {
 	GetVMServiceName(service *v1.Service, clusterName string) string
-	Get(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error)
-	Create(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error)
-	CreateOrUpdate(ctx context.Context, service *v1.Service, clusterName string) (*vmopv1.VirtualMachineService, error)
-	Update(ctx context.Context, service *v1.Service, clusterName string, vmService *vmopv1.VirtualMachineService) (*vmopv1.VirtualMachineService, error)
+	Get(ctx context.Context, service *v1.Service, clusterName string) (*vmoptypes.VirtualMachineServiceInfo, error)
+	Create(ctx context.Context, service *v1.Service, clusterName string) (*vmoptypes.VirtualMachineServiceInfo, error)
+	CreateOrUpdate(ctx context.Context, service *v1.Service, clusterName string) (*vmoptypes.VirtualMachineServiceInfo, error)
+	Update(ctx context.Context, service *v1.Service, clusterName string, vms *vmoptypes.VirtualMachineServiceInfo) (*vmoptypes.VirtualMachineServiceInfo, error)
 	Delete(ctx context.Context, service *v1.Service, clusterName string) error
 }
 
@@ -46,3 +46,6 @@ type vmService struct {
 	ownerReference                      *metav1.OwnerReference
 	serviceAnnotationPropagationEnabled bool
 }
+
+// Compile-time assertion that vmService implements VMService.
+var _ VMService = &vmService{}
