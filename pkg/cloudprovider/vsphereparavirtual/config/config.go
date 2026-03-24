@@ -49,6 +49,8 @@ const (
 	SupervisorServiceAccountNameEnv string = "SUPERVISOR_CLUSTER_SERVICEACCOUNT_SECRET_NAME"
 	// SupervisorAPIServerFQDN reads supervisor service API server's fully qualified domain name from env
 	SupervisorAPIServerFQDN string = "supervisor.default.svc"
+	// InternalSupervisorHostnameOverrideEnv allows overriding the default supervisor hostname
+	InternalSupervisorHostnameOverrideEnv string = "INTERNAL_SUPERVISOR_HOSTNAME_OVERRIDE"
 )
 
 // SupervisorEndpoint is the supervisor cluster endpoint
@@ -131,8 +133,14 @@ func GetRestConfig(svConfigPath string) (*rest.Config, error) {
 		return nil, err
 	}
 
+	supervisorHostname := SupervisorAPIServerFQDN
+	if override := os.Getenv(InternalSupervisorHostnameOverrideEnv); override != "" {
+		klog.V(4).Infof("Using supervisor hostname override: %s", override)
+		supervisorHostname = override
+	}
+
 	return &rest.Config{
-		Host: "https://" + net.JoinHostPort(SupervisorAPIServerFQDN, svEndpoint.Port),
+		Host: "https://" + net.JoinHostPort(supervisorHostname, svEndpoint.Port),
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: rootCA,
 		},
