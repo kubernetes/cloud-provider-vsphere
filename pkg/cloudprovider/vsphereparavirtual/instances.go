@@ -23,17 +23,13 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/rest"
-
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/klog/v2"
 
-	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
-	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice"
+	vmoptypes "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/types"
 )
 
 type instances struct {
@@ -41,10 +37,16 @@ type instances struct {
 	namespace string
 }
 
+// Compile-time assertion that instances implements cloudprovider.Instances.
+var _ cloudprovider.Instances = &instances{}
+
 const (
 	// providerPrefix is the Kubernetes cloud provider prefix for this
 	// cloud provider.
 	providerPrefix = ProviderName + "://"
+
+	// powerStateOff is the powered-off state constant from the hub types package.
+	powerStateOff = vmoptypes.PowerStatePoweredOff
 )
 
 // DiscoverNodeBackoff is set to be the same with https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/cloud/node_controller.go#L83
@@ -62,46 +64,40 @@ func checkError(err error) bool {
 	return err != nil
 }
 
-// discoverNodeByProviderID takes a ProviderID and returns a VirtualMachine if one exists, or nil otherwise
+// discoverNodeByProviderID takes a ProviderID and returns a VirtualMachineInfo if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func (i instances) discoverNodeByProviderID(ctx context.Context, providerID string) (*vmopv1.VirtualMachine, error) {
+func (i instances) discoverNodeByProviderID(ctx context.Context, providerID string) (*vmoptypes.VirtualMachineInfo, error) {
 	return discoverNodeByProviderID(ctx, providerID, i.namespace, i.vmClient)
 }
 
-// discoverNodeByName takes a node name and returns a VirtualMachine if one exists, or nil otherwise
+// discoverNodeByName takes a node name and returns a VirtualMachineInfo if one exists, or nil otherwise
 // VirtualMachine not found is not an error
-func (i instances) discoverNodeByName(ctx context.Context, name types.NodeName) (*vmopv1.VirtualMachine, error) {
+func (i instances) discoverNodeByName(ctx context.Context, name types.NodeName) (*vmoptypes.VirtualMachineInfo, error) {
 	return discoverNodeByName(ctx, name, i.namespace, i.vmClient)
 }
 
 // NewInstances returns an implementation of cloudprovider.Instances
-func NewInstances(clusterNS string, kcfg *rest.Config) (cloudprovider.Instances, error) {
-	vmClient, err := vmservice.GetVmopClient(kcfg)
-
-	if err != nil {
-		return nil, err
-	}
-
+func NewInstances(clusterNS string, vmClient vmop.Interface) (cloudprovider.Instances, error) {
 	return &instances{
 		vmClient:  vmClient,
 		namespace: clusterNS,
 	}, nil
 }
 
-func createNodeAddresses(vm *vmopv1.VirtualMachine) []v1.NodeAddress {
+func createNodeAddresses(vm *vmoptypes.VirtualMachineInfo) []v1.NodeAddress {
 	// TODO: Currently, dual-stack (IPv4 and IPv6) is not supported.
 	// Cluster will be assumed as IPv4 Primary by default.
 	// In the future, when dual-stack support is implemented, this code should be updated to
 	// dynamically determine the IP format based on the cluster's IP family.
 	// https://github.com/kubernetes/cloud-provider-vsphere/issues/1129
-	if vm.Status.Network == nil || (vm.Status.Network.PrimaryIP4 == "" && vm.Status.Network.PrimaryIP6 == "") {
+	if vm.PrimaryIP4 == "" && vm.PrimaryIP6 == "" {
 		klog.V(4).Info("instance found, but no address yet")
 		return []v1.NodeAddress{}
 	}
 
-	address := vm.Status.Network.PrimaryIP4
+	address := vm.PrimaryIP4
 	if address == "" {
-		address = vm.Status.Network.PrimaryIP6
+		address = vm.PrimaryIP6
 	}
 
 	return []v1.NodeAddress{
@@ -162,17 +158,17 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 		return "", cloudprovider.InstanceNotFound
 	}
 
-	if vm.Status.BiosUUID == "" {
+	if vm.BiosUUID == "" {
 		return "", errBiosUUIDEmpty
 	}
 
-	klog.V(4).Infof("instances.InstanceID() called to get vm: %v uuid: %v", nodeName, vm.Status.BiosUUID)
-	return vm.Status.BiosUUID, nil
+	klog.V(4).Infof("instances.InstanceID() called to get vm: %v uuid: %v", nodeName, vm.BiosUUID)
+	return vm.BiosUUID, nil
 }
 
 // InstanceType returns the type of the specified instance.
 func (i *instances) InstanceType(ctx context.Context, name types.NodeName) (string, error) {
-	klog.V(4).Info("instances.InstanceTypeByProviderID() called with ", name)
+	klog.V(4).Info("instances.InstanceType() called with ", name)
 	return "", nil
 }
 
@@ -213,7 +209,7 @@ func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID
 		klog.V(4).Info("instances.InstanceShutdownByProviderID() InstanceNotFound ", providerID)
 		return false, cloudprovider.InstanceNotFound
 	}
-	return vm.Status.PowerState == vmopv1.VirtualMachinePowerStateOff, nil
+	return vm.PowerState == powerStateOff, nil
 }
 
 func (i *instances) AddSSHKeyToAllInstances(ctx context.Context, user string, keyData []byte) error {
