@@ -38,6 +38,11 @@ updates:
   labels:
     - "ok-to-test"
   open-pull-requests-limit: 10
+  ignore:
+    # Ignore k8s modules as they are upgraded manually following the
+    # Kubernetes release cycle.
+    - dependency-name: "k8s.io/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
 ## Update dockerfile
 - target-branch: master
@@ -72,6 +77,9 @@ updates:
     prefix: ":seedling: (chore)"
   labels:
     - "ok-to-test"
+  ignore:
+    - dependency-name: "k8s.io/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
 # ##################
 # release branch N
@@ -113,6 +121,10 @@ updates:
     - "ok-to-test"
   open-pull-requests-limit: 5
   ignore:
+    # Fully ignore k8s modules on release branches. All k8s dependency
+    # updates are done manually following the Kubernetes patch release
+    # schedule.
+    - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
         - "version-update:semver-major"
@@ -157,6 +169,7 @@ updates:
   labels:
     - "ok-to-test"
   ignore:
+    - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
         - "version-update:semver-major"
@@ -202,6 +215,7 @@ updates:
     - "ok-to-test"
   open-pull-requests-limit: 5
   ignore:
+    - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
         - "version-update:semver-major"
@@ -246,6 +260,7 @@ updates:
   labels:
     - "ok-to-test"
   ignore:
+    - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
         - "version-update:semver-major"
@@ -291,6 +306,7 @@ updates:
     - "ok-to-test"
   open-pull-requests-limit: 5
   ignore:
+    - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
         - "version-update:semver-major"
@@ -335,6 +351,7 @@ updates:
   labels:
     - "ok-to-test"
   ignore:
+    - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
         - "version-update:semver-major"
