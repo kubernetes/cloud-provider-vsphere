@@ -161,7 +161,7 @@ submit_pr() {
 
     git commit -m "update documents for ${release_version} release"
 
-    git push -u origin "${NEW_BRANCH}"
+    git push -u -f origin "${NEW_BRANCH}"
 
     gh repo set-default kubernetes/cloud-provider-vsphere
 

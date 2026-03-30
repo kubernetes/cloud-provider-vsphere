@@ -1,0 +1,1212 @@
+env -u VSPHERE_SERVER -u VSPHERE_PASSWORD -u VSPHERE_USER go test -v -tags=unit ./pkg/cli ./pkg/cloudprovider/vsphere ./pkg/cloudprovider/vsphere/config ./pkg/cloudprovider/vsphere/loadbalancer ./pkg/cloudprovider/vsphere/loadbalancer/config ./pkg/cloudprovider/vsphere/route ./pkg/cloudprovider/vsphere/route/config ./pkg/cloudprovider/vsphereparavirtual ./pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ipaddressallocation ./pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ippool ./pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/node ./pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1 ./pkg/cloudprovider/vsphereparavirtual/nsxipmanager ./pkg/cloudprovider/vsphereparavirtual/routemanager/helper ./pkg/cloudprovider/vsphereparavirtual/routemanager/routeset ./pkg/cloudprovider/vsphereparavirtual/routemanager/staticroute ./pkg/cloudprovider/vsphereparavirtual/vmoperator/client ./pkg/cloudprovider/vsphereparavirtual/vmservice ./pkg/common/config ./pkg/common/connectionmanager ./pkg/common/credentialmanager ./pkg/common/vclib ./pkg/nsxt/config ./pkg/util
+=== RUN   TestNewClient
+--- PASS: TestNewClient (0.37s)
+=== RUN   TestGetRolePermission
+--- PASS: TestGetRolePermission (0.32s)
+=== RUN   TestRunUserFunc
+--- PASS: TestRunUserFunc (0.37s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cli	(cached)
+=== RUN   Test_validateDualStack
+=== RUN   Test_validateDualStack/config_dual-stack,_gate_enabled
+=== RUN   Test_validateDualStack/config_dual-stack,_gate_disabled
+=== RUN   Test_validateDualStack/config_single-stack,_gate_enabled
+=== RUN   Test_validateDualStack/config_single-stack,_gate_disabled
+=== RUN   Test_validateDualStack/config_default,_gate_enabled
+=== RUN   Test_validateDualStack/config_default,_gate_disabled
+--- PASS: Test_validateDualStack (0.00s)
+    --- PASS: Test_validateDualStack/config_dual-stack,_gate_enabled (0.00s)
+    --- PASS: Test_validateDualStack/config_dual-stack,_gate_disabled (0.00s)
+    --- PASS: Test_validateDualStack/config_single-stack,_gate_enabled (0.00s)
+    --- PASS: Test_validateDualStack/config_single-stack,_gate_disabled (0.00s)
+    --- PASS: Test_validateDualStack/config_default,_gate_enabled (0.00s)
+    --- PASS: Test_validateDualStack/config_default,_gate_disabled (0.00s)
+=== RUN   TestInstance
+I0620 12:17:09.798506 1798057 nodemanager.go:167] Discovered VM using normal UUID format
+I0620 12:17:09.806644 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+I0620 12:17:09.816345 1798057 nodemanager.go:167] Discovered VM using normal UUID format
+I0620 12:17:09.836151 1798057 nodemanager.go:167] Discovered VM using normal UUID format
+2025/06/20 12:17:09 http: TLS handshake error from 127.0.0.1:33582: read tcp 127.0.0.1:40799->127.0.0.1:33582: use of closed network connection
+--- PASS: TestInstance (0.58s)
+=== RUN   TestInvalidInstance
+E0620 12:17:10.398619 1798057 nodemanager.go:205] shakeOutNodeIDLookup failed. Err=nodeID is empty
+E0620 12:17:10.398638 1798057 nodemanager.go:205] shakeOutNodeIDLookup failed. Err=nodeID is empty
+E0620 12:17:10.398641 1798057 nodemanager.go:205] shakeOutNodeIDLookup failed. Err=nodeID is empty
+E0620 12:17:10.398644 1798057 nodemanager.go:205] shakeOutNodeIDLookup failed. Err=nodeID is empty
+--- PASS: TestInvalidInstance (0.56s)
+=== RUN   TestRegUnregNode
+I0620 12:17:10.909171 1798057 nodemanager.go:167] Discovered VM using normal UUID format
+--- PASS: TestRegUnregNode (0.52s)
+=== RUN   TestDiscoverNodeByName
+I0620 12:17:11.418388 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+--- PASS: TestDiscoverNodeByName (0.51s)
+=== RUN   TestDiscoverNodeByNameWithNamesClash
+E0620 12:17:11.922713 1798057 datacenter.go:129] Multiple vms found VM by DNS Name. DNS Name: foo.foo.foo
+E0620 12:17:11.922737 1798057 search.go:181] Error while looking for vm=foo.foo.foo(byName) in vc=127.0.0.1 and datacenter=DC1: Multiple VMs found
+E0620 12:17:11.923164 1798057 datacenter.go:129] Multiple vms found VM by DNS Name. DNS Name: foo.foo.foo
+E0620 12:17:11.923201 1798057 search.go:181] Error while looking for vm=foo.foo.foo(byName) in vc=127.0.0.1 and datacenter=DC0: Multiple VMs found
+E0620 12:17:11.923243 1798057 nodemanager.go:205] shakeOutNodeIDLookup failed. Err=Multiple VMs found
+--- PASS: TestDiscoverNodeByNameWithNamesClash (0.50s)
+=== RUN   TestDiscoverNodeWithMultiIFByName
+I0620 12:17:12.430621 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+2025/06/20 12:17:12 http: TLS handshake error from 127.0.0.1:59552: write tcp 127.0.0.1:42543->127.0.0.1:59552: use of closed network connection
+--- PASS: TestDiscoverNodeWithMultiIFByName (0.52s)
+=== RUN   TestDiscoverNodeIPs
+=== RUN   TestDiscoverNodeIPs/BySubnet
+I0620 12:17:13.058098 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+2025/06/20 12:17:13 http: TLS handshake error from 127.0.0.1:48954: write tcp 127.0.0.1:40429->127.0.0.1:48954: use of closed network connection
+=== RUN   TestDiscoverNodeIPs/ByNetworkName
+I0620 12:17:13.614999 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection
+I0620 12:17:14.200029 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySubnetIPv6
+I0620 12:17:14.653155 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByNetworkNameIPv6
+I0620 12:17:15.132825 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelectionIPv6
+I0620 12:17:15.580766 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByNetworkNameAndTwoNICs_desiredIPsAfterFirstNIC
+I0620 12:17:16.089502 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByMultipleSubnets_dualstack_itSelectsBothIPv4andIPv6Addrs
+I0620 12:17:16.538469 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByMultipleSubnets_dualstack_WhenNoIPsOfFamilyMatchAnySubnets_itFallsThroughToDefaultSelection
+I0620 12:17:17.048197 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByMultipleSubnets_dualstack_WhenNoIPsOfFamilyMatchesInternalOrExternalSubnets_itUsesSubnetSelectionAndOmitsTheIPThatHasNoMatch
+I0620 12:17:17.515656 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:17.521593 1798057 nodemanager.go:464] External address found, but internal address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/ByMultipleSubnets
+I0620 12:17:18.078101 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySubnetAndTwoNICs_desiredIPsAfterFirstNIC
+I0620 12:17:18.621671 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySubnetAndTwoNICs_desiredIPsAreSplitAcrossNICs
+I0620 12:17:19.085633 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySubnet_whenExternalCIDRHasNoMatch_itReturnsOnlyInternalIP
+I0620 12:17:19.628170 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:19.629808 1798057 nodemanager.go:462] Internal address found, but external address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/BySubnet_whenInternalCIDRHasNoMatch_itReturnsOnlyExternalIP
+I0620 12:17:20.198804 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:20.200654 1798057 nodemanager.go:464] External address found, but internal address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/ByNetworkName_whenInternalNameHasNoMatch_itReturnsOnlyExternalIP
+I0620 12:17:20.739129 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:20.749029 1798057 nodemanager.go:464] External address found, but internal address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/ByNetworkName_whenExternalNameHasNoMatch_itReturnsOnlyInternalIP
+I0620 12:17:21.253688 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:21.255426 1798057 nodemanager.go:462] Internal address found, but external address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/BySubnet_whenOnlyExternalCIDRIsSet_itReturnsOnlyExternalIP
+I0620 12:17:21.778614 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:21.780202 1798057 nodemanager.go:464] External address found, but internal address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/BySubnet_whenOnlyInternalCIDRIsSet_itReturnsOnlyInternalIP
+I0620 12:17:22.352883 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:22.355339 1798057 nodemanager.go:462] Internal address found, but external address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/ByNetworkName_selectsIgnoringCase
+I0620 12:17:22.856223 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByNetworkName_whenOnlyExternalNetworkIsSet_onlyExternalNetIsSet
+I0620 12:17:23.426070 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:23.428331 1798057 nodemanager.go:464] External address found, but internal address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/ByNetworkName_whenOnlyInternalNetworkIsSet_itReturnsOnlyInternalIP
+I0620 12:17:23.993038 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+W0620 12:17:23.998332 1798057 nodemanager.go:462] Internal address found, but external address not found. Returning what addresses were discovered.
+=== RUN   TestDiscoverNodeIPs/BySubnetAndNetworkNameTwoNICs_desiredIPsAreSplitAcrossNICs
+I0620 12:17:24.568013 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySettingBothNetworkNameAndSubnets_SubnetSelectionHasPrecedenceWhenMatchesAreFound
+I0620 12:17:25.160728 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySettingBothNetworkNameAndSubnets_whenSubnetsMatchNoIPs_itUsesNetworkNameSelection
+I0620 12:17:25.740035 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ItIgnoresVNICDevices
+I0620 12:17:26.336808 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySettingANetworkNameThatDoesntExist
+I0620 12:17:26.829505 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDiscoveringAnUnParsableIP_itIsIgnored
+I0620 12:17:27.432531 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection_whenTheSecondNICHasNoIPs
+I0620 12:17:28.036243 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection_whenTheFirstNICHasNoIPs
+I0620 12:17:28.615102 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection_whenTheFirstNICHasNoIPsOfTheDesiredFamily
+I0620 12:17:29.216816 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection_TheSecondNICHasNoIPsOfTheDesiredFamily
+I0620 12:17:29.795564 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection_whenDualStackIPv4Primary_itReturnsIPv4AddrsFirst
+I0620 12:17:30.355309 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection_itDoesNotSelectIPsFromtheExclusionCIDRList
+I0620 12:17:30.932609 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByDefaultSelection_DualStackIPv6Primary_itReturnsIPv6AddrsFirst
+I0620 12:17:31.528767 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByNetworkName_whenDualStack
+I0620 12:17:32.124569 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/BySubnet_itDoesNotSelectIPsFromtheExclusionCIDRList
+I0620 12:17:32.725664 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/ByNetworkName_itDoesNotSelectIPsFromtheExclusionCIDRList
+I0620 12:17:33.325586 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/Dualstack_ExcludingSubnets_whenNoIPv4AddrIsDiscovered
+I0620 12:17:33.903971 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/Dualstack_ExcludingSubnets_whenNoIPv6AddrIsDiscovered
+I0620 12:17:34.502563 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/DualStack_whenNoIPsOfOneFamilyAreDiscovered
+I0620 12:17:35.103771 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/IPv6_guestInfoWithDHCP
+I0620 12:17:35.704483 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_IPv6_usesStaticAddressForExternalInternal
+I0620 12:17:36.285298 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_IPv4_usesStaticAddressForExternalInternal
+I0620 12:17:36.869352 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_prioritizesOrderFromAddresses
+I0620 12:17:37.472979 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_usesTheStaticAddressInTheNetworkCIDR
+I0620 12:17:38.074809 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_ignoresStaticAddressWhenWithinExcludeCIDR
+I0620 12:17:38.672784 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_usesTheStaticAddressInTheConfiguredNetworkName
+I0620 12:17:39.222397 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_addressesAreNotAssignedToTheNIC
+I0620 12:17:39.805223 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_IPv6_handlesShorthandVsLonghandAddrs
+I0620 12:17:40.385454 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_IPv6_usesNetworkB64EncodedStaticAddressForExternalInternal
+I0620 12:17:40.962485 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_IPv6_usesNetworkGZB64EncodedStaticAddressForExternalInternal
+I0620 12:17:41.538219 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+=== RUN   TestDiscoverNodeIPs/StaticAddresses_errorsOnInvalidGuestInfoFormat
+I0620 12:17:42.142033 1798057 nodemanager.go:146] Discovered VM using FQDN or short-hand name
+E0620 12:17:42.144907 1798057 nodemanager.go:316] Error sorting statically configured addresses for vm=VirtualMachine:vm-105 in vc=127.0.0.1 and datacenter=DC1: yaml: unmarshal errors:
+  line 1: cannot unmarshal !!str `not-val...` into struct { NetworkEncoding string "yaml:\"network.encoding\"" }
+--- PASS: TestDiscoverNodeIPs (29.71s)
+    --- PASS: TestDiscoverNodeIPs/BySubnet (0.64s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName (0.55s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection (0.58s)
+    --- PASS: TestDiscoverNodeIPs/BySubnetIPv6 (0.47s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkNameIPv6 (0.46s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelectionIPv6 (0.45s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkNameAndTwoNICs_desiredIPsAfterFirstNIC (0.51s)
+    --- PASS: TestDiscoverNodeIPs/ByMultipleSubnets_dualstack_itSelectsBothIPv4andIPv6Addrs (0.45s)
+    --- PASS: TestDiscoverNodeIPs/ByMultipleSubnets_dualstack_WhenNoIPsOfFamilyMatchAnySubnets_itFallsThroughToDefaultSelection (0.51s)
+    --- PASS: TestDiscoverNodeIPs/ByMultipleSubnets_dualstack_WhenNoIPsOfFamilyMatchesInternalOrExternalSubnets_itUsesSubnetSelectionAndOmitsTheIPThatHasNoMatch (0.46s)
+    --- PASS: TestDiscoverNodeIPs/ByMultipleSubnets (0.56s)
+    --- PASS: TestDiscoverNodeIPs/BySubnetAndTwoNICs_desiredIPsAfterFirstNIC (0.55s)
+    --- PASS: TestDiscoverNodeIPs/BySubnetAndTwoNICs_desiredIPsAreSplitAcrossNICs (0.45s)
+    --- PASS: TestDiscoverNodeIPs/BySubnet_whenExternalCIDRHasNoMatch_itReturnsOnlyInternalIP (0.54s)
+    --- PASS: TestDiscoverNodeIPs/BySubnet_whenInternalCIDRHasNoMatch_itReturnsOnlyExternalIP (0.57s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName_whenInternalNameHasNoMatch_itReturnsOnlyExternalIP (0.55s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName_whenExternalNameHasNoMatch_itReturnsOnlyInternalIP (0.51s)
+    --- PASS: TestDiscoverNodeIPs/BySubnet_whenOnlyExternalCIDRIsSet_itReturnsOnlyExternalIP (0.52s)
+    --- PASS: TestDiscoverNodeIPs/BySubnet_whenOnlyInternalCIDRIsSet_itReturnsOnlyInternalIP (0.58s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName_selectsIgnoringCase (0.51s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName_whenOnlyExternalNetworkIsSet_onlyExternalNetIsSet (0.57s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName_whenOnlyInternalNetworkIsSet_itReturnsOnlyInternalIP (0.57s)
+    --- PASS: TestDiscoverNodeIPs/BySubnetAndNetworkNameTwoNICs_desiredIPsAreSplitAcrossNICs (0.57s)
+    --- PASS: TestDiscoverNodeIPs/BySettingBothNetworkNameAndSubnets_SubnetSelectionHasPrecedenceWhenMatchesAreFound (0.59s)
+    --- PASS: TestDiscoverNodeIPs/BySettingBothNetworkNameAndSubnets_whenSubnetsMatchNoIPs_itUsesNetworkNameSelection (0.58s)
+    --- PASS: TestDiscoverNodeIPs/ItIgnoresVNICDevices (0.60s)
+    --- PASS: TestDiscoverNodeIPs/BySettingANetworkNameThatDoesntExist (0.49s)
+    --- PASS: TestDiscoverNodeIPs/ByDiscoveringAnUnParsableIP_itIsIgnored (0.60s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection_whenTheSecondNICHasNoIPs (0.60s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection_whenTheFirstNICHasNoIPs (0.58s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection_whenTheFirstNICHasNoIPsOfTheDesiredFamily (0.60s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection_TheSecondNICHasNoIPsOfTheDesiredFamily (0.58s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection_whenDualStackIPv4Primary_itReturnsIPv4AddrsFirst (0.56s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection_itDoesNotSelectIPsFromtheExclusionCIDRList (0.58s)
+    --- PASS: TestDiscoverNodeIPs/ByDefaultSelection_DualStackIPv6Primary_itReturnsIPv6AddrsFirst (0.60s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName_whenDualStack (0.59s)
+    --- PASS: TestDiscoverNodeIPs/BySubnet_itDoesNotSelectIPsFromtheExclusionCIDRList (0.60s)
+    --- PASS: TestDiscoverNodeIPs/ByNetworkName_itDoesNotSelectIPsFromtheExclusionCIDRList (0.60s)
+    --- PASS: TestDiscoverNodeIPs/Dualstack_ExcludingSubnets_whenNoIPv4AddrIsDiscovered (0.58s)
+    --- PASS: TestDiscoverNodeIPs/Dualstack_ExcludingSubnets_whenNoIPv6AddrIsDiscovered (0.60s)
+    --- PASS: TestDiscoverNodeIPs/DualStack_whenNoIPsOfOneFamilyAreDiscovered (0.60s)
+    --- PASS: TestDiscoverNodeIPs/IPv6_guestInfoWithDHCP (0.60s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_IPv6_usesStaticAddressForExternalInternal (0.58s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_IPv4_usesStaticAddressForExternalInternal (0.58s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_prioritizesOrderFromAddresses (0.60s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_usesTheStaticAddressInTheNetworkCIDR (0.60s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_ignoresStaticAddressWhenWithinExcludeCIDR (0.60s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_usesTheStaticAddressInTheConfiguredNetworkName (0.55s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_addressesAreNotAssignedToTheNIC (0.58s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_IPv6_handlesShorthandVsLonghandAddrs (0.58s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_IPv6_usesNetworkB64EncodedStaticAddressForExternalInternal (0.58s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_IPv6_usesNetworkGZB64EncodedStaticAddressForExternalInternal (0.58s)
+    --- PASS: TestDiscoverNodeIPs/StaticAddresses_errorsOnInvalidGuestInfoFormat (0.60s)
+=== RUN   TestCollectNonVNICDevices
+--- PASS: TestCollectNonVNICDevices (0.00s)
+=== RUN   TestToIPAddrNetworkNames
+--- PASS: TestToIPAddrNetworkNames (0.00s)
+=== RUN   TestToNetworkNames
+--- PASS: TestToNetworkNames (0.00s)
+=== RUN   TestCollectMatchesForIPFamily
+--- PASS: TestCollectMatchesForIPFamily (0.00s)
+=== RUN   TestMatchesFamily
+--- PASS: TestMatchesFamily (0.00s)
+=== RUN   TestFilter
+--- PASS: TestFilter (0.00s)
+=== RUN   TestFindSubnetMatch
+--- PASS: TestFindSubnetMatch (0.00s)
+=== RUN   TestFindFirst
+--- PASS: TestFindFirst (0.00s)
+=== RUN   TestFindNetworkNameMatch
+--- PASS: TestFindNetworkNameMatch (0.00s)
+=== RUN   TestExcludeLocalhostIPs
+--- PASS: TestExcludeLocalhostIPs (0.00s)
+=== RUN   TestInvalidProviderID
+--- PASS: TestInvalidProviderID (0.00s)
+=== RUN   TestUpperUUIDFromProviderID
+--- PASS: TestUpperUUIDFromProviderID (0.00s)
+=== RUN   TestUUIDFromProviderID
+--- PASS: TestUUIDFromProviderID (0.00s)
+=== RUN   TestUUIDFromUUID
+--- PASS: TestUUIDFromUUID (0.00s)
+=== RUN   TestUUIDConvertInvalid
+E0620 12:17:42.146726 1798057 util.go:53] The UUID length is invalid. Returning UUID= as is.
+--- PASS: TestUUIDConvertInvalid (0.00s)
+=== RUN   TestUUIDConvert
+--- PASS: TestUUIDConvert (0.00s)
+=== RUN   TestUpperUUIDConvert
+--- PASS: TestUpperUUIDConvert (0.00s)
+=== RUN   TestUUIDConvertAndRevert
+--- PASS: TestUUIDConvertAndRevert (0.00s)
+=== RUN   TestArrayContainsCaseInsensitive
+--- PASS: TestArrayContainsCaseInsensitive (0.00s)
+=== RUN   TestNewVSphere
+--- PASS: TestNewVSphere (0.00s)
+=== RUN   TestVSphereLogin
+E0620 12:17:42.590476 1798057 connection.go:174] Logout failed: ServerFaultCode: NotAuthenticated
+--- PASS: TestVSphereLogin (0.45s)
+=== RUN   TestVSphereLoginByToken
+--- PASS: TestVSphereLoginByToken (0.44s)
+=== RUN   TestAlphaDualStackConfig
+=== RUN   TestAlphaDualStackConfig/Verifying_dual_stack_env_var_required_when_providing_two_ip_families
+W0620 12:17:43.035137 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.035759 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.035814 1798057 config.go:88] Config initialized
+=== RUN   TestAlphaDualStackConfig/Verifying_dual_stack_env_var_existing_when_providing_two_ip_families
+W0620 12:17:43.035897 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.036343 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.036387 1798057 config.go:88] Config initialized
+=== RUN   TestAlphaDualStackConfig/Dual_stack_env_var_not_required_when_providing_single_ip_family
+W0620 12:17:43.036493 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.036887 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.036926 1798057 config.go:88] Config initialized
+--- PASS: TestAlphaDualStackConfig (0.00s)
+    --- PASS: TestAlphaDualStackConfig/Verifying_dual_stack_env_var_required_when_providing_two_ip_families (0.00s)
+    --- PASS: TestAlphaDualStackConfig/Verifying_dual_stack_env_var_existing_when_providing_two_ip_families (0.00s)
+    --- PASS: TestAlphaDualStackConfig/Dual_stack_env_var_not_required_when_providing_single_ip_family (0.00s)
+=== RUN   TestSecretVSphereConfig
+    vsphere_test.go:517: Executing Testcase: Username and password with old configuration
+W0620 12:17:43.037054 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.037313 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.037351 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: SecretName and SecretNamespace in old configuration
+W0620 12:17:43.037390 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.037639 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.037704 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: SecretName and SecretNamespace with Username and Password in old configuration
+W0620 12:17:43.037744 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.038145 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.038183 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: SecretName and SecretNamespace with Username missing in old configuration
+W0620 12:17:43.038211 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.038500 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.038535 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: SecretNamespace missing with Username and Password in old configuration
+W0620 12:17:43.038566 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.038861 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.038898 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: SecretNamespace and Username missing in old configuration
+W0620 12:17:43.038924 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+E0620 12:17:43.039198 1798057 config_ini_legacy.go:178] vcConfig.User is empty for vc 0.0.0.0!
+E0620 12:17:43.039215 1798057 config.go:73] ReadConfigINI failed: Username is missing
+    vsphere_test.go:517: Executing Testcase: SecretNamespace and Password missing in old configuration
+W0620 12:17:43.039240 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+E0620 12:17:43.039476 1798057 config_ini_legacy.go:185] vcConfig.Password is empty for vc 0.0.0.0!
+E0620 12:17:43.039493 1798057 config.go:73] ReadConfigINI failed: Password is missing
+    vsphere_test.go:517: Executing Testcase: SecretNamespace, Username and Password missing in old configuration
+W0620 12:17:43.039516 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+E0620 12:17:43.039702 1798057 config_ini_legacy.go:178] vcConfig.User is empty for vc 0.0.0.0!
+E0620 12:17:43.039717 1798057 config.go:73] ReadConfigINI failed: Username is missing
+    vsphere_test.go:517: Executing Testcase: Username and password with new configuration but username and password in global section
+W0620 12:17:43.039737 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.039977 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.040004 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: Username and password with new configuration, username and password in virtualcenter section
+W0620 12:17:43.040043 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.040445 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.040482 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: SecretName and SecretNamespace with new configuration
+W0620 12:17:43.040510 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.040795 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.040848 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: SecretName and SecretNamespace with Username missing in new configuration
+W0620 12:17:43.040883 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.041329 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.041366 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: virtual centers with a thumbprint
+W0620 12:17:43.041398 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.041687 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.041721 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: Multiple virtual centers with different thumbprints
+W0620 12:17:43.041750 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.042178 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.042213 1798057 config.go:88] Config initialized
+    vsphere_test.go:517: Executing Testcase: Multiple virtual centers use the global CA cert
+W0620 12:17:43.042260 1798057 config.go:69] ReadCPIConfigYAML failed: yaml: line 2: found character that cannot start any token
+I0620 12:17:43.042707 1798057 config.go:77] ReadConfig INI succeeded. CPI INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:43.042738 1798057 config.go:88] Config initialized
+--- PASS: TestSecretVSphereConfig (0.01s)
+=== RUN   TestZones
+I0620 12:17:43.489932 1798057 nodemanager.go:167] Discovered VM using normal UUID format
+E0620 12:17:43.542088 1798057 zones.go:404] Get zone for mo: HostSystem:host-47: vSphere region category k8s-region does not match any tags for mo: HostSystem:host-47
+E0620 12:17:43.546752 1798057 zones.go:404] Get zone for mo: ResourcePool:resgroup-27: vSphere region category k8s-region does not match any tags for mo: ResourcePool:resgroup-27
+E0620 12:17:43.550632 1798057 zones.go:404] Get zone for mo: VirtualMachine:vm-71: vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+E0620 12:17:43.550663 1798057 zones.go:224] Failed to get host system properties. err: vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+    zones_test.go:223: no tags: expected error=vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+E0620 12:17:43.570905 1798057 zones.go:404] Get zone for mo: HostSystem:host-47: vSphere zone category k8s-zone does not match any tags for mo: HostSystem:host-47
+E0620 12:17:43.575830 1798057 zones.go:404] Get zone for mo: ResourcePool:resgroup-27: vSphere region category k8s-region does not match any tags for mo: ResourcePool:resgroup-27
+E0620 12:17:43.580117 1798057 zones.go:404] Get zone for mo: VirtualMachine:vm-71: vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+E0620 12:17:43.580175 1798057 zones.go:224] Failed to get host system properties. err: vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+    zones_test.go:223: no zone tag: expected error=vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+    zones_test.go:229: zone=cloudprovider.Zone{FailureDomain:"k8s-zone-US-CA1", Region:"k8s-region-US"}
+E0620 12:17:43.635892 1798057 zones.go:404] Get zone for mo: HostSystem:host-47: vSphere region category k8s-region does not match any tags for mo: HostSystem:host-47
+E0620 12:17:43.639883 1798057 zones.go:404] Get zone for mo: ResourcePool:resgroup-27: vSphere region category k8s-region does not match any tags for mo: ResourcePool:resgroup-27
+E0620 12:17:43.646008 1798057 zones.go:404] Get zone for mo: VirtualMachine:vm-71: vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+E0620 12:17:43.646054 1798057 zones.go:224] Failed to get host system properties. err: vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+    zones_test.go:223: host tags removed: expected error=vSphere region category k8s-region does not match any tags for mo: VirtualMachine:vm-71
+    zones_test.go:229: zone=cloudprovider.Zone{FailureDomain:"k8s-zone-US-CA1", Region:"k8s-region-US"}
+--- PASS: TestZones (0.63s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere	(cached)
+=== RUN   TestReadINIConfigSubnetCidr
+--- PASS: TestReadINIConfigSubnetCidr (0.00s)
+=== RUN   TestReadINIConfigNetworkName
+--- PASS: TestReadINIConfigNetworkName (0.00s)
+=== RUN   TestReadINIConfigExcludeSubnetCidr
+--- PASS: TestReadINIConfigExcludeSubnetCidr (0.00s)
+=== RUN   TestReadYAMLConfigSubnetCidr
+--- PASS: TestReadYAMLConfigSubnetCidr (0.00s)
+=== RUN   TestReadYAMLConfigNetworkName
+--- PASS: TestReadYAMLConfigNetworkName (0.00s)
+=== RUN   TestReadYAMLConfigExcludeSubnetCidr
+--- PASS: TestReadYAMLConfigExcludeSubnetCidr (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config	(cached)
+=== RUN   TestTagAdd
+--- PASS: TestTagAdd (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer	(cached)
+=== RUN   TestReadINIConfig
+--- PASS: TestReadINIConfig (0.00s)
+=== RUN   TestReadINIConfigOnVMC
+--- PASS: TestReadINIConfigOnVMC (0.00s)
+=== RUN   TestReadYAMLConfig
+--- PASS: TestReadYAMLConfig (0.00s)
+=== RUN   TestReadYAMLConfigOnVMC
+--- PASS: TestReadYAMLConfigOnVMC (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/loadbalancer/config	(cached)
+=== RUN   TestListRoutes
+--- PASS: TestListRoutes (0.00s)
+=== RUN   TestGenerateRoute
+--- PASS: TestGenerateRoute (0.00s)
+=== RUN   TestCreateRoute
+E0620 12:17:09.269120 1798069 routeprovider.go:127] creating static route 62d347a4-1b70-435e-b92a-9a61453843ee_100.96.0.0_24 for node node1 failed: mock error
+--- PASS: TestCreateRoute (0.00s)
+=== RUN   TestGenerateIPv4StaticRoute
+--- PASS: TestGenerateIPv4StaticRoute (0.00s)
+=== RUN   TestGenerateIPv6StaticRoute
+--- PASS: TestGenerateIPv6StaticRoute (0.00s)
+=== RUN   TestCheckStaticRouteRealizedState
+--- PASS: TestCheckStaticRouteRealizedState (1.00s)
+=== RUN   TestDeleteRoute
+--- PASS: TestDeleteRoute (0.00s)
+=== RUN   TestGetNodeIPv4Address
+--- PASS: TestGetNodeIPv4Address (0.00s)
+=== RUN   TestGetNodeIPv6Address
+--- PASS: TestGetNodeIPv6Address (0.00s)
+=== RUN   TestAddNode
+--- PASS: TestAddNode (0.00s)
+=== RUN   TestDeleteNode
+--- PASS: TestDeleteNode (0.00s)
+=== RUN   TestGetNode
+--- PASS: TestGetNode (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route	(cached)
+=== RUN   TestReadINIConfig
+--- PASS: TestReadINIConfig (0.00s)
+=== RUN   TestReadYAMLConfig
+--- PASS: TestReadYAMLConfig (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/route/config	(cached)
+=== RUN   TestReadOwnerRef
+--- PASS: TestReadOwnerRef (0.00s)
+=== RUN   TestReadSupervisorConfig
+--- PASS: TestReadSupervisorConfig (0.00s)
+=== RUN   TestGetNameSpace
+E0620 15:18:22.802977 1811067 config.go:102] Failed to read namespace from non-exits/namespace: open non-exits/namespace: no such file or directory
+--- PASS: TestGetNameSpace (0.00s)
+=== RUN   TestGetRestConfig
+E0620 15:18:22.806932 1811067 config.go:119] Failed to read token from /root/code/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/token: open /root/code/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/token: no such file or directory
+    config_test.go:247: incorrect Host: https://supervisor.default.svc:6443
+--- FAIL: TestGetRestConfig (0.00s)
+=== RUN   TestCheckPodIPPoolType
+--- PASS: TestCheckPodIPPoolType (0.00s)
+=== RUN   TestNewInstances
+=== RUN   TestNewInstances/NewInstance:_when_everything_is_ok
+--- PASS: TestNewInstances (0.00s)
+    --- PASS: TestNewInstances/NewInstance:_when_everything_is_ok (0.00s)
+=== RUN   TestInstanceID
+=== RUN   TestInstanceID/test_Instance_interface:_should_not_return_error
+=== RUN   TestInstanceID/cannot_find_virtualmachine_with_node_name
+=== RUN   TestInstanceID/cannot_find_virtualmachine_with_namespace
+=== RUN   TestInstanceID/cannot_find_virtualmachine_with_empty_bios_uuid
+--- PASS: TestInstanceID (0.00s)
+    --- PASS: TestInstanceID/test_Instance_interface:_should_not_return_error (0.00s)
+    --- PASS: TestInstanceID/cannot_find_virtualmachine_with_node_name (0.00s)
+    --- PASS: TestInstanceID/cannot_find_virtualmachine_with_namespace (0.00s)
+    --- PASS: TestInstanceID/cannot_find_virtualmachine_with_empty_bios_uuid (0.00s)
+=== RUN   TestInstanceIDThrowsErr
+=== RUN   TestInstanceIDThrowsErr/test_Instance_interface:_throws_an_error_in_client.Get()
+E0620 15:18:24.285945 1811067 instances.go:157] Error trying to find VM: Internal error getting VMs
+--- PASS: TestInstanceIDThrowsErr (1.48s)
+    --- PASS: TestInstanceIDThrowsErr/test_Instance_interface:_throws_an_error_in_client.Get() (1.48s)
+=== RUN   TestInstanceExistsByProviderID
+=== RUN   TestInstanceExistsByProviderID/InstanceExistsByProviderID_should_return_true
+=== RUN   TestInstanceExistsByProviderID/InstanceExistsByProviderID_should_return_false
+--- PASS: TestInstanceExistsByProviderID (0.00s)
+    --- PASS: TestInstanceExistsByProviderID/InstanceExistsByProviderID_should_return_true (0.00s)
+    --- PASS: TestInstanceExistsByProviderID/InstanceExistsByProviderID_should_return_false (0.00s)
+=== RUN   TestInstanceShutdownByProviderID
+=== RUN   TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_should_return_true_for_powered-off_VM
+=== RUN   TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_should_return_false_for_powered-on_VM
+=== RUN   TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_node_not_found_for_powered-on_VM
+=== RUN   TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_node_not_found_for_powered-off_VM
+--- PASS: TestInstanceShutdownByProviderID (0.00s)
+    --- PASS: TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_should_return_true_for_powered-off_VM (0.00s)
+    --- PASS: TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_should_return_false_for_powered-on_VM (0.00s)
+    --- PASS: TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_node_not_found_for_powered-on_VM (0.00s)
+    --- PASS: TestInstanceShutdownByProviderID/InstanceShutdownByProviderID_node_not_found_for_powered-off_VM (0.00s)
+=== RUN   TestNodeAddressesByProviderID
+=== RUN   TestNodeAddressesByProviderID/NodeAddressesByProviderID_returns_an_empty_address_for_found_node_with_no_IP
+=== RUN   TestNodeAddressesByProviderID/NodeAddressesByProviderID_returns_a_NotFound_error_for_a_not_found_node
+=== RUN   TestNodeAddressesByProviderID/NodeAddressesByProviderID_returns_a_valid_address_for_a_found_node
+--- PASS: TestNodeAddressesByProviderID (0.00s)
+    --- PASS: TestNodeAddressesByProviderID/NodeAddressesByProviderID_returns_an_empty_address_for_found_node_with_no_IP (0.00s)
+    --- PASS: TestNodeAddressesByProviderID/NodeAddressesByProviderID_returns_a_NotFound_error_for_a_not_found_node (0.00s)
+    --- PASS: TestNodeAddressesByProviderID/NodeAddressesByProviderID_returns_a_valid_address_for_a_found_node (0.00s)
+=== RUN   TestNodeAddressesByProviderIDInternalErr
+=== RUN   TestNodeAddressesByProviderIDInternalErr/NodeAddressesByProviderID_returns_a_general_error_for_an_internal_error
+E0620 15:18:25.743217 1811067 instances.go:143] Error trying to find VM: Internal error listing VMs
+--- PASS: TestNodeAddressesByProviderIDInternalErr (1.45s)
+    --- PASS: TestNodeAddressesByProviderIDInternalErr/NodeAddressesByProviderID_returns_a_general_error_for_an_internal_error (1.45s)
+=== RUN   TestNodeAddresses
+=== RUN   TestNodeAddresses/NodeAddresses_returns_an_empty_address_for_found_node_with_no_IP
+=== RUN   TestNodeAddresses/NodeAddresses_returns_a_NotFound_error_for_a_not_found_node
+=== RUN   TestNodeAddresses/NodeAddresses_returns_a_valid_address_for_a_found_node
+--- PASS: TestNodeAddresses (0.00s)
+    --- PASS: TestNodeAddresses/NodeAddresses_returns_an_empty_address_for_found_node_with_no_IP (0.00s)
+    --- PASS: TestNodeAddresses/NodeAddresses_returns_a_NotFound_error_for_a_not_found_node (0.00s)
+    --- PASS: TestNodeAddresses/NodeAddresses_returns_a_valid_address_for_a_found_node (0.00s)
+=== RUN   TestNodeAddressesInternalErr
+=== RUN   TestNodeAddressesInternalErr/NodeAddresses_returns_a_general_error_for_an_internal_error
+E0620 15:18:27.243329 1811067 instances.go:126] Error trying to find VM: Internal error getting VMs
+--- PASS: TestNodeAddressesInternalErr (1.50s)
+    --- PASS: TestNodeAddressesInternalErr/NodeAddresses_returns_a_general_error_for_an_internal_error (1.50s)
+=== RUN   TestNewLoadBalancer
+=== RUN   TestNewLoadBalancer/NewLoadBalancer:_when_serviceAnnotationPropagationEnabled_is_false
+=== RUN   TestNewLoadBalancer/NewLoadBalancer:_when_serviceAnnotationPropagationEnabled_is_true
+--- PASS: TestNewLoadBalancer (0.00s)
+    --- PASS: TestNewLoadBalancer/NewLoadBalancer:_when_serviceAnnotationPropagationEnabled_is_false (0.00s)
+    --- PASS: TestNewLoadBalancer/NewLoadBalancer:_when_serviceAnnotationPropagationEnabled_is_true (0.00s)
+=== RUN   TestGetLoadBalancer_VMServiceNotFound
+E0620 15:18:27.247875 1811067 loadbalancer.go:72] failed to get load balancer for test-service-ns/test-lb-service: VirtualMachineService not found
+--- PASS: TestGetLoadBalancer_VMServiceNotFound (0.00s)
+=== RUN   TestGetLoadBalancer_VMServiceCreated
+E0620 15:18:27.249667 1811067 loadbalancer.go:98] failed to ensure virtual machine service for test-service-ns/test-lb-service: VirtualMachineService IP not found
+--- PASS: TestGetLoadBalancer_VMServiceCreated (0.00s)
+=== RUN   TestUpdateLoadBalancer_GetVMServiceFailed
+E0620 15:18:27.250498 1811067 loadbalancer.go:122] failed to update load balancer for test-service-ns/test-lb-service: VirtualMachineService not found
+--- PASS: TestUpdateLoadBalancer_GetVMServiceFailed (0.00s)
+=== RUN   TestUpdateLoadBalancer
+=== RUN   TestUpdateLoadBalancer/when_VMService_update_failed
+E0620 15:18:27.251389 1811067 loadbalancer.go:98] failed to ensure virtual machine service for test-service-ns/test-lb-service: VirtualMachineService IP not found
+E0620 15:18:27.251846 1811067 vmservice.go:267] "msg"="Some undefined update error" "error"="failed to update VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.251876 1811067 loadbalancer.go:129] failed to update virtual machine service for test-service-ns/test-lb-service: Some undefined update error
+=== RUN   TestUpdateLoadBalancer/when_VMService_is_updated
+E0620 15:18:27.252655 1811067 loadbalancer.go:98] failed to ensure virtual machine service for test-service-ns/test-lb-service: VirtualMachineService IP not found
+--- PASS: TestUpdateLoadBalancer (0.00s)
+    --- PASS: TestUpdateLoadBalancer/when_VMService_update_failed (0.00s)
+    --- PASS: TestUpdateLoadBalancer/when_VMService_is_updated (0.00s)
+=== RUN   TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal
+E0620 15:18:27.253844 1811067 vmservice.go:285] "msg"="virtualmachineservices.vmoperator.vmware.com \"test-cluster-d36a40ea67af17e3306ba\" not found" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+--- PASS: TestEnsureLoadBalancer_VMServiceExternalTrafficPolicyLocal (0.00s)
+=== RUN   TestEnsureLoadBalancer
+=== RUN   TestEnsureLoadBalancer/when_VMService_is_created_but_IP_not_found
+E0620 15:18:27.254264 1811067 vmservice.go:169] "msg"="VirtualMachineService IP not found" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.254293 1811067 vmservice.go:197] "msg"="VirtualMachineService IP not found" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.254299 1811067 loadbalancer.go:98] failed to ensure virtual machine service for test-service-ns/test-lb-service: VirtualMachineService IP not found
+E0620 15:18:27.254337 1811067 vmservice.go:285] "msg"="virtualmachineservices.vmoperator.vmware.com \"test-cluster-d36a40ea67af17e3306ba\" not found" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+=== RUN   TestEnsureLoadBalancer/when_VMService_creation_failed
+E0620 15:18:27.254638 1811067 vmservice.go:169] "msg"="failed to create VirtualMachineService" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.254659 1811067 vmservice.go:197] "msg"="failed to create VirtualMachineService" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.254663 1811067 loadbalancer.go:98] failed to ensure virtual machine service for test-service-ns/test-lb-service: failed to create VirtualMachineService
+E0620 15:18:27.254684 1811067 vmservice.go:285] "msg"="virtualmachineservices.vmoperator.vmware.com \"test-cluster-d36a40ea67af17e3306ba\" not found" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+--- PASS: TestEnsureLoadBalancer (0.00s)
+    --- PASS: TestEnsureLoadBalancer/when_VMService_is_created_but_IP_not_found (0.00s)
+    --- PASS: TestEnsureLoadBalancer/when_VMService_creation_failed (0.00s)
+=== RUN   TestEnsureLoadBalancer_VMServiceCreatedIPFound
+E0620 15:18:27.255051 1811067 vmservice.go:285] "msg"="virtualmachineservices.vmoperator.vmware.com \"test-cluster-d36a40ea67af17e3306ba\" not found" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+--- PASS: TestEnsureLoadBalancer_VMServiceCreatedIPFound (0.00s)
+=== RUN   TestEnsureLoadBalancer_DeleteLB
+=== RUN   TestEnsureLoadBalancer_DeleteLB/should_ignore_not_found_error
+E0620 15:18:27.255351 1811067 vmservice.go:285] "msg"="virtualmachineservices.vmoperator.vmware.com \"test-cluster-d36a40ea67af17e3306ba\" not found" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.255380 1811067 vmservice.go:285] "msg"="virtualmachineservice.vmoperator.vmware.com \"test-cluster\" not found" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+=== RUN   TestEnsureLoadBalancer_DeleteLB/should_return_error
+E0620 15:18:27.255662 1811067 vmservice.go:285] "msg"="virtualmachineservices.vmoperator.vmware.com \"test-cluster-d36a40ea67af17e3306ba\" not found" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.255690 1811067 vmservice.go:285] "msg"="an error occurred while deleting load balancer" "error"="failed to delete VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 15:18:27.255701 1811067 loadbalancer.go:152] failed to delete load balancer for test-service-ns/test-lb-service
+--- PASS: TestEnsureLoadBalancer_DeleteLB (0.00s)
+    --- PASS: TestEnsureLoadBalancer_DeleteLB/should_ignore_not_found_error (0.00s)
+    --- PASS: TestEnsureLoadBalancer_DeleteLB/should_return_error (0.00s)
+=== RUN   TestListRoutes
+--- PASS: TestListRoutes (0.13s)
+=== RUN   TestListRoutesFailed
+--- PASS: TestListRoutesFailed (0.00s)
+=== RUN   TestCreateRouteFailed
+--- PASS: TestCreateRouteFailed (10.01s)
+=== RUN   TestCreateRouteFailedWithAlreadyExisting
+E0620 15:18:37.400656 1811067 route.go:127] Route CR fakeNode1 is already existing: routesets.nsx.vmware.com "fakeNode1" already exists
+--- PASS: TestCreateRouteFailedWithAlreadyExisting (0.01s)
+=== RUN   TestDeleteRoute
+--- PASS: TestDeleteRoute (0.00s)
+=== RUN   TestDeleteRouteFailed
+--- PASS: TestDeleteRouteFailed (0.01s)
+=== RUN   TestCheckStaticRouteRealizedState
+--- PASS: TestCheckStaticRouteRealizedState (11.01s)
+=== RUN   TestNewZones
+=== RUN   TestNewZones/NewZone:_when_everything_is_ok
+--- PASS: TestNewZones (0.00s)
+    --- PASS: TestNewZones/NewZone:_when_everything_is_ok (0.00s)
+=== RUN   TestZonesByProviderID
+=== RUN   TestZonesByProviderID/TestZonesByProviderID_should_return_true
+=== RUN   TestZonesByProviderID/TestZonesByProviderID_should_return_error
+--- PASS: TestZonesByProviderID (0.00s)
+    --- PASS: TestZonesByProviderID/TestZonesByProviderID_should_return_true (0.00s)
+    --- PASS: TestZonesByProviderID/TestZonesByProviderID_should_return_error (0.00s)
+=== RUN   TestZonesByNodeName
+=== RUN   TestZonesByNodeName/TestZonesByNodeName_should_return_true
+=== RUN   TestZonesByNodeName/TestZonesByNodeName_should_return_error
+--- PASS: TestZonesByNodeName (0.00s)
+    --- PASS: TestZonesByNodeName/TestZonesByNodeName_should_return_true (0.00s)
+    --- PASS: TestZonesByNodeName/TestZonesByNodeName_should_return_error (0.00s)
+FAIL
+FAIL	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual	25.668s
+=== RUN   TestPatchNodeCIDR
+    ipaddressallocation_controller.go:72: I0620 12:17:18.987981] Creating event broadcaster
+    ipaddressallocation_controller.go:90: I0620 12:17:18.988203] Setting up event handlers
+I0620 12:17:18.988247 1800596 shared_informer.go:649] "Warning: the specified resyncPeriod is invalid because this shared informer doesn't support resyncing" desired="30s"
+    utils.go:37: I0620 12:17:18.988905] Set PodCIDR to 192.168.5.0/24 on Node node-1 IPAddressAllocation ="default/node-1"
+    ipaddressallocation_controller.go:220: I0620 12:17:18.988937] Reconciliation took (648.948µs) IPAddressAllocation ="default/node-1"
+--- PASS: TestPatchNodeCIDR (0.00s)
+=== RUN   TestIPAddressAllocationNotExist
+    ipaddressallocation_controller.go:72: I0620 12:17:18.989106] Creating event broadcaster
+    ipaddressallocation_controller.go:90: I0620 12:17:18.989204] Setting up event handlers
+I0620 12:17:18.989224 1800596 shared_informer.go:649] "Warning: the specified resyncPeriod is invalid because this shared informer doesn't support resyncing" desired="30s"
+E0620 12:17:18.989278 1800596 ipaddressallocation_controller.go:235] "Unhandled Error" err="IPAddressAllocation 'node-1' in work queue no longer exists" logger="UnhandledError"
+    ipaddressallocation_controller.go:220: I0620 12:17:18.990391] Reconciliation took (1.113732ms) IPAddressAllocation ="node-1"
+--- PASS: TestIPAddressAllocationNotExist (0.00s)
+=== RUN   TestIPAddressAllocationNotReady
+    ipaddressallocation_controller.go:72: I0620 12:17:18.990612] Creating event broadcaster
+    ipaddressallocation_controller.go:90: I0620 12:17:18.990841] Setting up event handlers
+I0620 12:17:18.990872 1800596 shared_informer.go:649] "Warning: the specified resyncPeriod is invalid because this shared informer doesn't support resyncing" desired="30s"
+    ipaddressallocation_controller.go:220: I0620 12:17:18.990935] Reconciliation took (3.503µs) IPAddressAllocation ="default/node-1"
+--- PASS: TestIPAddressAllocationNotReady (0.00s)
+=== RUN   TestIPAddressAllocationEmptyCIDR
+    ipaddressallocation_controller.go:72: I0620 12:17:18.991499] Creating event broadcaster
+    ipaddressallocation_controller.go:90: I0620 12:17:18.991581] Setting up event handlers
+I0620 12:17:18.991606 1800596 shared_informer.go:649] "Warning: the specified resyncPeriod is invalid because this shared informer doesn't support resyncing" desired="30s"
+    ipaddressallocation_controller.go:220: I0620 12:17:18.991662] Reconciliation took (20.921µs) IPAddressAllocation ="default/node-1"
+--- PASS: TestIPAddressAllocationEmptyCIDR (0.00s)
+=== RUN   TestNodeNotExist
+    ipaddressallocation_controller.go:72: I0620 12:17:18.992159] Creating event broadcaster
+    ipaddressallocation_controller.go:90: I0620 12:17:18.992326] Setting up event handlers
+I0620 12:17:18.992359 1800596 shared_informer.go:649] "Warning: the specified resyncPeriod is invalid because this shared informer doesn't support resyncing" desired="30s"
+    ipaddressallocation_controller.go:220: I0620 12:17:18.992401] Reconciliation took (6.655µs) IPAddressAllocation ="default/node-1"
+--- PASS: TestNodeNotExist (0.00s)
+=== RUN   TestPatchNodeCIDRFailed
+    ipaddressallocation_controller.go:72: I0620 12:17:18.992583] Creating event broadcaster
+    ipaddressallocation_controller.go:90: I0620 12:17:18.992694] Setting up event handlers
+I0620 12:17:18.992716 1800596 shared_informer.go:649] "Warning: the specified resyncPeriod is invalid because this shared informer doesn't support resyncing" desired="30s"
+    utils.go:41: E0620 12:17:18.992756] Failed to set PodCIDR 192.168.5.0/24 on Node node-1 after multiple attempts err="failed to patch CIDR: API server failed" IPAddressAllocation ="default/node-1"
+    utils.go:76: I0620 12:17:18.992780] Recording status change CIDRAssignmentFailed event message for Node node-1 IPAddressAllocation ="default/node-1"
+    utils.go:43: E0620 12:17:18.992799] CIDR assignment for Node node-1 failed. Try again in next reconcile err="failed to patch CIDR: API server failed" IPAddressAllocation ="default/node-1"
+    ipaddressallocation_controller.go:220: I0620 12:17:18.992813] Reconciliation took (77.613µs) IPAddressAllocation ="default/node-1"
+--- PASS: TestPatchNodeCIDRFailed (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ipaddressallocation	(cached)
+=== RUN   TestProcessIPPoolCreateOrUpdate
+=== RUN   TestProcessIPPoolCreateOrUpdate/update_2_nodes'_cidr,_then_2_nodes_are_removed
+=== RUN   TestProcessIPPoolCreateOrUpdate/update_1_nodes'_cidr,_then_1_node_are_revoved
+=== RUN   TestProcessIPPoolCreateOrUpdate/ippool_exhausted,_updates_1_node,_the_2_node_didn't_get_ip._then_node_2_was_removed
+--- PASS: TestProcessIPPoolCreateOrUpdate (0.00s)
+    --- PASS: TestProcessIPPoolCreateOrUpdate/update_2_nodes'_cidr,_then_2_nodes_are_removed (0.00s)
+    --- PASS: TestProcessIPPoolCreateOrUpdate/update_1_nodes'_cidr,_then_1_node_are_revoved (0.00s)
+    --- PASS: TestProcessIPPoolCreateOrUpdate/ippool_exhausted,_updates_1_node,_the_2_node_didn't_get_ip._then_node_2_was_removed (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ippool	(cached)
+=== RUN   TestProcessNodeCreateOrUpdate
+=== RUN   TestProcessNodeCreateOrUpdate/create_2_nodes
+=== RUN   TestProcessNodeCreateOrUpdate/create_2_node,_update_2_node
+=== RUN   TestProcessNodeCreateOrUpdate/create_1_node
+=== RUN   TestProcessNodeCreateOrUpdate/create_1_node,_update_1_node
+--- PASS: TestProcessNodeCreateOrUpdate (0.00s)
+    --- PASS: TestProcessNodeCreateOrUpdate/create_2_nodes (0.00s)
+    --- PASS: TestProcessNodeCreateOrUpdate/create_2_node,_update_2_node (0.00s)
+    --- PASS: TestProcessNodeCreateOrUpdate/create_1_node (0.00s)
+    --- PASS: TestProcessNodeCreateOrUpdate/create_1_node,_update_1_node (0.00s)
+=== RUN   TestProcessNodeDelete
+=== RUN   TestProcessNodeDelete/create_2_nodes,_delete_2
+=== RUN   TestProcessNodeDelete/create_2_nodes,_delete_1
+=== RUN   TestProcessNodeDelete/create_1_nodes,_delete_1,_ippool_doesn't_exist
+--- PASS: TestProcessNodeDelete (0.00s)
+    --- PASS: TestProcessNodeDelete/create_2_nodes,_delete_2 (0.00s)
+    --- PASS: TestProcessNodeDelete/create_2_nodes,_delete_1 (0.00s)
+    --- PASS: TestProcessNodeDelete/create_1_nodes,_delete_1,_ippool_doesn't_exist (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/node	(cached)
+=== RUN   TestAddDeleteSubnetToIPPool
+=== RUN   TestAddDeleteSubnetToIPPool/Add_1_subnet_to_IPPool,_remove_the_subnet_from_IPPool
+=== RUN   TestAddDeleteSubnetToIPPool/Add_1_subnet_to_IPPool,_remove_another_subnet_from_IPPool
+--- PASS: TestAddDeleteSubnetToIPPool (0.00s)
+    --- PASS: TestAddDeleteSubnetToIPPool/Add_1_subnet_to_IPPool,_remove_the_subnet_from_IPPool (0.00s)
+    --- PASS: TestAddDeleteSubnetToIPPool/Add_1_subnet_to_IPPool,_remove_another_subnet_from_IPPool (0.00s)
+=== RUN   TestGetIPPoolSubnets
+=== RUN   TestGetIPPoolSubnets/There_are_two_subnets_realized_in_IPPool
+=== RUN   TestGetIPPoolSubnets/There_are_no_subnets_realized_in_IPPool
+--- PASS: TestGetIPPoolSubnets (0.00s)
+    --- PASS: TestGetIPPoolSubnets/There_are_two_subnets_realized_in_IPPool (0.00s)
+    --- PASS: TestGetIPPoolSubnets/There_are_no_subnets_realized_in_IPPool (0.00s)
+=== RUN   TestDiffIPPoolSubnets
+=== RUN   TestDiffIPPoolSubnets/IPPool_with_new_subnet_realized
+=== RUN   TestDiffIPPoolSubnets/IPPool_with_new_subnet_still_not_realized
+=== RUN   TestDiffIPPoolSubnets/IPPool_with_no_new_subnet_created
+=== RUN   TestDiffIPPoolSubnets/IPPool_with_no_subnet_realized
+--- PASS: TestDiffIPPoolSubnets (0.00s)
+    --- PASS: TestDiffIPPoolSubnets/IPPool_with_new_subnet_realized (0.00s)
+    --- PASS: TestDiffIPPoolSubnets/IPPool_with_new_subnet_still_not_realized (0.00s)
+    --- PASS: TestDiffIPPoolSubnets/IPPool_with_no_new_subnet_created (0.00s)
+    --- PASS: TestDiffIPPoolSubnets/IPPool_with_no_subnet_realized (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1	(cached)
+=== RUN   TestNSXVPCIPManager_ClaimPodCIDR
+=== RUN   TestNSXVPCIPManager_ClaimPodCIDR/Claim_Public_PodCIDR_Successfully
+=== RUN   TestNSXVPCIPManager_ClaimPodCIDR/Claim_Private_PodCIDR_Successfully
+=== RUN   TestNSXVPCIPManager_ClaimPodCIDR/Node_PodCIDR_Already_Set
+=== RUN   TestNSXVPCIPManager_ClaimPodCIDR/Fail_to_create_IPAddressAllocation
+=== RUN   TestNSXVPCIPManager_ClaimPodCIDR/IPAddressAllocation_Already_Exists
+--- PASS: TestNSXVPCIPManager_ClaimPodCIDR (0.00s)
+    --- PASS: TestNSXVPCIPManager_ClaimPodCIDR/Claim_Public_PodCIDR_Successfully (0.00s)
+    --- PASS: TestNSXVPCIPManager_ClaimPodCIDR/Claim_Private_PodCIDR_Successfully (0.00s)
+    --- PASS: TestNSXVPCIPManager_ClaimPodCIDR/Node_PodCIDR_Already_Set (0.00s)
+    --- PASS: TestNSXVPCIPManager_ClaimPodCIDR/Fail_to_create_IPAddressAllocation (0.00s)
+    --- PASS: TestNSXVPCIPManager_ClaimPodCIDR/IPAddressAllocation_Already_Exists (0.00s)
+=== RUN   TestNSXVPCIPManager_ReleasePodCIDR
+=== RUN   TestNSXVPCIPManager_ReleasePodCIDR/IPAddressAllocation_Not_Found
+=== RUN   TestNSXVPCIPManager_ReleasePodCIDR/Delete_IPAddressAllocation_Successfully
+=== RUN   TestNSXVPCIPManager_ReleasePodCIDR/Delete_IPAddressAllocation_Fail
+--- PASS: TestNSXVPCIPManager_ReleasePodCIDR (0.00s)
+    --- PASS: TestNSXVPCIPManager_ReleasePodCIDR/IPAddressAllocation_Not_Found (0.00s)
+    --- PASS: TestNSXVPCIPManager_ReleasePodCIDR/Delete_IPAddressAllocation_Successfully (0.00s)
+    --- PASS: TestNSXVPCIPManager_ReleasePodCIDR/Delete_IPAddressAllocation_Fail (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/nsxipmanager	(cached)
+=== RUN   TestGetRouteName
+--- PASS: TestGetRouteName (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/helper	(cached)
+=== RUN   TestCreateRouteCR
+--- PASS: TestCreateRouteCR (0.00s)
+=== RUN   TestDeleteRouteCR
+--- PASS: TestDeleteRouteCR (0.00s)
+=== RUN   TestWaitRouteCR
+--- PASS: TestWaitRouteCR (0.00s)
+=== RUN   TestGetRouteCondition
+=== RUN   TestGetRouteCondition/RouteSet_status_with_RouteConditionTypeReady
+=== RUN   TestGetRouteCondition/RouteSet_status_with_RouteConditionTypeFailure
+=== RUN   TestGetRouteCondition/empty_RouteSet_status
+--- PASS: TestGetRouteCondition (0.00s)
+    --- PASS: TestGetRouteCondition/RouteSet_status_with_RouteConditionTypeReady (0.00s)
+    --- PASS: TestGetRouteCondition/RouteSet_status_with_RouteConditionTypeFailure (0.00s)
+    --- PASS: TestGetRouteCondition/empty_RouteSet_status (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/routeset	(cached)
+=== RUN   TestCreateRouteCR
+--- PASS: TestCreateRouteCR (0.00s)
+=== RUN   TestDeleteRouteCR
+--- PASS: TestDeleteRouteCR (0.00s)
+=== RUN   TestWaitRouteCR
+--- PASS: TestWaitRouteCR (0.00s)
+=== RUN   TestGetRouteCRCondition
+=== RUN   TestGetRouteCRCondition/StaticRoute_status_with_RouteConditionTypeReady
+=== RUN   TestGetRouteCRCondition/StaticRoute_status_with_RouteConditionTypeFailure
+=== RUN   TestGetRouteCRCondition/empty_StaticRoute_status
+--- PASS: TestGetRouteCRCondition (0.00s)
+    --- PASS: TestGetRouteCRCondition/StaticRoute_status_with_RouteConditionTypeReady (0.00s)
+    --- PASS: TestGetRouteCRCondition/StaticRoute_status_with_RouteConditionTypeFailure (0.00s)
+    --- PASS: TestGetRouteCRCondition/empty_StaticRoute_status (0.00s)
+=== RUN   TestCreateCPRoutes
+=== RUN   TestCreateCPRoutes/There_is_2_ready_route
+=== RUN   TestCreateCPRoutes/There_is_no_ready_route
+--- PASS: TestCreateCPRoutes (0.00s)
+    --- PASS: TestCreateCPRoutes/There_is_2_ready_route (0.00s)
+    --- PASS: TestCreateCPRoutes/There_is_no_ready_route (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/staticroute	(cached)
+=== RUN   TestVMCreate
+=== RUN   TestVMCreate/Create:_when_everything_is_ok
+=== RUN   TestVMCreate/Create:_when_create_error
+--- PASS: TestVMCreate (0.00s)
+    --- PASS: TestVMCreate/Create:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMCreate/Create:_when_create_error (0.00s)
+=== RUN   TestVMUpdate
+=== RUN   TestVMUpdate/Update:_when_everything_is_ok
+=== RUN   TestVMUpdate/Update:_when_update_error
+--- PASS: TestVMUpdate (0.00s)
+    --- PASS: TestVMUpdate/Update:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMUpdate/Update:_when_update_error (0.00s)
+=== RUN   TestVMDelete
+=== RUN   TestVMDelete/Delete:_when_everything_is_ok
+=== RUN   TestVMDelete/Delete:_when_delete_error
+--- PASS: TestVMDelete (0.00s)
+    --- PASS: TestVMDelete/Delete:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMDelete/Delete:_when_delete_error (0.00s)
+=== RUN   TestVMGet
+=== RUN   TestVMGet/Get:_when_everything_is_ok
+=== RUN   TestVMGet/Get:_when_get_error
+--- PASS: TestVMGet (0.00s)
+    --- PASS: TestVMGet/Get:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMGet/Get:_when_get_error (0.00s)
+=== RUN   TestVMList
+=== RUN   TestVMList/List:_when_there_is_one_virtual_machine,_list_should_be_ok
+=== RUN   TestVMList/List:_when_there_is_2_virtual_machines,_list_should_be_ok
+=== RUN   TestVMList/List:_when_there_is_0_virtual_machine,_list_should_be_ok
+=== RUN   TestVMList/List:_when_list_error
+--- PASS: TestVMList (0.00s)
+    --- PASS: TestVMList/List:_when_there_is_one_virtual_machine,_list_should_be_ok (0.00s)
+    --- PASS: TestVMList/List:_when_there_is_2_virtual_machines,_list_should_be_ok (0.00s)
+    --- PASS: TestVMList/List:_when_there_is_0_virtual_machine,_list_should_be_ok (0.00s)
+    --- PASS: TestVMList/List:_when_list_error (0.00s)
+=== RUN   TestVMServiceCreate
+=== RUN   TestVMServiceCreate/Create:_when_everything_is_ok
+=== RUN   TestVMServiceCreate/Create:_when_create_error
+--- PASS: TestVMServiceCreate (0.00s)
+    --- PASS: TestVMServiceCreate/Create:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMServiceCreate/Create:_when_create_error (0.00s)
+=== RUN   TestVMServiceUpdate
+=== RUN   TestVMServiceUpdate/Update:_when_everything_is_ok
+=== RUN   TestVMServiceUpdate/Update:_when_update_error
+--- PASS: TestVMServiceUpdate (0.00s)
+    --- PASS: TestVMServiceUpdate/Update:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMServiceUpdate/Update:_when_update_error (0.00s)
+=== RUN   TestVMServiceDelete
+=== RUN   TestVMServiceDelete/Delete:_when_everything_is_ok
+=== RUN   TestVMServiceDelete/Delete:_when_delete_error
+--- PASS: TestVMServiceDelete (0.00s)
+    --- PASS: TestVMServiceDelete/Delete:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMServiceDelete/Delete:_when_delete_error (0.00s)
+=== RUN   TestVMServiceGet
+=== RUN   TestVMServiceGet/Get:_when_everything_is_ok
+=== RUN   TestVMServiceGet/Get:_when_get_error
+--- PASS: TestVMServiceGet (0.00s)
+    --- PASS: TestVMServiceGet/Get:_when_everything_is_ok (0.00s)
+    --- PASS: TestVMServiceGet/Get:_when_get_error (0.00s)
+=== RUN   TestVMServiceList
+=== RUN   TestVMServiceList/List:_when_there_is_one_virtual_machine_service,_list_should_be_ok
+=== RUN   TestVMServiceList/List:_when_there_is_2_virtual_machine_services,_list_should_be_ok
+=== RUN   TestVMServiceList/List:_when_there_is_0_virtual_machine_service,_list_should_be_ok
+=== RUN   TestVMServiceList/List:_when_list_error
+--- PASS: TestVMServiceList (0.00s)
+    --- PASS: TestVMServiceList/List:_when_there_is_one_virtual_machine_service,_list_should_be_ok (0.00s)
+    --- PASS: TestVMServiceList/List:_when_there_is_2_virtual_machine_services,_list_should_be_ok (0.00s)
+    --- PASS: TestVMServiceList/List:_when_there_is_0_virtual_machine_service,_list_should_be_ok (0.00s)
+    --- PASS: TestVMServiceList/List:_when_list_error (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client	(cached)
+=== RUN   TestNewVMService
+=== RUN   TestNewVMService/NewVMService:_when_everything_is_ok
+--- PASS: TestNewVMService (0.00s)
+    --- PASS: TestNewVMService/NewVMService:_when_everything_is_ok (0.00s)
+=== RUN   TestGetVMServiceName
+--- PASS: TestGetVMServiceName (0.00s)
+=== RUN   TestGetVMService_ReturnNil
+--- PASS: TestGetVMService_ReturnNil (0.00s)
+=== RUN   TestGetVMService
+--- PASS: TestGetVMService (0.00s)
+=== RUN   TestCreateVMService
+--- PASS: TestCreateVMService (0.00s)
+=== RUN   TestCreateVMServiceWithLegacySelector
+--- PASS: TestCreateVMServiceWithLegacySelector (0.00s)
+=== RUN   TestCreateVMService_ZeroNodeport
+E0620 12:17:20.678018 1800873 vmservice.go:163] "msg"="port http: NodePort not found" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+--- PASS: TestCreateVMService_ZeroNodeport (0.00s)
+=== RUN   TestCreateDuplicateVMService
+E0620 12:17:20.678429 1800873 vmservice.go:169] "msg"="virtualmachineservices.vmoperator.vmware.com \"test-cluster-d36a40ea67af17e3306ba\" already exists" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+--- PASS: TestCreateDuplicateVMService (0.00s)
+=== RUN   TestCreateVMService_LBConfigs
+=== RUN   TestCreateVMService_LBConfigs/when_Service_has_loadBalancerIP_defined
+=== RUN   TestCreateVMService_LBConfigs/when_Service_has_LoadBalancerSourceRanges_defined
+--- PASS: TestCreateVMService_LBConfigs (0.00s)
+    --- PASS: TestCreateVMService_LBConfigs/when_Service_has_loadBalancerIP_defined (0.00s)
+    --- PASS: TestCreateVMService_LBConfigs/when_Service_has_LoadBalancerSourceRanges_defined (0.00s)
+=== RUN   TestCreateVMService_ExternalTrafficPolicyTypeLocal
+--- PASS: TestCreateVMService_ExternalTrafficPolicyTypeLocal (0.00s)
+=== RUN   TestCreateVMService_ExternalTrafficPolicyTypeCluster
+--- PASS: TestCreateVMService_ExternalTrafficPolicyTypeCluster (0.00s)
+=== RUN   TestCreateOrUpdateVMService
+=== RUN   TestCreateOrUpdateVMService/when_VMService_does_not_exist
+=== RUN   TestCreateOrUpdateVMService/when_clusterName_is_empty
+E0620 12:17:20.680520 1800873 vmservice.go:184] "msg"="cluster name is required to create or update a vm service" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+--- PASS: TestCreateOrUpdateVMService (0.00s)
+    --- PASS: TestCreateOrUpdateVMService/when_VMService_does_not_exist (0.00s)
+    --- PASS: TestCreateOrUpdateVMService/when_clusterName_is_empty (0.00s)
+=== RUN   TestCreateOrUpdateVMService_RedefineGetFunc
+=== RUN   TestCreateOrUpdateVMService_RedefineGetFunc/failed_to_create_VirtualMachineService
+E0620 12:17:20.680756 1800873 vmservice.go:149] "msg"="failed to get VirtualMachineService" "error"="failed to get VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+=== RUN   TestCreateOrUpdateVMService_RedefineGetFunc/when_VMService_does_not_exist
+--- PASS: TestCreateOrUpdateVMService_RedefineGetFunc (0.00s)
+    --- PASS: TestCreateOrUpdateVMService_RedefineGetFunc/failed_to_create_VirtualMachineService (0.00s)
+    --- PASS: TestCreateOrUpdateVMService_RedefineGetFunc/when_VMService_does_not_exist (0.00s)
+=== RUN   TestCreateOrUpdateVMService_RedefineCreateFunc
+E0620 12:17:20.681227 1800873 vmservice.go:169] "msg"="failed to create VirtualMachineService" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+E0620 12:17:20.681250 1800873 vmservice.go:197] "msg"="failed to create VirtualMachineService" "error"="failed to create VirtualMachineService" "logger"="vmservice" "name"="test-lb-service" "namespace"="test-service-ns"
+--- PASS: TestCreateOrUpdateVMService_RedefineCreateFunc (0.00s)
+=== RUN   TestVMService_AlreadyExists
+--- PASS: TestVMService_AlreadyExists (0.00s)
+=== RUN   TestUpdateVMService_NoChange
+--- PASS: TestUpdateVMService_NoChange (0.00s)
+=== RUN   TestUpdateVMService_NodePortChanges
+--- PASS: TestUpdateVMService_NodePortChanges (0.00s)
+=== RUN   TestUpdateVMService_LBIPAdded
+--- PASS: TestUpdateVMService_LBIPAdded (0.00s)
+=== RUN   TestUpdateVMService_LBIPChanges
+--- PASS: TestUpdateVMService_LBIPChanges (0.00s)
+=== RUN   TestUpdateVMService_LBSourceRangesAdded
+--- PASS: TestUpdateVMService_LBSourceRangesAdded (0.00s)
+=== RUN   TestUpdateVMService_LBSourceRangesChanges
+--- PASS: TestUpdateVMService_LBSourceRangesChanges (0.00s)
+=== RUN   TestUpdateVMService_ExternalTrafficPolicyLocal
+--- PASS: TestUpdateVMService_ExternalTrafficPolicyLocal (0.00s)
+=== RUN   TestUpdateVMService_ExternalTrafficPolicyCluster
+--- PASS: TestUpdateVMService_ExternalTrafficPolicyCluster (0.00s)
+=== RUN   TestCreateVMService_ServiceAnnotationPropagation
+=== RUN   TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_disabled_with_service_annotations
+=== RUN   TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_service_annotations
+=== RUN   TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_conflicting_keys
+=== RUN   TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_excluded_key
+--- PASS: TestCreateVMService_ServiceAnnotationPropagation (0.00s)
+    --- PASS: TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_disabled_with_service_annotations (0.00s)
+    --- PASS: TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_service_annotations (0.00s)
+    --- PASS: TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_conflicting_keys (0.00s)
+    --- PASS: TestCreateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_excluded_key (0.00s)
+=== RUN   TestUpdateVMService_ServiceAnnotationPropagation
+=== RUN   TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_disabled_with_service_annotations
+=== RUN   TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_service_annotations
+=== RUN   TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_conflicting_keys
+=== RUN   TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_excluded_key
+--- PASS: TestUpdateVMService_ServiceAnnotationPropagation (0.00s)
+    --- PASS: TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_disabled_with_service_annotations (0.00s)
+    --- PASS: TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_service_annotations (0.00s)
+    --- PASS: TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_conflicting_keys (0.00s)
+    --- PASS: TestUpdateVMService_ServiceAnnotationPropagation/annotation_propagation_enabled_with_excluded_key (0.00s)
+=== RUN   TestDeleteVMService
+--- PASS: TestDeleteVMService (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmservice	(cached)
+=== RUN   TestReadConfigINIGlobal
+--- PASS: TestReadConfigINIGlobal (0.00s)
+=== RUN   TestIPFamiliesINI
+--- PASS: TestIPFamiliesINI (0.00s)
+=== RUN   TestTenantRefsINI
+--- PASS: TestTenantRefsINI (0.00s)
+=== RUN   TestReadConfig
+=== RUN   TestReadConfig/Valid_YAML
+I0620 12:17:20.656108 1800874 config.go:302] Config initialized
+=== RUN   TestReadConfig/Invalid_YAML
+E0620 12:17:20.656192 1800874 config.go:289] ReadConfigYAML failed: yaml: line 5: mapping values are not allowed in this context
+E0620 12:17:20.656197 1800874 config.go:290] ReadConfigINI failed: 2:1: expected section header
+=== RUN   TestReadConfig/Valid_INI
+I0620 12:17:20.656312 1800874 config.go:293] ReadConfig INI succeeded. INI-based cloud-config is deprecated and will be removed in 2.0. Please use YAML based cloud-config.
+I0620 12:17:20.656330 1800874 config.go:302] Config initialized
+=== RUN   TestReadConfig/Invalid_INI
+E0620 12:17:20.656364 1800874 config.go:289] ReadConfigYAML failed: yaml: unmarshal errors:
+  line 2: cannot unmarshal !!seq into config.CommonConfigYAML
+E0620 12:17:20.656368 1800874 config.go:290] ReadConfigINI failed: 2:9: expected EOL, EOF, or comment
+=== RUN   TestReadConfig/Invalid_format
+E0620 12:17:20.656418 1800874 config.go:289] ReadConfigYAML failed: yaml: unmarshal errors:
+  line 2: cannot unmarshal !!str `This is...` into config.CommonConfigYAML
+E0620 12:17:20.656422 1800874 config.go:290] ReadConfigINI failed: 2:1: expected section header
+=== RUN   TestReadConfig/Missing_vCenter_IP_YAML
+E0620 12:17:20.656487 1800874 config_yaml.go:128] No Virtual Center hosts defined
+E0620 12:17:20.656491 1800874 config_yaml.go:214] validateConfig failed: No Virtual Center hosts defined
+E0620 12:17:20.656495 1800874 config.go:273] ReadConfigYAML failed: No Virtual Center hosts defined
+=== RUN   TestReadConfig/Missing_vCenter_IP_INI
+E0620 12:17:20.656581 1800874 config_ini_legacy.go:152] No Virtual Center hosts defined
+--- PASS: TestReadConfig (0.00s)
+    --- PASS: TestReadConfig/Valid_YAML (0.00s)
+    --- PASS: TestReadConfig/Invalid_YAML (0.00s)
+    --- PASS: TestReadConfig/Valid_INI (0.00s)
+    --- PASS: TestReadConfig/Invalid_INI (0.00s)
+    --- PASS: TestReadConfig/Invalid_format (0.00s)
+    --- PASS: TestReadConfig/Missing_vCenter_IP_YAML (0.00s)
+    --- PASS: TestReadConfig/Missing_vCenter_IP_INI (0.00s)
+=== RUN   TestReadConfigYAMLGlobal
+E0620 12:17:20.656608 1800874 config_yaml.go:199] Invalid YAML file
+--- PASS: TestReadConfigYAMLGlobal (0.00s)
+=== RUN   TestTenantRefsYAML
+--- PASS: TestTenantRefsYAML (0.00s)
+=== RUN   TestIsConfigYAML
+--- PASS: TestIsConfigYAML (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/common/config	(cached)
+=== RUN   TestListAllVcPairs
+--- PASS: TestListAllVcPairs (0.54s)
+=== RUN   TestWhichVCandDCByNodeIdByUUID
+--- PASS: TestWhichVCandDCByNodeIdByUUID (0.52s)
+=== RUN   TestWhichVCandDCByNodeIdByName
+--- PASS: TestWhichVCandDCByNodeIdByName (0.58s)
+=== RUN   TestWhichVCandDCByFCDId
+I0620 12:17:24.127301 1801026 datacenter.go:649] DoesFirstClassDiskExist(10f6c542-fe18-4e43-b1c8-7bd375518f9e): FOUND
+I0620 12:17:24.127849 1801026 datacenter.go:654] DoesFirstClassDiskExist(10f6c542-fe18-4e43-b1c8-7bd375518f9e): NOT FOUND
+E0620 12:17:24.127868 1801026 search.go:347] Error while looking for FCD=<nil> in vc=127.0.0.1 and datacenter=DC1: No vSphere disk ID/Name found
+--- PASS: TestWhichVCandDCByFCDId (0.61s)
+=== RUN   TestWhichVCandDCByZoneSingleDC
+I0620 12:17:24.552752 1801026 zones.go:63] Single VC Detected
+I0620 12:17:24.564011 1801026 zones.go:111] Single vCenter/Datacenter configuration detected
+--- PASS: TestWhichVCandDCByZoneSingleDC (0.44s)
+=== RUN   TestWhichVCandDCByZoneMultiDC
+I0620 12:17:25.148790 1801026 zones.go:63] Single VC Detected
+I0620 12:17:25.152983 1801026 zones.go:106] Multi Datacenter configuration detected
+I0620 12:17:25.174105 1801026 zones.go:268] Found zone: k8s-zone-US-east and region: k8s-region-US for host DC1_C0_H0
+I0620 12:17:25.174787 1801026 zones.go:268] Found zone: k8s-zone-US-east and region: k8s-region-US for host DC1_C0_H2
+I0620 12:17:25.175822 1801026 zones.go:268] Found zone: k8s-zone-US-east and region: k8s-region-US for host DC1_C0_H1
+--- PASS: TestWhichVCandDCByZoneMultiDC (0.61s)
+=== RUN   TestLookupZoneByMoref
+--- PASS: TestLookupZoneByMoref (0.44s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager	(cached)
+=== RUN   TestSecretCredentialManagerK8s_GetCredential
+    credentialmanager_test.go:273: Executing Testcase: Deleting secret should give the credentials from cache
+    credentialmanager_test.go:278: Adding secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{0.0.0.0.password: [112 97 115 115 119 111 114 100],0.0.0.0.username: [117 115 101 114],},Type:,StringData:map[string]string{},Immutable:nil,}
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.0.0
+    credentialmanager_test.go:302: Deleting secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{0.0.0.0.password: [112 97 115 115 119 111 114 100],0.0.0.0.username: [117 115 101 114],},Type:,StringData:map[string]string{},Immutable:nil,}
+W0620 12:17:22.398591 1801038 credentialmanager.go:85] Cannot get secret vsconf in namespace kube-system. error: "secret \"vsconf\" not found"
+E0620 12:17:22.398640 1801038 credentialmanager.go:54] updateCredentialsMapK8s failed. err=secret "vsconf" not found
+W0620 12:17:22.398644 1801038 credentialmanager.go:60] secret "vsconf" not found in namespace "kube-system"
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.0.0
+    credentialmanager_test.go:273: Executing Testcase: Add secret and get credentials
+    credentialmanager_test.go:278: Adding secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{0.0.0.0.password: [112 97 115 115 119 111 114 100],0.0.0.0.username: [117 115 101 114],},Type:,StringData:map[string]string{},Immutable:nil,}
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.0.0
+    credentialmanager_test.go:273: Executing Testcase: Getcredentials should fail by not adding at secret at first time
+W0620 12:17:22.398710 1801038 credentialmanager.go:85] Cannot get secret vsconf in namespace kube-system. error: "secret \"vsconf\" not found"
+E0620 12:17:22.398713 1801038 credentialmanager.go:54] updateCredentialsMapK8s failed. err=secret "vsconf" not found
+W0620 12:17:22.398716 1801038 credentialmanager.go:60] secret "vsconf" not found in namespace "kube-system"
+E0620 12:17:22.398721 1801038 credentialmanager.go:75] credentials not found for server 0.0.0.0
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.0.0
+    credentialmanager_test.go:273: Executing Testcase: GetCredential should fail to get credentials from empty secrets
+    credentialmanager_test.go:278: Adding secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{},Type:,StringData:map[string]string{},Immutable:nil,}
+E0620 12:17:22.398755 1801038 credentialmanager.go:97] parseSecret failed with err="Username/Password is missing"
+E0620 12:17:22.398758 1801038 credentialmanager.go:54] updateCredentialsMapK8s failed. err=Username/Password is missing
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.0.0
+    credentialmanager_test.go:273: Executing Testcase: GetCredential should fail to get credentials for invalid server
+    credentialmanager_test.go:278: Adding secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{0.0.0.0.password: [112 97 115 115 119 111 114 100],0.0.0.0.username: [117 115 101 114],},Type:,StringData:map[string]string{},Immutable:nil,}
+E0620 12:17:22.398812 1801038 credentialmanager.go:75] credentials not found for server 1.1.1.1
+    credentialmanager_test.go:286: Retrieving credentials for server 1.1.1.1
+    credentialmanager_test.go:273: Executing Testcase: GetCredential for multi-vc
+    credentialmanager_test.go:278: Adding secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{0.0.0.0.password: [112 97 115 115 119 111 114 100],0.0.0.0.username: [117 115 101 114],0.0.1.1.password: [112 97 115 115 119 111 114 100 49],0.0.1.1.username: [117 115 101 114 49],},Type:,StringData:map[string]string{},Immutable:nil,}
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.1.1
+    credentialmanager_test.go:273: Executing Testcase: GetCredential for multi-vc with session manager
+    credentialmanager_test.go:278: Adding secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{0.0.0.0.password: [112 97 115 115 119 111 114 100],0.0.0.0.username: [117 115 101 114],0.0.1.1.vc-session-manager-token: [116 111 107 101 110],0.0.1.1.vc-session-manager-url: [104 116 116 112 115 58 47 47 115 111 109 101 109 97 110 97 103 101 114 46 116 108 100 47 115 101 115 115 105 111 110],},Type:,StringData:map[string]string{},Immutable:nil,}
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.1.1
+    credentialmanager_test.go:273: Executing Testcase: GetCredential for alternative IPv6 server address compatable format
+    credentialmanager_test.go:278: Adding secret: &Secret{ObjectMeta:{vsconf  kube-system    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{password_0: [112 97 115 115 119 111 114 100],password_1: [112 97 115 115 119 111 114 100 49],server_0: [48 46 48 46 48 46 48],server_1: [102 100 48 49 58 58 49],username_0: [117 115 101 114],username_1: [117 115 101 114 49],},Type:,StringData:map[string]string{},Immutable:nil,}
+    credentialmanager_test.go:286: Retrieving credentials for server 0.0.0.0
+--- PASS: TestSecretCredentialManagerK8s_GetCredential (0.00s)
+=== RUN   TestParseSecretConfig
+    credentialmanager_test.go:551: Executing Testcase: Valid username and password
+    credentialmanager_test.go:551: Executing Testcase: Valid username and password with suffix '\n'(Load from files in SecretDirectory)
+E0620 12:17:22.399044 1801038 credentialmanager.go:301] Unknown secret key 10.20.30.40.usernam
+    credentialmanager_test.go:551: Executing Testcase: Invalid username key with valid password key
+E0620 12:17:22.399063 1801038 credentialmanager.go:308] Username/Password or shared session manager URL/Token directives are missing for server 10.20.30.40
+    credentialmanager_test.go:551: Executing Testcase: Missing username
+E0620 12:17:22.399077 1801038 credentialmanager.go:308] Username/Password or shared session manager URL/Token directives are missing for server 10.20.30.40
+    credentialmanager_test.go:551: Executing Testcase: Missing password
+    credentialmanager_test.go:551: Executing Testcase: Missing session manager token
+E0620 12:17:22.399102 1801038 credentialmanager.go:308] Username/Password or shared session manager URL/Token directives are missing for server 10.20.30.40
+    credentialmanager_test.go:551: Executing Testcase: Missing session manager url
+    credentialmanager_test.go:551: Executing Testcase: Valid session manager configuration
+E0620 12:17:22.399120 1801038 credentialmanager.go:301] Unknown secret key 10.20.30.40
+    credentialmanager_test.go:551: Executing Testcase: IP with unknown key
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret
+E0620 12:17:22.399150 1801038 credentialmanager.go:260] password_0 is missing for server fd01::1
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: missing password
+E0620 12:17:22.399161 1801038 credentialmanager.go:255] username_0 is missing for server fd01::1
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: missing username
+E0620 12:17:22.399177 1801038 credentialmanager.go:295] Found password key "password_1" without a matching "server_1" identifier
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: password with no matching server
+E0620 12:17:22.399195 1801038 credentialmanager.go:285] Found username key "username_1" without a matching "server_1" identifier
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: username with no matching server
+E0620 12:17:22.399210 1801038 credentialmanager.go:268] server secret key missing suffix
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: missing suffixes
+    credentialmanager_test.go:551: Executing Testcase: Mixing legacy and Alternative IPv6 compatible secret
+E0620 12:17:22.399246 1801038 credentialmanager.go:281] Found username key with no suffix identifier.
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: server key missing suffix
+E0620 12:17:22.399261 1801038 credentialmanager.go:281] Found username key with no suffix identifier.
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: username missing suffix
+E0620 12:17:22.399280 1801038 credentialmanager.go:291] Found password key with no suffix identifier.
+    credentialmanager_test.go:551: Executing Testcase: Alternative IPv6 compatible secret: password missing suffix
+--- PASS: TestParseSecretConfig (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/common/credentialmanager	(cached)
+fixturesDir: /root/code/cloud-provider-vsphere/pkg/common/vclib/fixtures
+cwd: /root/code/cloud-provider-vsphere/pkg/common/vclib
+=== RUN   TestDatacenter
+E0620 12:17:22.802727 1801039 datacenter.go:62] Failed to find the datacenter: enoent. err: datacenter 'enoent' not found
+=== RUN   TestDatacenter/should_get_objects_using_Datacenter_path
+E0620 12:17:22.806478 1801039 datacenter.go:146] Unable to find VM by UUID. VM UUID: enoent
+E0620 12:17:22.814814 1801039 datacenter.go:159] Failed to find VM by Path. VM Path: enoent, err: vm 'enoent' not found
+E0620 12:17:22.819578 1801039 datacenter.go:206] Failed to parse vmDiskPath: enoent
+E0620 12:17:22.823687 1801039 datacenter.go:218] Failed while searching for datastore: enoent. err: datastore 'enoent' not found
+E0620 12:17:22.832722 1801039 datacenter.go:218] Failed while searching for datastore: enoent. err: datastore 'enoent' not found
+E0620 12:17:22.854925 1801039 datacenter.go:260] Failed to get the folder reference for enoent. err: folder 'enoent' not found
+E0620 12:17:22.857322 1801039 datacenter.go:272] VirtualMachine Object list is empty
+E0620 12:17:22.859274 1801039 datacenter.go:282] Failed to get VM managed objects from VM objects. vmObjList: [VirtualMachine:vm-65 @ /DC0/vm/DC0_H0_VM1], properties: [enoent], err: InvalidProperty
+W0620 12:17:22.860945 1801039 datacenter.go:298] QueryVirtualDiskUuid failed for diskPath: "[LocalDS_0] DC0_H0_VM1/disk1.vmdkenoent.vmdk". err: ServerFaultCode: File [LocalDS_0] DC0_H0_VM1/disk1.vmdkenoent.vmdk was not found
+E0620 12:17:22.861351 1801039 datacenter.go:310] Datastore Object list is empty
+E0620 12:17:22.861757 1801039 datacenter.go:320] Failed to get Datastore managed objects from datastore objects. dsObjList: [Datastore:datastore-59 @ /DC0/datastore/LocalDS_0], properties: [enoent], err: InvalidProperty
+=== RUN   TestDatacenter/should_get_objects_using_Datacenter_MOID
+I0620 12:17:22.865652 1801039 datacenter.go:57] Datacenter found by Moid: /DC0
+E0620 12:17:22.866019 1801039 datacenter.go:146] Unable to find VM by UUID. VM UUID: enoent
+E0620 12:17:22.868268 1801039 datacenter.go:159] Failed to find VM by Path. VM Path: enoent, err: vm 'enoent' not found
+E0620 12:17:22.870174 1801039 datacenter.go:206] Failed to parse vmDiskPath: enoent
+E0620 12:17:22.873021 1801039 datacenter.go:218] Failed while searching for datastore: enoent. err: datastore 'enoent' not found
+E0620 12:17:22.876634 1801039 datacenter.go:218] Failed while searching for datastore: enoent. err: datastore 'enoent' not found
+E0620 12:17:22.890740 1801039 datacenter.go:260] Failed to get the folder reference for enoent. err: folder 'enoent' not found
+E0620 12:17:22.892056 1801039 datacenter.go:272] VirtualMachine Object list is empty
+E0620 12:17:22.892476 1801039 datacenter.go:282] Failed to get VM managed objects from VM objects. vmObjList: [VirtualMachine:vm-65 @ /DC0/vm/DC0_H0_VM1], properties: [enoent], err: InvalidProperty
+W0620 12:17:22.893663 1801039 datacenter.go:298] QueryVirtualDiskUuid failed for diskPath: "[LocalDS_0] DC0_H0_VM1/disk1.vmdkenoent.vmdk". err: ServerFaultCode: File [LocalDS_0] DC0_H0_VM1/disk1.vmdkenoent.vmdk was not found
+E0620 12:17:22.894136 1801039 datacenter.go:310] Datastore Object list is empty
+E0620 12:17:22.894557 1801039 datacenter.go:320] Failed to get Datastore managed objects from datastore objects. dsObjList: [Datastore:datastore-59 @ /DC0/datastore/LocalDS_0], properties: [enoent], err: InvalidProperty
+--- PASS: TestDatacenter (0.51s)
+    --- PASS: TestDatacenter/should_get_objects_using_Datacenter_path (0.06s)
+    --- PASS: TestDatacenter/should_get_objects_using_Datacenter_MOID (0.04s)
+=== RUN   TestDatastore
+--- PASS: TestDatastore (0.41s)
+=== RUN   TestFolder
+--- PASS: TestFolder (0.43s)
+=== RUN   TestDatastoreAndClusters
+2025/06/20 12:17:24 Datastore /DC0/datastore/DC0_POD0/LocalDS_0:
+2025/06/20 12:17:24   0: 04cabdee-fa14-49fe-8cc3-c4312393c4a3
+2025/06/20 12:17:24   1: e2276ffb-2921-4f83-a1ff-7204e126fa58
+2025/06/20 12:17:24   2: b105fa2e-1b96-4152-b1cc-6f114c084d80
+2025/06/20 12:17:24   3: 0f675e92-8acb-4522-a45a-f1caaa72b657
+2025/06/20 12:17:24 Datastore /DC0/datastore/DC0_POD0/LocalDS_1:
+2025/06/20 12:17:24 Datastore /DC0/datastore/LocalDS_2:
+2025/06/20 12:17:24   0: 353e585f-a769-4f09-9fd3-191f52b76699
+2025/06/20 12:17:24   1: 320362a8-cd5a-4fe0-9261-87507f0ab833
+2025/06/20 12:17:24   2: 5906f092-a6ce-4b35-aca5-31ad1730bf5b
+2025/06/20 12:17:24   3: 6e356129-71d2-4ba1-9f03-a3e6fbda495c
+2025/06/20 12:17:24 Datastore /DC0/datastore/LocalDS_3:
+2025/06/20 12:17:24   0: 2a8fd186-9da4-4ff9-88f2-24341a3bfb40
+2025/06/20 12:17:24   1: 097c093a-5cf4-4b8c-bf74-f163fa1a14ba
+2025/06/20 12:17:24   2: 7df86961-0f56-4ab0-9ab1-67e4f84d35b3
+2025/06/20 12:17:24   3: d27e9ea5-a1d9-4ded-bdaa-6cc36ae6b558
+--- PASS: TestDatastoreAndClusters (0.92s)
+=== RUN   TestUtils
+--- PASS: TestUtils (0.44s)
+=== RUN   TestVirtualMachine
+--- PASS: TestVirtualMachine (0.65s)
+=== RUN   TestWithValidCaCert
+E0620 12:17:25.776384 1801039 connection.go:199] Failed to create new client. err: EOF
+--- PASS: TestWithValidCaCert (0.02s)
+=== RUN   TestWithVerificationWithWrongThumbprint
+2025/06/20 12:17:25 http: TLS handshake error from 127.0.0.1:41644: remote error: tls: bad certificate
+E0620 12:17:25.819411 1801039 connection.go:199] Failed to create new client. err: Post "https://127.0.0.1:37359/sdk": host "127.0.0.1:37359" thumbprint does not match "obviously wrong"
+--- PASS: TestWithVerificationWithWrongThumbprint (0.04s)
+=== RUN   TestWithVerificationWithoutCaCertOrThumbprint
+E0620 12:17:25.837691 1801039 connection.go:199] Failed to create new client. err: Post "https://127.0.0.1:35175/sdk": tls: failed to verify certificate: x509: certificate signed by unknown authority
+--- PASS: TestWithVerificationWithoutCaCertOrThumbprint (0.02s)
+=== RUN   TestWithValidThumbprint
+2025/06/20 12:17:25 http: TLS handshake error from 127.0.0.1:55906: remote error: tls: bad certificate
+2025/06/20 12:17:25 http: TLS handshake error from 127.0.0.1:45460: remote error: tls: bad certificate
+E0620 12:17:25.854888 1801039 connection.go:199] Failed to create new client. err: EOF
+--- PASS: TestWithValidThumbprint (0.02s)
+=== RUN   TestWithInvalidCaCertPath
+--- PASS: TestWithInvalidCaCertPath (0.00s)
+=== RUN   TestInvalidCaCert
+--- PASS: TestInvalidCaCert (0.00s)
+=== RUN   TestGetSharedToken
+=== RUN   TestGetSharedToken/when_options_are_invalid
+=== RUN   TestGetSharedToken/when_options_are_invalid/should_fail_when_no_URL_is_sent
+=== RUN   TestGetSharedToken/when_options_are_invalid/should_fail_when_no_token_is_passed_and_SA_token_cannot_be_read
+=== RUN   TestGetSharedToken/when_options_are_invalid/should_fail_when_passed_URL_is_invalid
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_respect_the_timeout
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_calling_an_invalid_path
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_an_empty_token_is_returned
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_an_invalid_json_is_returned
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_no_cert_is_passed_and_insecureskipverify_is_false
+2025/06/20 12:17:25 http: TLS handshake error from 127.0.0.1:33774: remote error: tls: bad certificate
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_return_a_valid_token_for_the_right_request_and_insecureskip=true
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_return_a_valid_token_for_the_right_request_and_cert
+=== RUN   TestGetSharedToken/when_using_a_valid_session_manager/should_return_a_valid_token_when_using_a_file_as_a_token
+--- PASS: TestGetSharedToken (0.04s)
+    --- PASS: TestGetSharedToken/when_options_are_invalid (0.00s)
+        --- PASS: TestGetSharedToken/when_options_are_invalid/should_fail_when_no_URL_is_sent (0.00s)
+        --- PASS: TestGetSharedToken/when_options_are_invalid/should_fail_when_no_token_is_passed_and_SA_token_cannot_be_read (0.00s)
+        --- PASS: TestGetSharedToken/when_options_are_invalid/should_fail_when_passed_URL_is_invalid (0.00s)
+    --- PASS: TestGetSharedToken/when_using_a_valid_session_manager (0.04s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_respect_the_timeout (0.01s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_calling_an_invalid_path (0.00s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_an_empty_token_is_returned (0.00s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_an_invalid_json_is_returned (0.00s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_fail_when_no_cert_is_passed_and_insecureskipverify_is_false (0.01s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_return_a_valid_token_for_the_right_request_and_insecureskip=true (0.00s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_return_a_valid_token_for_the_right_request_and_cert (0.01s)
+        --- PASS: TestGetSharedToken/when_using_a_valid_session_manager/should_return_a_valid_token_when_using_a_file_as_a_token (0.01s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/common/vclib	(cached)
+=== RUN   TestINIValidateTokenConfig
+--- PASS: TestINIValidateTokenConfig (0.00s)
+=== RUN   TestINIValidateUserConfig
+--- PASS: TestINIValidateUserConfig (0.00s)
+=== RUN   TestINIValidateCertConfig
+--- PASS: TestINIValidateCertConfig (0.00s)
+=== RUN   TestINIValidateSecretConfig
+--- PASS: TestINIValidateSecretConfig (0.00s)
+=== RUN   TestReadRawConfigINI
+--- PASS: TestReadRawConfigINI (0.00s)
+=== RUN   TestReadConfigINI
+--- PASS: TestReadConfigINI (0.00s)
+=== RUN   TestFromEnv
+--- PASS: TestFromEnv (0.00s)
+=== RUN   TestYAMLValidateTokenConfig
+--- PASS: TestYAMLValidateTokenConfig (0.00s)
+=== RUN   TestYAMLValidateUserConfig
+--- PASS: TestYAMLValidateUserConfig (0.00s)
+=== RUN   TestYAMLValidateCertConfig
+--- PASS: TestYAMLValidateCertConfig (0.00s)
+=== RUN   TestYAMLValidateSecretConfig
+--- PASS: TestYAMLValidateSecretConfig (0.00s)
+=== RUN   TestReadRawConfigYAML
+--- PASS: TestReadRawConfigYAML (0.00s)
+=== RUN   TestReadConfigYAML
+--- PASS: TestReadConfigYAML (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/nsxt/config	(cached)
+=== RUN   TestRetryOnConflict
+--- PASS: TestRetryOnConflict (0.00s)
+=== RUN   TestIsIPv4
+=== RUN   TestIsIPv4/valid_IPv4_address
+=== RUN   TestIsIPv4/empty_IP_address
+=== RUN   TestIsIPv4/invalid_IPv4_address
+--- PASS: TestIsIPv4 (0.00s)
+    --- PASS: TestIsIPv4/valid_IPv4_address (0.00s)
+    --- PASS: TestIsIPv4/empty_IP_address (0.00s)
+    --- PASS: TestIsIPv4/invalid_IPv4_address (0.00s)
+PASS
+ok  	k8s.io/cloud-provider-vsphere/pkg/util	(cached)
+FAIL
