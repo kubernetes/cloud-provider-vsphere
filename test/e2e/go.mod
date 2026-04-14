@@ -12,7 +12,7 @@ replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.12.1
 
 require (
 	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.0
+	github.com/onsi/gomega v1.39.1
 	github.com/vmware/govmomi v0.53.0
 	golang.org/x/crypto v0.49.0
 	k8s.io/api v0.35.0
