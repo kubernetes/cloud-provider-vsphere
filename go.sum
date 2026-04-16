@@ -163,8 +163,8 @@ github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240827061921-8f0982975508
 github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240827061921-8f0982975508/go.mod h1:Q4JzNkNMvjo7pXtlB5/R3oME4Nhah7fAObWgghVmtxk=
 github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240827061921-8f0982975508 h1:oLcoseDTk/8eVXMu74aZQWxaiMTB/ym3CP8NNQ4qRqg=
 github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240827061921-8f0982975508/go.mod h1:Hsn4QLNjQA6wQYGI6IlQJrTqM+29KWCVdyFgS7a2Sck=
-github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20251029150609-93918c59a719 h1:nb/5ytRj7E/5eo9UzLfaR29JytMtbGpqMVs3hjaRwZ0=
-github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20251029150609-93918c59a719/go.mod h1:nWTPpxfe4gHuuYuFcrs86+NMxfkqPk3a3IlvI8TCWak=
+github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20260414214322-1fcdef9dd5cc h1:4Fl5pYawXy100oyPjv1iXh/AFa59yakvF1UXmEWHPXs=
+github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20260414214322-1fcdef9dd5cc/go.mod h1:nWTPpxfe4gHuuYuFcrs86+NMxfkqPk3a3IlvI8TCWak=
 github.com/vmware/govmomi v0.53.0 h1:e1bZCotAq7wm4xy95ePN2uoWwz28pNp/ewZZhpBY7/4=
 github.com/vmware/govmomi v0.53.0/go.mod h1:EWfuzPfxT5NV+aS2we02SLFdhvJkgeY7t7+TszgBSMY=
 github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0 h1:pT+oqJ8FD5eUBQkl+e7LZwwtbwPvW5kDyyGXvt66gOM=

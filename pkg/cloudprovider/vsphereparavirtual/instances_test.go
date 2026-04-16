@@ -25,14 +25,16 @@ import (
 	vmopv1 "github.com/vmware-tanzu/vm-operator/api/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	cloudprovider "k8s.io/cloud-provider"
-	vmopclient "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/client"
 
-	dynamicfake "k8s.io/client-go/dynamic/fake"
+	adapterv2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha2"
+	fakev2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha2/fake"
+	clientv2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/provider/v1alpha2"
 )
 
 var (
@@ -54,11 +56,6 @@ func createTestVM(name, namespace, biosUUID string) *vmopv1.VirtualMachine {
 }
 
 func createTestVMWithVMIPAndHost(name, namespace, biosUUID string) *vmopv1.VirtualMachine {
-	// TODO: Currently, dual-stack (IPv4 and IPv6) is not supported.
-	// Cluster will be assumed as IPv4 Primary by default.
-	// In the future, when dual-stack support is implemented, this code should be updated to
-	// dynamically determine the IP format based on the cluster's IP family.
-	// https://github.com/kubernetes/cloud-provider-vsphere/issues/1129
 	return &vmopv1.VirtualMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -77,19 +74,18 @@ func createTestVMWithVMIPAndHost(name, namespace, biosUUID string) *vmopv1.Virtu
 func TestNewInstances(t *testing.T) {
 	testCases := []struct {
 		name        string
-		config      *rest.Config
 		expectedErr error
 	}{
 		{
 			name:        "NewInstance: when everything is ok",
-			config:      &rest.Config{},
 			expectedErr: nil,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := NewInstances(testClusterNameSpace, testCase.config)
+			fakeAdapter, _ := fakev2.NewAdapter()
+			_, err := NewInstances(testClusterNameSpace, fakeAdapter)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.expectedErr, err)
 		})
@@ -100,12 +96,19 @@ func initTest(testVM *vmopv1.VirtualMachine) (*instances, *dynamicfake.FakeDynam
 	scheme := runtime.NewScheme()
 	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
-	fcw := vmopclient.NewFakeClientSet(fc)
+	vmopAdapter := adapterv2.NewWithFakeClient(clientv2.NewWithDynamicClient(fc))
 	instance := &instances{
-		vmClient:  fcw,
+		vmClient:  vmopAdapter,
 		namespace: testClusterNameSpace,
 	}
-	_, err := fcw.V1alpha2().VirtualMachines(testVM.Namespace).Create(context.TODO(), testVM, metav1.CreateOptions{})
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(testVM)
+	if err != nil {
+		return nil, nil, err
+	}
+	obj["apiVersion"] = clientv2.VirtualMachineGVR.Group + "/" + clientv2.VirtualMachineGVR.Version
+	obj["kind"] = "VirtualMachine"
+	_, err = fc.Resource(clientv2.VirtualMachineGVR).Namespace(testVM.Namespace).Create(
+		context.TODO(), &unstructured.Unstructured{Object: obj}, metav1.CreateOptions{})
 	return instance, fc, err
 }
 
