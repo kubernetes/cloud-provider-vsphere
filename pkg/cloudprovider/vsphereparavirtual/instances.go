@@ -85,31 +85,20 @@ func NewInstances(clusterNS string, vmClient vmop.Interface) (cloudprovider.Inst
 }
 
 func createNodeAddresses(vm *vmoptypes.VirtualMachineInfo) []v1.NodeAddress {
-	// TODO: Currently, dual-stack (IPv4 and IPv6) is not supported.
-	// Cluster will be assumed as IPv4 Primary by default.
-	// In the future, when dual-stack support is implemented, this code should be updated to
-	// dynamically determine the IP format based on the cluster's IP family.
-	// https://github.com/kubernetes/cloud-provider-vsphere/issues/1129
 	if vm.PrimaryIP4 == "" && vm.PrimaryIP6 == "" {
 		klog.V(4).Info("instance found, but no address yet")
 		return []v1.NodeAddress{}
 	}
 
-	address := vm.PrimaryIP4
-	if address == "" {
-		address = vm.PrimaryIP6
+	addrs := make([]v1.NodeAddress, 0, 3)
+	if vm.PrimaryIP4 != "" {
+		addrs = append(addrs, v1.NodeAddress{Type: v1.NodeInternalIP, Address: vm.PrimaryIP4})
 	}
-
-	return []v1.NodeAddress{
-		{
-			Type:    v1.NodeInternalIP,
-			Address: address,
-		},
-		{
-			Type:    v1.NodeHostName,
-			Address: "",
-		},
+	if vm.PrimaryIP6 != "" {
+		addrs = append(addrs, v1.NodeAddress{Type: v1.NodeInternalIP, Address: vm.PrimaryIP6})
 	}
+	addrs = append(addrs, v1.NodeAddress{Type: v1.NodeHostName, Address: ""})
+	return addrs
 }
 
 // NodeAddresses returns the addresses of the specified instance if one exists, otherwise nil

@@ -27,15 +27,17 @@ import (
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 	adapterv2 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha2"
 	adapterv5 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha5"
+	adapterv6 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha6"
 )
 
 // Supported VM Operator API version strings for the --vm-operator-api-version flag.
 const (
 	V1alpha2 = "v1alpha2"
 	V1alpha5 = "v1alpha5"
+	V1alpha6 = "v1alpha6"
 )
 
-var supportedVersions = []string{V1alpha2, V1alpha5}
+var supportedVersions = []string{V1alpha2, V1alpha5, V1alpha6}
 
 // NewAdapter returns a vmoperator.Interface for the requested API version.
 func NewAdapter(version string, cfg *rest.Config) (vmop.Interface, error) {
@@ -44,6 +46,8 @@ func NewAdapter(version string, cfg *rest.Config) (vmop.Interface, error) {
 		return adapterv2.New(cfg)
 	case V1alpha5:
 		return adapterv5.New(cfg)
+	case V1alpha6:
+		return adapterv6.New(cfg)
 	default:
 		return nil, fmt.Errorf("unsupported vm-operator-api-version %q: supported versions are %s",
 			version, strings.Join(supportedVersions, ", "))

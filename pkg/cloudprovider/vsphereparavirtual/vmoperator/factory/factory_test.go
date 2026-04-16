@@ -30,7 +30,7 @@ func TestNewAdapter_SupportedVersions(t *testing.T) {
 	// parses the config struct; it does not dial the server or perform any
 	// network I/O, so this test remains hermetic and requires no fake server.
 	cfg := &rest.Config{Host: "https://fake-host"}
-	for _, version := range []string{factory.V1alpha2, factory.V1alpha5} {
+	for _, version := range []string{factory.V1alpha2, factory.V1alpha5, factory.V1alpha6} {
 		t.Run(version, func(t *testing.T) {
 			adapter, err := factory.NewAdapter(version, cfg)
 			assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestNewAdapter_UnsupportedVersion(t *testing.T) {
 		name    string
 		version string
 	}{
-		{name: "unknown version string", version: "v1alpha6"},
+		{name: "unknown version string", version: "v1alpha7"},
 		{name: "empty version string", version: ""},
 	}
 	for _, tc := range testCases {
@@ -58,6 +58,7 @@ func TestNewAdapter_UnsupportedVersion(t *testing.T) {
 			assert.Contains(t, err.Error(), "unsupported vm-operator-api-version")
 			assert.Contains(t, err.Error(), factory.V1alpha2)
 			assert.Contains(t, err.Error(), factory.V1alpha5)
+			assert.Contains(t, err.Error(), factory.V1alpha6)
 		})
 	}
 }

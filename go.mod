@@ -2,9 +2,10 @@ module k8s.io/cloud-provider-vsphere
 
 go 1.26.0
 
-replace github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels => github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels v1.9.1-0.20251029150609-93918c59a719
+replace github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels => github.com/vmware-tanzu/vm-operator/pkg/constants/testlabels v1.9.1-0.20260414214322-1fcdef9dd5cc
 
-// vm-operator version is aligned with CAPV https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/blob/main/go.mod#L11
+// vm-operator version: prefer alignment with CAPV https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/blob/main/go.mod#L11
+// (may temporarily diverge when CPI needs a newer api/v1alpha6 commit before CAPV bumps).
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/golang/mock v1.6.0
@@ -16,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20240827061921-8f0982975508
 	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20240827061921-8f0982975508
-	github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20251029150609-93918c59a719
+	github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20260414214322-1fcdef9dd5cc
 	github.com/vmware/govmomi v0.53.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0

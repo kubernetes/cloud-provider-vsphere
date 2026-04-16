@@ -21,6 +21,7 @@ import (
 	"crypto/md5" // #nosec
 	"encoding/hex"
 	"fmt"
+	"net"
 	"reflect"
 	"slices"
 	"strconv"
@@ -198,12 +199,11 @@ func (s *vmService) CreateOrUpdate(ctx context.Context, service *v1.Service, clu
 		}
 	}
 
-	vmServiceIP := getVMServiceIP(vms)
-	if vmServiceIP == "" {
+	if !loadBalancerIngressesSatisfied(service, vms) {
 		return vms, ErrVMServiceIPNotFound
 	}
 
-	logger.V(2).Info("VirtualMachineService IP has been found")
+	logger.V(2).Info("VirtualMachineService load balancer ingress is ready")
 
 	return vms, err
 }
@@ -248,6 +248,12 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 	if len(desiredAnnotations) == 0 {
 		desiredAnnotations = nil
 	}
+	existingIPFams := existing.Spec.IPFamilies
+	if len(existingIPFams) == 0 {
+		existingIPFams = nil
+	}
+	desiredIPFams := cloneIPFamilies(service.Spec.IPFamilies)
+	servicePolicy := cloneIPFamilyPolicy(service.Spec.IPFamilyPolicy)
 
 	var needsUpdate bool
 	if !reflect.DeepEqual(existing.Spec.Ports, ports) {
@@ -262,6 +268,12 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 	if !reflect.DeepEqual(existingAnnotations, desiredAnnotations) {
 		needsUpdate = true
 	}
+	if !reflect.DeepEqual(existingIPFams, desiredIPFams) {
+		needsUpdate = true
+	}
+	if !ipFamilyPolicyEqual(existing.Spec.IPFamilyPolicy, service.Spec.IPFamilyPolicy) {
+		needsUpdate = true
+	}
 
 	if needsUpdate {
 		update := &vmoptypes.VirtualMachineServiceInfo{
@@ -270,6 +282,8 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 				Ports:                    ports,
 				LoadBalancerIP:           service.Spec.LoadBalancerIP,
 				LoadBalancerSourceRanges: serviceRanges,
+				IPFamilies:               desiredIPFams,
+				IPFamilyPolicy:           servicePolicy,
 			},
 		}
 		result, err := s.vmClient.VirtualMachineServices().Update(ctx, s.namespace, existing.Name, update)
@@ -350,6 +364,8 @@ func (s *vmService) lbServiceToVMServiceInfo(service *v1.Service, clusterName st
 			Selector:                 selector,
 			LoadBalancerIP:           service.Spec.LoadBalancerIP,
 			LoadBalancerSourceRanges: service.Spec.LoadBalancerSourceRanges,
+			IPFamilies:               cloneIPFamilies(service.Spec.IPFamilies),
+			IPFamilyPolicy:           cloneIPFamilyPolicy(service.Spec.IPFamilyPolicy),
 		},
 	}
 
@@ -388,9 +404,69 @@ func getVMServiceAnnotations(service *v1.Service, serviceAnnotationPropagationEn
 	return annotations
 }
 
-func getVMServiceIP(vms *vmoptypes.VirtualMachineServiceInfo) string {
-	if len(vms.Status.LoadBalancerIngress) > 0 {
-		return vms.Status.LoadBalancerIngress[0].IP
+func cloneIPFamilies(f []v1.IPFamily) []v1.IPFamily {
+	if len(f) == 0 {
+		return nil
 	}
-	return ""
+	out := make([]v1.IPFamily, len(f))
+	copy(out, f)
+	return out
+}
+
+func cloneIPFamilyPolicy(p *v1.IPFamilyPolicyType) *v1.IPFamilyPolicyType {
+	if p == nil {
+		return nil
+	}
+	v := *p
+	return &v
+}
+
+func ipFamilyPolicyEqual(a, b *v1.IPFamilyPolicyType) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+// loadBalancerIngressesSatisfied returns true when status has at least one usable
+// ingress IP, and when the Service declares specific IP families, each family
+// has a matching ingress address.
+func loadBalancerIngressesSatisfied(service *v1.Service, vms *vmoptypes.VirtualMachineServiceInfo) bool {
+	wantV4, wantV6 := false, false
+	for _, f := range service.Spec.IPFamilies {
+		switch f {
+		case v1.IPv4Protocol:
+			wantV4 = true
+		case v1.IPv6Protocol:
+			wantV6 = true
+		}
+	}
+	var hasV4, hasV6 bool
+	for _, ing := range vms.Status.LoadBalancerIngress {
+		if ing.IP == "" {
+			continue
+		}
+		ip := net.ParseIP(ing.IP)
+		if ip == nil {
+			continue
+		}
+		if ip.To4() != nil {
+			hasV4 = true
+		} else {
+			hasV6 = true
+		}
+	}
+	if !wantV4 && !wantV6 {
+		return hasV4 || hasV6
+	}
+	if wantV4 && !hasV4 {
+		return false
+	}
+	if wantV6 && !hasV6 {
+		return false
+	}
+	return true
 }

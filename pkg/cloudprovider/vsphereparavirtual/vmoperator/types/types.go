@@ -23,7 +23,10 @@ limitations under the License.
 // the relevant adapter's conversion functions, and leave older adapters unchanged.
 package types
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // PowerState represents the power state of a VirtualMachine.
 type PowerState string
@@ -73,6 +76,10 @@ type VirtualMachineServiceSpec struct {
 	Selector                 map[string]string
 	LoadBalancerIP           string
 	LoadBalancerSourceRanges []string
+	// IPFamilies and IPFamilyPolicy mirror core Service fields (v1alpha6+ on VirtualMachineService).
+	// Older VM Operator API versions do not persist these on the wire; adapters leave them unset.
+	IPFamilies     []corev1.IPFamily
+	IPFamilyPolicy *corev1.IPFamilyPolicyType
 }
 
 // LoadBalancerIngress represents a single ingress point for a load balancer.

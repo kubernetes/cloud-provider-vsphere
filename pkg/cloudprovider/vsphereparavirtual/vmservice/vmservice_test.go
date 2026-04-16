@@ -881,3 +881,34 @@ func TestDeleteVMService(t *testing.T) {
 	err := vms.Delete(context.Background(), testK8sService, testClustername)
 	assert.NoError(t, err)
 }
+
+func TestLoadBalancerIngressesSatisfied(t *testing.T) {
+	svcSingle := &v1.Service{Spec: v1.ServiceSpec{IPFamilies: []v1.IPFamily{v1.IPv4Protocol}}}
+	svcDual := &v1.Service{Spec: v1.ServiceSpec{IPFamilies: []v1.IPFamily{v1.IPv4Protocol, v1.IPv6Protocol}}}
+	svcUnspecified := &v1.Service{Spec: v1.ServiceSpec{}}
+
+	vmsV4Only := &vmoptypes.VirtualMachineServiceInfo{
+		Status: vmoptypes.VirtualMachineServiceStatus{
+			LoadBalancerIngress: []vmoptypes.LoadBalancerIngress{{IP: "10.0.0.1"}},
+		},
+	}
+	vmsDual := &vmoptypes.VirtualMachineServiceInfo{
+		Status: vmoptypes.VirtualMachineServiceStatus{
+			LoadBalancerIngress: []vmoptypes.LoadBalancerIngress{
+				{IP: "10.0.0.1"},
+				{IP: "2001:db8::1"},
+			},
+		},
+	}
+	vmsV6Only := &vmoptypes.VirtualMachineServiceInfo{
+		Status: vmoptypes.VirtualMachineServiceStatus{
+			LoadBalancerIngress: []vmoptypes.LoadBalancerIngress{{IP: "2001:db8::1"}},
+		},
+	}
+
+	assert.True(t, loadBalancerIngressesSatisfied(svcUnspecified, vmsV4Only))
+	assert.True(t, loadBalancerIngressesSatisfied(svcSingle, vmsV4Only))
+	assert.False(t, loadBalancerIngressesSatisfied(svcSingle, vmsV6Only))
+	assert.False(t, loadBalancerIngressesSatisfied(svcDual, vmsV4Only))
+	assert.True(t, loadBalancerIngressesSatisfied(svcDual, vmsDual))
+}

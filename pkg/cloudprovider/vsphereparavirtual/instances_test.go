@@ -56,11 +56,6 @@ func createTestVM(name, namespace, biosUUID string) *vmopv1.VirtualMachine {
 }
 
 func createTestVMWithVMIPAndHost(name, namespace, biosUUID string) *vmopv1.VirtualMachine {
-	// TODO: Currently, dual-stack (IPv4 and IPv6) is not supported.
-	// Cluster will be assumed as IPv4 Primary by default.
-	// In the future, when dual-stack support is implemented, this code should be updated to
-	// dynamically determine the IP format based on the cluster's IP family.
-	// https://github.com/kubernetes/cloud-provider-vsphere/issues/1129
 	return &vmopv1.VirtualMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

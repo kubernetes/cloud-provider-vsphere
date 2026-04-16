@@ -161,16 +161,17 @@ func (l *loadBalancer) EnsureLoadBalancerDeleted(ctx context.Context, clusterNam
 }
 
 func toStatus(vms *vmoptypes.VirtualMachineServiceInfo) *v1.LoadBalancerStatus {
-	if len(vms.Status.LoadBalancerIngress) > 0 {
-		return &v1.LoadBalancerStatus{
-			Ingress: []v1.LoadBalancerIngress{
-				{
-					IP: vms.Status.LoadBalancerIngress[0].IP,
-				},
-			},
+	st := &v1.LoadBalancerStatus{}
+	for _, ing := range vms.Status.LoadBalancerIngress {
+		if ing.IP == "" && ing.Hostname == "" {
+			continue
 		}
+		st.Ingress = append(st.Ingress, v1.LoadBalancerIngress{
+			IP:       ing.IP,
+			Hostname: ing.Hostname,
+		})
 	}
-	return &v1.LoadBalancerStatus{}
+	return st
 }
 
 func namespacedName(service *v1.Service) string {
