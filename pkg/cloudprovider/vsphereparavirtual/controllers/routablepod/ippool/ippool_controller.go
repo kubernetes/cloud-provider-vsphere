@@ -194,8 +194,8 @@ func (c *Controller) processIPPoolCreateOrUpdate(subnets map[string]string) erro
 	// update node with allocated subnet
 	for _, n := range nodes.Items {
 		if v, ok := subnets[n.Name]; ok {
-			// Set or overwrite the podCIDR on current node
-			if err := utils.PatchNodeCIDRWithRetry(ctx, c.kubeclientset, &n, v, c.recorder); err == nil {
+			// Set or overwrite the podCIDR on current node (T1 mode is always single stack IPv4)
+			if err := utils.PatchNodeCIDRWithRetry(ctx, c.kubeclientset, &n, []string{v}, c.recorder); err == nil {
 				// continue to next node if this one succeeded
 				continue
 			}

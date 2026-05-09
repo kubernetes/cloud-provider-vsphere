@@ -3,7 +3,6 @@ package staticroute
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
 	nsxclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned"
@@ -64,14 +63,17 @@ func (sr *RouteManager) CreateCPRoutes(staticroutes helper.RouteCRList) ([]*clou
 		// only return cloudprovider.RouteInfo if RouteSet CR status 'Ready' is true
 		condition := GetRouteCRCondition(&(staticroute.Status), vpcapisv1.Ready)
 		if condition != nil && condition.Status == v1.ConditionTrue {
-			// TargetNode must be the Kubernetes node name, not the CR name.
-			// For IPv6 routes, crNameForRoute appends helper.SuffixIPv6 to the node
-			// name. Strip the suffix only when the destination CIDR is IPv6, so that
-			// node names that legitimately end in "-ipv6" are not incorrectly truncated
-			// when they have an IPv4 route.
-			nodeName := staticroute.Name
-			if !util.IsIPv4(staticroute.Spec.Network) {
-				nodeName = strings.TrimSuffix(staticroute.Name, helper.SuffixIPv6)
+			// Prefer the nodeName label written by CreateRoute (Phase 2+).
+			// Fall back to the CR name for legacy CRs that lack the label.
+			// In the fallback path we only strip the IPv6 suffix when the
+			// destination is actually IPv6, so an IPv4 route on a node whose
+			// name happens to end in "-ipv6" is not silently truncated.
+			nodeName := staticroute.Labels[helper.LabelKeyNodeName]
+			if nodeName == "" {
+				nodeName = staticroute.Name
+				if !util.IsIPv4(staticroute.Spec.Network) {
+					nodeName = helper.StripFamilySuffix(staticroute.Name)
+				}
 			}
 			cpRoute := &cloudprovider.Route{
 				Name:            staticroute.Name,

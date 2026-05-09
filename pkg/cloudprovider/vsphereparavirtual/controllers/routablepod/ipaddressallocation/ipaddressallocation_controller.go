@@ -23,6 +23,7 @@ import (
 	vpclisterv1alpha1 "github.com/vmware-tanzu/nsx-operator/pkg/client/listers/vpc/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -35,12 +36,14 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/utils"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ipfamily"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/helper"
 )
 
 const (
-	// controllerAgentName is the string used by this controller to identify
+	// controllerAgentName is the string used by this controller to identify itself in events.
 	controllerAgentName = "ipaddressallocation-controller"
-	// syncPeriod Interval of synchronizing IPAddressAllocation from apiserver
+	// syncPeriod is the interval at which IPAddressAllocation objects are re-synced from the API server.
 	syncPeriod = 30 * time.Second
 )
 
@@ -56,6 +59,9 @@ type Controller struct {
 
 	recorder  record.EventRecorder
 	workqueue workqueue.RateLimitingInterface
+
+	// ipFamily encodes which address families are active and which is primary.
+	ipFamily ipfamily.IPFamily
 }
 
 // NewController returns a Controller that reconciles IPAddressAllocation
@@ -64,7 +70,8 @@ func NewController(
 	kubeclientset kubernetes.Interface,
 	nodesLister listerv1.NodeLister,
 	nodesSynced cache.InformerSynced,
-	ipAddressAllocationInformer vpcinformerv1.IPAddressAllocationInformer) *Controller {
+	ipAddressAllocationInformer vpcinformerv1.IPAddressAllocationInformer,
+	f ipfamily.IPFamily) *Controller {
 	logger := klog.FromContext(ctx)
 
 	// Create event broadcaster
@@ -85,6 +92,7 @@ func NewController(
 		workqueue: workqueue.NewRateLimitingQueueWithConfig(workqueue.DefaultControllerRateLimiter(), workqueue.RateLimitingQueueConfig{
 			Name: "IPAddressAllocations",
 		}),
+		ipFamily: f,
 	}
 
 	logger.Info("Setting up event handlers")
@@ -247,27 +255,142 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 	return c.processIPAddressAllocationCreateOrUpdate(ctx, ipAddressAllocation)
 }
 
-// processIPAddressAllocationCreateOrUpdate will get CIDR from the IPAddressAllocation status and update it to the
-// PodCIDR of the same name Node.
-func (c *Controller) processIPAddressAllocationCreateOrUpdate(ctx context.Context, ipAddressAllocation *vpcapisv1.IPAddressAllocation) error {
+// isIPv4Allocation returns true if the given IPAddressAllocation is IPv4.
+//
+// Identification is taken from Spec.IPAddressType, which is the authoritative
+// source set by the creator. For backward compatibility with pre-dual-stack
+// CRs (which left IPAddressType unset and were always single-stack IPv4), an
+// empty type also resolves to IPv4 — matching the upstream API default.
+//
+// We deliberately do NOT parse the CR name to decide the family: node names
+// that themselves end in "-ipv6" would otherwise be misclassified.
+func isIPv4Allocation(alloc *vpcapisv1.IPAddressAllocation) bool {
+	return alloc.Spec.IPAddressType != vpcapisv1.IPAllocationIPAddressTypeIPv6
+}
 
-	var podCIDR string
-	for _, condition := range ipAddressAllocation.Status.Conditions {
-		if condition.Type == vpcapisv1.Ready {
-			if condition.Status != corev1.ConditionTrue {
-				return fmt.Errorf("IPAddressAllocation %v is not ready", ipAddressAllocation.Name)
-			}
-			podCIDR = ipAddressAllocation.Status.AllocationIPs
+// nodeNameForAllocation returns the Kubernetes Node name that the given
+// IPAddressAllocation is bound to.
+//
+// The label helper.LabelKeyNodeName is the authoritative source (set by the
+// nsxipmanager when creating the CR). For backward compatibility with
+// pre-dual-stack CRs that lack the label, the function falls back to
+// stripping the family suffix from the CR name. That fallback is unsafe for
+// nodes whose name itself ends in "-ipv6", but those clusters could not have
+// existed in dual-stack mode before this change, so the fallback is only
+// reached for legacy single-stack IPv4 CRs whose names are the bare node
+// name and so the strip is a no-op.
+func nodeNameForAllocation(alloc *vpcapisv1.IPAddressAllocation) string {
+	if name, ok := alloc.Labels[helper.LabelKeyNodeName]; ok && name != "" {
+		return name
+	}
+	return helper.StripFamilySuffix(alloc.Name)
+}
+
+// allocationIP returns the allocated CIDR from the IPAddressAllocation status,
+// or an empty string if not yet ready.
+func allocationIP(alloc *vpcapisv1.IPAddressAllocation) string {
+	for _, condition := range alloc.Status.Conditions {
+		if condition.Type == vpcapisv1.Ready && condition.Status == corev1.ConditionTrue {
+			return alloc.Status.AllocationIPs
 		}
 	}
-	if podCIDR == "" {
-		return fmt.Errorf("IPAddressAllocation %v does not get CIDR allocated", ipAddressAllocation.Name)
-	}
-	node, err := c.nodesLister.Get(ipAddressAllocation.Name)
+	return ""
+}
+
+// processIPAddressAllocationCreateOrUpdate gets the CIDR from the IPAddressAllocation
+// status and patches it to the matching Node's PodCIDRs.
+//
+// In dual stack mode it waits for both the IPv4 and IPv6 partner allocation to
+// be ready before performing a single atomic patch with both CIDRs ordered by
+// primaryIPFamilyIsIPv4.
+func (c *Controller) processIPAddressAllocationCreateOrUpdate(ctx context.Context, ipAddressAllocation *vpcapisv1.IPAddressAllocation) error {
+	nodeName := nodeNameForAllocation(ipAddressAllocation)
+
+	node, err := c.nodesLister.Get(nodeName)
 	if err != nil {
 		return err
 	}
 
-	// update node with allocated podCIDR
-	return utils.PatchNodeCIDRWithRetry(ctx, c.kubeclientset, node, podCIDR, c.recorder)
+	var cidrs []string
+
+	if !c.ipFamily.DualStack() {
+		// Single-stack: we only need the allocation that triggered the reconcile.
+		// Legacy CRs might not have the nodeName label, so we don't use a label selector here.
+		isIPv4 := isIPv4Allocation(ipAddressAllocation)
+		if c.ipFamily.PrimaryIPv4() && !isIPv4 {
+			return fmt.Errorf("expected IPv4 allocation for IPv4 single-stack node %s", nodeName)
+		}
+		if !c.ipFamily.PrimaryIPv4() && isIPv4 {
+			return fmt.Errorf("expected IPv6 allocation for IPv6 single-stack node %s", nodeName)
+		}
+
+		cidr := allocationIP(ipAddressAllocation)
+		if cidr == "" {
+			return fmt.Errorf("IPAddressAllocation %s does not have an allocated CIDR yet", ipAddressAllocation.Name)
+		}
+		cidrs = []string{cidr}
+	} else {
+		// Dual-stack: list all allocations for this node.
+		// Dual-stack clusters are new and guaranteed to have the nodeName label on their CRs.
+		selector := labels.SelectorFromSet(labels.Set{helper.LabelKeyNodeName: nodeName})
+		allocations, err := c.ipAddressAllocationsLister.IPAddressAllocations(ipAddressAllocation.Namespace).List(selector)
+		if err != nil {
+			return err
+		}
+
+		if len(allocations) != 2 {
+			return fmt.Errorf("expected 2 IPAddressAllocations for dual-stack node %s, got %d", nodeName, len(allocations))
+		}
+
+		var ipv4CIDR, ipv6CIDR string
+		for _, alloc := range allocations {
+			cidr := allocationIP(alloc)
+			if cidr == "" {
+				return fmt.Errorf("IPAddressAllocation %s does not have an allocated CIDR yet", alloc.Name)
+			}
+			if isIPv4Allocation(alloc) {
+				ipv4CIDR = cidr
+			} else {
+				ipv6CIDR = cidr
+			}
+		}
+
+		if ipv4CIDR == "" || ipv6CIDR == "" {
+			return fmt.Errorf("dual-stack node %s must have one IPv4 and one IPv6 allocation", nodeName)
+		}
+
+		// In Kubernetes dual-stack, the order of CIDRs in node.Spec.PodCIDRs is semantically significant.
+		// The first element determines the primary IP family for the node, which dictates the primary IP
+		// assigned to Pods. This order must align with the cluster's overall primary IP family.
+		if c.ipFamily.PrimaryIPv4() {
+			cidrs = []string{ipv4CIDR, ipv6CIDR}
+		} else {
+			cidrs = []string{ipv6CIDR, ipv4CIDR}
+		}
+	}
+
+	// Skip the API server PATCH if the node already carries the correct CIDRs.
+	// Without this guard every 30-second resync of either partner allocation would
+	// issue a redundant PATCH (2*N nodes per cycle in dual-stack clusters).
+	if slicesEqual(node.Spec.PodCIDRs, cidrs) {
+		klog.V(4).Infof("Node %s already has correct PodCIDRs %v, skipping patch", nodeName, cidrs)
+		return nil
+	}
+
+	return utils.PatchNodeCIDRWithRetry(ctx, c.kubeclientset, node, cidrs, c.recorder)
+}
+
+// slicesEqual returns true if a and b have the same length and identical
+// elements in the same order. It is used to compare PodCIDRs slices so that
+// we can skip redundant API server PATCHes on resync.
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
