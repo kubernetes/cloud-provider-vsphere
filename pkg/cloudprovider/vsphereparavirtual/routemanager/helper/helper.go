@@ -23,6 +23,9 @@ const (
 	RealizedStateTimeout = 10 * time.Second
 	// RealizedStateSleepTime is the interval between realized state check
 	RealizedStateSleepTime = 1 * time.Second
+	// SuffixIPv6 is appended to the node name when naming an IPv6 StaticRoute CR,
+	// so that dual-stack nodes can have one CR per address family without name collision.
+	SuffixIPv6 = "-ipv6"
 )
 
 // RouteCR defines an interface that is used to represent different kinds of nsx.vmware.com route CR

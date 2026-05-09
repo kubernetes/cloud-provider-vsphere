@@ -57,6 +57,9 @@ type VirtualMachineInfo struct {
 	PowerState PowerState
 	PrimaryIP4 string
 	PrimaryIP6 string
+	// NetworkInterfaceAddresses lists CIDR-stripped IPs from vm.Status.Network.Interfaces
+	// in discovery order. The CPI merges these with primaries, deduplicates, and filters link-local.
+	NetworkInterfaceAddresses []string
 }
 
 // VirtualMachineServicePort describes a single port exposed by a VirtualMachineService.

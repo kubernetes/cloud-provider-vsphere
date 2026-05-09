@@ -89,11 +89,25 @@ func (r *routesProvider) ListRoutes(ctx context.Context, clusterName string) ([]
 	return r.routeManager.CreateCPRoutes(routes)
 }
 
+// crNameForRoute returns the StaticRoute CR name for a given Kubernetes node name
+// and destination CIDR. IPv4 CIDRs use the bare node name to remain compatible
+// with existing StaticRoute CRs created before dual-stack support; changing the
+// IPv4 naming scheme would orphan those CRs on upgrade. IPv6 CIDRs append
+// helper.SuffixIPv6 so dual-stack nodes can have one CR per address family
+// without name collision.
+func crNameForRoute(nodeName, destCIDR string) string {
+	if util.IsIPv4(destCIDR) {
+		return nodeName
+	}
+	return nodeName + helper.SuffixIPv6
+}
+
 // CreateRoute implements Routes.CreateRoute
 // Create a RouteSet or StaticRoute CR for a Node
 func (r *routesProvider) CreateRoute(ctx context.Context, clusterName string, nameHint string, route *cloudprovider.Route) error {
 	nodeName := string(route.TargetNode)
-	klog.V(6).Infof("Creating Route for node %s with hint %s in cluster %s", nodeName, nameHint, clusterName)
+	crName := crNameForRoute(nodeName, route.DestinationCIDR)
+	klog.V(6).Infof("Creating Route for node %s (CR name %s) with hint %s in cluster %s", nodeName, crName, nameHint, clusterName)
 
 	nodeIP, err := r.getNodeIPAddress(nodeName, util.IsIPv4(route.DestinationCIDR))
 	if err != nil {
@@ -116,66 +130,74 @@ func (r *routesProvider) CreateRoute(ctx context.Context, clusterName string, na
 	routeInfo := &helper.RouteInfo{
 		Labels:    labels,
 		Owner:     owners,
-		Name:      nodeName,
+		Name:      crName,
 		Cidr:      route.DestinationCIDR,
 		NodeIP:    nodeIP,
-		RouteName: helper.GetRouteName(nodeName, route.DestinationCIDR, clusterName),
+		RouteName: helper.GetRouteName(crName, route.DestinationCIDR, clusterName),
 	}
 	_, err = r.routeManager.CreateRouteCR(ctx, routeInfo)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			klog.Errorf("Route CR %s is already existing: %v", nodeName, err)
+			klog.Errorf("Route CR %s is already existing: %v", crName, err)
 			return nil
 		}
-		klog.Errorf("creating Route CR for node %s failed: %s", nodeName, err)
+		klog.Errorf("creating Route CR for node %s failed: %s", crName, err)
 		return err
 	}
-	klog.V(6).Infof("Successfully created Route CR for node %s", nodeName)
-	return r.checkStaticRouteRealizedState(nodeName)
+	klog.V(6).Infof("Successfully created Route CR %s for node %s", crName, nodeName)
+	return r.checkStaticRouteRealizedState(crName)
 }
 
 // checkStaticRouteRealizedState checks static route realized state. The ready status is updated to Route CR by ncp/nsx-operator afterwards
 // The check happens every 1 second and the default timeout is 10 seconds
-func (r *routesProvider) checkStaticRouteRealizedState(routeSetName string) error {
+func (r *routesProvider) checkStaticRouteRealizedState(crName string) error {
 	timeout := time.After(helper.RealizedStateTimeout)
 	ticker := time.NewTicker(helper.RealizedStateSleepTime)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-timeout:
-			return fmt.Errorf("timed out waiting for static route %s", routeSetName)
+			return fmt.Errorf("timed out waiting for static route %s", crName)
 		case <-ticker.C:
-			if err := r.routeManager.WaitRouteCR(routeSetName); err == nil {
+			if err := r.routeManager.WaitRouteCR(crName); err == nil {
 				return nil
 			}
 		}
 	}
 }
 
-// DeleteRoute implements Routes.DeleteRouteCR
+// DeleteRoute implements Routes.DeleteRoute
 // Delete node's corresponding RouteSet or StaticRoute CR
 func (r *routesProvider) DeleteRoute(ctx context.Context, clusterName string, route *cloudprovider.Route) error {
-	routeSetName := string(route.TargetNode)
-	klog.V(6).Infof("Deleting Route CR %s in cluster %s", routeSetName, clusterName)
-	if err := r.routeManager.DeleteRouteCR(routeSetName); err != nil {
+	nodeName := string(route.TargetNode)
+	crName := crNameForRoute(nodeName, route.DestinationCIDR)
+	klog.V(6).Infof("Deleting Route CR %s in cluster %s", crName, clusterName)
+	if err := r.routeManager.DeleteRouteCR(crName); err != nil {
+		if apierrors.IsNotFound(err) {
+			klog.V(6).Infof("Route CR %s already gone, treating as success", crName)
+			return nil
+		}
 		klog.ErrorS(helper.ErrDeleteRouteCR, fmt.Sprintf("%v", err))
+		return err
 	}
-	// routeset name equals node name
-	klog.V(6).Infof("Successfully deleted Route CR for node %s", routeSetName)
+	klog.V(6).Infof("Successfully deleted Route CR %s for node %s", crName, nodeName)
 	return nil
 }
 
-// getNodeIPAddress gets node IP address
-// IP family of node address and podCIDR should be the same
-// The order is to choose node internal IP first, then external IP
-// Return the first IP address as node IP
-func (r *routesProvider) getNodeIPAddress(nodeName string, isIPv4 bool) (string, error) {
+// getNodeIPAddress returns the first node address whose IP family matches the
+// requested family. wantIPv4 selects IPv4 (true) or IPv6 (false). Internal
+// addresses take precedence over external addresses; within each priority
+// tier the first matching address wins. For dual-stack nodes, callers invoke
+// this function once per route family and create a separate StaticRoute CR
+// for each address family.
+func (r *routesProvider) getNodeIPAddress(nodeName string, wantIPv4 bool) (string, error) {
 	node, err := r.nodeLister.Get(nodeName)
 	if err != nil {
 		klog.Errorf("getting node %s failed: %v", nodeName, err)
 		return "", err
 	}
 
+	// Collect all IPs (InternalIP first, then ExternalIP for priority)
 	allIPs := make([]net.IP, 0, len(node.Status.Addresses))
 	for _, addr := range node.Status.Addresses {
 		if addr.Type == v1.NodeInternalIP {
@@ -193,15 +215,27 @@ func (r *routesProvider) getNodeIPAddress(nodeName string, isIPv4 bool) (string,
 			}
 		}
 	}
+
 	if len(allIPs) == 0 {
 		return "", fmt.Errorf("node %s has neither InternalIP nor ExternalIP", nodeName)
 	}
+
+	wantFamily := "IPv6"
+	if wantIPv4 {
+		wantFamily = "IPv4"
+	}
+
 	for _, ip := range allIPs {
-		if (ip.To4() != nil) == isIPv4 {
-			klog.V(4).Infof("successfully fetching node %s IP address", node.Name)
+		isIPv4 := ip.To4() != nil
+		if isIPv4 == wantIPv4 {
+			klog.V(4).Infof("successfully fetched %s address %s for node %s", wantFamily, ip.String(), nodeName)
 			return ip.String(), nil
 		}
 	}
 
-	return "", fmt.Errorf("node %s does not have the same IP family with podCIDR", nodeName)
+	availableIPs := make([]string, len(allIPs))
+	for i, ip := range allIPs {
+		availableIPs[i] = ip.String()
+	}
+	return "", fmt.Errorf("node %s does not have any %s address (available IPs: %v)", nodeName, wantFamily, availableIPs)
 }

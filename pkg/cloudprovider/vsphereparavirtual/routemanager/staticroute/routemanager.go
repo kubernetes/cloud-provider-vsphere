@@ -3,6 +3,7 @@ package staticroute
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
 	nsxclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned"
@@ -14,6 +15,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/helper"
+	"k8s.io/cloud-provider-vsphere/pkg/util"
 )
 
 // RouteManager defines a route manager working with static route CR
@@ -62,8 +64,15 @@ func (sr *RouteManager) CreateCPRoutes(staticroutes helper.RouteCRList) ([]*clou
 		// only return cloudprovider.RouteInfo if RouteSet CR status 'Ready' is true
 		condition := GetRouteCRCondition(&(staticroute.Status), vpcapisv1.Ready)
 		if condition != nil && condition.Status == v1.ConditionTrue {
-			// one RouteSet per node, so we can use nodeName as the name of RouteSet CR
+			// TargetNode must be the Kubernetes node name, not the CR name.
+			// For IPv6 routes, crNameForRoute appends helper.SuffixIPv6 to the node
+			// name. Strip the suffix only when the destination CIDR is IPv6, so that
+			// node names that legitimately end in "-ipv6" are not incorrectly truncated
+			// when they have an IPv4 route.
 			nodeName := staticroute.Name
+			if !util.IsIPv4(staticroute.Spec.Network) {
+				nodeName = strings.TrimSuffix(staticroute.Name, helper.SuffixIPv6)
+			}
 			cpRoute := &cloudprovider.Route{
 				Name:            staticroute.Name,
 				TargetNode:      types.NodeName(nodeName),

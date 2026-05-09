@@ -295,3 +295,23 @@ func TestCheckStaticRouteRealizedState(t *testing.T) {
 	err = r.routeManager.DeleteRouteCR(fakeNode2.Name)
 	assert.NoError(t, err)
 }
+
+func TestCrNameForRoute(t *testing.T) {
+	tests := []struct {
+		name     string
+		nodeName string
+		cidr     string
+		expected string
+	}{
+		{"IPv4 CIDR keeps bare node name", "node-1", "10.244.0.0/24", "node-1"},
+		{"IPv6 CIDR appends -ipv6 suffix", "node-1", "fd00::/80", "node-1" + helper.SuffixIPv6},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := crNameForRoute(tt.nodeName, tt.cidr)
+			if got != tt.expected {
+				t.Errorf("crNameForRoute(%q, %q) = %q, want %q", tt.nodeName, tt.cidr, got, tt.expected)
+			}
+		})
+	}
+}

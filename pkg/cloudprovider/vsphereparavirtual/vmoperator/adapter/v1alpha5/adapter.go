@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/networkutil"
 	clientv5 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/provider/v1alpha5"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/types"
 )
@@ -200,6 +201,16 @@ func vmToInfo(vm *vmopv5.VirtualMachine) *types.VirtualMachineInfo {
 	if vm.Status.Network != nil {
 		info.PrimaryIP4 = vm.Status.Network.PrimaryIP4
 		info.PrimaryIP6 = vm.Status.Network.PrimaryIP6
+		if vm.Status.Network.Interfaces != nil {
+			for _, iface := range vm.Status.Network.Interfaces {
+				if iface.IP == nil || iface.IP.Addresses == nil {
+					continue
+				}
+				for _, ipAddr := range iface.IP.Addresses {
+					info.NetworkInterfaceAddresses = append(info.NetworkInterfaceAddresses, networkutil.StripCIDRPrefix(ipAddr.Address))
+				}
+			}
+		}
 	}
 	return info
 }
