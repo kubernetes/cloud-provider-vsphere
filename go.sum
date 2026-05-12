@@ -165,8 +165,8 @@ github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20260423081355-beab241734
 github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20260423081355-beab2417344a/go.mod h1:MNz/PlAeJyKGt+X+nQE2bpiMghzpaP5XKaUlH0Stgh4=
 github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20260502065817-4ee333ccd54c h1:xJzEwgcm+w72/Da+0wiv/EXUmAj0JJ0DnF7TeSjGJIw=
 github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20260502065817-4ee333ccd54c/go.mod h1:nWTPpxfe4gHuuYuFcrs86+NMxfkqPk3a3IlvI8TCWak=
-github.com/vmware/govmomi v0.53.0 h1:e1bZCotAq7wm4xy95ePN2uoWwz28pNp/ewZZhpBY7/4=
-github.com/vmware/govmomi v0.53.0/go.mod h1:EWfuzPfxT5NV+aS2we02SLFdhvJkgeY7t7+TszgBSMY=
+github.com/vmware/govmomi v0.54.0 h1:akEKkM9XKMOhTskmdzTLG8JzH+sh61jbFrVPbAzv5IQ=
+github.com/vmware/govmomi v0.54.0/go.mod h1:0F3hChqXDrSQQnjfSiCqRE5lPD4aZlbOtKG4uroq2a4=
 github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0 h1:pT+oqJ8FD5eUBQkl+e7LZwwtbwPvW5kDyyGXvt66gOM=
 github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0/go.mod h1:f3+6YVZpNcK2pYyiQ94BoHWmjMj9BnYav0vNFuTiDVM=
 github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0 h1:pSBxa9Agh6bgW8Hr0A1eQxuwnxGTnuAVox8iQb023hg=
