@@ -80,11 +80,16 @@ deps:
 ################################################################################
 # Ensure the version is injected into the binaries via a linker flag.
 export VERSION ?= $(shell git describe --always --dirty)
+GO_VERSION ?= 1.25.0
 
 .PHONY: version print-ccm-image
 
 version:
 	@echo $(VERSION)
+
+.PHONY: go-version
+go-version: ## Print the go version we use to compile our binaries and images
+	@echo $(GO_VERSION)
 
 ################################################################################
 ##                              BUILD BINARIES                                ##
