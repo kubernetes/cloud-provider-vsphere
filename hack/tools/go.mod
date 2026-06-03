@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/onsi/ginkgo/v2 v2.29.0
-	sigs.k8s.io/kind v0.30.0
+	sigs.k8s.io/kind v0.32.0
 )
 
 require (
