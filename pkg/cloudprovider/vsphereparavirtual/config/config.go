@@ -43,8 +43,6 @@ const (
 	SupervisorClusterAccessNamespaceFile = "namespace"
 	// SupervisorAPIServerPortEnv reads supervisor service endpoint info from env
 	SupervisorAPIServerPortEnv string = "SUPERVISOR_APISERVER_PORT"
-	// SupervisorAPIServerEndpointIPEnv reads supervisor API server endpoint IP from env
-	SupervisorAPIServerEndpointIPEnv string = "SUPERVISOR_APISERVER_ENDPOINT_IP"
 	// SupervisorServiceAccountNameEnv reads supervisor service account name from env
 	SupervisorServiceAccountNameEnv string = "SUPERVISOR_CLUSTER_SERVICEACCOUNT_SECRET_NAME"
 	// SupervisorAPIServerFQDN reads supervisor service API server's fully qualified domain name from env
@@ -53,8 +51,6 @@ const (
 
 // SupervisorEndpoint is the supervisor cluster endpoint
 type SupervisorEndpoint struct {
-	// supervisor cluster proxy service hostname
-	Endpoint string
 	// supervisor cluster proxy service  port
 	Port string
 }
@@ -74,12 +70,6 @@ func ReadOwnerRef(path string) (*metav1.OwnerReference, error) {
 }
 
 func readSupervisorConfig() (*SupervisorEndpoint, error) {
-	remoteVip := os.Getenv(SupervisorAPIServerEndpointIPEnv)
-	if remoteVip == "" {
-		// call os.Exit(1) for the pod to restart
-		klog.Fatalf("%s is missing in env vars", SupervisorAPIServerEndpointIPEnv)
-	}
-
 	remotePort := os.Getenv(SupervisorAPIServerPortEnv)
 
 	if remotePort == "" {
@@ -88,10 +78,9 @@ func readSupervisorConfig() (*SupervisorEndpoint, error) {
 
 	}
 
-	klog.V(6).Infof("Configured with remote apiserver %s:%s", remoteVip, remotePort)
+	klog.V(6).Infof("Configured with remote apiserver port %s", remotePort)
 	return &SupervisorEndpoint{
-		Endpoint: remoteVip,
-		Port:     remotePort,
+		Port: remotePort,
 	}, nil
 
 }

@@ -109,31 +109,37 @@ func TestReadOwnerRef(t *testing.T) {
 }
 
 func TestReadSupervisorConfig(t *testing.T) {
-	endpoint := "test.sv.proxy"
-	port := "6443"
-
-	err := os.Setenv(SupervisorAPIServerEndpointIPEnv, endpoint)
-	if err != nil {
-		t.Errorf("Should be able to set env var: %s", err)
+	tests := []struct {
+		name         string
+		portEnv      string
+		expectedPort string
+	}{
+		{
+			name:         "port is configured",
+			portEnv:      "6443",
+			expectedPort: "6443",
+		},
 	}
 
-	err = os.Setenv(SupervisorAPIServerPortEnv, port)
-	if err != nil {
-		t.Errorf("Should be able to set env var: %s", err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := os.Setenv(SupervisorAPIServerPortEnv, tc.portEnv)
+			if err != nil {
+				t.Errorf("Should be able to set env var: %s", err)
+			}
+
+			defer os.Unsetenv(SupervisorAPIServerPortEnv)
+
+			svEndpoint, err := readSupervisorConfig()
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+
+			if svEndpoint.Port != tc.expectedPort {
+				t.Fatalf("incorrect port: got %q, want %q", svEndpoint.Port, tc.expectedPort)
+			}
+		})
 	}
-
-	defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
-	defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
-
-	svEndpoint, _ := readSupervisorConfig()
-
-	if svEndpoint.Endpoint != endpoint {
-		t.Fatalf("incorrect endpoint: %s", svEndpoint.Endpoint)
-	}
-	if svEndpoint.Port != port {
-		t.Fatalf("incorrect port: %s", svEndpoint.Port)
-	}
-
 }
 
 func TestGetNameSpace(t *testing.T) {
@@ -187,7 +193,6 @@ func TestGetRestConfig(t *testing.T) {
 	tests := []struct {
 		fileExists bool
 		fqdn       string
-		endpoint   string
 		port       string
 		token      string
 		ca         string
@@ -195,7 +200,6 @@ func TestGetRestConfig(t *testing.T) {
 		{
 			fileExists: false,
 			fqdn:       "supervisor.default.svc",
-			endpoint:   "192.163.1.100",
 			port:       "6443",
 			token:      "test-token",
 			ca:         "test-ca",
@@ -203,7 +207,6 @@ func TestGetRestConfig(t *testing.T) {
 		{
 			fileExists: true,
 			fqdn:       "supervisor.default.svc",
-			endpoint:   "192.163.1.200",
 			port:       "6443",
 			token:      "test-token",
 			ca:         "test-ca",
@@ -226,18 +229,12 @@ func TestGetRestConfig(t *testing.T) {
 				t.Errorf("failed to create test ca file, %s", err)
 			}
 
-			err = os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
-			if err != nil {
-				t.Errorf("Should be able to set env var: %s", err)
-			}
-
 			err = os.Setenv(SupervisorAPIServerPortEnv, test.port)
 			if err != nil {
 				t.Errorf("Should be able to set env var: %s", err)
 			}
 
-			defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
-			defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
+			defer os.Unsetenv(SupervisorAPIServerPortEnv)
 
 			cfg, err := GetRestConfig(dir)
 			if err != nil {
@@ -250,18 +247,12 @@ func TestGetRestConfig(t *testing.T) {
 				t.Fatalf("incorrect Token: %s", cfg.BearerToken)
 			}
 		} else {
-			err := os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
+			err := os.Setenv(SupervisorAPIServerPortEnv, test.port)
 			if err != nil {
 				t.Errorf("Should be able to set env var: %s", err)
 			}
 
-			err = os.Setenv(SupervisorAPIServerPortEnv, test.port)
-			if err != nil {
-				t.Errorf("Should be able to set env var: %s", err)
-			}
-
-			defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
-			defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
+			defer os.Unsetenv(SupervisorAPIServerPortEnv)
 
 			_, err = GetRestConfig(dir)
 			if err == nil {
