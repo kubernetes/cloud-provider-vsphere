@@ -246,8 +246,14 @@ func TestGetRestConfig(t *testing.T) {
 			if cfg.Host != "https://"+net.JoinHostPort(test.fqdn, test.port) {
 				t.Fatalf("incorrect Host: %s", cfg.Host)
 			}
-			if cfg.BearerToken != test.token {
-				t.Fatalf("incorrect Token: %s", cfg.BearerToken)
+			// The token must be supplied as a file path (not an inlined static
+			// string) so client-go reloads it on rotation without a restart.
+			if cfg.BearerToken != "" {
+				t.Fatalf("BearerToken should be empty, got %q", cfg.BearerToken)
+			}
+			wantTokenFile := dir + "/" + SupervisorClusterAccessTokenFile
+			if cfg.BearerTokenFile != wantTokenFile {
+				t.Fatalf("incorrect BearerTokenFile: got %q, want %q", cfg.BearerTokenFile, wantTokenFile)
 			}
 		} else {
 			err := os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
