@@ -109,31 +109,60 @@ func TestReadOwnerRef(t *testing.T) {
 }
 
 func TestReadSupervisorConfig(t *testing.T) {
-	endpoint := "test.sv.proxy"
-	port := "6443"
-
-	err := os.Setenv(SupervisorAPIServerEndpointIPEnv, endpoint)
-	if err != nil {
-		t.Errorf("Should be able to set env var: %s", err)
+	tests := []struct {
+		name             string
+		endpoint         string
+		port             string
+		hostname         string
+		expectedHostname string
+	}{
+		{
+			name:             "hostname env var not set defaults to SupervisorAPIServerFQDN",
+			endpoint:         "test.sv.proxy",
+			port:             "6443",
+			hostname:         "",
+			expectedHostname: SupervisorAPIServerFQDN,
+		},
+		{
+			name:             "hostname env var set uses custom hostname",
+			endpoint:         "test.sv.proxy",
+			port:             "6443",
+			hostname:         "custom.supervisor.svc",
+			expectedHostname: "custom.supervisor.svc",
+		},
 	}
 
-	err = os.Setenv(SupervisorAPIServerPortEnv, port)
-	if err != nil {
-		t.Errorf("Should be able to set env var: %s", err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
+			if err != nil {
+				t.Errorf("Should be able to set env var: %s", err)
+			}
+			err = os.Setenv(SupervisorAPIServerPortEnv, test.port)
+			if err != nil {
+				t.Errorf("Should be able to set env var: %s", err)
+			}
+			err = os.Setenv(SupervisorAPIServerHostnameEnv, test.hostname)
+			if err != nil {
+				t.Errorf("Should be able to set env var: %s", err)
+			}
+			defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
+			defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
+			defer os.Setenv(SupervisorAPIServerHostnameEnv, "")   // clean up
+
+			svEndpoint, _ := readSupervisorConfig()
+
+			if svEndpoint.Endpoint != test.endpoint {
+				t.Fatalf("incorrect endpoint: %s", svEndpoint.Endpoint)
+			}
+			if svEndpoint.Port != test.port {
+				t.Fatalf("incorrect port: %s", svEndpoint.Port)
+			}
+			if svEndpoint.Hostname != test.expectedHostname {
+				t.Fatalf("incorrect hostname: got %s, want %s", svEndpoint.Hostname, test.expectedHostname)
+			}
+		})
 	}
-
-	defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
-	defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
-
-	svEndpoint, _ := readSupervisorConfig()
-
-	if svEndpoint.Endpoint != endpoint {
-		t.Fatalf("incorrect endpoint: %s", svEndpoint.Endpoint)
-	}
-	if svEndpoint.Port != port {
-		t.Fatalf("incorrect port: %s", svEndpoint.Port)
-	}
-
 }
 
 func TestGetNameSpace(t *testing.T) {
@@ -185,24 +214,40 @@ func TestGetNameSpace(t *testing.T) {
 
 func TestGetRestConfig(t *testing.T) {
 	tests := []struct {
+		name       string
 		fileExists bool
 		fqdn       string
+		hostname   string
 		endpoint   string
 		port       string
 		token      string
 		ca         string
 	}{
 		{
+			name:       "missing credential files returns error",
 			fileExists: false,
 			fqdn:       "supervisor.default.svc",
+			hostname:   "",
 			endpoint:   "192.163.1.100",
 			port:       "6443",
 			token:      "test-token",
 			ca:         "test-ca",
 		},
 		{
+			name:       "hostname env var not set uses default FQDN",
 			fileExists: true,
 			fqdn:       "supervisor.default.svc",
+			hostname:   "",
+			endpoint:   "192.163.1.200",
+			port:       "6443",
+			token:      "test-token",
+			ca:         "test-ca",
+		},
+		{
+			name:       "hostname env var set uses custom hostname in rest config",
+			fileExists: true,
+			fqdn:       "custom.supervisor.svc",
+			hostname:   "custom.supervisor.svc",
 			endpoint:   "192.163.1.200",
 			port:       "6443",
 			token:      "test-token",
@@ -211,63 +256,66 @@ func TestGetRestConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		dir, _ := os.Getwd()
+		t.Run(test.name, func(t *testing.T) {
+			dir, _ := os.Getwd()
 
-		if test.fileExists {
-			err := createTestFile(dir, SupervisorClusterAccessTokenFile, test.token)
-			defer os.Remove(dir + "/" + SupervisorClusterAccessTokenFile)
-			if err != nil {
-				t.Errorf("failed to create test token file, %s", err)
-			}
+			if test.fileExists {
+				err := createTestFile(dir, SupervisorClusterAccessTokenFile, test.token)
+				defer os.Remove(dir + "/" + SupervisorClusterAccessTokenFile)
+				if err != nil {
+					t.Errorf("failed to create test token file, %s", err)
+				}
 
-			err = createTestFile(dir, SupervisorClusterAccessCAFile, test.ca)
-			defer os.Remove(dir + "/" + SupervisorClusterAccessCAFile)
-			if err != nil {
-				t.Errorf("failed to create test ca file, %s", err)
-			}
+				err = createTestFile(dir, SupervisorClusterAccessCAFile, test.ca)
+				defer os.Remove(dir + "/" + SupervisorClusterAccessCAFile)
+				if err != nil {
+					t.Errorf("failed to create test ca file, %s", err)
+				}
 
-			err = os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
-			if err != nil {
-				t.Errorf("Should be able to set env var: %s", err)
-			}
+				err = os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
+				if err != nil {
+					t.Errorf("Should be able to set env var: %s", err)
+				}
+				err = os.Setenv(SupervisorAPIServerPortEnv, test.port)
+				if err != nil {
+					t.Errorf("Should be able to set env var: %s", err)
+				}
+				err = os.Setenv(SupervisorAPIServerHostnameEnv, test.hostname)
+				if err != nil {
+					t.Errorf("Should be able to set env var: %s", err)
+				}
+				defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
+				defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
+				defer os.Setenv(SupervisorAPIServerHostnameEnv, "")   // clean up
 
-			err = os.Setenv(SupervisorAPIServerPortEnv, test.port)
-			if err != nil {
-				t.Errorf("Should be able to set env var: %s", err)
-			}
+				cfg, err := GetRestConfig(dir)
+				if err != nil {
+					t.Fatalf("Should succeed when a valid SV endpoint config is provided: %s", err)
+				}
+				if cfg.Host != "https://"+net.JoinHostPort(test.fqdn, test.port) {
+					t.Fatalf("incorrect Host: %s", cfg.Host)
+				}
+				if cfg.BearerToken != test.token {
+					t.Fatalf("incorrect Token: %s", cfg.BearerToken)
+				}
+			} else {
+				err := os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
+				if err != nil {
+					t.Errorf("Should be able to set env var: %s", err)
+				}
+				err = os.Setenv(SupervisorAPIServerPortEnv, test.port)
+				if err != nil {
+					t.Errorf("Should be able to set env var: %s", err)
+				}
+				defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
+				defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
 
-			defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
-			defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
-
-			cfg, err := GetRestConfig(dir)
-			if err != nil {
-				t.Fatalf("Should succeed when a valid SV endpoint config is provided: %s", err)
+				_, err = GetRestConfig(dir)
+				if err == nil {
+					t.Errorf("Should fail when an invalid supervisor config is provided")
+				}
 			}
-			if cfg.Host != "https://"+net.JoinHostPort(test.fqdn, test.port) {
-				t.Fatalf("incorrect Host: %s", cfg.Host)
-			}
-			if cfg.BearerToken != test.token {
-				t.Fatalf("incorrect Token: %s", cfg.BearerToken)
-			}
-		} else {
-			err := os.Setenv(SupervisorAPIServerEndpointIPEnv, test.endpoint)
-			if err != nil {
-				t.Errorf("Should be able to set env var: %s", err)
-			}
-
-			err = os.Setenv(SupervisorAPIServerPortEnv, test.port)
-			if err != nil {
-				t.Errorf("Should be able to set env var: %s", err)
-			}
-
-			defer os.Setenv(SupervisorAPIServerEndpointIPEnv, "") // clean up
-			defer os.Setenv(SupervisorAPIServerPortEnv, "")       // clean up
-
-			_, err = GetRestConfig(dir)
-			if err == nil {
-				t.Errorf("Should fail when an invalid supervisor config is provided")
-			}
-		}
+		})
 	}
 }
 

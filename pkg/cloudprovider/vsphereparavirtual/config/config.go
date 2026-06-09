@@ -43,6 +43,8 @@ const (
 	SupervisorClusterAccessNamespaceFile = "namespace"
 	// SupervisorAPIServerPortEnv reads supervisor service endpoint info from env
 	SupervisorAPIServerPortEnv string = "SUPERVISOR_APISERVER_PORT"
+	// SupervisorAPIServerHostnameEnv reads supervisor API server hostname from env, defaults to supervisor.default.svc
+	SupervisorAPIServerHostnameEnv string = "SUPERVISOR_APISERVER_HOSTNAME"
 	// SupervisorAPIServerEndpointIPEnv reads supervisor API server endpoint IP from env
 	SupervisorAPIServerEndpointIPEnv string = "SUPERVISOR_APISERVER_ENDPOINT_IP"
 	// SupervisorServiceAccountNameEnv reads supervisor service account name from env
@@ -57,6 +59,8 @@ type SupervisorEndpoint struct {
 	Endpoint string
 	// supervisor cluster proxy service  port
 	Port string
+	// hostname for supervisor cluster, defaults to supervisor.default.svc
+	Hostname string
 }
 
 // ReadOwnerRef read the OwnerReference config file
@@ -88,10 +92,16 @@ func readSupervisorConfig() (*SupervisorEndpoint, error) {
 
 	}
 
+	supervisorHostname := os.Getenv(SupervisorAPIServerHostnameEnv)
+	if supervisorHostname == "" {
+		supervisorHostname = SupervisorAPIServerFQDN
+	}
+
 	klog.V(6).Infof("Configured with remote apiserver %s:%s", remoteVip, remotePort)
 	return &SupervisorEndpoint{
 		Endpoint: remoteVip,
 		Port:     remotePort,
+		Hostname: supervisorHostname,
 	}, nil
 
 }
@@ -132,7 +142,7 @@ func GetRestConfig(svConfigPath string) (*rest.Config, error) {
 	}
 
 	return &rest.Config{
-		Host: "https://" + net.JoinHostPort(SupervisorAPIServerFQDN, svEndpoint.Port),
+		Host: "https://" + net.JoinHostPort(svEndpoint.Hostname, svEndpoint.Port),
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: rootCA,
 		},
