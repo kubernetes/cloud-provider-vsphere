@@ -20,7 +20,7 @@ limitations under the License.
 package main
 
 import (
-	"crypto/sha256"
+	"bytes"
 	"flag"
 	goflag "flag"
 	"fmt"
@@ -330,18 +330,18 @@ type restartGuard struct {
 	// volume. It is empty when not running in paravirtual mode, in which case
 	// every non-Chmod event triggers a restart.
 	secretMountDir string
-	// baselines maps a restart-worthy file name to the content hash captured at
+	// baselines maps a restart-worthy file name to the raw content captured at
 	// startup.
-	baselines map[string][sha256.Size]byte
+	baselines map[string][]byte
 }
 
-// newRestartGuard captures the startup content hashes of the restart-worthy
+// newRestartGuard captures the startup raw contents of the restart-worthy
 // keys under secretMountDir. Pass an empty secretMountDir to restart on every
 // (non-Chmod) event.
 func newRestartGuard(secretMountDir string, restartKeys []string) *restartGuard {
 	g := &restartGuard{
 		secretMountDir: secretMountDir,
-		baselines:      make(map[string][sha256.Size]byte, len(restartKeys)),
+		baselines:      make(map[string][]byte, len(restartKeys)),
 	}
 	for _, k := range restartKeys {
 		data, err := os.ReadFile(filepath.Join(secretMountDir, k))
@@ -352,7 +352,7 @@ func newRestartGuard(secretMountDir string, restartKeys []string) *restartGuard 
 			klog.Warningf("unable to read baseline for %s under %s: %v", k, secretMountDir, err)
 			continue
 		}
-		g.baselines[k] = sha256.Sum256(data)
+		g.baselines[k] = data
 	}
 	return g
 }
@@ -382,7 +382,7 @@ func (g *restartGuard) restartKeyChanged() bool {
 			klog.Warningf("failed to re-read %s under %s, triggering restart: %v", name, g.secretMountDir, err)
 			return true
 		}
-		if sha256.Sum256(got) != want {
+		if !bytes.Equal(got, want) {
 			klog.Infof("detected change in %s, triggering restart", name)
 			return true
 		}
