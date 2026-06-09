@@ -18,7 +18,7 @@ package vmservice
 
 import (
 	"context"
-	"crypto/md5" // #nosec
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"reflect"
@@ -29,6 +29,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	vmop "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator"
 	vmoptypes "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/types"
@@ -106,13 +107,48 @@ func NewVMService(vmClient vmop.Interface, ns string, ownerRef *metav1.OwnerRefe
 }
 
 func (s *vmService) hashString(str string) string {
-	// #nosec
-	hash := md5.New()
+	// SHA-256 is used as a FIPS-approved, well-distributed hash to derive a
+	// deterministic name suffix. The output is later truncated to
+	// MaxCheckSumLen; this is not a security-sensitive use.
+	hash := sha256.New()
 	if _, err := hash.Write([]byte(str)); err != nil {
 		log.Error(err, "create hash string failed")
 	}
 
 	return hex.EncodeToString(hash.Sum(nil))
+}
+
+// findLegacyVMService locates a VirtualMachineService that was created by an
+// older release using a different name-hashing scheme. It matches on the
+// identifying labels that the CPI has always stamped on every
+// VirtualMachineService, so the lookup is independent of how the name was
+// generated. Returns nil when no matching resource exists.
+//
+// Any List error (including a missing "list" RBAC permission) is logged and
+// treated as "no legacy resource found" so that the primary, name-based flow is
+// never blocked. In particular, a freshly created Service has no
+// VirtualMachineService yet and must still be able to proceed to Create.
+func (s *vmService) findLegacyVMService(ctx context.Context, service *v1.Service, clusterName string) *vmoptypes.VirtualMachineServiceInfo {
+	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
+
+	selector := labels.SelectorFromSet(labels.Set{
+		LabelClusterNameKey:      clusterName,
+		LabelServiceNameKey:      service.Name,
+		LabelServiceNameSpaceKey: service.Namespace,
+	}).String()
+
+	list, err := s.vmClient.VirtualMachineServices().List(ctx, s.namespace, vmoptypes.ListOptions{LabelSelector: selector})
+	if err != nil {
+		logger.Error(err, "failed to list VirtualMachineServices for legacy lookup; treating as not found")
+		return nil
+	}
+	if len(list) == 0 {
+		return nil
+	}
+	if len(list) > 1 {
+		logger.V(2).Info("multiple VirtualMachineServices matched the legacy label lookup; using the first", "count", len(list))
+	}
+	return list[0]
 }
 
 // GetVMServiceName returns VirtualMachineService name for a lb type of service
@@ -133,9 +169,17 @@ func (s *vmService) Get(ctx context.Context, service *v1.Service, clusterName st
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to get VirtualMachineService")
 
-	vmService, err := s.vmClient.VirtualMachineServices().Get(ctx, s.namespace, s.GetVMServiceName(service, clusterName))
+	name := s.GetVMServiceName(service, clusterName)
+	vmService, err := s.vmClient.VirtualMachineServices().Get(ctx, s.namespace, name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
+			// Fallback for resources created by an older release that used a
+			// different name-hashing scheme. Located via the always-present
+			// identifying labels rather than by recomputing the legacy name.
+			if legacy := s.findLegacyVMService(ctx, service, clusterName); legacy != nil {
+				logger.V(2).Info("VirtualMachineService not found by name; found legacy resource via labels", "legacyName", legacy.Name)
+				return legacy, nil
+			}
 			return nil, nil
 		}
 		logger.Error(ErrGetVMService, fmt.Sprintf("%v", err))
@@ -304,8 +348,27 @@ func (s *vmService) Delete(ctx context.Context, service *v1.Service, clusterName
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 	logger.V(2).Info("Attempting to delete VirtualMachineService")
 
-	err := s.vmClient.VirtualMachineServices().Delete(ctx, s.namespace, s.GetVMServiceName(service, clusterName))
+	name := s.GetVMServiceName(service, clusterName)
+	err := s.vmClient.VirtualMachineServices().Delete(ctx, s.namespace, name)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// Fallback: a resource created by an older release lives under a
+			// different name. Locate it via the identifying labels and delete it.
+			legacy := s.findLegacyVMService(ctx, service, clusterName)
+			if legacy == nil {
+				return nil
+			}
+			logger.V(2).Info("VirtualMachineService not found by name; deleting legacy resource found via labels", "legacyName", legacy.Name)
+			if derr := s.vmClient.VirtualMachineServices().Delete(ctx, s.namespace, legacy.Name); derr != nil {
+				if apierrors.IsNotFound(derr) {
+					return nil
+				}
+				logger.Error(ErrDeleteVMService, fmt.Sprintf("failed to delete legacy VirtualMachineService: %v", derr))
+				return derr
+			}
+			logger.V(2).Info("Successfully deleted legacy VirtualMachineService")
+			return nil
+		}
 		logger.Error(ErrDeleteVMService, fmt.Sprintf("%v", err))
 		return err
 	}

@@ -176,6 +176,62 @@ func TestGetVMService(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestGetVMService_LegacyFallback(t *testing.T) {
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
+	k8sService := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testK8sServiceName,
+			Namespace: testK8sServiceNameSpace,
+		},
+	}
+
+	// Simulate a VirtualMachineService created by an older release: it lives
+	// under a name that does NOT match the current (SHA-256-based) scheme, but it
+	// carries the identifying labels that the CPI has always stamped on every
+	// VirtualMachineService.
+	legacyName := "legacy-" + testClustername + "-deadbeef"
+	ports, _ := findPorts(testK8sService)
+	legacyInfo := &vmoptypes.VirtualMachineServiceInfo{
+		Name:      legacyName,
+		Namespace: testClusterNameSpace,
+		Labels: map[string]string{
+			LabelClusterNameKey:      testClustername,
+			LabelServiceNameKey:      testK8sServiceName,
+			LabelServiceNameSpaceKey: testK8sServiceNameSpace,
+		},
+		Spec: vmoptypes.VirtualMachineServiceSpec{
+			Type:  vmoptypes.VirtualMachineServiceTypeLoadBalancer,
+			Ports: ports,
+			Selector: map[string]string{
+				ClusterSelectorKey: testClustername,
+				NodeSelectorKey:    NodeRole,
+			},
+		},
+	}
+	_, err := vms.(*vmService).vmClient.VirtualMachineServices().Create(context.Background(), legacyInfo)
+	assert.NoError(t, err)
+
+	// Sanity check: the legacy resource is not reachable by the current name.
+	currentName := vms.GetVMServiceName(k8sService, testClustername)
+	assert.NotEqual(t, legacyName, currentName)
+
+	// Get must fall back to the label-based lookup and find the legacy resource.
+	vmServiceObj, err := vms.Get(context.Background(), k8sService, testClustername)
+	assert.NoError(t, err)
+	assert.NotNil(t, vmServiceObj)
+	assert.Equal(t, legacyName, vmServiceObj.Name)
+
+	// Delete must likewise fall back and remove the legacy resource.
+	err = vms.Delete(context.Background(), k8sService, testClustername)
+	assert.NoError(t, err)
+
+	// Verify it is indeed deleted.
+	deletedObj, err := vms.(*vmService).vmClient.VirtualMachineServices().Get(context.Background(), testClusterNameSpace, legacyName)
+	assert.Error(t, err)
+	assert.True(t, apierrors.IsNotFound(err))
+	assert.Nil(t, deletedObj)
+}
+
 func TestCreateVMService(t *testing.T) {
 	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	ports, _ := findPorts(testK8sService)
