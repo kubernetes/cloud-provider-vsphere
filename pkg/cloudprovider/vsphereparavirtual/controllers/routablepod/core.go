@@ -27,61 +27,89 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ipaddressallocation"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/ippool"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/controllers/routablepod/node"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ipfamily"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
 	ippmv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/nsxipmanager"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
 
-// StartControllers starts ippool_controller and node_controller
-func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
-	informerManager *k8s.InformerManager, clusterName, clusterNS string, ownerRef *metav1.OwnerReference,
-	vpcModeEnabled bool, podIPPoolType string) error {
+// Options collects the configuration that StartControllers needs. Grouping
+// these into a struct keeps the function signature stable as new flags are
+// added and prevents the boolean-parameter anti-pattern at the call site.
+type Options struct {
+	// ClusterName is the guest cluster name; required.
+	ClusterName string
+	// ClusterNS is the supervisor namespace for the guest cluster; required.
+	ClusterNS string
+	// OwnerRef is stamped onto every CR the controllers create.
+	OwnerRef *metav1.OwnerReference
+	// VPCModeEnabled selects between VPC (IPAddressAllocation+StaticRoute) and
+	// T1 (IPPool+RouteSet) backing CRs. IPv6 requires VPC mode.
+	VPCModeEnabled bool
+	// PodIPPoolType is "Public" or "Private" and controls IPv4 visibility.
+	PodIPPoolType string
+	// IPFamily is the resolved --cluster-ip-family value. Valid values are
+	// ipfamily.IPv4, ipfamily.IPv6, ipfamily.IPv4IPv6, and ipfamily.IPv6IPv4.
+	// It encodes which address families are active and which is primary, so
+	// no separate boolean fields are needed.
+	IPFamily ipfamily.IPFamily
+}
 
-	if clusterName == "" {
+// StartControllers starts the Routable Pods controllers: in VPC mode it starts
+// ipaddressallocation_controller (which patches node PodCIDRs) and
+// node_controller (which manages IPAddressAllocation CRs); in T1 mode it
+// starts ippool_controller and node_controller.
+func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
+	informerManager *k8s.InformerManager, opts Options) error {
+
+	if opts.ClusterName == "" {
 		return fmt.Errorf("cluster name can't be empty")
 	}
-	if clusterNS == "" {
+	if opts.ClusterNS == "" {
 		return fmt.Errorf("cluster namespace can't be empty")
 	}
 
-	klog.V(2).Info("Routable pod controllers start with VPC mode enabled: ", vpcModeEnabled)
+	klog.V(2).Info("Routable pod controllers start with VPC mode enabled: ", opts.VPCModeEnabled)
 
 	ctx := informerManager.GetContext()
+
 	var nsxIPManager nsxipmanager.NSXIPManager
-	if vpcModeEnabled {
-		nsxClient, nsxInformerFactory, err := getNSXClientAndInformer(scCfg, clusterNS)
+	if opts.VPCModeEnabled {
+		nsxClient, nsxInformerFactory, err := getNSXClientAndInformer(scCfg, opts.ClusterNS)
 		if err != nil {
 			return fmt.Errorf("fail to get NSX client or informer factory: %w", err)
 		}
 
-		startIPAddressAllocationController(ctx, client, informerManager, nsxInformerFactory)
+		startIPAddressAllocationController(ctx, client, informerManager, nsxInformerFactory, opts.IPFamily)
 
-		nsxIPManager = nsxipmanager.NewNSXVPCIPManager(nsxClient, nsxInformerFactory, clusterNS, podIPPoolType, ownerRef)
+		nsxIPManager = nsxipmanager.NewNSXVPCIPManager(nsxClient, nsxInformerFactory, opts.ClusterNS, opts.PodIPPoolType, opts.OwnerRef,
+			opts.IPFamily.IPv4Enabled(), opts.IPFamily.IPv6Enabled())
 	} else {
-		ippManager, err := ippmv1alpha1.NewIPPoolManager(scCfg, clusterNS)
+		ippManager, err := ippmv1alpha1.NewIPPoolManager(scCfg, opts.ClusterNS)
 		if err != nil {
 			return fmt.Errorf("fail to get ippool manager or start ippool controller: %w", err)
 		}
 
 		startIPPoolController(ctx, client, ippManager)
 
-		nsxIPManager = nsxipmanager.NewNSXT1IPManager(ippManager, clusterName, clusterNS, ownerRef)
+		nsxIPManager = nsxipmanager.NewNSXT1IPManager(ippManager, opts.ClusterName, opts.ClusterNS, opts.OwnerRef)
 	}
 
-	nodeController := node.NewController(client, nsxIPManager, informerManager, clusterName, clusterNS, ownerRef)
-	go nodeController.Run(context.Background().Done())
+	nodeController := node.NewController(client, nsxIPManager, informerManager, opts.ClusterName, opts.ClusterNS, opts.OwnerRef, opts.IPFamily.FamilyCount())
+	go nodeController.Run(ctx.Done())
 
 	return nil
 }
 
-func startIPAddressAllocationController(ctx context.Context, client kubernetes.Interface, informerManager *k8s.InformerManager, nsxInformerFactory nsxinformers.SharedInformerFactory) {
+func startIPAddressAllocationController(ctx context.Context, client kubernetes.Interface, informerManager *k8s.InformerManager, nsxInformerFactory nsxinformers.SharedInformerFactory, f ipfamily.IPFamily) {
 	ipAddressAllocationController := ipaddressallocation.NewController(
 		ctx,
 		client,
 		informerManager.GetNodeLister(),
 		informerManager.IsNodeInformerSynced(),
-		nsxInformerFactory.Crd().V1alpha1().IPAddressAllocations())
+		nsxInformerFactory.Crd().V1alpha1().IPAddressAllocations(),
+		f)
 	go ipAddressAllocationController.Run(ctx, 1)
 	nsxInformerFactory.Start(ctx.Done())
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ipfamily"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/factory"
 )
 
@@ -49,16 +50,16 @@ func TestParseClusterIPFamily(t *testing.T) {
 	testCases := []struct {
 		name    string
 		raw     string
-		want    string
+		want    ipfamily.IPFamily
 		wantErr bool
 	}{
-		{name: "ipv4 canonical", raw: "ipv4", want: ClusterIPFamilyIPv4},
-		{name: "IPv4 case", raw: "IPv4", want: ClusterIPFamilyIPv4},
-		{name: "ipv6 with spaces", raw: "  ipv6 ", want: ClusterIPFamilyIPv6},
-		{name: "ipv4ipv6", raw: "ipv4ipv6", want: ClusterIPFamilyIPv4IPv6},
-		{name: "IPv4IPv6 mixed case", raw: "IPv4IPv6", want: ClusterIPFamilyIPv4IPv6},
-		{name: "ipv6ipv4", raw: "ipv6ipv4", want: ClusterIPFamilyIPv6IPv4},
-		{name: "IPv6IPv4 mixed case", raw: "IPv6IPv4", want: ClusterIPFamilyIPv6IPv4},
+		{name: "ipv4 canonical", raw: "ipv4", want: ipfamily.IPv4},
+		{name: "IPv4 case", raw: "IPv4", want: ipfamily.IPv4},
+		{name: "ipv6 with spaces", raw: "  ipv6 ", want: ipfamily.IPv6},
+		{name: "ipv4ipv6", raw: "ipv4ipv6", want: ipfamily.IPv4IPv6},
+		{name: "IPv4IPv6 mixed case", raw: "IPv4IPv6", want: ipfamily.IPv4IPv6},
+		{name: "ipv6ipv4", raw: "ipv6ipv4", want: ipfamily.IPv6IPv4},
+		{name: "IPv6IPv4 mixed case", raw: "IPv6IPv4", want: ipfamily.IPv6IPv4},
 		{name: "garbage", raw: "dual-stack", wantErr: true},
 		{name: "empty after trim", raw: "   ", wantErr: true},
 		{name: "typo v6", raw: "ip6", wantErr: true},
@@ -125,79 +126,79 @@ func TestSimulateInitializeIPFamilyChecks_Order(t *testing.T) {
 func TestValidateIPFamilyConfig(t *testing.T) {
 	testCases := []struct {
 		name            string
-		clusterIPFamily string
+		clusterIPFamily ipfamily.IPFamily
 		vmopAPIVersion  string
 		wantErr         bool
 	}{
 		{
 			name:            "ipv4 + v1alpha2 is always valid (default path)",
-			clusterIPFamily: ClusterIPFamilyIPv4,
+			clusterIPFamily: ipfamily.IPv4,
 			vmopAPIVersion:  factory.V1alpha2,
 			wantErr:         false,
 		},
 		{
 			name:            "ipv4 + v1alpha5 is valid",
-			clusterIPFamily: ClusterIPFamilyIPv4,
+			clusterIPFamily: ipfamily.IPv4,
 			vmopAPIVersion:  factory.V1alpha5,
 			wantErr:         false,
 		},
 		{
 			name:            "ipv4 + v1alpha6 is valid",
-			clusterIPFamily: ClusterIPFamilyIPv4,
+			clusterIPFamily: ipfamily.IPv4,
 			vmopAPIVersion:  factory.V1alpha6,
 			wantErr:         false,
 		},
 		{
 			name:            "ipv6 + v1alpha6 is valid",
-			clusterIPFamily: ClusterIPFamilyIPv6,
+			clusterIPFamily: ipfamily.IPv6,
 			vmopAPIVersion:  factory.V1alpha6,
 			wantErr:         false,
 		},
 		{
 			name:            "ipv4ipv6 + v1alpha6 is valid",
-			clusterIPFamily: ClusterIPFamilyIPv4IPv6,
+			clusterIPFamily: ipfamily.IPv4IPv6,
 			vmopAPIVersion:  factory.V1alpha6,
 			wantErr:         false,
 		},
 		{
 			name:            "ipv6 + v1alpha2 is rejected",
-			clusterIPFamily: ClusterIPFamilyIPv6,
+			clusterIPFamily: ipfamily.IPv6,
 			vmopAPIVersion:  factory.V1alpha2,
 			wantErr:         true,
 		},
 		{
 			name:            "ipv6 + v1alpha5 is rejected",
-			clusterIPFamily: ClusterIPFamilyIPv6,
+			clusterIPFamily: ipfamily.IPv6,
 			vmopAPIVersion:  factory.V1alpha5,
 			wantErr:         true,
 		},
 		{
 			name:            "ipv4ipv6 + v1alpha2 is rejected",
-			clusterIPFamily: ClusterIPFamilyIPv4IPv6,
+			clusterIPFamily: ipfamily.IPv4IPv6,
 			vmopAPIVersion:  factory.V1alpha2,
 			wantErr:         true,
 		},
 		{
 			name:            "ipv4ipv6 + v1alpha5 is rejected",
-			clusterIPFamily: ClusterIPFamilyIPv4IPv6,
+			clusterIPFamily: ipfamily.IPv4IPv6,
 			vmopAPIVersion:  factory.V1alpha5,
 			wantErr:         true,
 		},
 		{
 			name:            "ipv6ipv4 + v1alpha6 is valid",
-			clusterIPFamily: ClusterIPFamilyIPv6IPv4,
+			clusterIPFamily: ipfamily.IPv6IPv4,
 			vmopAPIVersion:  factory.V1alpha6,
 			wantErr:         false,
 		},
 		{
 			name:            "ipv6ipv4 + v1alpha2 is rejected",
-			clusterIPFamily: ClusterIPFamilyIPv6IPv4,
+			clusterIPFamily: ipfamily.IPv6IPv4,
 			vmopAPIVersion:  factory.V1alpha2,
 			wantErr:         true,
 		},
 		{
 			name:            "unknown vmop version is treated as below v1alpha6 for dual-stack family",
-			clusterIPFamily: ClusterIPFamilyIPv6IPv4,
+			clusterIPFamily: ipfamily.IPv6IPv4,
 			vmopAPIVersion:  "v1alpha99",
 			wantErr:         true,
 		},
