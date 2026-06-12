@@ -20,12 +20,14 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"flag"
 	goflag "flag"
 	"fmt"
 	"math/rand"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -204,10 +206,19 @@ func main() {
 		klog.Infof("initialize notifier on configmap and service token update %s\n", cloudConfig)
 
 		pathsToMonitor := []string{cloudConfig}
+		// guard restarts on every (non-Chmod) event by default; in paravirtual
+		// mode it is narrowed so that token-only rotations of the supervisor
+		// credentials Secret do not restart the pod (client-go reloads the token
+		// from BearerTokenFile), while ca.crt/namespace changes still do.
+		guard := newRestartGuard("", nil)
 		if cloudProvider == vsphereparavirtual.RegisteredProviderName {
 			pathsToMonitor = append(pathsToMonitor, SupervisorServiceAccountPath, pvconfig.VsphereParavirtualCloudProviderConfigPath)
+			guard = newRestartGuard(SupervisorServiceAccountPath, []string{
+				pvconfig.SupervisorClusterAccessCAFile,
+				pvconfig.SupervisorClusterAccessNamespaceFile,
+			})
 		}
-		watch, stop, err := initializeWatch(pathsToMonitor)
+		watch, stop, err := initializeWatch(pathsToMonitor, guard)
 		if err != nil {
 			klog.Fatalf("fail to initialize watch on config map %s: %v\n", cloudConfig, err)
 		}
@@ -270,7 +281,7 @@ func shouldEnableRouteController(controllersFlag, cloudProviderFlag *pflag.Value
 // set up a filesystem watcher for the mounted files
 // which include cloud-config and projected service account.
 // reboot the app whenever there is an update via the returned stopCh.
-func initializeWatch(paths []string) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
+func initializeWatch(paths []string, guard *restartGuard) (watch *fsnotify.Watcher, stopCh chan struct{}, err error) {
 	stopCh = make(chan struct{})
 	watch, err = fsnotify.NewWatcher()
 	if err != nil {
@@ -282,11 +293,11 @@ func initializeWatch(paths []string) (watch *fsnotify.Watcher, stopCh chan struc
 			case err := <-watch.Errors:
 				klog.Warningf("watcher receives err: %v\n", err)
 			case event := <-watch.Events:
-				if event.Op != fsnotify.Chmod {
+				if guard.shouldRestart(event) {
 					klog.Fatalf("restarting pod because received event %v\n", event)
 					stopCh <- struct{}{}
 				} else {
-					klog.V(5).Infof("watcher receives %s on the mounted file %s\n", event.Op.String(), event.Name)
+					klog.V(5).Infof("watcher receives %s on the mounted file %s, skipping restart\n", event.Op.String(), event.Name)
 				}
 			}
 		}
@@ -298,6 +309,96 @@ func initializeWatch(paths []string) (watch *fsnotify.Watcher, stopCh chan struc
 	}
 
 	return
+}
+
+// restartGuard decides whether a filesystem event should trigger a pod restart.
+//
+// The supervisor credentials (ca.crt, token, namespace) are delivered as a
+// single projected Secret volume. Kubernetes' atomic writer updates the whole
+// volume via a "..data" symlink swap, so fsnotify events never name an
+// individual key and every key appears to change at once. That makes filename
+// matching useless for skipping routine token rotation.
+//
+// Instead we compare the content of the keys that DO require a restart when they
+// change (ca.crt, namespace) against a baseline captured at startup. A
+// token-only rotation leaves those keys untouched and is skipped (client-go
+// reloads the bearer token from BearerTokenFile on its own); any change to a
+// restart-worthy key, or any event outside the credentials mount, triggers a
+// restart.
+type restartGuard struct {
+	// secretMountDir is the directory of the projected supervisor credentials
+	// volume. It is empty when not running in paravirtual mode, in which case
+	// every non-Chmod event triggers a restart.
+	secretMountDir string
+	// baselines maps a restart-worthy file name to the raw content captured at
+	// startup.
+	baselines map[string][]byte
+}
+
+// newRestartGuard captures the startup raw contents of the restart-worthy
+// keys under secretMountDir. Pass an empty secretMountDir to restart on every
+// (non-Chmod) event.
+func newRestartGuard(secretMountDir string, restartKeys []string) *restartGuard {
+	g := &restartGuard{
+		secretMountDir: secretMountDir,
+		baselines:      make(map[string][]byte, len(restartKeys)),
+	}
+	for _, k := range restartKeys {
+		data, err := os.ReadFile(filepath.Join(secretMountDir, k))
+		if err != nil {
+			// Without a baseline we cannot tell whether this key changed later,
+			// so we deliberately leave it unset; a subsequent read error or diff
+			// in restartKeyChanged will then fail safe by restarting.
+			klog.Warningf("unable to read baseline for %s under %s: %v", k, secretMountDir, err)
+			continue
+		}
+		g.baselines[k] = data
+	}
+	return g
+}
+
+// shouldRestart reports whether the given event must trigger a pod restart.
+func (g *restartGuard) shouldRestart(event fsnotify.Event) bool {
+	if event.Op == fsnotify.Chmod {
+		return false
+	}
+	// Events outside the credentials mount (e.g. cloud-config, ownerref) always
+	// trigger a restart, preserving the original behavior.
+	if !isUnder(event.Name, g.secretMountDir) {
+		return true
+	}
+	// Within the credentials mount, restart only when a restart-worthy key
+	// actually changed; token-only rotations are reloaded live by client-go.
+	return g.restartKeyChanged()
+}
+
+// restartKeyChanged re-reads the restart-worthy keys and reports whether any of
+// them differs from the baseline captured at startup. A read failure is treated
+// as a change so we fail safe by restarting.
+func (g *restartGuard) restartKeyChanged() bool {
+	for name, want := range g.baselines {
+		got, err := os.ReadFile(filepath.Join(g.secretMountDir, name))
+		if err != nil {
+			klog.Warningf("failed to re-read %s under %s, triggering restart: %v", name, g.secretMountDir, err)
+			return true
+		}
+		if !bytes.Equal(got, want) {
+			klog.Infof("detected change in %s, triggering restart", name)
+			return true
+		}
+	}
+	return false
+}
+
+// isUnder reports whether path is dir itself or a descendant of dir. A blank dir
+// matches nothing.
+func isUnder(path, dir string) bool {
+	if dir == "" {
+		return false
+	}
+	cleanDir := filepath.Clean(dir)
+	cleanPath := filepath.Clean(path)
+	return cleanPath == cleanDir || strings.HasPrefix(cleanPath, cleanDir+string(os.PathSeparator))
 }
 
 func initializeCloud(config *appconfig.CompletedConfig, cloudProvider string) cloudprovider.Interface {

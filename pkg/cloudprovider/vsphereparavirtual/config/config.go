@@ -116,9 +116,11 @@ func GetRestConfig(svConfigPath string) (*rest.Config, error) {
 	}
 
 	tokenFile := svConfigPath + "/" + SupervisorClusterAccessTokenFile
-	token, err := os.ReadFile(tokenFile)
-
-	if err != nil {
+	// Validate the token is readable at startup so we fail fast with a clear
+	// error. The content is intentionally discarded: we hand the path to
+	// client-go via BearerTokenFile so it reloads the (potentially short-lived,
+	// periodically refreshed) token from disk without requiring a pod restart.
+	if _, err := os.ReadFile(tokenFile); err != nil {
 		klog.Errorf("Failed to read token from %s: %v", tokenFile, err)
 		return nil, err
 	}
@@ -136,7 +138,7 @@ func GetRestConfig(svConfigPath string) (*rest.Config, error) {
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: rootCA,
 		},
-		BearerToken: string(token),
+		BearerTokenFile: tokenFile,
 	}, nil
 }
 
