@@ -15,9 +15,9 @@ require (
 	github.com/onsi/gomega v1.42.0
 	github.com/vmware/govmomi v0.54.1
 	golang.org/x/crypto v0.53.0
-	k8s.io/api v0.35.5
-	k8s.io/apimachinery v0.35.5
-	k8s.io/client-go v0.35.5
+	k8s.io/api v0.35.6
+	k8s.io/apimachinery v0.35.6
+	k8s.io/client-go v0.35.6
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	sigs.k8s.io/cluster-api v1.12.1
