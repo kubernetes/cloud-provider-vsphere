@@ -55,6 +55,10 @@ type Controller struct {
 	clusterNS   string
 
 	ownerRef *metav1.OwnerReference
+
+	// expectedFamilyCount is 1 for single stack and 2 for dual stack.
+	// The update handler re-enqueues a node until len(PodCIDRs) reaches this count.
+	expectedFamilyCount int
 }
 
 // NewController returns controller that reconciles node
@@ -64,7 +68,8 @@ func NewController(
 	informerManager *k8s.InformerManager,
 	clusterName string,
 	clusterNS string,
-	ownerRef *metav1.OwnerReference) *Controller {
+	ownerRef *metav1.OwnerReference,
+	expectedFamilyCount int) *Controller {
 
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
@@ -79,10 +84,10 @@ func NewController(
 		recorder:  recorder,
 		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Nodes"),
 
-		clusterName: clusterName,
-		clusterNS:   clusterNS,
-
-		ownerRef: ownerRef,
+		clusterName:         clusterName,
+		clusterNS:           clusterNS,
+		ownerRef:            ownerRef,
+		expectedFamilyCount: expectedFamilyCount,
 	}
 
 	// watch node change
@@ -99,8 +104,8 @@ func NewController(
 		// update
 		func(_, cur interface{}) {
 			node := cur.(*corev1.Node).DeepCopy()
-			// no need to add request if it's already allocated
-			if len(node.Spec.PodCIDR) == 0 || len(node.Spec.PodCIDRs) == 0 {
+			// Re-enqueue until all expected IP family CIDRs have been assigned.
+			if len(node.Spec.PodCIDRs) < c.expectedFamilyCount {
 				c.enqueueNode(node)
 			}
 		})
@@ -189,7 +194,7 @@ func (c *Controller) processNextWorkItem() bool {
 func (c *Controller) syncNode(key string) error {
 	startTime := time.Now()
 	defer func() {
-		klog.V(4).Infof("Finished syncing service %q (%v)", key, time.Since(startTime))
+		klog.V(4).Infof("Finished syncing node %q (%v)", key, time.Since(startTime))
 	}()
 
 	_, name, err := cache.SplitMetaNamespaceKey(key)

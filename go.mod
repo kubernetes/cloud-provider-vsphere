@@ -15,8 +15,8 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20260423081355-beab2417344a
-	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20260423081355-beab2417344a
+	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20260526090146-dc1b9330cf6b
+	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20260526090146-dc1b9330cf6b
 	github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20260502065817-4ee333ccd54c
 	github.com/vmware/govmomi v0.54.1
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
@@ -125,7 +125,7 @@ require (
 	k8s.io/streaming v0.36.0 // indirect
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 // indirect
-	sigs.k8s.io/controller-runtime v0.19.0 // indirect
+	sigs.k8s.io/controller-runtime v0.23.3 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
