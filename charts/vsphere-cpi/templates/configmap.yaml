@@ -1,4 +1,5 @@
 {{- $config := .Values.config -}}
+{{- if and $config.enabled (eq $config.source "configMap") }}
 {{- if .Values.global }}
 {{- if .Values.global.config }}
 {{- $config = mergeOverwrite (deepCopy .Values.config) .Values.global.config -}}
@@ -42,4 +43,5 @@ data:
     labels:
       region: {{ $config.region }}
       zone: {{ $config.zone }}
+{{- end -}}
 {{- end -}}
