@@ -81,7 +81,12 @@ export TF_VAR_vsphere_network="sddc-cgw-network-3"
 
 # The cluster name is a combination of the build ID and the first seven
 # characters of a hash of the job ID.
-CLUSTER_NAME="prow-$(echo "${BUILD_ID:-1}-${PROW_JOB_ID:-$(date +%s)}" | { md5sum 2>/dev/null || md5; } | awk '{print $1}' | cut -c-7)"
+if command -v python3 >/dev/null 2>&1; then
+  SUFFIX=$(python3 -c "h = 2166136261; [h := ((h ^ b) * 16777619) & 0xffffffff for b in b\"${BUILD_ID:-1}-${PROW_JOB_ID:-$(date +%s)}\"]; print(f\"{h:08x}\")" | cut -c-7)
+else
+  SUFFIX=$(echo "${BUILD_ID:-1}-${PROW_JOB_ID:-$(date +%s)}" | { sha256sum 2>/dev/null || shasum -a 256; } | awk '{print $1}' | cut -c-7)
+fi
+CLUSTER_NAME="prow-${SUFFIX}"
 
 # Write information about the build out to disk.
 cat <<EOF >"${ARTIFACTS-}/build-info.json"
