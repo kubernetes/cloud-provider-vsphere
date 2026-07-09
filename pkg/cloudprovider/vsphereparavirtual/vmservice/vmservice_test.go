@@ -232,6 +232,43 @@ func TestGetVMService_LegacyFallback(t *testing.T) {
 	assert.Nil(t, deletedObj)
 }
 
+func TestGetVMService_LegacyLookupError(t *testing.T) {
+	testK8sService, vms, fc := initTest(testServiceAnnotationPropagationEnabled)
+
+	// No VMService exists under the current name, so Get falls back to the
+	// label-based legacy lookup. Make that List fail (e.g. a missing "list" RBAC
+	// permission). The lookup must fail closed: Get returns the error rather than
+	// (nil, nil), which would otherwise cause the caller to create a duplicate
+	// VMService under the new name-hashing scheme.
+	listErr := apierrors.NewForbidden(v1alpha1.Resource("virtualmachineservices"), "", fmt.Errorf("no list permission"))
+	fc.PrependReactor("list", "virtualmachineservices", func(clientgotesting.Action) (bool, runtime.Object, error) {
+		return true, nil, listErr
+	})
+
+	vmServiceObj, err := vms.Get(context.Background(), testK8sService, testClustername)
+	assert.Error(t, err)
+	assert.Nil(t, vmServiceObj)
+	assert.True(t, apierrors.IsForbidden(err))
+}
+
+func TestDeleteVMService_LegacyLookupError(t *testing.T) {
+	testK8sService, vms, fc := initTest(testServiceAnnotationPropagationEnabled)
+
+	// No VMService exists under the current name, so Delete falls back to the
+	// label-based legacy lookup. Make that List fail. The lookup must fail closed:
+	// Delete returns the error rather than reporting a successful (no-op) delete,
+	// which would otherwise silently orphan a legacy VMService we merely failed to
+	// read.
+	listErr := apierrors.NewForbidden(v1alpha1.Resource("virtualmachineservices"), "", fmt.Errorf("no list permission"))
+	fc.PrependReactor("list", "virtualmachineservices", func(clientgotesting.Action) (bool, runtime.Object, error) {
+		return true, nil, listErr
+	})
+
+	err := vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.Error(t, err)
+	assert.True(t, apierrors.IsForbidden(err))
+}
+
 func TestCreateVMService(t *testing.T) {
 	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	ports, _ := findPorts(testK8sService)

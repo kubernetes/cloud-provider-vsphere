@@ -122,13 +122,16 @@ func (s *vmService) hashString(str string) string {
 // older release using a different name-hashing scheme. It matches on the
 // identifying labels that the CPI has always stamped on every
 // VirtualMachineService, so the lookup is independent of how the name was
-// generated. Returns nil when no matching resource exists.
+// generated. Returns (nil, nil) when no matching resource exists.
 //
-// Any List error (including a missing "list" RBAC permission) is logged and
-// treated as "no legacy resource found" so that the primary, name-based flow is
-// never blocked. In particular, a freshly created Service has no
-// VirtualMachineService yet and must still be able to proceed to Create.
-func (s *vmService) findLegacyVMService(ctx context.Context, service *v1.Service, clusterName string) *vmoptypes.VirtualMachineServiceInfo {
+// The lookup fails closed: any List error (including a missing "list" RBAC
+// permission) is returned to the caller rather than being swallowed. Swallowing
+// the error would make an unreadable legacy resource look like "not found",
+// causing the caller to create a duplicate VirtualMachineService under the new
+// name-hashing scheme. A genuine empty result is not an error, so a freshly
+// created Service (which has no VirtualMachineService yet) still returns
+// (nil, nil) and can proceed to Create.
+func (s *vmService) findLegacyVMService(ctx context.Context, service *v1.Service, clusterName string) (*vmoptypes.VirtualMachineServiceInfo, error) {
 	logger := log.WithValues("name", service.Name, "namespace", service.Namespace)
 
 	selector := labels.SelectorFromSet(labels.Set{
@@ -139,16 +142,16 @@ func (s *vmService) findLegacyVMService(ctx context.Context, service *v1.Service
 
 	list, err := s.vmClient.VirtualMachineServices().List(ctx, s.namespace, vmoptypes.ListOptions{LabelSelector: selector})
 	if err != nil {
-		logger.Error(err, "failed to list VirtualMachineServices for legacy lookup; treating as not found")
-		return nil
+		logger.Error(err, "failed to list VirtualMachineServices for legacy lookup")
+		return nil, err
 	}
 	if len(list) == 0 {
-		return nil
+		return nil, nil
 	}
 	if len(list) > 1 {
 		logger.V(2).Info("multiple VirtualMachineServices matched the legacy label lookup; using the first", "count", len(list))
 	}
-	return list[0]
+	return list[0], nil
 }
 
 // GetVMServiceName returns VirtualMachineService name for a lb type of service
@@ -176,7 +179,16 @@ func (s *vmService) Get(ctx context.Context, service *v1.Service, clusterName st
 			// Fallback for resources created by an older release that used a
 			// different name-hashing scheme. Located via the always-present
 			// identifying labels rather than by recomputing the legacy name.
-			if legacy := s.findLegacyVMService(ctx, service, clusterName); legacy != nil {
+			//
+			// Fail closed: if the legacy lookup itself errors, surface the error
+			// instead of returning "not found". Returning nil here would make the
+			// caller create a duplicate VirtualMachineService under the new name.
+			legacy, legacyErr := s.findLegacyVMService(ctx, service, clusterName)
+			if legacyErr != nil {
+				logger.Error(ErrGetVMService, fmt.Sprintf("legacy lookup failed: %v", legacyErr))
+				return nil, legacyErr
+			}
+			if legacy != nil {
 				logger.V(2).Info("VirtualMachineService not found by name; found legacy resource via labels", "legacyName", legacy.Name)
 				return legacy, nil
 			}
@@ -354,7 +366,15 @@ func (s *vmService) Delete(ctx context.Context, service *v1.Service, clusterName
 		if apierrors.IsNotFound(err) {
 			// Fallback: a resource created by an older release lives under a
 			// different name. Locate it via the identifying labels and delete it.
-			legacy := s.findLegacyVMService(ctx, service, clusterName)
+			//
+			// Fail closed: if the legacy lookup errors, surface the error rather
+			// than reporting a successful delete. Returning nil could orphan a
+			// legacy VirtualMachineService that we simply failed to read.
+			legacy, legacyErr := s.findLegacyVMService(ctx, service, clusterName)
+			if legacyErr != nil {
+				logger.Error(ErrDeleteVMService, fmt.Sprintf("legacy lookup failed: %v", legacyErr))
+				return legacyErr
+			}
 			if legacy == nil {
 				return nil
 			}
