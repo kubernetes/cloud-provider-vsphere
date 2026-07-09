@@ -28,28 +28,33 @@ type nodeSpecForMergePatch struct {
 	PodCIDRs []string `json:"podCIDRs,omitempty"`
 }
 
-// PatchNodeCIDRWithRetry patches the specified node's CIDR to the given value with retries
-func PatchNodeCIDRWithRetry(ctx context.Context, kubeclientset kubernetes.Interface, node *corev1.Node, cidr string, recorder record.EventRecorder) error {
+// PatchNodeCIDRWithRetry patches the specified node's PodCIDR and PodCIDRs with retries.
+// cidrs must be non-empty; cidrs[0] is used as PodCIDR.
+func PatchNodeCIDRWithRetry(ctx context.Context, kubeclientset kubernetes.Interface, node *corev1.Node, cidrs []string, recorder record.EventRecorder) error {
 	logger := klog.FromContext(ctx)
 	var err error
 	for i := 0; i < cidrUpdateRetries; i++ {
-		if err = PatchNodeCIDR(ctx, kubeclientset, node.Name, cidr); err == nil {
-			logger.V(4).Info(fmt.Sprintf("Set PodCIDR to %s on Node %s", cidr, node.Name))
+		if err = PatchNodeCIDR(ctx, kubeclientset, node.Name, cidrs); err == nil {
+			logger.V(4).Info(fmt.Sprintf("Set PodCIDRs to %v on Node %s", cidrs, node.Name))
 			return nil
 		}
 	}
-	logger.Error(err, fmt.Sprintf("Failed to set PodCIDR %s on Node %s after multiple attempts", cidr, node.Name))
+	logger.Error(err, fmt.Sprintf("Failed to set PodCIDRs %v on Node %s after multiple attempts", cidrs, node.Name))
 	RecordNodeCIDRAssignmentFailed(ctx, node, recorder)
 	logger.Error(err, fmt.Sprintf("CIDR assignment for Node %s failed. Try again in next reconcile", node.Name))
 	return err
 }
 
-// PatchNodeCIDR patches the specified node's CIDR to the given value.
-func PatchNodeCIDR(ctx context.Context, kubeclientset kubernetes.Interface, name, cidr string) error {
+// PatchNodeCIDR patches the specified node's PodCIDR and PodCIDRs.
+// cidrs must be non-empty; cidrs[0] is used as PodCIDR (primary family).
+func PatchNodeCIDR(ctx context.Context, kubeclientset kubernetes.Interface, name string, cidrs []string) error {
+	if len(cidrs) == 0 {
+		return fmt.Errorf("cidrs must not be empty")
+	}
 	patch := nodeForCIDRMergePatch{
 		Spec: nodeSpecForMergePatch{
-			PodCIDR:  cidr,
-			PodCIDRs: []string{cidr},
+			PodCIDR:  cidrs[0],
+			PodCIDRs: cidrs,
 		},
 	}
 	patchBytes, err := json.Marshal(&patch)

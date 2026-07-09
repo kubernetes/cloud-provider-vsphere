@@ -161,15 +161,11 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 		klog.Fatalf("Invalid flag combination: %v", err)
 	}
 
-	ipv6Enabled := resolvedClusterIPFamily == ClusterIPFamilyIPv6 ||
-		resolvedClusterIPFamily == ClusterIPFamilyIPv4IPv6 ||
-		resolvedClusterIPFamily == ClusterIPFamilyIPv6IPv4
-
 	// IPv6 (including dual stack) Routable Pods requires VPC mode; T1 networking does not
 	// support per-family IPAddressAllocation or StaticRoute CRs.
 	// This guard is scoped to RouteEnabled: IPv6 Node IP Report and Load Balancer do not
 	// depend on VPC mode and must continue to work when route controllers are disabled.
-	if RouteEnabled && ipv6Enabled && !vpcModeEnabled {
+	if RouteEnabled && resolvedClusterIPFamily.IPv6Enabled() && !vpcModeEnabled {
 		klog.Fatalf("--cluster-ip-family=%s with route controller enabled requires --enable-vpc-mode=true: IPv6 and dual stack routable pods are not supported on the legacy T1 networking mode", resolvedClusterIPFamily)
 	}
 	klog.Infof("Using VM Operator API version: %s", vmopAPIVersion)
@@ -191,7 +187,7 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	cp.loadBalancer = lb
 
 	klog.Infof("Using cluster IP family: %s", resolvedClusterIPFamily)
-	instances, err := NewInstances(clusterNS, vmopClient, resolvedClusterIPFamily)
+	instances, err := NewInstances(clusterNS, vmopClient, string(resolvedClusterIPFamily))
 	if err != nil {
 		klog.Errorf("Failed to init Instance: %v", err)
 	}
@@ -200,7 +196,14 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	if RouteEnabled {
 		klog.V(0).Info("Starting routable pod controllers")
 
-		if err := routablepod.StartControllers(kcfg, client, cp.informMgr, ClusterName, clusterNS, ownerRef, vpcModeEnabled, podIPPoolType); err != nil {
+		if err := routablepod.StartControllers(kcfg, client, cp.informMgr, routablepod.Options{
+			ClusterName:    ClusterName,
+			ClusterNS:      clusterNS,
+			OwnerRef:       ownerRef,
+			VPCModeEnabled: vpcModeEnabled,
+			PodIPPoolType:  podIPPoolType,
+			IPFamily:       resolvedClusterIPFamily,
+		}); err != nil {
 			klog.Errorf("Failed to start Routable pod controllers: %v", err)
 		}
 	}

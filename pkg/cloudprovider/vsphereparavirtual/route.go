@@ -90,11 +90,10 @@ func (r *routesProvider) ListRoutes(ctx context.Context, clusterName string) ([]
 }
 
 // crNameForRoute returns the StaticRoute CR name for a given Kubernetes node name
-// and destination CIDR. IPv4 CIDRs use the bare node name to remain compatible
-// with existing StaticRoute CRs created before dual-stack support; changing the
-// IPv4 naming scheme would orphan those CRs on upgrade. IPv6 CIDRs append
-// helper.SuffixIPv6 so dual-stack nodes can have one CR per address family
-// without name collision.
+// and destination CIDR. IPv4 CIDRs use the bare node name (no suffix); IPv6
+// CIDRs append helper.SuffixIPv6. This convention is shared with
+// IPAddressAllocation CRs so that all NSX-VPC resources for a node follow the
+// same naming scheme.
 func crNameForRoute(nodeName, destCIDR string) string {
 	if util.IsIPv4(destCIDR) {
 		return nodeName
@@ -117,6 +116,8 @@ func (r *routesProvider) CreateRoute(ctx context.Context, clusterName string, na
 
 	labels := map[string]string{
 		helper.LabelKeyClusterName: clusterName,
+		helper.LabelKeyNodeName:    nodeName,
+		helper.LabelKeyIPFamily:    helper.IPFamilyLabel(route.DestinationCIDR),
 	}
 	nodeRef := metav1.OwnerReference{
 		APIVersion: "v1",

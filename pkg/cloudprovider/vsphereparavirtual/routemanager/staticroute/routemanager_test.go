@@ -27,6 +27,8 @@ const (
 func buildFakeRouteInfo(clusterName, nameHint, dstCIDR, nodeName, nodeIP string) *helper.RouteInfo {
 	labels := map[string]string{
 		helper.LabelKeyClusterName: clusterName,
+		helper.LabelKeyNodeName:    nodeName,
+		helper.LabelKeyIPFamily:    helper.IPFamilyLabel(dstCIDR),
 	}
 	nodeRef := metav1.OwnerReference{
 		APIVersion: "v1",
@@ -72,6 +74,8 @@ func TestCreateRouteCR(t *testing.T) {
 	}
 	expectedLabels := map[string]string{
 		helper.LabelKeyClusterName: testClustername,
+		helper.LabelKeyNodeName:    testNodeName,
+		helper.LabelKeyIPFamily:    helper.LabelValueIPFamilyIPv4,
 	}
 	expectedOwnerRefs := []metav1.OwnerReference{
 		{
@@ -171,18 +175,22 @@ func TestGetRouteCRCondition(t *testing.T) {
 }
 
 func TestCreateCPRoutes(t *testing.T) {
+	const testNodeNameIPv6 = "fakeNode1" + helper.SuffixIPv6
+
 	testcases := []struct {
 		name           string
 		rs             vpcapisv1.StaticRouteList
 		expectedRoutes []*cloudprovider.Route
 	}{
 		{
-			name: "There is 2 ready route",
+			name: "Two ready IPv4 routes with nodeName label",
 			rs: vpcapisv1.StaticRouteList{
 				Items: []vpcapisv1.StaticRoute{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: testNodeName,
+							// IPv4 CRs use the bare node name — no suffix.
+							Name:   testNodeName,
+							Labels: map[string]string{helper.LabelKeyNodeName: testNodeName},
 						},
 						Spec: vpcapisv1.StaticRouteSpec{
 							Network: testCIDR,
@@ -200,7 +208,8 @@ func TestCreateCPRoutes(t *testing.T) {
 					},
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: testNodeName,
+							Name:   testNodeName,
+							Labels: map[string]string{helper.LabelKeyNodeName: testNodeName},
 						},
 						Spec: vpcapisv1.StaticRouteSpec{
 							Network: testCIDR,
@@ -218,14 +227,111 @@ func TestCreateCPRoutes(t *testing.T) {
 					},
 				},
 			},
-			expectedRoutes: []*cloudprovider.Route{{
-				Name:            testNodeName,
-				TargetNode:      types.NodeName(testNodeName),
-				DestinationCIDR: testCIDR,
-			},
+			expectedRoutes: []*cloudprovider.Route{
 				{
 					Name:            testNodeName,
 					TargetNode:      types.NodeName(testNodeName),
+					DestinationCIDR: testCIDR,
+				},
+				{
+					Name:            testNodeName,
+					TargetNode:      types.NodeName(testNodeName),
+					DestinationCIDR: testCIDR,
+				},
+			},
+		},
+		{
+			name: "Ready IPv6 route with nodeName label",
+			rs: vpcapisv1.StaticRouteList{
+				Items: []vpcapisv1.StaticRoute{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   testNodeNameIPv6,
+							Labels: map[string]string{helper.LabelKeyNodeName: testNodeName},
+						},
+						Spec: vpcapisv1.StaticRouteSpec{
+							Network: "fd00::/80",
+						},
+						Status: vpcapisv1.StaticRouteStatus{
+							Conditions: []vpcapisv1.StaticRouteCondition{
+								{
+									Type:   vpcapisv1.Ready,
+									Status: v1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedRoutes: []*cloudprovider.Route{
+				{
+					Name:            testNodeNameIPv6,
+					TargetNode:      types.NodeName(testNodeName),
+					DestinationCIDR: "fd00::/80",
+				},
+			},
+		},
+		{
+			name: "Fallback: IPv4 route without nodeName label (legacy CR)",
+			rs: vpcapisv1.StaticRouteList{
+				Items: []vpcapisv1.StaticRoute{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   testNodeName,
+							Labels: map[string]string{},
+						},
+						Spec: vpcapisv1.StaticRouteSpec{
+							Network: testCIDR,
+						},
+						Status: vpcapisv1.StaticRouteStatus{
+							Conditions: []vpcapisv1.StaticRouteCondition{
+								{
+									Type:   vpcapisv1.Ready,
+									Status: v1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedRoutes: []*cloudprovider.Route{
+				{
+					Name:            testNodeName,
+					TargetNode:      types.NodeName(testNodeName),
+					DestinationCIDR: testCIDR,
+				},
+			},
+		},
+		{
+			// Regression: a legacy IPv4 CR whose node literally ends in
+			// "-ipv6" must NOT have the suffix stripped, because the fallback
+			// only strips when the destination CIDR is IPv6.
+			name: "Fallback: IPv4 route on a node literally named *-ipv6 keeps full name",
+			rs: vpcapisv1.StaticRouteList{
+				Items: []vpcapisv1.StaticRoute{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   "worker-ipv6",
+							Labels: map[string]string{},
+						},
+						Spec: vpcapisv1.StaticRouteSpec{
+							Network: testCIDR, // IPv4
+						},
+						Status: vpcapisv1.StaticRouteStatus{
+							Conditions: []vpcapisv1.StaticRouteCondition{
+								{
+									Type:   vpcapisv1.Ready,
+									Status: v1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedRoutes: []*cloudprovider.Route{
+				{
+					Name:            "worker-ipv6",
+					TargetNode:      types.NodeName("worker-ipv6"), // NOT "worker"
 					DestinationCIDR: testCIDR,
 				},
 			},
