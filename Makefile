@@ -319,8 +319,8 @@ quick-conformance-test: conformance-test
 ################################################################################
 ##                                LINT & VERIFY                               ##
 ################################################################################
-.PHONY: fmt vet lint mdlint shellcheck staticcheck check
-check: fmt lint mdlint shellcheck staticcheck vet
+.PHONY: fmt vet lint mdlint shellcheck staticcheck verify-boilerplate check
+check: fmt lint mdlint shellcheck staticcheck vet verify-boilerplate
 
 fmt:
 	hack/check-format.sh
@@ -339,6 +339,9 @@ staticcheck:
 
 vet:
 	hack/check-vet.sh
+
+verify-boilerplate:
+	hack/check-boilerplate.sh
 
 .PHONY: verify-container-images
 verify-container-images: ## Verify container images
