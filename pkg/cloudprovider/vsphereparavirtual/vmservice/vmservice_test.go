@@ -269,6 +269,73 @@ func TestDeleteVMService_LegacyLookupError(t *testing.T) {
 	assert.True(t, apierrors.IsForbidden(err))
 }
 
+func TestGetVMService_LegacyMultipleMatches(t *testing.T) {
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
+
+	// Create two legacy VirtualMachineServices with the same identifying labels.
+	ports, _ := findPorts(testK8sService)
+	for i := 1; i <= 2; i++ {
+		legacyName := fmt.Sprintf("legacy-%s-%d", testClustername, i)
+		legacyInfo := &vmoptypes.VirtualMachineServiceInfo{
+			Name:      legacyName,
+			Namespace: testClusterNameSpace,
+			Labels: map[string]string{
+				LabelClusterNameKey:      testClustername,
+				LabelServiceNameKey:      testK8sServiceName,
+				LabelServiceNameSpaceKey: testK8sServiceNameSpace,
+			},
+			Spec: vmoptypes.VirtualMachineServiceSpec{
+				Type:  vmoptypes.VirtualMachineServiceTypeLoadBalancer,
+				Ports: ports,
+				Selector: map[string]string{
+					ClusterSelectorKey: testClustername,
+					NodeSelectorKey:    NodeRole,
+				},
+			},
+		}
+		_, err := vms.(*vmService).vmClient.VirtualMachineServices().Create(context.Background(), legacyInfo)
+		assert.NoError(t, err)
+	}
+
+	// Get must fail and return ErrMultipleLegacyVMServices.
+	vmServiceObj, err := vms.Get(context.Background(), testK8sService, testClustername)
+	assert.ErrorIs(t, err, ErrMultipleLegacyVMServices)
+	assert.Nil(t, vmServiceObj)
+}
+
+func TestDeleteVMService_LegacyMultipleMatches(t *testing.T) {
+	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
+
+	// Create two legacy VirtualMachineServices with the same identifying labels.
+	ports, _ := findPorts(testK8sService)
+	for i := 1; i <= 2; i++ {
+		legacyName := fmt.Sprintf("legacy-%s-%d", testClustername, i)
+		legacyInfo := &vmoptypes.VirtualMachineServiceInfo{
+			Name:      legacyName,
+			Namespace: testClusterNameSpace,
+			Labels: map[string]string{
+				LabelClusterNameKey:      testClustername,
+				LabelServiceNameKey:      testK8sServiceName,
+				LabelServiceNameSpaceKey: testK8sServiceNameSpace,
+			},
+			Spec: vmoptypes.VirtualMachineServiceSpec{
+				Type:  vmoptypes.VirtualMachineServiceTypeLoadBalancer,
+				Ports: ports,
+				Selector: map[string]string{
+					ClusterSelectorKey: testClustername,
+					NodeSelectorKey:    NodeRole,
+				},
+			},
+		}
+		_, err := vms.(*vmService).vmClient.VirtualMachineServices().Create(context.Background(), legacyInfo)
+		assert.NoError(t, err)
+	}
+
+	// Delete must fail and return ErrMultipleLegacyVMServices.
+	err := vms.Delete(context.Background(), testK8sService, testClustername)
+	assert.ErrorIs(t, err, ErrMultipleLegacyVMServices)
+}
+
 func TestCreateVMService(t *testing.T) {
 	testK8sService, vms, _ := initTest(testServiceAnnotationPropagationEnabled)
 	ports, _ := findPorts(testK8sService)

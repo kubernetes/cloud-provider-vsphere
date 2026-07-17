@@ -82,12 +82,13 @@ var excludedAnnotations = []string{
 
 // A list of possible error messages
 var (
-	ErrCreateVMService     = errors.New("failed to create VirtualMachineService")
-	ErrUpdateVMService     = errors.New("failed to update VirtualMachineService")
-	ErrGetVMService        = errors.New("failed to get VirtualMachineService")
-	ErrDeleteVMService     = errors.New("failed to delete VirtualMachineService")
-	ErrVMServiceIPNotFound = errors.New("VirtualMachineService IP not found")
-	ErrNodePortNotFound    = errors.New("NodePort not found")
+	ErrCreateVMService          = errors.New("failed to create VirtualMachineService")
+	ErrUpdateVMService          = errors.New("failed to update VirtualMachineService")
+	ErrGetVMService             = errors.New("failed to get VirtualMachineService")
+	ErrDeleteVMService          = errors.New("failed to delete VirtualMachineService")
+	ErrVMServiceIPNotFound      = errors.New("VirtualMachineService IP not found")
+	ErrNodePortNotFound         = errors.New("NodePort not found")
+	ErrMultipleLegacyVMServices = errors.New("multiple VirtualMachineServices matched the legacy label lookup")
 )
 
 var (
@@ -107,7 +108,7 @@ func NewVMService(vmClient vmop.Interface, ns string, ownerRef *metav1.OwnerRefe
 }
 
 func (s *vmService) hashString(str string) string {
-	// SHA-256 is used as a FIPS-approved, well-distributed hash to derive a
+	// SHA-256 is used as a FIPS-compliant, well-distributed hash to derive a
 	// deterministic name suffix. The output is later truncated to
 	// MaxCheckSumLen; this is not a security-sensitive use.
 	hash := sha256.New()
@@ -149,7 +150,8 @@ func (s *vmService) findLegacyVMService(ctx context.Context, service *v1.Service
 		return nil, nil
 	}
 	if len(list) > 1 {
-		logger.V(2).Info("multiple VirtualMachineServices matched the legacy label lookup; using the first", "count", len(list))
+		logger.Error(ErrMultipleLegacyVMServices, "multiple VirtualMachineServices matched the legacy label lookup", "count", len(list))
+		return nil, ErrMultipleLegacyVMServices
 	}
 	return list[0], nil
 }
