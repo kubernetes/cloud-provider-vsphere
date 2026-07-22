@@ -419,7 +419,7 @@ LOCAL_BINARY_PATH := $(abspath $(BIN_OUT))/vsphere-cloud-controller-manager.$(GO
 ## latest git tag for the commit, e.g., v0.3.10
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 ## Hardcode active reviews
-IMAGE_REVIEWERS="@chenlin07 @DanielXiao @fabriziopandini @sbueringer @silvery1622 @zhanggbj"
+IMAGE_REVIEWERS="@chenlin07,@DanielXiao,@fabriziopandini,@sbueringer,@silvery1622,@zhanggbj,@12345lcr"
 
 .PHONY: docker-build-and-push
 docker-build-and-push: 
