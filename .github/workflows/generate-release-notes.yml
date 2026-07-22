@@ -18,7 +18,7 @@ jobs:
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v7.0.0
         with:
           fetch-depth: 0
 
@@ -29,7 +29,7 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@0778a10ce47b5d450cf60fb94fafad4330008a35 # tag=v7.0.0
         with:
           go-version-file: 'go.mod'
 
