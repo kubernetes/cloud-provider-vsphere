@@ -85,6 +85,100 @@ updates:
 # release branch N
 # ##################
 # GitHub Actions
+- target-branch: release-1.36
+  package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  commit-message:
+    prefix: ":seedling: (chore)[release-1.36]"
+  labels:
+    - "ok-to-test"
+    - "area/ci"
+  groups:
+    all-github-actions:
+      patterns: [ "*" ]
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+
+# Main Go module
+- target-branch: release-1.36
+  package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+  commit-message:
+    prefix: ":seedling: (chore)[release-1.36]"
+  labels:
+    - "ok-to-test"
+  open-pull-requests-limit: 5
+  ignore:
+    # Fully ignore k8s modules on release branches. All k8s dependency
+    # updates are done manually following the Kubernetes patch release
+    # schedule.
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+
+## Update dockerfile
+- target-branch: release-1.36
+  package-ecosystem: docker
+  directory: "/cluster/images/controller-manager"
+  schedule:
+    interval: weekly
+  commit-message:
+    prefix: ":seedling: (chore)[release-1.36]"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+  groups:
+    all-docker-update:
+      patterns: [ "*" ]
+
+# Test Go module
+- target-branch: release-1.36
+  package-ecosystem: "gomod"
+  directory: "/test/e2e"
+  schedule:
+    interval: "weekly"
+    day: "tuesday"
+  ## group all dependencies with a k8s.io prefix into a single PR.
+  groups:
+    kubernetes:
+      patterns: [ "k8s.io/*" ]
+    sigs-k8s:
+      patterns: [ "sigs.k8s.io/*" ]
+    onsi:
+      patterns: [ "github.com/onsi/*" ]
+  commit-message:
+    prefix: ":seedling: (chore)[release-1.36]"
+  labels:
+    - "ok-to-test"
+  ignore:
+    - dependency-name: "k8s.io/*"
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-major"
+        - "version-update:semver-minor"
+
+# ################
+# release branch N-1
+# ################
+# GitHub Actions
 - target-branch: release-1.35
   package-ecosystem: "github-actions"
   directory: "/"
@@ -175,9 +269,9 @@ updates:
         - "version-update:semver-major"
         - "version-update:semver-minor"
 
-# ################
-# release branch N-1
-# ################
+# ##################
+# release branch N-2
+# ##################
 # GitHub Actions
 - target-branch: release-1.34
   package-ecosystem: "github-actions"
@@ -215,6 +309,9 @@ updates:
     - "ok-to-test"
   open-pull-requests-limit: 5
   ignore:
+    # Fully ignore k8s modules on release branches. All k8s dependency
+    # updates are done manually following the Kubernetes patch release
+    # schedule.
     - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
@@ -267,7 +364,7 @@ updates:
         - "version-update:semver-minor"
 
 # ##################
-# release branch N-2
+# release branch N-3
 # ##################
 # GitHub Actions
 - target-branch: release-1.33
@@ -306,6 +403,9 @@ updates:
     - "ok-to-test"
   open-pull-requests-limit: 5
   ignore:
+    # Fully ignore k8s modules on release branches. All k8s dependency
+    # updates are done manually following the Kubernetes patch release
+    # schedule.
     - dependency-name: "k8s.io/*"
     - dependency-name: "*"
       update-types:
