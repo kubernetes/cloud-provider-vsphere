@@ -233,9 +233,9 @@ helm search repo vsphere-cpi/vsphere-cpi --versions
 
 ## Phase 8: Update Dependabot Configuration (Official Minor Releases Only)
 
-Dependabot is configured to automatically bump dependencies on the `master` branch and the three latest active release branches, corresponding to the officially supported minor releases (from \( N \) to \( N-2 \)).
+Dependabot is configured to automatically bump dependencies on the `master` branch and the four latest active release branches, corresponding to the officially supported minor releases (from \( N \) to \( N-3 \)).
 
 After cutting a new minor release, update the list of tracked release branches within `.github/dependabot.yml` to:
 
 1. Add the newest release branch.
-2. Drop the oldest release branch (now \( N-3 \) and no longer officially supported).
+2. Drop the oldest release branch (now \( N-4 \) and no longer officially supported).
