@@ -37,6 +37,21 @@ Remember to also update the version value in the [Dockerfile for image building]
 
 > **Note on Beta/RC Releases**: The `ARG VERSION` value in the `Dockerfile` is **only** updated for GA (official minor and patch) releases (typically managed by the `./hack/update-docs.sh` script). For Beta and RC releases, you do not need to update `ARG VERSION` in the `Dockerfile` manually. This is because our build processes (including the `Makefile` and Prow workflows) automatically override the version dynamically by passing the `--build-arg "VERSION=${VERSION}"` flag during image compilation.
 
+### 3. Verify Security & Fix Vulnerabilities (CVEs)
+
+Before releasing a new version, you must verify that there are no outstanding high-risk security vulnerabilities (CVEs) in both the codebase and our container images.
+
+- **Check Prow Security Jobs**: Verify that the periodic security scans on Prow are clean and that any outstanding CVEs are addressed.
+- **Run Security Checks Locally**: You can run the local security verification suite using the following command:
+
+  ```shell
+  make verify-security
+  ```
+
+  This command executes `verify-container-images` (using Trivy to inspect compiled images) and `verify-govulncheck` (using Go Vulncheck to identify known vulnerabilities in dependencies).
+
+- **Merge Package/Dependency Bumps**: Check active pull requests (such as those automatically opened by Dependabot or submitted by contributors) to merge package bumps required to resolve security issues before drafting the release.
+
 ---
 
 ## Phase 2: Testing and CI Maintenance (All Releases: Beta, RC, Official)
