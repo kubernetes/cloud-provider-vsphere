@@ -6,17 +6,7 @@ This document provides a comprehensive, step-by-step guide on how to prepare, bu
 
 ## Phase 1: Testing and CI Maintenance (All Releases: Beta, RC, Official)
 
-Before cutting any release, you shoulld verify that CPI passes E2E and unit tests.
-
-### 1. Build and Test Locally
-
-To compile and build a local Docker image for testing, run:
-
-```shell
-make docker-image IMAGE=<image_name>
-```
-
-### 2. CI and Testbed Maintenance
+Before cutting any release, you should verify that CPI CI tests are up-to-date.
 
 The CPI project runs its E2E suite via Prow jobs. Maintain the CI jobs and test configurations as follows:
 
