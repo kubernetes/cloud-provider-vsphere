@@ -4,9 +4,36 @@ This document provides a comprehensive, step-by-step guide on how to prepare, bu
 
 ---
 
-## Phase 1: Bump Kubernetes and Cloud Provider Dependencies (All Releases: Beta, RC, Official)
+## Phase 1: Testing and CI Maintenance (All Releases: Beta, RC, Official)
+
+Before cutting any release, you shoulld verify that CPI passes E2E and unit tests.
+
+### 1. Build and Test Locally
+
+To compile and build a local Docker image for testing, run:
+
+```shell
+make docker-image IMAGE=<image_name>
+```
+
+### 2. CI and Testbed Maintenance
+
+The CPI project runs its E2E suite via Prow jobs. Maintain the CI jobs and test configurations as follows:
+
+- **CI Jobs Config**: Maintained under the Kubernetes `test-infra` repository:
+  [Kubernetes test-infra CPI jobs](https://github.com/kubernetes/test-infra/tree/master/config/jobs/kubernetes/cloud-provider-vsphere)
+- **E2E Testbed Configurations**: Maintained inside [vsphere-ci.yaml](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/test/e2e/config/vsphere-ci.yaml).
+- **Keep CAPI and CAPV Releases Up-to-Date**: You should ensure that the Cluster API (CAPI) and Cluster API Provider vSphere (CAPV) release versions are kept up-to-date in E2E tests. These are used during the E2E test runs to verify compatibility.
+- **Update Kubernetes and OVA Versions in CI**: We should also update the Kubernetes version used in CI accordingly, along with the corresponding OVA version. The list of compatible, published OVA templates can be found in the [CAPV Kubernetes Versions with Published OVAs](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere#kubernetes-versions-with-published-ovas) documentation.
+- **Sample CAPI/CAPV Version Update and E2E configuration Update**: Refer to [PR #1821](https://github.com/kubernetes/cloud-provider-vsphere/pull/1821) for an example of updating the CAPI & CAPV release dependencies for E2E testing.
+
+---
+
+## Phase 2: Bump Kubernetes and Cloud Provider Dependencies (All Releases: Beta, RC, Official)
 
 When a new Kubernetes version is released, you must bump the Kubernetes dependencies of CPI before cutting a new release.
+
+All dependency bumping pull requests (whether triggered automatically or manually) must pass the repository's CI tests (described in Phase 1: Testing and CI Maintenance) before they can be merged.
 
 ### 1. Automatic Dependency Bumping via GitHub Workflows
 
@@ -33,10 +60,6 @@ After updating dependencies, ensure the packages are tidy:
 go mod tidy
 ```
 
-Remember to also update the version value in the [Dockerfile for image building](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/cluster/images/controller-manager/Dockerfile).
-
-> **Note on Beta/RC Releases**: The `ARG VERSION` value in the `Dockerfile` is **only** updated for GA (official minor and patch) releases (typically managed by the `./hack/update-docs.sh` script). For Beta and RC releases, you do not need to update `ARG VERSION` in the `Dockerfile` manually. This is because our build processes (including the `Makefile` and Prow workflows) automatically override the version dynamically by passing the `--build-arg "VERSION=${VERSION}"` flag during image compilation.
-
 ### 3. Verify Security & Fix Vulnerabilities (CVEs)
 
 Before releasing a new version, you must verify that there are no outstanding high-risk security vulnerabilities (CVEs) in both the codebase and our container images.
@@ -51,31 +74,6 @@ Before releasing a new version, you must verify that there are no outstanding hi
   This command executes `verify-container-images` (using Trivy to inspect compiled images) and `verify-govulncheck` (using Go Vulncheck to identify known vulnerabilities in dependencies).
 
 - **Merge Package/Dependency Bumps**: Check active pull requests (such as those automatically opened by Dependabot or submitted by contributors) to merge package bumps required to resolve security issues before drafting the release.
-
----
-
-## Phase 2: Testing and CI Maintenance (All Releases: Beta, RC, Official)
-
-Before cutting any release, you must verify that CPI passes E2E and unit tests.
-
-### 1. Build and Test Locally
-
-To compile and build a local Docker image for testing, run:
-
-```shell
-make docker-image IMAGE=<image_name>
-```
-
-### 2. CI and Testbed Maintenance
-
-The CPI project runs its E2E suite via Prow jobs. Maintain the CI jobs and test configurations as follows:
-
-- **CI Jobs Config**: Maintained under the Kubernetes `test-infra` repository:
-  [Kubernetes test-infra CPI jobs](https://github.com/kubernetes/test-infra/tree/master/config/jobs/kubernetes/cloud-provider-vsphere)
-- **E2E Testbed Configurations**: Maintained inside [vsphere-ci.yaml](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/test/e2e/config/vsphere-ci.yaml).
-- **Keep CAPI and CAPV Releases Up-to-Date**: You should ensure that the Cluster API (CAPI) and Cluster API Provider vSphere (CAPV) release versions are kept up-to-date in E2E tests. These are used during the E2E test runs to verify compatibility.
-- **Update Kubernetes and OVA Versions in CI**: We should also update the Kubernetes version used in CI accordingly, along with the corresponding OVA version. The list of compatible, published OVA templates can be found in the [CAPV Kubernetes Versions with Published OVAs](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere#kubernetes-versions-with-published-ovas) documentation.
-- **Sample CAPI/CAPV Version Update and E2E configuration Update**: Refer to [PR #1821](https://github.com/kubernetes/cloud-provider-vsphere/pull/1821) for an example of updating the CAPI & CAPV release dependencies for E2E testing.
 
 ---
 
@@ -96,9 +94,12 @@ Run the automated document update script by passing the target release version:
 This script automates several tasks:
 
 - Modifies YAML files (DaemonSet, Pod templates, disable-node-deletion config).
+- Updates the version value (`ARG VERSION`) in the [Dockerfile for image building](https://github.com/kubernetes/cloud-provider-vsphere/blob/master/cluster/images/controller-manager/Dockerfile).
 - Updates the release information and versions in the root `README.md` and `releases/README.md`.
 - Packages the Helm chart, generates the updated repository index (`index.yaml`), and copies the release template to `releases/v1.XX/vsphere-cloud-controller-manager.yaml`.
 - Automatically checks out a new branch called `pre-<version>-document-update` and opens a draft PR.
+
+> **Note on Beta/RC Releases**: The `ARG VERSION` value in the `Dockerfile` is **only** updated for GA (official minor and patch) releases, and this is fully automated by the `./hack/update-docs.sh` script. For Beta and RC releases, you do not need to update `ARG VERSION` in the `Dockerfile` manually because our build processes (including the `Makefile` and Prow workflows) automatically override the version dynamically by passing the `--build-arg "VERSION=${VERSION}"` flag during image compilation.
 
 ### 2. Document Update Troubleshooting
 
