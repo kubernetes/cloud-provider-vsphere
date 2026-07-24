@@ -6,7 +6,7 @@ This document provides a comprehensive, step-by-step guide on how to prepare, bu
 
 ## Phase 1: Testing and CI Maintenance (All Releases: Beta, RC, Official)
 
-Before cutting any release, you should verify that CPI CI tests are up-to-date.
+Before bump to new K8s releases, you should verify that CPI CI tests are up-to-date which will be leveraged in later PR precommit pipeline.
 
 The CPI project runs its E2E suite via Prow jobs. Maintain the CI jobs and test configurations as follows:
 
@@ -89,7 +89,7 @@ This script automates several tasks:
 - Packages the Helm chart, generates the updated repository index (`index.yaml`), and copies the release template to `releases/v1.XX/vsphere-cloud-controller-manager.yaml`.
 - Automatically checks out a new branch called `pre-<version>-document-update` and opens a draft PR.
 
-> **Note on Beta/RC Releases**: The `ARG VERSION` value in the `Dockerfile` is **only** updated for GA (official minor and patch) releases, and this is fully automated by the `./hack/update-docs.sh` script. For Beta and RC releases, you do not need to update `ARG VERSION` in the `Dockerfile` manually because our build processes (including the `Makefile` and Prow workflows) automatically override the version dynamically by passing the `--build-arg "VERSION=${VERSION}"` flag during image compilation.
+> **Note on Beta/RC Releases**: The `ARG VERSION` value in the `Dockerfile` is **only** updated for GA (official minor and patch) releases, and this is fully automated by the `./hack/update-docs.sh` script. For Beta and RC releases, you do not need to update `ARG VERSION` manually because our build processes (including the `Makefile` and Prow workflows) automatically override the version dynamically by passing the `--build-arg "VERSION=${VERSION}"` flag during image compilation.
 
 ### 2. Document Update Troubleshooting
 
@@ -102,7 +102,7 @@ The automated documentation update script may occasionally fail on a release bra
 
 ## Phase 4: Git Tagging and Creating GitHub Releases (All Releases: Beta, RC, Official)
 
-Once dependencies, code, and documentation (if applicable) are ready, proceed with tagging the release.
+Once dependencies, code, and documentation (if applicable) are ready, proceed with tagging the release. Every single release (including Beta, RC, and GA/Official patch or minor releases) **must** have a unique Git tag.
 
 ### 1. Tag the Release Branch
 
@@ -136,7 +136,31 @@ git fetch upstream --tags
 
 ---
 
-## Phase 5: GitHub Release Notes (All Releases: Beta, RC, Official)
+## Phase 5: Cut a New Release Branch (Official Minor Releases Only)
+
+When releasing a brand-new **Official Minor Release** (e.g., `v1.37.0`), you need to cut a new release branch (such as `release-1.37`) from `master` to track future patch releases for that minor version.
+
+> **Note**: Cutting a new release branch is **only** required for new official minor releases. You do not cut a release branch for Beta, RC, or patch releases (such as `v1.37.1`).
+
+### Steps to Cut a Release Branch
+
+To cut and push the new release branch, run:
+
+```shell
+# Checkout master branch and ensure it is up-to-date
+git checkout master
+git pull upstream master -r
+
+# Create and checkout the new release branch
+git checkout -b release-<minor-version>
+
+# Push the new release branch to the upstream repository
+git push upstream release-<minor-version>
+```
+
+---
+
+## Phase 6: GitHub Release Notes (All Releases: Beta, RC, Official)
 
 ### 1. Release Notes Generation
 
@@ -147,7 +171,7 @@ Navigate to the [GitHub Releases page](https://github.com/kubernetes/cloud-provi
 
 ---
 
-## Phase 6: Image Management and Promotion (All Releases: Beta, RC, Official)
+## Phase 7: Image Management and Promotion (All Releases: Beta, RC, Official)
 
 Images are managed via Kubernetes community-controlled registries. The process involves pushing images to a staging repository first, then promoting them to the official registry.
 
@@ -213,7 +237,7 @@ Once the promotion PR (from Option 1 or Option 2) is merged, verify that the ima
 
 ---
 
-## Phase 7: Update `gh-pages` Branch (Official Release Only)
+## Phase 8: Update `gh-pages` Branch (Official Release Only)
 
 For **Official Releases**, you must publish the new Helm charts to the `gh-pages` branch so users can consume the updated chart.
 
@@ -237,7 +261,7 @@ helm search repo vsphere-cpi/vsphere-cpi --versions
 
 ---
 
-## Phase 8: Update Dependabot Configuration (Official Minor Releases Only)
+## Phase 9: Update Dependabot Configuration (Official Minor Releases Only)
 
 Dependabot is configured to automatically bump dependencies on the `master` branch and the four latest active release branches, corresponding to the officially supported minor releases (from \( N \) to \( N-3 \)).
 
