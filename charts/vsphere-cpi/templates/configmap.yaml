@@ -42,4 +42,37 @@ data:
     labels:
       region: {{ $config.region }}
       zone: {{ $config.zone }}
+    {{- if or $config.nodes.internalNetworkSubnetCidr $config.nodes.externalNetworkSubnetCidr $config.nodes.internalVmNetworkName $config.nodes.externalVmNetworkName $config.nodes.excludeInternalNetworkSubnetCidr $config.nodes.excludeExternalNetworkSubnetCidr }}
+    # nodes section for IP address selection
+    nodes:
+      # Select the first address within the provided subnet for the node Internal IP
+      {{- if $config.nodes.internalNetworkSubnetCidr }}
+      internalNetworkSubnetCidr: {{ $config.nodes.internalNetworkSubnetCidr }}
+      {{- end }}
+
+      # Select the first address within the provided subnet for the node External IP
+      {{- if $config.nodes.externalNetworkSubnetCidr }}
+      externalNetworkSubnetCidr: {{ $config.nodes.externalNetworkSubnetCidr }}
+      {{- end }}
+
+      # Select the first address on the VM network matching the provided name for the node Internal IP
+      {{- if $config.nodes.internalVmNetworkName }}
+      internalVmNetworkName: {{ $config.nodes.internalVmNetworkName }}
+      {{- end }}
+
+      # Select the first address on the VM network matching the provided name for the node External IP
+      {{- if $config.nodes.externalVmNetworkName }}
+      externalVmNetworkName: {{ $config.nodes.externalVmNetworkName }}
+      {{- end }}
+
+      # Never select Internal IP addresses within the provided subnet ranges (highest precedence)
+      {{- if $config.nodes.excludeInternalNetworkSubnetCidr }}
+      excludeInternalNetworkSubnetCidr: {{ $config.nodes.excludeInternalNetworkSubnetCidr }}
+      {{- end }}
+
+      # Never select External IP addresses within the provided subnet ranges (highest precedence)
+      {{- if $config.nodes.excludeExternalNetworkSubnetCidr }}
+      excludeExternalNetworkSubnetCidr: {{ $config.nodes.excludeExternalNetworkSubnetCidr }}
+      {{- end }}
+    {{- end }}
 {{- end -}}
