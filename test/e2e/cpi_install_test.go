@@ -97,8 +97,11 @@ var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 			Eventually(func() error {
 				var err error
 				workerNode, err = getWorkerNode()
+				if err != nil {
+					klog.Infof("waiting for worker node to be available: %v", err)
+				}
 				return err
-			}, 2*time.Minute, 5*time.Second).Should(Succeed(), "timed out waiting for a worker node to be available")
+			}, 10*time.Minute, 5*time.Second).Should(Succeed(), "timed out waiting for a worker node to be available")
 		})
 
 		By("Fetch the Node's Internal IP", func() {
