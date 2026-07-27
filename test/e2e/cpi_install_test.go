@@ -94,9 +94,11 @@ var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 		var networkName string
 
 		By("Get the current active worker node from the cluster", func() {
-			var err error
-			workerNode, err = getWorkerNode()
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() error {
+				var err error
+				workerNode, err = getWorkerNode()
+				return err
+			}, 2*time.Minute, 5*time.Second).Should(Succeed(), "timed out waiting for a worker node to be available")
 		})
 
 		By("Fetch the Node's Internal IP", func() {
