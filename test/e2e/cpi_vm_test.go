@@ -194,15 +194,31 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 		})
 
 		By("Get the machine object in bootstrap cluster", func() {
-			workerMachine, err = getWorkerMachine(workerNode.Name)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(workerMachine).ToNot(BeNil())
+			Eventually(func() error {
+				var err error
+				workerMachine, err = getWorkerMachine(workerNode.Name)
+				if err != nil {
+					return err
+				}
+				if workerMachine == nil {
+					return errors.New("worker machine is nil")
+				}
+				return nil
+			}, 5*time.Minute, 5*time.Second).Should(Succeed(), "failed to get machine object in bootstrap cluster")
 		})
 
 		By("Get corresponding VM object for node", func() {
-			workerVM, err = getWorkerVM(workerNode.Name)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(workerVM).ToNot(BeNil())
+			Eventually(func() error {
+				var err error
+				workerVM, err = getWorkerVM(workerNode.Name)
+				if err != nil {
+					return err
+				}
+				if workerVM == nil {
+					return errors.New("worker VM is nil")
+				}
+				return nil
+			}, 5*time.Minute, 5*time.Second).Should(Succeed(), "failed to get VM object for node")
 		})
 	})
 
