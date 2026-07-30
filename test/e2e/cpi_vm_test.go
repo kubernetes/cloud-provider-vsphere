@@ -77,7 +77,7 @@ func getExternalIPFromNode(node *corev1.Node) (string, error) {
 	addresses := node.Status.Addresses
 	for _, address := range addresses {
 		if address.Type == corev1.NodeExternalIP {
-			return address.String(), nil
+			return address.Address, nil
 		}
 	}
 	return "", errors.New("external IP not found")
@@ -88,7 +88,7 @@ func getInternalIPFromNode(node *corev1.Node) (string, error) {
 	addresses := node.Status.Addresses
 	for _, address := range addresses {
 		if address.Type == corev1.NodeInternalIP {
-			return address.String(), nil
+			return address.Address, nil
 		}
 	}
 	return "", errors.New("internal IP not found")
