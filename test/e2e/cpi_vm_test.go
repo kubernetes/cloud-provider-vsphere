@@ -373,19 +373,50 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 			return DoesNodeHasReadiness(workerNode, corev1.ConditionTrue)
 		}, 10*time.Minute).Should(BeTrue())
 
-		By("Powering off machine object")
-		task, err := workerVM.PowerOff(ctx)
-		Expect(err).ToNot(HaveOccurred(), "cannot power off vm")
+		By("Pause reconcile for workload cluster", func() {
+			updateClusterSpecPaused(ctx, workloadResult.Cluster.Name, workloadResult.Cluster.Namespace, "true")
+			Eventually(func() bool {
+				wldCluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+					Getter:    proxy.GetClient(),
+					Namespace: workloadResult.Cluster.Namespace,
+					Name:      workloadResult.Cluster.Name,
+				})
 
-		err = task.Wait(ctx)
-		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power off")
+				return ptr.Deref(wldCluster.Spec.Paused, false)
+			}, 180*time.Second, 10*time.Second).Should(BeTrue(), "Failed to pause the Workload Cluster")
+		})
 
-		By("Delete VM from VC")
-		task, err = workerVM.Destroy(ctx)
-		Expect(err).ToNot(HaveOccurred(), "cannot destroy vm")
+		By("Powering off machine object", func() {
+			task, err := workerVM.PowerOff(ctx)
+			Expect(err).ToNot(HaveOccurred(), "cannot power off vm")
 
-		err = task.Wait(ctx)
-		Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to destroy")
+			err = task.Wait(ctx)
+			Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to power off")
+		})
+
+		By("Wait for VM " + workerVM.Name() + " to go down")
+		Eventually(WaitForVMPowerState(workerVM.Name(), types.VirtualMachinePowerStatePoweredOff), 1*time.Minute, 2*time.Second).Should(Succeed())
+
+		By("Delete VM from VC", func() {
+			task, err := workerVM.Destroy(ctx)
+			Expect(err).ToNot(HaveOccurred(), "cannot destroy vm")
+
+			err = task.Wait(ctx)
+			Expect(err).ToNot(HaveOccurred(), "cannot wait for vm to destroy")
+		})
+
+		By("Unpause reconcile for workload cluster", func() {
+			updateClusterSpecPaused(ctx, workloadResult.Cluster.Name, workloadResult.Cluster.Namespace, "false")
+			Eventually(func() bool {
+				wldCluster := framework.GetClusterByName(ctx, framework.GetClusterByNameInput{
+					Getter:    proxy.GetClient(),
+					Namespace: workloadResult.Cluster.Namespace,
+					Name:      workloadResult.Cluster.Name,
+				})
+
+				return ptr.Deref(wldCluster.Spec.Paused, false)
+			}, 180*time.Second, 10*time.Second).Should(BeFalse(), "Failed to unpause the Workload Cluster")
+		})
 
 		By("Eventually original node will be gone")
 		Eventually(func() bool {
