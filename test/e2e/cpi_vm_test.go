@@ -376,5 +376,17 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 			_, err := workloadClientset.CoreV1().Nodes().Get(ctx, workerNode.Name, metav1.GetOptions{})
 			return err != nil && apierrors.IsNotFound(err)
 		}, 5*time.Minute, 5*time.Second).Should(BeTrue())
+
+		By("Delete machine object")
+		err = deleteWorkerMachine(workerMachine.Name)
+		Expect(err).To(BeNil(), "cannot delete machine object")
+
+		By("Eventually new node will be created")
+		Eventually(func() error {
+			if workerNode, err = getWorkerNode(); err != nil {
+				return err
+			}
+			return nil
+		}, 10*time.Minute, 5*time.Second).Should(Succeed())
 	})
 })
