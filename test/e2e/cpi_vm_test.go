@@ -35,8 +35,11 @@ func getWorkerNode() (*corev1.Node, error) {
 	}
 
 	for _, node := range nodes.Items {
+		if node.DeletionTimestamp != nil {
+			continue
+		}
 		if _, ok := node.GetLabels()[ControlPlaneNodeLabel]; !ok {
-			// get the first worker node
+			// get the first active worker node
 			return &node, nil
 		}
 
@@ -186,8 +189,17 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 	BeforeEach(func() {
 		By("Get the name of worker node", func() {
-			workerNode, err = getWorkerNode()
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func() error {
+				var err error
+				workerNode, err = getWorkerNode()
+				if err != nil {
+					return err
+				}
+				if _, err = getInternalIPFromNode(workerNode); err != nil {
+					return err
+				}
+				return nil
+			}, 10*time.Minute, 5*time.Second).Should(Succeed(), "failed to get worker node with internal IP")
 
 			klog.Infof("The worker node for testing is %s\n", workerNode.Name)
 			originalWorkerNodeName = workerNode.Name
@@ -297,21 +309,34 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 
 		By("Assert that externalIP, internalIP and providerID are preserved after VM restarts", func() {
 			Eventually(func() error {
+				var err error
 				workerNode, err = getWorkerNode()
-				Expect(err).ToNot(HaveOccurred())
+				if err != nil {
+					return err
+				}
 
 				newExternalIP, err := getExternalIPFromNode(workerNode)
-				Expect(err).ToNot(HaveOccurred())
+				if err != nil {
+					return err
+				}
 
 				newInternalIP, err := getInternalIPFromNode(workerNode)
-				Expect(err).ToNot(HaveOccurred())
+				if err != nil {
+					return err
+				}
 
-				Expect(newExternalIP).To(Equal(externalIP))
-				Expect(newInternalIP).To(Equal(internalIP))
-				Expect(getProviderIDFromNode(workerNode)).To(Equal(providerID))
+				if newExternalIP != externalIP {
+					return fmt.Errorf("external IP changed: expected %s, got %s", externalIP, newExternalIP)
+				}
+				if newInternalIP != internalIP {
+					return fmt.Errorf("internal IP changed: expected %s, got %s", internalIP, newInternalIP)
+				}
+				if getProviderIDFromNode(workerNode) != providerID {
+					return fmt.Errorf("provider ID changed: expected %s, got %s", providerID, getProviderIDFromNode(workerNode))
+				}
 
 				return nil
-			}).Should(Succeed())
+			}, 5*time.Minute, 5*time.Second).Should(Succeed())
 		})
 	})
 
@@ -428,12 +453,17 @@ var _ = Describe("Restarting, recreating and deleting VMs", func() {
 		err = deleteWorkerMachine(workerMachine.Name)
 		Expect(err).To(BeNil(), "cannot delete machine object")
 
-		By("Eventually new node will be created")
-		Eventually(func() error {
-			if workerNode, err = getWorkerNode(); err != nil {
-				return err
-			}
-			return nil
-		}, 10*time.Minute, 5*time.Second).Should(Succeed())
+		By("Eventually new node will be created", func() {
+			Eventually(func() error {
+				var err error
+				if workerNode, err = getWorkerNode(); err != nil {
+					return err
+				}
+				if _, err = getInternalIPFromNode(workerNode); err != nil {
+					return err
+				}
+				return nil
+			}, 10*time.Minute, 5*time.Second).Should(Succeed(), "failed to get new worker node with internal IP")
+		})
 	})
 })
