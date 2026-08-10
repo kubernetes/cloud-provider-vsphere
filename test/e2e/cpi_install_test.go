@@ -61,7 +61,9 @@ var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 				return errors.New("CPI daemon list is empty")
 			}
 			daemon, err := findVSphereCPIDaemonsetInList(daemonList)
-			Expect(err).ShouldNot(HaveOccurred())
+			if err != nil {
+				return err
+			}
 
 			By("CPI daemon should be running")
 			if daemon.Status.NumberReady != daemon.Status.DesiredNumberScheduled {
@@ -74,17 +76,28 @@ var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 	It("should have all CPI pods in the running state", func() {
 		Eventually(func() error {
 			pods, err := workloadClientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				return err
+			}
+			foundPod := false
 			for _, pod := range pods.Items {
 				if strings.HasPrefix(pod.Name, daemonsetName) {
-					Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+					foundPod = true
+					if pod.Status.Phase != corev1.PodRunning {
+						return fmt.Errorf("pod %s is in phase %s, expected Running", pod.Name, pod.Status.Phase)
+					}
 					for _, containerStatus := range pod.Status.ContainerStatuses {
-						Expect(containerStatus.Ready).To(BeTrue())
+						if !containerStatus.Ready {
+							return fmt.Errorf("container %s in pod %s is not ready", containerStatus.Name, pod.Name)
+						}
 					}
 				}
 			}
+			if !foundPod {
+				return fmt.Errorf("no pods found with prefix %s", daemonsetName)
+			}
 			return nil
-		}).Should(Succeed())
+		}, 2*time.Minute, 5*time.Second).Should(Succeed())
 	})
 
 	It("should apply nodes config and select correct internal IP for worker node", func() {
@@ -93,21 +106,21 @@ var _ = Describe("Deploy cloud provider vSphere with helm", func() {
 		var originalInternalIP string
 		var networkName string
 
-		By("Get the current active worker node from the cluster", func() {
+		By("Get the current active worker node and its internal IP from the cluster", func() {
 			Eventually(func() error {
 				var err error
 				workerNode, err = getWorkerNode()
 				if err != nil {
 					klog.Infof("waiting for worker node to be available: %v", err)
+					return err
 				}
-				return err
-			}, 10*time.Minute, 5*time.Second).Should(Succeed(), "timed out waiting for a worker node to be available")
-		})
-
-		By("Fetch the Node's Internal IP", func() {
-			var err error
-			originalInternalIP, err = getInternalIPFromNode(workerNode)
-			Expect(err).NotTo(HaveOccurred())
+				originalInternalIP, err = getInternalIPFromNode(workerNode)
+				if err != nil {
+					klog.Infof("waiting for worker node internal IP: %v", err)
+					return err
+				}
+				return nil
+			}, 10*time.Minute, 5*time.Second).Should(Succeed(), "timed out waiting for a worker node with internal IP to be available")
 			Expect(originalInternalIP).NotTo(BeEmpty(), "worker node has no internal IP")
 			klog.Infof("Worker node %s internal IP: %s", workerNode.Name, originalInternalIP)
 		})
