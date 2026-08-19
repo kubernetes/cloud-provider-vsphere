@@ -15,7 +15,7 @@ replace sigs.k8s.io/cluster-api-provider-vsphere/test => sigs.k8s.io/cluster-api
 replace sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.14.0-beta.0
 
 require (
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/vmware/govmomi v0.55.1
 	golang.org/x/crypto v0.55.0
