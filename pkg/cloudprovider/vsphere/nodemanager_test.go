@@ -159,7 +159,7 @@ func TestDiscoverNodeByNameWithNamesClash(t *testing.T) {
 	}
 
 	if err != vclib.ErrMultipleVMsFound {
-		t.Errorf("ErrMultipleVMsFound expected, another error occured: %s", err)
+		t.Errorf("ErrMultipleVMsFound expected, another error occurred: %s", err)
 	}
 }
 
