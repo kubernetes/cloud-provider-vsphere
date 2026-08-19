@@ -80,7 +80,7 @@ deps:
 ################################################################################
 # Ensure the version is injected into the binaries via a linker flag.
 export VERSION ?= $(shell git describe --always --dirty)
-GO_VERSION ?= 1.25.0
+GO_VERSION ?= 1.26.6
 
 .PHONY: version print-ccm-image
 
