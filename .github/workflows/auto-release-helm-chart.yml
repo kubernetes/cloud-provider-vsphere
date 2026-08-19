@@ -20,7 +20,7 @@ jobs:
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # tag=v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v7.0.1
         with:
           fetch-depth: 0
 
@@ -32,7 +32,7 @@ jobs:
 
       # Install Helm
       - name: Install Helm
-        uses: azure/setup-helm@95ecf4967d92f8074e91c548e394f8ac547da403 # tag=v5.0.1
+        uses: azure/setup-helm@7a9c28ba04c99ae42726a8472c6eba25beab7bee # tag=v5.0.1
         with:
           version: v3.4.0
 
