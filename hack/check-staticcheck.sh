@@ -22,9 +22,8 @@ set -o pipefail
 # script is located.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-go get honnef.co/go/tools/cmd/staticcheck
-go install honnef.co/go/tools/cmd/staticcheck
-CMD=$(go list -f \{\{\.Target\}\} honnef.co/go/tools/cmd/staticcheck)
+go install honnef.co/go/tools/cmd/staticcheck@latest
+CMD=$(go env GOPATH)/bin/staticcheck
 
 # re-enable SA1019 when we upgrade to Go 1.14
 CHECKS="all,-ST1*,-SA1019"

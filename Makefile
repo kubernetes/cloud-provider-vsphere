@@ -80,11 +80,15 @@ deps:
 ################################################################################
 # Ensure the version is injected into the binaries via a linker flag.
 export VERSION ?= $(shell git describe --always --dirty)
+GO_VERSION ?= 1.26.6
 
-.PHONY: version print-ccm-image
+.PHONY: version print-ccm-image go-version
 
 version:
 	@echo $(VERSION)
+
+go-version: ## Print the go version we use to compile our binaries and images
+	@echo $(GO_VERSION)
 
 ################################################################################
 ##                              BUILD BINARIES                                ##
@@ -314,8 +318,8 @@ quick-conformance-test: conformance-test
 ################################################################################
 ##                                LINT & VERIFY                               ##
 ################################################################################
-.PHONY: fmt vet lint mdlint shellcheck staticcheck check
-check: fmt lint mdlint shellcheck staticcheck vet
+.PHONY: fmt vet lint mdlint shellcheck staticcheck verify-boilerplate check
+check: fmt lint mdlint shellcheck staticcheck vet verify-boilerplate
 
 fmt:
 	hack/check-format.sh
@@ -334,6 +338,9 @@ staticcheck:
 
 vet:
 	hack/check-vet.sh
+
+verify-boilerplate:
+	hack/check-boilerplate.sh
 
 .PHONY: verify-container-images
 verify-container-images: ## Verify container images
