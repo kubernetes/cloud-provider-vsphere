@@ -41,9 +41,10 @@ goformat_exit_code=0; test -z "$(head -n 1 "${out}")" || goformat_exit_code=1
 rm -f "${out}" && touch "${out}"
 
 # Run goimports on all the sources.
-go get golang.org/x/tools/cmd/goimports
-go install golang.org/x/tools/cmd/goimports
-cmd=$(go list -f \{\{\.Target\}\} golang.org/x/tools/cmd/goimports)
+if ! command -v goimports &>/dev/null; then
+  go install golang.org/x/tools/cmd/goimports@latest
+fi
+cmd=$(command -v goimports || go list -f \{\{\.Target\}\} golang.org/x/tools/cmd/goimports)
 flags="-e -w"
 [ -z "${PROW_JOB_ID-}" ] || flags="-d ${flags}"
 eval "${cmd} ${flags} ./cmd/ ./pkg/" | tee "${out}"
