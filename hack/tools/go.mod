@@ -3,7 +3,7 @@ module tools
 go 1.25.0
 
 require (
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	sigs.k8s.io/kind v0.32.0
 )
 
