@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 The Kubernetes Authors.
+# Copyright The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ set -o pipefail
 # script is located.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-go install golang.org/x/lint/golint@latest
-CMD=$(go env GOPATH)/bin/golint
-
-"${CMD}" -set_exit_status ./pkg/... ./cmd/...
+echo "Verifying copyright boilerplate headers..."
+python3 hack/verify-boilerplate.py
+echo "Boilerplate check passed successfully."
