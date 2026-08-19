@@ -1,6 +1,6 @@
 module tools
 
-go 1.23.0
+go 1.25.0
 
 require (
 	github.com/onsi/ginkgo/v2 v2.27.3

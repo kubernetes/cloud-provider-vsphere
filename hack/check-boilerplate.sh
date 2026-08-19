@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 The Kubernetes Authors.
+# Copyright The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,12 +22,6 @@ set -o pipefail
 # script is located.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-if ! command -v staticcheck &>/dev/null; then
-  go install honnef.co/go/tools/cmd/staticcheck@latest
-fi
-CMD=$(command -v staticcheck || echo "$(go env GOPATH)/bin/staticcheck")
-
-# re-enable SA1019 when we upgrade to Go 1.14
-CHECKS="all,-ST1*,-SA1019"
-
-"${CMD}" -checks "${CHECKS}" ./...
+echo "Verifying copyright boilerplate headers..."
+python3 hack/verify-boilerplate.py
+echo "Boilerplate check passed successfully."
