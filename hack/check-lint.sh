@@ -22,9 +22,10 @@ set -o pipefail
 # script is located.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-go get golang.org/x/lint/golint
-go install golang.org/x/lint/golint
+if ! command -v golint &>/dev/null; then
+  go install golang.org/x/lint/golint@latest
+fi
 
-CMD=$(go list -f \{\{\.Target\}\} golang.org/x/lint/golint)
+CMD=$(command -v golint || echo "$(go env GOPATH)/bin/golint")
 
 "${CMD}" -set_exit_status ./pkg/... ./cmd/...
