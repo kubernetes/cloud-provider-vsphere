@@ -25,12 +25,12 @@ require (
 	golang.org/x/net v0.58.0
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.37.0-rc.0
-	k8s.io/apimachinery v0.37.0-rc.0
-	k8s.io/client-go v0.37.0-rc.0
-	k8s.io/cloud-provider v0.37.0-rc.0
-	k8s.io/code-generator v0.37.0-rc.0
-	k8s.io/component-base v0.37.0-rc.0
+	k8s.io/api v0.37.0-rc.1
+	k8s.io/apimachinery v0.37.0-rc.1
+	k8s.io/client-go v0.37.0-rc.1
+	k8s.io/cloud-provider v0.37.0-rc.1
+	k8s.io/code-generator v0.37.0-rc.1
+	k8s.io/component-base v0.37.0-rc.1
 	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -123,13 +123,13 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.37.0-rc.0 // indirect
-	k8s.io/component-helpers v0.37.0-rc.0 // indirect
-	k8s.io/controller-manager v0.37.0-rc.0 // indirect
+	k8s.io/apiserver v0.37.0-rc.1 // indirect
+	k8s.io/component-helpers v0.37.0-rc.1 // indirect
+	k8s.io/controller-manager v0.37.0-rc.1 // indirect
 	k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3 // indirect
-	k8s.io/kms v0.37.0-rc.0 // indirect
+	k8s.io/kms v0.37.0-rc.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
-	k8s.io/streaming v0.37.0-rc.0 // indirect
+	k8s.io/streaming v0.37.0-rc.1 // indirect
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.36.0 // indirect
 	sigs.k8s.io/controller-runtime v0.23.3 // indirect
