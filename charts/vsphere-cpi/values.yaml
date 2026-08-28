@@ -13,6 +13,19 @@ config:
   zone: "k8s-zone"
   thumbprint: ""
   caFile: "" # Path to the ca-file if it has been mounted into the pod.
+  nodes:
+    # Select the first address within the provided subnet for the node Internal IP
+    internalNetworkSubnetCidr: ""
+    # Select the first address within the provided subnet for the node External IP
+    externalNetworkSubnetCidr: ""
+    # Select the first address on the VM network matching the provided name for the node Internal IP
+    internalVmNetworkName: ""
+    # Select the first address on the VM network matching the provided name for the node External IP
+    externalVmNetworkName: ""
+    # Never select Internal IP addresses within the provided subnet ranges (highest precedence)
+    excludeInternalNetworkSubnetCidr: ""
+    # Never select External IP addresses within the provided subnet ranges (highest precedence)
+    excludeExternalNetworkSubnetCidr: ""
   secret:
     # Specifies whether Secret should be created from config values
     create: true
@@ -50,7 +63,7 @@ serviceAccount:
 daemonset:
   annotations: {}
   image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere
-  tag: v1.36.0
+  tag: v1.37.0
   pullPolicy: IfNotPresent
   dnsPolicy: ClusterFirst
   cmdline:
