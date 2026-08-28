@@ -18,7 +18,7 @@ require (
 	github.com/vmware-tanzu/nsx-operator/pkg/apis v0.0.0-20260526090146-dc1b9330cf6b
 	github.com/vmware-tanzu/nsx-operator/pkg/client v0.0.0-20260526090146-dc1b9330cf6b
 	github.com/vmware-tanzu/vm-operator/api v1.9.1-0.20260502065817-4ee333ccd54c
-	github.com/vmware/govmomi v0.55.1
+	github.com/vmware/govmomi v0.56.0
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.12.0
@@ -122,6 +122,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.37.0 // indirect
 	k8s.io/component-helpers v0.37.0 // indirect
 	k8s.io/controller-manager v0.37.0 // indirect
