@@ -85,13 +85,13 @@ updates:
 # release branch N
 # ##################
 # GitHub Actions
-- target-branch: release-1.36
+- target-branch: release-1.37
   package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling: (chore)[release-1.36]"
+    prefix: ":seedling: (chore)[release-1.37]"
   labels:
     - "ok-to-test"
     - "area/ci"
@@ -105,7 +105,7 @@ updates:
         - "version-update:semver-minor"
 
 # Main Go module
-- target-branch: release-1.36
+- target-branch: release-1.37
   package-ecosystem: "gomod"
   directory: "/"
   schedule:
@@ -116,7 +116,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.36]"
+    prefix: ":seedling: (chore)[release-1.37]"
   labels:
     - "ok-to-test"
   open-pull-requests-limit: 5
@@ -131,13 +131,13 @@ updates:
         - "version-update:semver-minor"
 
 ## Update dockerfile
-- target-branch: release-1.36
+- target-branch: release-1.37
   package-ecosystem: docker
   directory: "/cluster/images/controller-manager"
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling: (chore)[release-1.36]"
+    prefix: ":seedling: (chore)[release-1.37]"
   labels:
     - "ok-to-test"
   ignore:
@@ -150,7 +150,7 @@ updates:
       patterns: [ "*" ]
 
 # Test Go module
-- target-branch: release-1.36
+- target-branch: release-1.37
   package-ecosystem: "gomod"
   directory: "/test/e2e"
   schedule:
@@ -165,7 +165,7 @@ updates:
     onsi:
       patterns: [ "github.com/onsi/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.36]"
+    prefix: ":seedling: (chore)[release-1.37]"
   labels:
     - "ok-to-test"
   ignore:
@@ -179,13 +179,13 @@ updates:
 # release branch N-1
 # ################
 # GitHub Actions
-- target-branch: release-1.35
+- target-branch: release-1.36
   package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling: (chore)[release-1.35]"
+    prefix: ":seedling: (chore)[release-1.36]"
   labels:
     - "ok-to-test"
     - "area/ci"
@@ -199,7 +199,7 @@ updates:
         - "version-update:semver-minor"
 
 # Main Go module
-- target-branch: release-1.35
+- target-branch: release-1.36
   package-ecosystem: "gomod"
   directory: "/"
   schedule:
@@ -210,7 +210,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.35]"
+    prefix: ":seedling: (chore)[release-1.36]"
   labels:
     - "ok-to-test"
   open-pull-requests-limit: 5
@@ -225,13 +225,13 @@ updates:
         - "version-update:semver-minor"
 
 ## Update dockerfile
-- target-branch: release-1.35
+- target-branch: release-1.36
   package-ecosystem: docker
   directory: "/cluster/images/controller-manager"
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling: (chore)[release-1.35]"
+    prefix: ":seedling: (chore)[release-1.36]"
   labels:
     - "ok-to-test"
   ignore:
@@ -244,7 +244,7 @@ updates:
       patterns: [ "*" ]
 
 # Test Go module
-- target-branch: release-1.35
+- target-branch: release-1.36
   package-ecosystem: "gomod"
   directory: "/test/e2e"
   schedule:
@@ -259,7 +259,7 @@ updates:
     onsi:
       patterns: [ "github.com/onsi/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.35]"
+    prefix: ":seedling: (chore)[release-1.36]"
   labels:
     - "ok-to-test"
   ignore:
@@ -273,13 +273,13 @@ updates:
 # release branch N-2
 # ##################
 # GitHub Actions
-- target-branch: release-1.34
+- target-branch: release-1.35
   package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling: (chore)[release-1.34]"
+    prefix: ":seedling: (chore)[release-1.35]"
   labels:
     - "ok-to-test"
     - "area/ci"
@@ -293,7 +293,7 @@ updates:
         - "version-update:semver-minor"
 
 # Main Go module
-- target-branch: release-1.34
+- target-branch: release-1.35
   package-ecosystem: "gomod"
   directory: "/"
   schedule:
@@ -304,7 +304,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.34]"
+    prefix: ":seedling: (chore)[release-1.35]"
   labels:
     - "ok-to-test"
   open-pull-requests-limit: 5
@@ -319,13 +319,13 @@ updates:
         - "version-update:semver-minor"
 
 ## Update dockerfile
-- target-branch: release-1.34
+- target-branch: release-1.35
   package-ecosystem: docker
   directory: "/cluster/images/controller-manager"
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling: (chore)[release-1.34]"
+    prefix: ":seedling: (chore)[release-1.35]"
   labels:
     - "ok-to-test"
   ignore:
@@ -338,7 +338,7 @@ updates:
       patterns: [ "*" ]
 
 # Test Go module
-- target-branch: release-1.34
+- target-branch: release-1.35
   package-ecosystem: "gomod"
   directory: "/test/e2e"
   schedule:
@@ -353,7 +353,7 @@ updates:
     onsi:
       patterns: [ "github.com/onsi/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.34]"
+    prefix: ":seedling: (chore)[release-1.35]"
   labels:
     - "ok-to-test"
   ignore:
@@ -367,13 +367,13 @@ updates:
 # release branch N-3
 # ##################
 # GitHub Actions
-- target-branch: release-1.33
+- target-branch: release-1.34
   package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "weekly"
   commit-message:
-    prefix: ":seedling: (chore)[release-1.33]"
+    prefix: ":seedling: (chore)[release-1.34]"
   labels:
     - "ok-to-test"
     - "area/ci"
@@ -387,7 +387,7 @@ updates:
         - "version-update:semver-minor"
 
 # Main Go module
-- target-branch: release-1.33
+- target-branch: release-1.34
   package-ecosystem: "gomod"
   directory: "/"
   schedule:
@@ -398,7 +398,7 @@ updates:
     kubernetes:
       patterns: [ "k8s.io/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.33]"
+    prefix: ":seedling: (chore)[release-1.34]"
   labels:
     - "ok-to-test"
   open-pull-requests-limit: 5
@@ -413,13 +413,13 @@ updates:
         - "version-update:semver-minor"
 
 ## Update dockerfile
-- target-branch: release-1.33
+- target-branch: release-1.34
   package-ecosystem: docker
   directory: "/cluster/images/controller-manager"
   schedule:
     interval: weekly
   commit-message:
-    prefix: ":seedling: (chore)[release-1.33]"
+    prefix: ":seedling: (chore)[release-1.34]"
   labels:
     - "ok-to-test"
   ignore:
@@ -432,7 +432,7 @@ updates:
       patterns: [ "*" ]
 
 # Test Go module
-- target-branch: release-1.33
+- target-branch: release-1.34
   package-ecosystem: "gomod"
   directory: "/test/e2e"
   schedule:
@@ -447,7 +447,7 @@ updates:
     onsi:
       patterns: [ "github.com/onsi/*" ]
   commit-message:
-    prefix: ":seedling: (chore)[release-1.33]"
+    prefix: ":seedling: (chore)[release-1.34]"
   labels:
     - "ok-to-test"
   ignore:
