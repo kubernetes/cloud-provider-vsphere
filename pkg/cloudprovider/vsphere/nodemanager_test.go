@@ -2254,3 +2254,205 @@ network.encoding: %s
 network: %s`,
 		encoding, encodedNetconfig)
 }
+
+func TestGetInstanceType(t *testing.T) {
+	tests := []struct {
+		name       string
+		annotation string
+		config     vimtypes.VirtualMachineConfigSummary
+		expected   string
+	}{
+		{
+			name:       "camel-case YAML field",
+			annotation: "instanceType: c-2x",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       2,
+				MemorySizeMB: 4096,
+			},
+			expected: "c-2x",
+		},
+		{
+			name: "camel-case multiline YAML",
+			annotation: `owner: platform-team
+instanceType: c-4x
+environment: production`,
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       4,
+				MemorySizeMB: 8192,
+			},
+			expected: "c-4x",
+		},
+		{
+			name:       "camel-case JSON is valid YAML",
+			annotation: `{"instanceType":"m-8x"}`,
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       8,
+				MemorySizeMB: 16384,
+			},
+			expected: "m-8x",
+		},
+		{
+			name: "camel-case human-readable key-value format",
+			annotation: `owner: platform-team
+instanceType: r-16x`,
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       16,
+				MemorySizeMB: 32768,
+			},
+			expected: "r-16x",
+		},
+		{
+			name:       "snake-case YAML field is ignored",
+			annotation: "instance_type: c-2x",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       2,
+				MemorySizeMB: 4096,
+			},
+			expected: "vsphere-vm.cpu-2.mem-4gb.os-unknown",
+		},
+		{
+			name:       "snake-case JSON field is ignored",
+			annotation: `{"instance_type":"c-4x"}`,
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       4,
+				MemorySizeMB: 8192,
+			},
+			expected: "vsphere-vm.cpu-4.mem-8gb.os-unknown",
+		},
+		{
+			name: "snake-case multiline field is ignored",
+			annotation: `owner: platform-team
+instance_type: c-8x`,
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       8,
+				MemorySizeMB: 16384,
+			},
+			expected: "vsphere-vm.cpu-8.mem-16gb.os-unknown",
+		},
+		{
+			name:       "missing instanceType uses fallback",
+			annotation: "owner: platform-team",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       4,
+				MemorySizeMB: 8192,
+			},
+			expected: "vsphere-vm.cpu-4.mem-8gb.os-unknown",
+		},
+		{
+			name:       "empty instanceType uses fallback",
+			annotation: `instanceType: ""`,
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       8,
+				MemorySizeMB: 32768,
+			},
+			expected: "vsphere-vm.cpu-8.mem-32gb.os-unknown",
+		},
+		{
+			name:       "non-string instanceType uses fallback",
+			annotation: "instanceType: 123",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       2,
+				MemorySizeMB: 2048,
+			},
+			expected: "vsphere-vm.cpu-2.mem-2gb.os-unknown",
+		},
+		{
+			name:       "boolean instanceType uses fallback",
+			annotation: "instanceType: true",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       2,
+				MemorySizeMB: 4096,
+			},
+			expected: "vsphere-vm.cpu-2.mem-4gb.os-unknown",
+		},
+		{
+			name:       "malformed YAML uses fallback",
+			annotation: "instanceType: [invalid",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       4,
+				MemorySizeMB: 16384,
+			},
+			expected: "vsphere-vm.cpu-4.mem-16gb.os-unknown",
+		},
+		{
+			name:       "unknown guest OS uses unknown",
+			annotation: "owner: platform-team",
+			config: vimtypes.VirtualMachineConfigSummary{
+				GuestId:      "unsupportedGuest",
+				NumCpu:       4,
+				MemorySizeMB: 8192,
+			},
+			expected: "vsphere-vm.cpu-4.mem-8gb.os-unknown",
+		},
+		{
+			name:       "memory is converted from MB to whole GB",
+			annotation: "owner: platform-team",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       2,
+				MemorySizeMB: 2560,
+			},
+			expected: "vsphere-vm.cpu-2.mem-2gb.os-unknown",
+		},
+
+		// This documents the current implementation. It returns before
+		// constructing the default instance type.
+		{
+			name:       "empty annotation returns empty string",
+			annotation: "",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       2,
+				MemorySizeMB: 4096,
+			},
+			expected: "vsphere-vm.cpu-2.mem-4gb.os-unknown",
+		},
+		{
+			name:       "whitespace-only annotation returns empty string",
+			annotation: " \n\t ",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       2,
+				MemorySizeMB: 4096,
+			},
+			expected: "vsphere-vm.cpu-2.mem-4gb.os-unknown",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := getInstanceType(test.annotation, test.config)
+			if actual != test.expected {
+				t.Errorf(
+					"getInstanceType(%q, %+v) returned %q, expected %q",
+					test.annotation,
+					test.config,
+					actual,
+					test.expected,
+				)
+			}
+		})
+	}
+}
+
+func TestGetInstanceTypeUsesGuestOSLookup(t *testing.T) {
+	const guestID = "sles12_64Guest"
+
+	expectedOS, ok := GuestOSLookup[guestID]
+	if !ok {
+		t.Fatalf("GuestOSLookup does not contain %q", guestID)
+	}
+
+	config := vimtypes.VirtualMachineConfigSummary{
+		GuestId:      guestID,
+		NumCpu:       4,
+		MemorySizeMB: 8192,
+	}
+
+	actual := getInstanceType("owner: platform-team", config)
+	expected := fmt.Sprintf(
+		"vsphere-vm.cpu-4.mem-8gb.os-%s",
+		expectedOS,
+	)
+
+	if actual != expected {
+		t.Errorf("getInstanceType() returned %q, expected %q", actual, expected)
+	}
+}
