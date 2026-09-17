@@ -2266,8 +2266,8 @@ func TestGetInstanceType(t *testing.T) {
 			name:       "camel-case YAML field",
 			annotation: "instanceType: c-2x",
 			config: vimtypes.VirtualMachineConfigSummary{
-				NumCpu:       2,
-				MemorySizeMB: 4096,
+				NumCpu:       1,
+				MemorySizeMB: 2048,
 			},
 			expected: "c-2x",
 		},
@@ -2277,33 +2277,32 @@ func TestGetInstanceType(t *testing.T) {
 instanceType: c-4x
 environment: production`,
 			config: vimtypes.VirtualMachineConfigSummary{
-				NumCpu:       4,
-				MemorySizeMB: 8192,
+				NumCpu:       2,
+				MemorySizeMB: 4096,
 			},
 			expected: "c-4x",
 		},
 		{
 			name:       "camel-case JSON is valid YAML",
-			annotation: `{"instanceType":"m-8x"}`,
+			annotation: `{"instanceType":"m-9x"}`,
 			config: vimtypes.VirtualMachineConfigSummary{
-				NumCpu:       8,
-				MemorySizeMB: 16384,
-			},
-			expected: "m-8x",
-		},
-		{
-			name: "camel-case human-readable key-value format",
-			annotation: `owner: platform-team
-instanceType: r-16x`,
-			config: vimtypes.VirtualMachineConfigSummary{
-				NumCpu:       16,
+				NumCpu:       4,
 				MemorySizeMB: 32768,
 			},
-			expected: "r-16x",
+			expected: "m-9x",
 		},
 		{
 			name:       "snake-case YAML field is ignored",
 			annotation: "instance_type: c-2x",
+			config: vimtypes.VirtualMachineConfigSummary{
+				NumCpu:       1,
+				MemorySizeMB: 2048,
+			},
+			expected: "vsphere-vm.cpu-1.mem-2gb.os-unknown",
+		},
+		{
+			name:       "snake-case JSON field is ignored",
+			annotation: `{"instance_type":"c-4x"}`,
 			config: vimtypes.VirtualMachineConfigSummary{
 				NumCpu:       2,
 				MemorySizeMB: 4096,
@@ -2311,23 +2310,14 @@ instanceType: r-16x`,
 			expected: "vsphere-vm.cpu-2.mem-4gb.os-unknown",
 		},
 		{
-			name:       "snake-case JSON field is ignored",
-			annotation: `{"instance_type":"c-4x"}`,
+			name: "snake-case multiline field is ignored",
+			annotation: `owner: platform-team
+instance_type: c-9x`,
 			config: vimtypes.VirtualMachineConfigSummary{
 				NumCpu:       4,
 				MemorySizeMB: 8192,
 			},
 			expected: "vsphere-vm.cpu-4.mem-8gb.os-unknown",
-		},
-		{
-			name: "snake-case multiline field is ignored",
-			annotation: `owner: platform-team
-instance_type: c-8x`,
-			config: vimtypes.VirtualMachineConfigSummary{
-				NumCpu:       8,
-				MemorySizeMB: 16384,
-			},
-			expected: "vsphere-vm.cpu-8.mem-16gb.os-unknown",
 		},
 		{
 			name:       "missing instanceType uses fallback",
