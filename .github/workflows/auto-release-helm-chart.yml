@@ -32,7 +32,7 @@ jobs:
 
       # Install Helm
       - name: Install Helm
-        uses: azure/setup-helm@7a9c28ba04c99ae42726a8472c6eba25beab7bee # tag=v5.0.1
+        uses: azure/setup-helm@b85984b901f10908cd32321c0c203c7186607506 # tag=v5.0.1
         with:
           version: v3.4.0
 
