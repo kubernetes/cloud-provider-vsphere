@@ -662,7 +662,9 @@ func (nm *NodeManager) FindNodeInfo(UUID string) (*NodeInfo, error) {
 		return nil, ErrVMNotFound
 	}
 
+	nm.nodeInfoLock.RLock()
 	nodeInfo := nm.nodeUUIDMap[UUIDlower]
+	nm.nodeInfoLock.RUnlock()
 	if nodeInfo == nil {
 		klog.Errorf("FindNodeInfo( %s ) NOT FOUND", UUIDlower)
 		return nil, ErrVMNotFound
@@ -672,6 +674,22 @@ func (nm *NodeManager) FindNodeInfo(UUID string) (*NodeInfo, error) {
 	return nodeInfo, nil
 }
 
+// nodeByName returns the cached NodeInfo for a node name.
+// Callers may use the pointer after this returns; only the map access is locked.
+func (nm *NodeManager) nodeByName(name string) *NodeInfo {
+	nm.nodeInfoLock.RLock()
+	defer nm.nodeInfoLock.RUnlock()
+	return nm.nodeNameMap[name]
+}
+
+// nodeByUUID returns the cached NodeInfo for a VM UUID.
+func (nm *NodeManager) nodeByUUID(uuid string) *NodeInfo {
+	nm.nodeInfoLock.RLock()
+	defer nm.nodeInfoLock.RUnlock()
+	return nm.nodeUUIDMap[uuid]
+}
+
+// getNodeNameByUUID must be called with nodeInfoLock held.
 func (nm *NodeManager) getNodeNameByUUID(UUID string) string {
 	for k, v := range nm.nodeNameMap {
 		if v.UUID == UUID {

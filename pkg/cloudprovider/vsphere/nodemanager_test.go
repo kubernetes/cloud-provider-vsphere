@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/vmware/govmomi/simulator"
@@ -2253,4 +2254,33 @@ wait-on-network:
 network.encoding: %s
 network: %s`,
 		encoding, encodedNetconfig)
+}
+
+func TestNodeInfoLookupsDoNotRace(t *testing.T) {
+	nm := newNodeManager(nil, nil)
+	nm.nodeRegUUIDMap["u"] = &v1.Node{}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			info := &NodeInfo{NodeName: "n", UUID: "u", NodeType: "t"}
+			nm.nodeInfoLock.Lock()
+			nm.nodeNameMap["n"] = info
+			nm.nodeUUIDMap["u"] = info
+			delete(nm.nodeNameMap, "n")
+			delete(nm.nodeUUIDMap, "u")
+			nm.nodeInfoLock.Unlock()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			_ = nm.nodeByName("n")
+			_ = nm.nodeByUUID("u")
+			_, _ = nm.FindNodeInfo("u")
+		}
+	}()
+	wg.Wait()
 }
