@@ -131,11 +131,20 @@ func (u *User) createCert() error {
 	}
 	defer certFile.Close()
 
-	keyFile, err := os.Create(id + ".key")
+	// O_EXCL refuses an existing file or symlink. Chmod pins 0600, since
+	// the create mode is still masked by umask.
+	keyPath := id + ".key"
+	keyFile, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return err
 	}
-	defer keyFile.Close()
+	keyOK := false
+	defer func() {
+		keyFile.Close()
+		if !keyOK {
+			os.Remove(keyPath)
+		}
+	}()
 
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -181,6 +190,10 @@ func (u *User) createCert() error {
 	if err != nil {
 		return err
 	}
+	if err := keyFile.Chmod(0o600); err != nil {
+		return err
+	}
+	keyOK = true
 
 	return nil
 }
