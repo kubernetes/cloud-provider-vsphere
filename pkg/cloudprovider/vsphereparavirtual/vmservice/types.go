@@ -45,6 +45,7 @@ type vmService struct {
 	namespace                           string
 	ownerReference                      *metav1.OwnerReference
 	serviceAnnotationPropagationEnabled bool
+	serviceIPFamilyFieldsEnabled        bool
 }
 
 // Compile-time assertion that vmService implements VMService.

@@ -59,7 +59,7 @@ func newTestLoadBalancer() (cloudprovider.LoadBalancer, *dynamicfake.FakeDynamic
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
 	vmopAdapter := adapterv2.NewWithFakeClient(clientv2.NewWithDynamicClient(fc))
 
-	vms := vmservice.NewVMService(vmopAdapter, testClusterNameSpace, &testOwnerReference, false)
+	vms := vmservice.NewVMService(vmopAdapter, testClusterNameSpace, &testOwnerReference, false, true)
 	return &loadBalancer{vmService: vms}, fc
 }
 
@@ -84,7 +84,7 @@ func TestNewLoadBalancer(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			fakeAdapter, _ := fakev2.NewAdapter()
-			_, err := NewLoadBalancer(testClusterNameSpace, fakeAdapter, &testOwnerReference, testCase.serviceAnnotationPropagationEnabled)
+			_, err := NewLoadBalancer(testClusterNameSpace, fakeAdapter, &testOwnerReference, testCase.serviceAnnotationPropagationEnabled, true)
 			assert.Equal(t, testCase.err, err)
 		})
 	}

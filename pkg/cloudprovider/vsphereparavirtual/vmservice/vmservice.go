@@ -98,12 +98,13 @@ var (
 )
 
 // NewVMService creates a vmService object
-func NewVMService(vmClient vmop.Interface, ns string, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled bool) VMService {
+func NewVMService(vmClient vmop.Interface, ns string, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled, serviceIPFamilyFieldsEnabled bool) VMService {
 	return &vmService{
 		vmClient:                            vmClient,
 		namespace:                           ns,
 		ownerReference:                      ownerRef,
 		serviceAnnotationPropagationEnabled: serviceAnnotationPropagationEnabled,
+		serviceIPFamilyFieldsEnabled:        serviceIPFamilyFieldsEnabled,
 	}
 }
 
@@ -310,8 +311,7 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 	if len(existingIPFams) == 0 {
 		existingIPFams = nil
 	}
-	desiredIPFams := cloneIPFamilies(service.Spec.IPFamilies)
-	servicePolicy := cloneIPFamilyPolicy(service.Spec.IPFamilyPolicy)
+	desiredIPFams, servicePolicy := s.serviceIPFamilyFields(service)
 
 	var needsUpdate bool
 	if !reflect.DeepEqual(existing.Spec.Ports, ports) {
@@ -326,10 +326,10 @@ func (s *vmService) Update(ctx context.Context, service *v1.Service, clusterName
 	if !reflect.DeepEqual(existingAnnotations, desiredAnnotations) {
 		needsUpdate = true
 	}
-	if !reflect.DeepEqual(existingIPFams, desiredIPFams) {
+	if s.serviceIPFamilyFieldsEnabled && !reflect.DeepEqual(existingIPFams, desiredIPFams) {
 		needsUpdate = true
 	}
-	if !reflect.DeepEqual(existing.Spec.IPFamilyPolicy, servicePolicy) {
+	if s.serviceIPFamilyFieldsEnabled && !reflect.DeepEqual(existing.Spec.IPFamilyPolicy, servicePolicy) {
 		needsUpdate = true
 	}
 
@@ -432,6 +432,7 @@ func (s *vmService) lbServiceToVMServiceInfo(service *v1.Service, clusterName st
 		}
 	}
 
+	families, policy := s.serviceIPFamilyFields(service)
 	info := &vmoptypes.VirtualMachineServiceInfo{
 		Name:      s.GetVMServiceName(service, clusterName),
 		Namespace: s.namespace,
@@ -449,8 +450,8 @@ func (s *vmService) lbServiceToVMServiceInfo(service *v1.Service, clusterName st
 			Selector:                 selector,
 			LoadBalancerIP:           service.Spec.LoadBalancerIP,
 			LoadBalancerSourceRanges: service.Spec.LoadBalancerSourceRanges,
-			IPFamilies:               cloneIPFamilies(service.Spec.IPFamilies),
-			IPFamilyPolicy:           cloneIPFamilyPolicy(service.Spec.IPFamilyPolicy),
+			IPFamilies:               families,
+			IPFamilyPolicy:           policy,
 		},
 	}
 
@@ -459,6 +460,15 @@ func (s *vmService) lbServiceToVMServiceInfo(service *v1.Service, clusterName st
 	}
 
 	return info, nil
+}
+
+// serviceIPFamilyFields omits both fields when Supervisor admission or the
+// selected API does not support them. Supported gate-off objects have no fields.
+func (s *vmService) serviceIPFamilyFields(service *v1.Service) ([]v1.IPFamily, *v1.IPFamilyPolicyType) {
+	if !s.serviceIPFamilyFieldsEnabled {
+		return nil, nil
+	}
+	return cloneIPFamilies(service.Spec.IPFamilies), cloneIPFamilyPolicy(service.Spec.IPFamilyPolicy)
 }
 
 func getVMServiceAnnotations(service *v1.Service, serviceAnnotationPropagationEnabled bool) map[string]string {

@@ -44,10 +44,10 @@ var _ cloudprovider.LoadBalancer = &loadBalancer{}
 // caller via factory.NewAdapter; this constructor does not create its own
 // client so that the same versioned adapter can be shared with NewInstances
 // and NewZones.
-func NewLoadBalancer(clusterNS string, vmClient vmop.Interface, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled bool) (cloudprovider.LoadBalancer, error) {
+func NewLoadBalancer(clusterNS string, vmClient vmop.Interface, ownerRef *metav1.OwnerReference, serviceAnnotationPropagationEnabled, serviceIPFamilyFieldsEnabled bool) (cloudprovider.LoadBalancer, error) {
 	klog.V(1).Info("Create load balancer for vsphere paravirtual cloud provider")
 
-	vmSvc := vmservice.NewVMService(vmClient, clusterNS, ownerRef, serviceAnnotationPropagationEnabled)
+	vmSvc := vmservice.NewVMService(vmClient, clusterNS, ownerRef, serviceAnnotationPropagationEnabled, serviceIPFamilyFieldsEnabled)
 	return &loadBalancer{
 		vmService: vmSvc,
 	}, nil
