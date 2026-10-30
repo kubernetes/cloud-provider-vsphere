@@ -435,11 +435,11 @@ func TestNodeAddressesByProviderID(t *testing.T) {
 				},
 				{
 					Type:    v1.NodeInternalIP,
-					Address: "2001:db8::1",
+					Address: "10.0.0.5",
 				},
 				{
 					Type:    v1.NodeInternalIP,
-					Address: "10.0.0.5",
+					Address: "2001:db8::1",
 				},
 				{
 					Type:    v1.NodeInternalIP,
@@ -599,11 +599,11 @@ func TestNodeAddresses(t *testing.T) {
 				},
 				{
 					Type:    v1.NodeInternalIP,
-					Address: "2001:db8::1",
+					Address: "10.0.0.5",
 				},
 				{
 					Type:    v1.NodeInternalIP,
-					Address: "10.0.0.5",
+					Address: "2001:db8::1",
 				},
 				{
 					Type:    v1.NodeInternalIP,
