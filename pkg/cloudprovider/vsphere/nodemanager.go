@@ -695,6 +695,14 @@ func guestInfoMetadata(extraConfig []types.BaseOptionValue) (string, string) {
 	return guestInfo, encoding
 }
 
+// Caps for guestinfo cloud-init. Network config is small; the decoded cap
+// still leaves room for the rest of the metadata document.
+const (
+	maxGuestInfoEncodedBytes = 8 << 20
+	maxGuestInfoDecodedBytes = 4 << 20
+	maxNetworkDecodedBytes   = 1 << 20
+)
+
 // sortStaticallyConfiguredAddressesFirst prefers addresses that are from the
 // guestInfo but only if they are on a NIC already. It preserves the order in which
 // the addresses appear in the guestInfo. For addresses not found in the guestInfo,
@@ -705,10 +713,16 @@ func sortStaticallyConfiguredAddressesFirst(extraConfig []types.BaseOptionValue,
 	if guestInfo == "" || encoding != "base64" {
 		return nonLocalhostIPs, nil
 	}
+	if len(guestInfo) > maxGuestInfoEncodedBytes {
+		return nil, fmt.Errorf("guestinfo metadata exceeds encoded size limit of %d bytes", maxGuestInfoEncodedBytes)
+	}
 
 	value, err := base64.StdEncoding.DecodeString(guestInfo)
 	if err != nil {
 		return nil, err
+	}
+	if len(value) > maxGuestInfoDecodedBytes {
+		return nil, fmt.Errorf("guestinfo metadata exceeds decoded size limit of %d bytes", maxGuestInfoDecodedBytes)
 	}
 
 	ne := struct {
@@ -726,7 +740,7 @@ func sortStaticallyConfiguredAddressesFirst(extraConfig []types.BaseOptionValue,
 			return nil, err
 		}
 
-		if value, err = base64.StdEncoding.DecodeString(encNetconfig.Network); err != nil {
+		if value, err = decodeNetworkPayload(encNetconfig.Network); err != nil {
 			return nil, err
 		}
 
@@ -739,22 +753,12 @@ func sortStaticallyConfiguredAddressesFirst(extraConfig []types.BaseOptionValue,
 			return nil, err
 		}
 
-		gzData, err := base64.StdEncoding.DecodeString(encNetconfig.Network)
+		gzData, err := decodeNetworkPayload(encNetconfig.Network)
 		if err != nil {
 			return nil, err
 		}
 
-		r := bytes.NewReader(gzData)
-		gr, err := gzip.NewReader(r)
-		if err != nil {
-			return nil, err
-		}
-
-		if value, err = io.ReadAll(gr); err != nil {
-			return nil, err
-		}
-
-		if err := gr.Close(); err != nil {
+		if value, err = gunzipLimited(gzData, maxNetworkDecodedBytes); err != nil {
 			return nil, err
 		}
 
@@ -790,4 +794,37 @@ func sortStaticallyConfiguredAddressesFirst(extraConfig []types.BaseOptionValue,
 	})
 
 	return nonLocalhostIPs, nil
+}
+
+func decodeNetworkPayload(encoded string) ([]byte, error) {
+	if len(encoded) > maxGuestInfoEncodedBytes {
+		return nil, fmt.Errorf("network metadata exceeds encoded size limit of %d bytes", maxGuestInfoEncodedBytes)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, err
+	}
+	if len(decoded) > maxNetworkDecodedBytes {
+		return nil, fmt.Errorf("network metadata exceeds decoded size limit of %d bytes", maxNetworkDecodedBytes)
+	}
+	return decoded, nil
+}
+
+func gunzipLimited(gzData []byte, maxBytes int) ([]byte, error) {
+	gr, err := gzip.NewReader(bytes.NewReader(gzData))
+	if err != nil {
+		return nil, err
+	}
+	value, readErr := io.ReadAll(io.LimitReader(gr, int64(maxBytes)+1))
+	closeErr := gr.Close()
+	if readErr != nil {
+		return nil, readErr
+	}
+	if len(value) > maxBytes {
+		return nil, fmt.Errorf("decompressed network metadata exceeds %d bytes", maxBytes)
+	}
+	if closeErr != nil {
+		return nil, closeErr
+	}
+	return value, nil
 }
