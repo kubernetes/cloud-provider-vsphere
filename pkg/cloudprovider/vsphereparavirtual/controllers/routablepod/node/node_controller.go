@@ -14,6 +14,7 @@ limitations under the License.
 package node
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -39,11 +40,17 @@ const (
 	controllerName = "node-controller"
 )
 
+// RouteCleaner removes routes for a deleted node, including unrealized routes.
+type RouteCleaner interface {
+	DeleteNodeRoutes(ctx context.Context, clusterName, nodeName string) error
+}
+
 // Controller adds or removes node's CIDR allocation request from ippool spec
 // whenever a node is added/updated/removed.
 // Create a ippool if there isn't one for current cluster.
 type Controller struct {
 	nsxIPManager nsxipmanager.NSXIPManager
+	routeCleaner RouteCleaner
 
 	nodesLister      corelisters.NodeLister
 	nodeListerSynced cache.InformerSynced
@@ -69,7 +76,8 @@ func NewController(
 	clusterName string,
 	clusterNS string,
 	ownerRef *metav1.OwnerReference,
-	expectedFamilyCount int) *Controller {
+	expectedFamilyCount int,
+	routeCleaner RouteCleaner) *Controller {
 
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
@@ -78,6 +86,7 @@ func NewController(
 
 	c := &Controller{
 		nsxIPManager:     nsxIPManager,
+		routeCleaner:     routeCleaner,
 		nodesLister:      informerManager.GetNodeLister(),
 		nodeListerSynced: informerManager.IsNodeInformerSynced(),
 
@@ -115,7 +124,7 @@ func NewController(
 func (c *Controller) enqueueNode(obj interface{}) {
 	var key string
 	var err error
-	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+	if key, err = cache.DeletionHandlingMetaNamespaceKeyFunc(obj); err != nil {
 		utilruntime.HandleError(err)
 		return
 	}
@@ -205,6 +214,13 @@ func (c *Controller) syncNode(key string) error {
 	node, err := c.nodesLister.Get(name)
 	switch {
 	case apierrors.IsNotFound(err):
+		// Request deletion of even pending/failed routes before releasing the CIDR.
+		// StaticRoute finalization and network cleanup remain asynchronous.
+		if c.routeCleaner != nil {
+			if err := c.routeCleaner.DeleteNodeRoutes(context.Background(), c.clusterName, name); err != nil {
+				return err
+			}
+		}
 		// node absence in store means watcher caught the deletion, ensure Pod CIDR of this Node is released
 		klog.V(4).Infof("Node %s is not found, releasing its Pod CIDR", name)
 		err = c.nsxIPManager.ReleasePodCIDR(&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: name}})
