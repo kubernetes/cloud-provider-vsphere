@@ -81,7 +81,7 @@ func initTest(serviceAnnotationPropagationEnabled bool) (*v1.Service, VMService,
 	_ = vmopv1.AddToScheme(scheme)
 	fc := dynamicfake.NewSimpleDynamicClient(scheme)
 	vmopAdapter := adapterv2.NewWithFakeClient(clientv2.NewWithDynamicClient(fc))
-	vms = NewVMService(vmopAdapter, testClusterNameSpace, &testOwnerReference, serviceAnnotationPropagationEnabled)
+	vms = NewVMService(vmopAdapter, testClusterNameSpace, &testOwnerReference, serviceAnnotationPropagationEnabled, true)
 	return testK8sService, vms, fc
 }
 
@@ -103,7 +103,7 @@ func TestNewVMService(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			fakeAdapter, _ := fakev2.NewAdapter()
-			svc := NewVMService(fakeAdapter, testClusterNameSpace, &testOwnerReference, tc.serviceAnnotationPropagationEnabled)
+			svc := NewVMService(fakeAdapter, testClusterNameSpace, &testOwnerReference, tc.serviceAnnotationPropagationEnabled, true)
 			assert.NotNil(t, svc)
 			// Verify the constructed service correctly propagates annotations
 			// by creating a service and checking annotation presence.
