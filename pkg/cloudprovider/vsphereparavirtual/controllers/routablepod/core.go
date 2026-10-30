@@ -31,6 +31,7 @@ import (
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/helper"
 	ippmv1alpha1 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/ippoolmanager/v1alpha1"
 	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/nsxipmanager"
+	"k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/routemanager/staticroute"
 	k8s "k8s.io/cloud-provider-vsphere/pkg/common/kubernetes"
 )
 
@@ -75,10 +76,16 @@ func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
 	ctx := informerManager.GetContext()
 
 	var nsxIPManager nsxipmanager.NSXIPManager
+	var routeCleaner node.RouteCleaner
 	if opts.VPCModeEnabled {
 		nsxClient, nsxInformerFactory, err := getNSXClientAndInformer(scCfg, opts.ClusterNS)
 		if err != nil {
 			return fmt.Errorf("fail to get NSX client or informer factory: %w", err)
+		}
+
+		routeCleaner, err = staticroute.NewRouteManagerWithClients(nsxClient, opts.ClusterNS)
+		if err != nil {
+			return fmt.Errorf("create StaticRoute cleanup manager: %w", err)
 		}
 
 		startIPAddressAllocationController(ctx, client, informerManager, nsxInformerFactory, opts.IPFamily, opts.ClusterName)
@@ -96,7 +103,7 @@ func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
 		nsxIPManager = nsxipmanager.NewNSXT1IPManager(ippManager, opts.ClusterName, opts.ClusterNS, opts.OwnerRef)
 	}
 
-	nodeController := node.NewController(client, nsxIPManager, informerManager, opts.ClusterName, opts.ClusterNS, opts.OwnerRef, opts.IPFamily.FamilyCount())
+	nodeController := node.NewController(client, nsxIPManager, informerManager, opts.ClusterName, opts.ClusterNS, opts.OwnerRef, opts.IPFamily.FamilyCount(), routeCleaner)
 	go nodeController.Run(ctx.Done())
 
 	return nil

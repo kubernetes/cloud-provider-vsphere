@@ -3,10 +3,13 @@ package staticroute
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
 
 	vpcapisv1 "github.com/vmware-tanzu/nsx-operator/pkg/apis/vpc/v1alpha1"
 	nsxclients "github.com/vmware-tanzu/nsx-operator/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -132,9 +135,61 @@ func (sr *RouteManager) CreateRouteCR(ctx context.Context, routeInfo *helper.Rou
 	return sr.clients.CrdV1alpha1().StaticRoutes(sr.namespace).Create(ctx, staticRoute, metav1.CreateOptions{})
 }
 
-// DeleteRouteCR deletes corresponding RouteSet CR when there is a node deleted
-func (sr *RouteManager) DeleteRouteCR(nodeName string) error {
-	return sr.clients.CrdV1alpha1().StaticRoutes(sr.namespace).Delete(context.Background(), nodeName, metav1.DeleteOptions{})
+// DeleteRouteCR deletes the StaticRoute with the given CR name.
+func (sr *RouteManager) DeleteRouteCR(name string) error {
+	return sr.deleteRouteCR(context.Background(), name, metav1.DeleteOptions{})
+}
+
+// DeleteNodeRoutes removes a deleted node's StaticRoutes regardless of realization
+// status. ListRoutes must retain its readiness filter for the cloud route controller.
+func (sr *RouteManager) DeleteNodeRoutes(ctx context.Context, clusterName, nodeName string) error {
+	listed, err := sr.ListRouteCR(ctx, metav1.LabelSelector{
+		MatchLabels: map[string]string{helper.LabelKeyClusterName: clusterName},
+	})
+	if err != nil {
+		return fmt.Errorf("list StaticRoutes for cluster %q: %w", clusterName, err)
+	}
+	routes, ok := listed.(*vpcapisv1.StaticRouteList)
+	if !ok {
+		return fmt.Errorf("unexpected StaticRoute list type %T", listed)
+	}
+	for i := range routes.Items {
+		route := &routes.Items[i]
+		if staticRouteNodeName(route) != nodeName {
+			continue
+		}
+		// Do not delete a replacement created between the list and delete calls.
+		if err := sr.deleteRouteCR(ctx, route.Name, metav1.DeleteOptions{
+			Preconditions: &metav1.Preconditions{UID: &route.UID},
+		}); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("delete StaticRoute %q for node %q: %w", route.Name, nodeName, err)
+		}
+	}
+	return nil
+}
+
+// deleteRouteCR shares the delete call while retaining each caller's options and
+// error handling. DeleteRoute handles NotFound for the single-route path.
+func (sr *RouteManager) deleteRouteCR(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return sr.clients.CrdV1alpha1().StaticRoutes(sr.namespace).Delete(ctx, name, opts)
+}
+
+func staticRouteNodeName(route *vpcapisv1.StaticRoute) string {
+	for _, owner := range route.OwnerReferences {
+		if owner.APIVersion == "v1" && owner.Kind == "Node" {
+			return owner.Name
+		}
+	}
+	// Legacy routes may lack a Node owner. Decode their family from the network,
+	// not the name: an IPv4 node name can itself end in "-ipv6".
+	ip, _, err := net.ParseCIDR(route.Spec.Network)
+	if err != nil {
+		return ""
+	}
+	if ip.To4() != nil {
+		return route.Name
+	}
+	return strings.TrimSuffix(route.Name, helper.SuffixIPv6)
 }
 
 // GetClients get clientsets. It's used in unit tests
