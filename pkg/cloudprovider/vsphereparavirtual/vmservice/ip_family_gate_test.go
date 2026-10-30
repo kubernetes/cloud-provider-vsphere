@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
+	clienttesting "k8s.io/client-go/testing"
 
 	adapterv6 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/adapter/v1alpha6"
 	clientv6 "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphereparavirtual/vmoperator/provider/v1alpha6"
@@ -193,6 +194,70 @@ func TestUpdateVMService_ServiceIPFamilyFieldsEnabled(t *testing.T) {
 			require.NoError(t, err)
 			for _, action := range fc.Actions() {
 				assert.False(t, action.Matches("update", "virtualmachineservices"), "identical effective fields must not trigger repeated updates")
+			}
+		})
+	}
+}
+
+func TestUpdateVMService_ServiceIPFamilyFieldsOnly(t *testing.T) {
+	tests := []struct {
+		name     string
+		families []v1.IPFamily
+		policy   v1.IPFamilyPolicyType
+	}{
+		{name: "families only", families: []v1.IPFamily{v1.IPv4Protocol, v1.IPv6Protocol}, policy: v1.IPFamilyPolicyPreferDualStack},
+		{name: "policy only", families: []v1.IPFamily{v1.IPv4Protocol}, policy: v1.IPFamilyPolicySingleStack},
+		{name: "families and policy", families: []v1.IPFamily{v1.IPv4Protocol, v1.IPv6Protocol}, policy: v1.IPFamilyPolicyRequireDualStack},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			source, svc, fc := initIPFamilyTest(t, true)
+			initialPolicy := v1.IPFamilyPolicyPreferDualStack
+			source.Spec.IPFamilies = []v1.IPFamily{v1.IPv4Protocol}
+			source.Spec.IPFamilyPolicy = &initialPolicy
+			current, err := svc.Create(context.Background(), source, testClustername)
+			require.NoError(t, err)
+			initial, err := fc.Resource(clientv6.VirtualMachineServiceGVR).Namespace(testClusterNameSpace).Get(context.Background(), current.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+			desired := source.DeepCopy()
+			desired.Spec.IPFamilies = tt.families
+			desired.Spec.IPFamilyPolicy = &tt.policy
+			before := desired.DeepCopy()
+			fc.ClearActions()
+
+			updated, err := svc.Update(context.Background(), desired, testClustername, current)
+			require.NoError(t, err)
+			var updates []clienttesting.Action
+			for _, action := range fc.Actions() {
+				if action.Matches("update", "virtualmachineservices") {
+					updates = append(updates, action)
+				}
+			}
+			require.Len(t, updates, 1, "family fields alone must trigger exactly one update")
+			update, ok := updates[0].(clienttesting.UpdateAction)
+			require.True(t, ok)
+			raw, ok := update.GetObject().(*unstructured.Unstructured)
+			require.True(t, ok)
+			expected := initial.DeepCopy()
+			families := make([]string, len(tt.families))
+			for i, family := range tt.families {
+				families[i] = string(family)
+			}
+			require.NoError(t, unstructured.SetNestedStringSlice(expected.Object, families, "spec", "ipFamilies"))
+			require.NoError(t, unstructured.SetNestedField(expected.Object, string(tt.policy), "spec", "ipFamilyPolicy"))
+			assert.Equal(t, expected.Object["spec"], raw.Object["spec"], "serialized update must change only IP family fields")
+			assert.Equal(t, current.Spec.Ports, updated.Spec.Ports, "ports must remain unchanged")
+			assert.Equal(t, tt.families, updated.Spec.IPFamilies)
+			require.NotNil(t, updated.Spec.IPFamilyPolicy)
+			assert.Equal(t, tt.policy, *updated.Spec.IPFamilyPolicy)
+			assert.Equal(t, before, desired, "update must not mutate the Guest Service")
+			assertIPFamilyFields(t, fc, updated.Name, tt.families, &tt.policy)
+
+			fc.ClearActions()
+			_, err = svc.Update(context.Background(), desired, testClustername, updated)
+			require.NoError(t, err)
+			for _, action := range fc.Actions() {
+				assert.False(t, action.Matches("update", "virtualmachineservices"), "identical family fields must not trigger another update")
 			}
 		})
 	}
