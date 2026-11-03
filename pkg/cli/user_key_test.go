@@ -101,3 +101,26 @@ func TestCreateCertRejectsKeySymlink(t *testing.T) {
 		t.Fatal("symlink was replaced with a regular file")
 	}
 }
+
+func TestCreateCertExistingKeyDoesNotLeaveCert(t *testing.T) {
+	dir := t.TempDir()
+	keyPath := filepath.Join(dir, "solution.key")
+	certPath := filepath.Join(dir, "solution.crt")
+	if err := os.WriteFile(keyPath, []byte("old-key"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	u := &User{cert: certPath}
+	if err := u.createCert(); err == nil {
+		t.Fatal("expected an error when the private key already exists")
+	}
+	got, err := os.ReadFile(keyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "old-key" {
+		t.Fatalf("existing private key was replaced: %q", got)
+	}
+	if _, err := os.Stat(certPath); !os.IsNotExist(err) {
+		t.Fatalf("certificate left behind: %v", err)
+	}
+}

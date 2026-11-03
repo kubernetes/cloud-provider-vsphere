@@ -124,16 +124,12 @@ type Role struct {
 // createCert creates a key pair for login purpose
 func (u *User) createCert() error {
 	id := strings.TrimSuffix(u.cert, ".crt")
-	var encodedCert bytes.Buffer
-	certFile, err := os.Create(id + ".crt")
-	if err != nil {
-		return err
-	}
-	defer certFile.Close()
-
-	// O_EXCL refuses an existing file or symlink. Chmod pins 0600, since
-	// the create mode is still masked by umask.
+	certPath := id + ".crt"
 	keyPath := id + ".key"
+
+	// Key first. O_EXCL still refuses an existing file or symlink, and a
+	// failure must not leave the empty .crt that CreateSolutionUser treats
+	// as "already exists". Chmod pins 0600 because umask still applies.
 	keyFile, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return err
@@ -176,10 +172,23 @@ func (u *User) createCert() error {
 		return err
 	}
 
+	var encodedCert bytes.Buffer
 	err = pem.Encode(&encodedCert, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if err != nil {
 		return err
 	}
+
+	certFile, err := os.Create(certPath)
+	if err != nil {
+		return err
+	}
+	certOK := false
+	defer func() {
+		certFile.Close()
+		if !certOK {
+			os.Remove(certPath)
+		}
+	}()
 
 	_, err = certFile.Write(encodedCert.Bytes())
 	if err != nil {
@@ -194,6 +203,7 @@ func (u *User) createCert() error {
 		return err
 	}
 	keyOK = true
+	certOK = true
 
 	return nil
 }
