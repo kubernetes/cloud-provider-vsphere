@@ -13,11 +13,12 @@
 ################################################################################
 ##                               BUILD ARGS                                   ##
 ################################################################################
-# This build arg allows the specification of a custom Golang image.
-ARG GOLANG_IMAGE=golang:1.26.6
+# Pin the multi-platform image indexes while keeping their tags readable.
+# The Docker Dependabot entry updates these references.
+ARG GOLANG_IMAGE=golang:1.26.6@sha256:0d1d3a794be25f809dd2cb3160d8c73276c4056a9f8242a138e908ddeee7b6b6
 
-# The distroless image on which the CPI manager image is built.
-ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian11:latest
+# Distroless currently maintains Debian 13 images; Debian 11 tags are deprecated.
+ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian13:latest@sha256:448810357cc8e67b7208988abdba0f5ec3d3aebee0a5b13eb624979792cffc0f
 
 ################################################################################
 ##                              BUILD STAGE                                   ##
