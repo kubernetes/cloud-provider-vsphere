@@ -32,13 +32,13 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 #
 # Go.
 #
-GO_VERSION ?= 1.26.10
+GO_VERSION ?= 1.27.3
 
 # Binaries
 GO_INSTALL := ./hack/go-install.sh
 TRIVY_VER := 0.69.2
 GOVULNCHECK_BIN := govulncheck
-GOVULNCHECK_VER := v1.1.4
+GOVULNCHECK_VER := v1.9.0
 GOVULNCHECK := $(abspath $(TOOLS_BIN_DIR)/$(GOVULNCHECK_BIN)-$(GOVULNCHECK_VER))
 GOVULNCHECK_PKG := golang.org/x/vuln/cmd/govulncheck
 
