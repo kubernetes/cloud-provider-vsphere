@@ -125,7 +125,7 @@ KIND := $(TOOLS_BIN_DIR)/kind
 TOOLING_BINARIES := $(GINKGO) $(KIND)
 E2E_DIR := $(abspath test/e2e)
 
-KPROMO_VER := 5ab0dbc74b0228c22a93d240596dff77464aee8f
+KPROMO_VER := v4.8.1
 KPROMO_BIN := kpromo
 KPROMO :=  $(abspath $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER))
 # KPROMO_PKG may have to be changed if KPROMO_VER increases its major version.
