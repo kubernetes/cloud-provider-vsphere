@@ -41,6 +41,11 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
+const (
+	// instanceType field key in the annotation YAML field of VirtualMachineConfigInfo(vim.vm.ConfigInfo) Data Object
+	instanceTypeFieldKey = "instanceType"
+)
+
 // Errors
 var (
 	// ErrVCenterNotFound is returned when the configured vCenter cannot be
@@ -358,17 +363,7 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 		nodeID, vmDI.VM, vmDI.VcServer, vmDI.DataCenter.Name())
 	klog.V(2).Info("Hostname: ", oVM.Guest.HostName, " UUID: ", vmDI.UUID)
 
-	os := "unknown"
-	if g, ok := GuestOSLookup[oVM.Summary.Config.GuestId]; ok {
-		os = g
-	}
-
-	// store instance type in nodeinfo map
-	instanceType := fmt.Sprintf("vsphere-vm.cpu-%d.mem-%dgb.os-%s",
-		oVM.Summary.Config.NumCpu,
-		(oVM.Summary.Config.MemorySizeMB / 1024),
-		os,
-	)
+	instanceType := getInstanceType(oVM.Config.Annotation, oVM.Summary.Config)
 
 	nodeInfo := &NodeInfo{
 		tenantRef: tenantRef, dataCenter: vmDI.DataCenter, vm: vmDI.VM, vcServer: vmDI.VcServer,
@@ -377,6 +372,35 @@ func (nm *NodeManager) DiscoverNode(nodeID string, searchBy cm.FindVM) error {
 	nm.addNodeInfo(nodeInfo)
 
 	return nil
+}
+
+func getInstanceType(annotation string, config types.VirtualMachineConfigSummary) string {
+	annotation = strings.TrimSpace(annotation)
+	if annotation == "" {
+		return getInstanceTypeFallback(config)
+	}
+
+	var yamlData map[string]any
+	if err := yaml.Unmarshal([]byte(annotation), &yamlData); err == nil {
+		if instanceTypeFieldValue, ok := yamlData[instanceTypeFieldKey].(string); ok && instanceTypeFieldValue != "" {
+			return instanceTypeFieldValue
+		}
+	}
+	return getInstanceTypeFallback(config)
+}
+
+func getInstanceTypeFallback(config types.VirtualMachineConfigSummary) string {
+	os := "unknown"
+	if g, ok := GuestOSLookup[config.GuestId]; ok {
+		os = g
+	}
+
+	// store instance type in nodeinfo map
+	return fmt.Sprintf("vsphere-vm.cpu-%d.mem-%dgb.os-%s",
+		config.NumCpu,
+		(config.MemorySizeMB / 1024),
+		os,
+	)
 }
 
 // discoverIPs returns a pair of *ipAddrNetworkNames. The first representing
