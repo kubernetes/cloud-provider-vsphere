@@ -55,8 +55,8 @@ func (z *zones) GetZone(ctx context.Context) (cloudprovider.Zone, error) {
 		return zone, err
 	}
 
-	node, ok := z.nodeManager.nodeNameMap[nodeName]
-	if !ok {
+	node := z.nodeManager.nodeByName(nodeName)
+	if node == nil {
 		klog.V(2).Info("zones.GetZone() NOT FOUND with ", nodeName)
 		return zone, ErrVMNotFound
 	}
@@ -100,8 +100,8 @@ func (z *zones) GetZoneByNodeName(ctx context.Context, nodeName k8stypes.NodeNam
 		return zone, nil
 	}
 
-	node, ok := z.nodeManager.nodeNameMap[string(nodeName)]
-	if !ok {
+	node := z.nodeManager.nodeByName(string(nodeName))
+	if node == nil {
 		klog.V(2).Info("zones.GetZoneByNodeName() NOT FOUND with ", string(nodeName))
 		return zone, ErrVMNotFound
 	}
@@ -171,8 +171,8 @@ func (z *zones) GetZoneByProviderID(ctx context.Context, providerID string) (clo
 	}
 
 	uid := GetUUIDFromProviderID(providerID)
-	node, ok := z.nodeManager.nodeUUIDMap[uid]
-	if !ok {
+	node := z.nodeManager.nodeByUUID(uid)
+	if node == nil {
 		klog.V(2).Info("zones.GetZoneByProviderID() NOT FOUND with ", uid)
 		return zone, ErrVMNotFound
 	}
