@@ -31,7 +31,7 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 
 # Binaries
 GO_INSTALL := ./hack/go-install.sh
-TRIVY_VER := 0.49.1
+TRIVY_VER := 0.69.2
 GOVULNCHECK_BIN := govulncheck
 GOVULNCHECK_VER := v1.1.4
 GOVULNCHECK := $(abspath $(TOOLS_BIN_DIR)/$(GOVULNCHECK_BIN)-$(GOVULNCHECK_VER))
@@ -80,7 +80,7 @@ deps:
 ################################################################################
 # Ensure the version is injected into the binaries via a linker flag.
 export VERSION ?= $(shell git describe --always --dirty)
-GO_VERSION ?= 1.26.10
+GO_VERSION ?= 1.26.11
 
 .PHONY: version print-ccm-image go-version
 
