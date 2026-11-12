@@ -22,7 +22,7 @@ require (
 	github.com/vmware/vsphere-automation-sdk-go/lib v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/runtime v0.7.0
 	github.com/vmware/vsphere-automation-sdk-go/services/nsxt v0.12.0
-	golang.org/x/net v0.61.0
+	golang.org/x/net v0.62.0
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.37.0
