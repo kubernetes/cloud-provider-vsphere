@@ -32,7 +32,7 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 #
 # Go.
 #
-GO_VERSION ?= 1.26.10
+GO_VERSION ?= 1.26.11
 
 # Binaries
 GO_INSTALL := ./hack/go-install.sh
