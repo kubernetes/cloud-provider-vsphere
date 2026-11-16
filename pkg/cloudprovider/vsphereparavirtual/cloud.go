@@ -75,6 +75,10 @@ var (
 	// clusterIPFamily is the raw --cluster-ip-family flag; Initialize resolves it
 	// with ParseClusterIPFamily to one of: ipv4, ipv6, ipv4ipv6, or ipv6ipv4.
 	clusterIPFamily string
+
+	// supervisorVMOPIPv6Support declares Supervisor VM Operator IPv6/dual-stack
+	// support (WorkloadIPv6), independently of the Guest cluster IP family.
+	supervisorVMOPIPv6Support bool
 )
 
 func init() {
@@ -104,10 +108,14 @@ func init() {
 	flag.StringVar(&podIPPoolType, "pod-ip-pool-type", "", "Specify if Pod IP address is Public or Private routable in VPC network. Valid values are Public and Private")
 	flag.BoolVar(&serviceAnnotationPropagationEnabled, "enable-service-annotation-propagation", false, "If true, will propagate the service annotation to resource in supervisor cluster.")
 	flag.StringVar(&vmopAPIVersion, "vm-operator-api-version", factory.V1alpha2, "the API version to use when communicating with VM Operator in supervisor mode. Valid values are: "+factory.V1alpha2+", "+factory.V1alpha5+", "+factory.V1alpha6)
+	flag.BoolVar(&supervisorVMOPIPv6Support, "supervisor-vmop-ipv6-support", false,
+		"Whether Supervisor VM Operator supports IPv6/dual-stack VirtualMachineServices (WorkloadIPv6). "+
+			"Allows forwarding Service IP family fields, including IPv4, when the selected VM Operator API supports them. "+
+			"This declares support; it does not enable the Supervisor feature or select a VM Operator API version.")
 	flag.StringVar(&clusterIPFamily, "cluster-ip-family", "ipv4",
 		"Cluster IP family for NodeInternalIP ordering and Routable Pods. "+
 			"Valid values (case-insensitive): ipv4 (default), ipv6, ipv4ipv6, ipv6ipv4. "+
-			"Non-ipv4 values require --vm-operator-api-version >= v1alpha6. "+
+			"Non-ipv4 values require --supervisor-vmop-ipv6-support=true and --vm-operator-api-version >= v1alpha6. "+
 			"IPv6 or dual-stack with the route controller additionally requires --enable-vpc-mode=true.")
 }
 
@@ -157,7 +165,7 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	if err != nil {
 		klog.Fatalf("Invalid --cluster-ip-family: %v", err)
 	}
-	if err := validateIPFamilyConfig(resolvedClusterIPFamily, vmopAPIVersion); err != nil {
+	if err := validateIPFamilyConfig(resolvedClusterIPFamily, vmopAPIVersion, supervisorVMOPIPv6Support); err != nil {
 		klog.Fatalf("Invalid flag combination: %v", err)
 	}
 
@@ -180,7 +188,8 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	}
 	cp.routes = routes
 
-	lb, err := NewLoadBalancer(clusterNS, vmopClient, cp.ownerReference, serviceAnnotationPropagationEnabled)
+	lb, err := NewLoadBalancer(clusterNS, vmopClient, cp.ownerReference, serviceAnnotationPropagationEnabled,
+		serviceIPFamilyFieldsEnabled(supervisorVMOPIPv6Support, vmopAPIVersion))
 	if err != nil {
 		klog.Errorf("Failed to init LoadBalancer: %v", err)
 	}

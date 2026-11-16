@@ -32,13 +32,13 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 #
 # Go.
 #
-GO_VERSION ?= 1.26.6
+GO_VERSION ?= 1.27.4
 
 # Binaries
 GO_INSTALL := ./hack/go-install.sh
 TRIVY_VER := 0.69.2
 GOVULNCHECK_BIN := govulncheck
-GOVULNCHECK_VER := v1.1.4
+GOVULNCHECK_VER := v1.9.0
 GOVULNCHECK := $(abspath $(TOOLS_BIN_DIR)/$(GOVULNCHECK_BIN)-$(GOVULNCHECK_VER))
 GOVULNCHECK_PKG := golang.org/x/vuln/cmd/govulncheck
 
@@ -125,7 +125,7 @@ KIND := $(TOOLS_BIN_DIR)/kind
 TOOLING_BINARIES := $(GINKGO) $(KIND)
 E2E_DIR := $(abspath test/e2e)
 
-KPROMO_VER := 5ab0dbc74b0228c22a93d240596dff77464aee8f
+KPROMO_VER := v4.8.1
 KPROMO_BIN := kpromo
 KPROMO :=  $(abspath $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER))
 # KPROMO_PKG may have to be changed if KPROMO_VER increases its major version.
@@ -250,6 +250,7 @@ KUBE_BUILDER_VERSION = 2.3.1
 KUBE_BUILDER = kubebuilder_${KUBE_BUILDER_VERSION}_${GOOS}_${GOARCH}
 KUBE_BUILDER_DIR = "/usr/local/kubebuilder/$(KUBE_BUILDER)"
 unit unit-test:
+	hack/install-helm-test.sh
 	@if [ ! -d $(KUBE_BUILDER_DIR) ]; then \
 	curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${KUBE_BUILDER_VERSION}/${KUBE_BUILDER}.tar.gz | tar -xz -C /tmp/ ;\
 	mv /tmp/${KUBE_BUILDER} /usr/local/kubebuilder; \

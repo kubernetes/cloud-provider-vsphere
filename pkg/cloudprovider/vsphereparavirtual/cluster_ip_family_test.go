@@ -84,7 +84,7 @@ func simulateInitializeIPFamilyChecks(rawClusterIPFamily, vmopAPIVersion string)
 	if err != nil {
 		return err
 	}
-	return validateIPFamilyConfig(normalized, vmopAPIVersion)
+	return validateIPFamilyConfig(normalized, vmopAPIVersion, true)
 }
 
 // The following tests exercise the combined parse+validate flow, not the individual functions.
@@ -205,12 +205,39 @@ func TestValidateIPFamilyConfig(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateIPFamilyConfig(tc.clusterIPFamily, tc.vmopAPIVersion)
+			err := validateIPFamilyConfig(tc.clusterIPFamily, tc.vmopAPIVersion, true)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
 		})
+	}
+}
+
+func TestSupervisorVMOPIPv6SupportConfig(t *testing.T) {
+	for _, family := range []string{ClusterIPFamilyIPv4, ClusterIPFamilyIPv6, ClusterIPFamilyIPv4IPv6, ClusterIPFamilyIPv6IPv4} {
+		parsed, err := ParseClusterIPFamily(family)
+		require.NoError(t, err)
+		for _, version := range []string{factory.V1alpha2, factory.V1alpha5, factory.V1alpha6} {
+			for _, enabled := range []bool{false, true} {
+				name := family + "/" + version + "/disabled"
+				if enabled {
+					name = family + "/" + version + "/enabled"
+				}
+				t.Run(name, func(t *testing.T) {
+					err := validateIPFamilyConfig(parsed, version, enabled)
+					if family == ClusterIPFamilyIPv4 || (enabled && version == factory.V1alpha6) {
+						require.NoError(t, err)
+					} else {
+						require.Error(t, err)
+						if !enabled {
+							assert.Contains(t, err.Error(), "--supervisor-vmop-ipv6-support=true")
+						}
+					}
+					assert.Equal(t, enabled && version == factory.V1alpha6, serviceIPFamilyFieldsEnabled(enabled, version))
+				})
+			}
+		}
 	}
 }

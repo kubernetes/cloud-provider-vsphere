@@ -61,13 +61,20 @@ func vmopSupportsDualStackVMServiceAPI(version string) bool {
 	return supportsDualStackVMService[version]
 }
 
-// validateIPFamilyConfig ensures ipv6 / ipv4ipv6 / ipv6ipv4 are only used with
-// a VM Operator API version that persists VirtualMachineService dual-stack
-// fields (see supportsDualStackVMService). ipv4 does not require dual-stack
-// VirtualMachineService fields.
-func validateIPFamilyConfig(f ipfamily.IPFamily, vmopAPIVersion string) error {
+// serviceIPFamilyFieldsEnabled requires Supervisor admission support and an API
+// that can represent the fields. It also applies to IPv4-only Guests.
+func serviceIPFamilyFieldsEnabled(supervisorVMOPIPv6Support bool, vmopAPIVersion string) bool {
+	return supervisorVMOPIPv6Support && vmopSupportsDualStackVMServiceAPI(vmopAPIVersion)
+}
+
+// validateIPFamilyConfig checks the IPv6 Guest prerequisites for VMService
+// support. StaticRoute and IPAddressAllocation do not depend on the VMOP API.
+func validateIPFamilyConfig(f ipfamily.IPFamily, vmopAPIVersion string, supervisorVMOPIPv6Support bool) error {
 	if !f.IPv6Enabled() {
 		return nil
+	}
+	if !supervisorVMOPIPv6Support {
+		return fmt.Errorf("--cluster-ip-family=%s requires --supervisor-vmop-ipv6-support=true", f)
 	}
 	if !vmopSupportsDualStackVMServiceAPI(vmopAPIVersion) {
 		return fmt.Errorf(

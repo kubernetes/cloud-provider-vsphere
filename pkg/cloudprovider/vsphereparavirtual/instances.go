@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"time"
 
@@ -204,6 +205,18 @@ func createNodeAddresses(vm *vmoptypes.VirtualMachineInfo, clusterIPFamily strin
 		})
 		addedIPs[normalizeIP(ip)] = true
 	}
+
+	// Order the complete address set so interface fallback addresses also obey
+	// the cluster preference. Stability keeps primary IPs before additional
+	// addresses within each family, preserving their existing relative order.
+	sort.SliceStable(nodeAddresses, func(i, j int) bool {
+		iIPv4 := net.ParseIP(nodeAddresses[i].Address).To4() != nil
+		jIPv4 := net.ParseIP(nodeAddresses[j].Address).To4() != nil
+		if ipv6First {
+			return !iIPv4 && jIPv4
+		}
+		return iIPv4 && !jIPv4
+	})
 
 	// NodeHostName is intentionally left empty: in paravirtual mode kubelet sets
 	// the node hostname via --hostname-override or the OS hostname. The cloud

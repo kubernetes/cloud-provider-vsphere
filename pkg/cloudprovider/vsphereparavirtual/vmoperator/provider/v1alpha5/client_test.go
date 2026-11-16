@@ -332,6 +332,10 @@ func (r *listOptsSpyResource) Delete(_ context.Context, _ string, _ metav1.Delet
 	r.spy.tb.Fatal("listOptsSpy: unexpected call to Delete")
 	return nil
 }
+func (r *listOptsSpyResource) DeleteWithResult(_ context.Context, _ string, _ metav1.DeleteOptions, _ ...string) (metav1.APIResult, error) {
+	r.spy.tb.Fatal("listOptsSpy: unexpected call to DeleteWithResult")
+	return nil, nil
+}
 func (r *listOptsSpyResource) DeleteCollection(_ context.Context, _ metav1.DeleteOptions, _ metav1.ListOptions) error {
 	r.spy.tb.Fatal("listOptsSpy: unexpected call to DeleteCollection")
 	return nil
