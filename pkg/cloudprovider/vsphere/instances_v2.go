@@ -96,17 +96,19 @@ func (c *instancesV2) InstanceMetadata(ctx context.Context, node *v1.Node) (*clo
 	}
 	klog.V(4).Infof("instancesV2.InstanceMetadata() got instanceType %s", instanceType)
 
-	zone, err := c.zones.GetZoneByProviderID(ctx, providerID)
-	if err != nil {
-		return nil, err
-	}
-	klog.V(4).InfoS("instancesV2.InstanceMetadata() got zone info", "zone", zone)
-
+	// NodeAddressesByProviderID rediscovers the node, which reconnects an expired
+	// vCenter session and refreshes the cached VM that the zone lookup uses.
 	nodeAddresses, err := c.instances.NodeAddressesByProviderID(ctx, providerID)
 	if err != nil {
 		return nil, err
 	}
 	klog.V(4).InfoS("instancesV2.InstanceMetadata() got nodeAddresses", "nodeAddresses", nodeAddresses)
+
+	zone, err := c.zones.GetZoneByProviderID(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+	klog.V(4).InfoS("instancesV2.InstanceMetadata() got zone info", "zone", zone)
 
 	// Generate additionalLabels
 	additionalLabels, err := c.getAdditionalLabels()
