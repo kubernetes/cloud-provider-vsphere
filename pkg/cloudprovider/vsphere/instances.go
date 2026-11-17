@@ -53,12 +53,13 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 	klog.V(4).Info("instances.NodeAddresses() called with ", string(nodeName))
 
 	if err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName); err == nil {
-		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
+		node := i.nodeManager.nodeByName(string(nodeName))
+		if node == nil {
 			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
 			return []v1.NodeAddress{}, ErrNodeNotFound
 		}
 		klog.V(2).Info("instances.NodeAddresses() FOUND with ", string(nodeName))
-		return i.nodeManager.nodeNameMap[string(nodeName)].NodeAddresses, nil
+		return node.NodeAddresses, nil
 	}
 
 	klog.V(4).Info("instances.NodeAddresses() NOT FOUND with ", string(nodeName))
@@ -75,7 +76,7 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 
 	if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err == nil {
 		klog.V(2).Info("instances.NodeAddressesByProviderID() FOUND with ", uid)
-		return i.nodeManager.nodeUUIDMap[uid].NodeAddresses, nil
+		return i.nodeManager.nodeByUUID(uid).NodeAddresses, nil
 	}
 
 	klog.V(4).Info("instances.NodeAddressesByProviderID() NOT FOUND with ", uid)
@@ -98,19 +99,20 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 	klog.V(4).Info("instances.InstanceID() called with ", nodeName)
 
 	// Check if node has been discovered already
-	if node, ok := i.nodeManager.nodeNameMap[string(nodeName)]; ok {
+	if node := i.nodeManager.nodeByName(string(nodeName)); node != nil {
 		klog.V(2).Info("instances.InstanceID() CACHED with ", string(nodeName))
 		return node.UUID, nil
 	}
 
 	err := i.nodeManager.DiscoverNode(string(nodeName), cm.FindVMByName)
 	if err == nil {
-		if i.nodeManager.nodeNameMap[string(nodeName)] == nil {
+		node := i.nodeManager.nodeByName(string(nodeName))
+		if node == nil {
 			klog.Errorf("DiscoverNode succeeded, but CACHE missed for node=%s. If this is a Linux VM, hostnames are case sensitive. Make sure they match.", string(nodeName))
 			return "", ErrNodeNotFound
 		}
 		klog.V(2).Infof("instances.InstanceID() FOUND with %s", string(nodeName))
-		return i.nodeManager.nodeNameMap[string(nodeName)].UUID, nil
+		return node.UUID, nil
 	}
 
 	klog.V(4).Infof("instances.InstanceID() failed with err: %v", err)
@@ -120,7 +122,7 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 // InstanceType returns the type of the instance identified by name.
 func (i *instances) InstanceType(ctx context.Context, name types.NodeName) (string, error) {
 	klog.V(4).Info("instances.InstanceType() called")
-	if nodeInfo, ok := i.nodeManager.nodeNameMap[string(name)]; ok {
+	if nodeInfo := i.nodeManager.nodeByName(string(name)); nodeInfo != nil {
 		return nodeInfo.NodeType, nil
 	}
 	return "", fmt.Errorf("cannot find node with nodeName %s in nodeNameMap", name)
@@ -130,7 +132,7 @@ func (i *instances) InstanceType(ctx context.Context, name types.NodeName) (stri
 func (i *instances) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
 	klog.V(4).Info("instances.InstanceTypeByProviderID() called")
 	uid := GetUUIDFromProviderID(providerID)
-	if nodeInfo, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
+	if nodeInfo := i.nodeManager.nodeByUUID(uid); nodeInfo != nil {
 		return nodeInfo.NodeType, nil
 	}
 	return "", fmt.Errorf("cannot find node with providerID %s in nodeUUIDMap", providerID)
@@ -173,19 +175,20 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 	}
 
 	// try fetch the VM using the managed object reference and check the VM state
-	if _, ok := i.nodeManager.nodeUUIDMap[uid]; !ok {
+	node := i.nodeManager.nodeByUUID(uid)
+	if node == nil {
 		klog.V(2).Infof("instances.InstanceExistsByProviderID() NOT CACHED for node uid %q", uid)
 		return false, nil
 	}
 
-	exist, err := i.nodeManager.nodeUUIDMap[uid].vm.Exists(ctx)
+	exist, err := node.vm.Exists(ctx)
 	if err != nil {
-		klog.V(2).Infof("instances.InstanceExistsByProviderID() check for node uid '%q' by using vm-id '%q' failed", uid, i.nodeManager.nodeUUIDMap[uid].vm.Reference())
+		klog.V(2).Infof("instances.InstanceExistsByProviderID() check for node uid '%q' by using vm-id '%q' failed", uid, node.vm.Reference())
 		return false, err
 	}
 
 	if exist {
-		klog.V(2).Infof("instances.InstanceExistsByProviderID() found node uid '%q' by using vm-id '%q'", uid, i.nodeManager.nodeUUIDMap[uid].vm.Reference())
+		klog.V(2).Infof("instances.InstanceExistsByProviderID() found node uid '%q' by using vm-id '%q'", uid, node.vm.Reference())
 		return true, nil
 	}
 
@@ -199,7 +202,8 @@ func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID
 
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
-	if _, ok := i.nodeManager.nodeUUIDMap[uid]; !ok {
+	node := i.nodeManager.nodeByUUID(uid)
+	if node == nil {
 		// if the uuid is not cached, we end up here
 		klog.V(2).Info("instances.InstanceShutdownByProviderID() NOT CACHED")
 		if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err != nil {
@@ -208,9 +212,10 @@ func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID
 			return false, err
 		}
 		klog.V(2).Infof("instances.InstanceShutdownByProviderID() EXISTS with %q", uid)
+		node = i.nodeManager.nodeByUUID(uid)
 	}
 
-	active, err := i.nodeManager.nodeUUIDMap[uid].vm.IsActive(ctx)
+	active, err := node.vm.IsActive(ctx)
 	klog.V(2).Infof("VM=%s IsActive=%t", uid, active)
 	// invert the return value
 	return !active, err
