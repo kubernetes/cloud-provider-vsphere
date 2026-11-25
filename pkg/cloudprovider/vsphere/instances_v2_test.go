@@ -19,13 +19,20 @@ package vsphere
 import (
 	"context"
 	"errors"
+	"net/url"
 	"reflect"
 	"testing"
 
+	"github.com/vmware/govmomi/simulator"
+	"github.com/vmware/govmomi/vapi/rest"
+	"github.com/vmware/govmomi/vapi/tags"
+	vimtypes "github.com/vmware/govmomi/vim25/types"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
+
+	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
 func TestNewInstancesV2(t *testing.T) {
@@ -587,5 +594,69 @@ func TestInstanceMetadata(t *testing.T) {
 				t.Errorf("expected %+v but got %+v", tc.expected, result)
 			}
 		})
+	}
+}
+
+func TestInstanceMetadataAfterSessionExpired(t *testing.T) {
+	ctx := context.Background()
+
+	cfg, close := configFromEnvOrSim(false)
+	defer close()
+
+	connMgr := cm.NewConnectionManager(&cfg.Config, nil, nil)
+	defer connMgr.Logout()
+	vsi := connMgr.VsphereInstanceMap[cfg.Global.VCenterIP]
+	if err := connMgr.Connect(ctx, vsi); err != nil {
+		t.Fatalf("Failed to connect to vSphere: %s", err)
+	}
+
+	nm := newNodeManager(nil, connMgr)
+	c := newInstancesV2(newInstances(nm), newZones(nm, cfg.Labels.Zone, cfg.Labels.Region))
+
+	myvm := cfg.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
+	myvm.Guest.HostName = myvm.Name
+	myvm.Guest.Net = []vimtypes.GuestNicInfo{{Network: "foo-bar", IpAddress: []string{"10.0.0.1"}}}
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{Name: myvm.Name},
+		Status: v1.NodeStatus{
+			NodeInfo: v1.NodeSystemInfo{SystemUUID: ConvertK8sUUIDtoNormal(myvm.Config.Uuid)},
+		},
+	}
+	nm.RegisterNode(node)
+	node.Spec.ProviderID = ProviderPrefix + myvm.Config.Uuid
+
+	// Tag the VM's host with a region and a zone
+	rc := rest.NewClient(vsi.Conn.Client)
+	if err := rc.Login(ctx, url.UserPassword(vsi.Conn.Username, vsi.Conn.Password)); err != nil {
+		t.Fatal(err)
+	}
+	m := tags.NewManager(rc)
+	host := cfg.Map.Get(*myvm.Runtime.Host)
+	for category, tag := range map[string]string{cfg.Labels.Region: "k8s-region-US", cfg.Labels.Zone: "k8s-zone-US-CA1"} {
+		categoryID, err := m.CreateCategory(ctx, &tags.Category{Name: category})
+		if err != nil {
+			t.Fatal(err)
+		}
+		tagID, err := m.CreateTag(ctx, &tags.Tag{CategoryID: categoryID, Name: tag})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := m.AttachTag(ctx, tagID, host.Reference()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Expire the session that the cached node VM was discovered with
+	vsi.Conn.Logout(ctx)
+
+	metadata, err := c.InstanceMetadata(ctx, node)
+	if err != nil {
+		t.Fatalf("InstanceMetadata() failed after the vCenter session expired: %v", err)
+	}
+	if metadata.Region != "k8s-region-US" || metadata.Zone != "k8s-zone-US-CA1" {
+		t.Errorf("unexpected region/zone: %q/%q", metadata.Region, metadata.Zone)
+	}
+	if got := nm.nodeUUIDMap[GetUUIDFromProviderID(node.Spec.ProviderID)].vm.Client(); got != vsi.Conn.Client {
+		t.Errorf("cached VM is not bound to the reconnected client")
 	}
 }
