@@ -2254,3 +2254,66 @@ network.encoding: %s
 network: %s`,
 		encoding, encodedNetconfig)
 }
+
+func guestInfoExtraConfig(metadata string) []vimtypes.BaseOptionValue {
+	return []vimtypes.BaseOptionValue{
+		&vimtypes.OptionValue{
+			Key:   "guestinfo.metadata",
+			Value: base64.StdEncoding.EncodeToString([]byte(metadata)),
+		},
+		&vimtypes.OptionValue{
+			Key:   "guestinfo.metadata.encoding",
+			Value: "base64",
+		},
+	}
+}
+
+func TestSortStaticAddressesGzipBound(t *testing.T) {
+	ips := []*ipAddrNetworkName{
+		{ipAddr: "10.0.0.2", networkName: "VM Network"},
+		{ipAddr: "10.0.0.1", networkName: "VM Network"},
+	}
+	got, err := sortStaticallyConfiguredAddressesFirst(
+		guestInfoExtraConfig(guestInfoEncodedNetconfigWithAddresses("gzip+base64", "10.0.0.1/24")),
+		ips,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].ipAddr != "10.0.0.1" {
+		t.Fatalf("order = [%s %s], want static address first", got[0].ipAddr, got[1].ipAddr)
+	}
+
+	oversized := bytes.Repeat([]byte("a"), maxNetworkDecodedBytes+1)
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	if _, err := zw.Write(oversized); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	bomb := fmt.Sprintf("network.encoding: gzip+base64\nnetwork: %s\n", base64.StdEncoding.EncodeToString(buf.Bytes()))
+	if _, err := sortStaticallyConfiguredAddressesFirst(guestInfoExtraConfig(bomb), ips); err == nil || !strings.Contains(err.Error(), "decompressed network metadata") {
+		t.Fatalf("oversized gzip: got %v", err)
+	}
+
+	badGzip := fmt.Sprintf("network.encoding: gzip+base64\nnetwork: %s\n", base64.StdEncoding.EncodeToString([]byte("not-gzip")))
+	if _, err := sortStaticallyConfiguredAddressesFirst(guestInfoExtraConfig(badGzip), ips); err == nil {
+		t.Fatal("malformed gzip was accepted")
+	}
+
+	badB64 := "network.encoding: gzip+base64\nnetwork: %%%\n"
+	if _, err := sortStaticallyConfiguredAddressesFirst(guestInfoExtraConfig(badB64), ips); err == nil {
+		t.Fatal("invalid base64 was accepted")
+	}
+
+	huge := strings.Repeat("A", maxGuestInfoEncodedBytes+1)
+	extra := []vimtypes.BaseOptionValue{
+		&vimtypes.OptionValue{Key: "guestinfo.metadata", Value: huge},
+		&vimtypes.OptionValue{Key: "guestinfo.metadata.encoding", Value: "base64"},
+	}
+	if _, err := sortStaticallyConfiguredAddressesFirst(extra, ips); err == nil || !strings.Contains(err.Error(), "encoded size limit") {
+		t.Fatalf("encoded cap: got %v", err)
+	}
+}
