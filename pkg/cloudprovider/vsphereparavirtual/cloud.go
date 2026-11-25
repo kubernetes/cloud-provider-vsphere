@@ -58,10 +58,10 @@ var (
 	// RouteEnabled if set to true, will start ippool and node controller.
 	RouteEnabled bool
 
-	// nodeRoutesDisabled controls the cloud-provider Routes interface.
+	// nodeRoutesDisabled, if set to true, disables management of Kubernetes node routes.
 	nodeRoutesDisabled bool
 
-	// loadBalancerDisabled controls the cloud-provider LoadBalancer interface.
+	// loadBalancerDisabled, if set to true, disables provisioning and management of load balancers for Kubernetes Services.
 	loadBalancerDisabled bool
 
 	// vpcModeEnabled if set to true, ippool and node controller will process v1alpha1 StaticRoute and v1alpha2 IPPool, otherwise v1alpha1 RouteSet and v1alpha1 IPPool
