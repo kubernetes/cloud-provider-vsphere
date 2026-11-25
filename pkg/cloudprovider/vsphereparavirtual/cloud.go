@@ -58,6 +58,12 @@ var (
 	// RouteEnabled if set to true, will start ippool and node controller.
 	RouteEnabled bool
 
+	// nodeRoutesDisabled, if set to true, disables management of Kubernetes node routes.
+	nodeRoutesDisabled bool
+
+	// loadBalancerDisabled, if set to true, disables provisioning and management of load balancers for Kubernetes Services.
+	loadBalancerDisabled bool
+
 	// vpcModeEnabled if set to true, ippool and node controller will process v1alpha1 StaticRoute and v1alpha2 IPPool, otherwise v1alpha1 RouteSet and v1alpha1 IPPool
 	vpcModeEnabled bool
 
@@ -109,6 +115,8 @@ func init() {
 			"Valid values (case-insensitive): ipv4 (default), ipv6, ipv4ipv6, ipv6ipv4. "+
 			"Non-ipv4 values require --vm-operator-api-version >= v1alpha6. "+
 			"IPv6 or dual-stack with the route controller additionally requires --enable-vpc-mode=true.")
+	flag.BoolVar(&loadBalancerDisabled, "disable-load-balancer", false, "Disable provisioning and management of load balancers for Kubernetes Services.")
+	flag.BoolVar(&nodeRoutesDisabled, "disable-node-routes", false, "Disable management of Kubernetes node routes.")
 }
 
 // newVSphereParavirtual creates a new VSphereParavirtual cloud provider from the given config.
@@ -174,17 +182,27 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 		klog.Fatalf("Failed to create VM Operator adapter for version %s: %v", vmopAPIVersion, err)
 	}
 
-	routes, err := NewRoutes(clusterNS, kcfg, *cp.ownerReference, vpcModeEnabled, cp.informMgr.GetNodeLister())
-	if err != nil {
-		klog.Errorf("Failed to init Route: %v", err)
+	if !nodeRoutesDisabled {
+		routes, err := NewRoutes(clusterNS, kcfg, *cp.ownerReference, vpcModeEnabled, cp.informMgr.GetNodeLister())
+		if err != nil {
+			klog.Errorf("Failed to init Route: %v", err)
+		} else {
+			cp.routes = routes
+		}
+	} else {
+		klog.V(0).Info("Node Routes interface disabled")
 	}
-	cp.routes = routes
 
-	lb, err := NewLoadBalancer(clusterNS, vmopClient, cp.ownerReference, serviceAnnotationPropagationEnabled)
-	if err != nil {
-		klog.Errorf("Failed to init LoadBalancer: %v", err)
+	if !loadBalancerDisabled {
+		lb, err := NewLoadBalancer(clusterNS, vmopClient, cp.ownerReference, serviceAnnotationPropagationEnabled)
+		if err != nil {
+			klog.Errorf("Failed to init LoadBalancer: %v", err)
+		} else {
+			cp.loadBalancer = lb
+		}
+	} else {
+		klog.V(0).Info("LoadBalancer interface disabled")
 	}
-	cp.loadBalancer = lb
 
 	klog.Infof("Using cluster IP family: %s", resolvedClusterIPFamily)
 	instances, err := NewInstances(clusterNS, vmopClient, string(resolvedClusterIPFamily))
@@ -221,8 +239,12 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 // LoadBalancer returns a balancer interface. Also returns true if the
 // interface is supported, false otherwise.
 func (cp *VSphereParavirtual) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
-	klog.V(1).Info("Enabling load balancer support in vsphere paravirtual cloud provider")
-	return cp.loadBalancer, true
+	if cp.loadBalancer != nil {
+		klog.V(4).Info("LoadBalancer interface is available")
+		return cp.loadBalancer, true
+	}
+	klog.V(4).Info("LoadBalancer interface is not available")
+	return nil, false
 }
 
 // Instances returns an instances interface. Also returns true if the
@@ -255,8 +277,12 @@ func (cp *VSphereParavirtual) Clusters() (cloudprovider.Clusters, bool) {
 // Routes returns a routes interface along with whether the interface
 // is supported.
 func (cp *VSphereParavirtual) Routes() (cloudprovider.Routes, bool) {
-	klog.V(1).Info("Enabling Routes interface on vsphere paravirtual cloud provider")
-	return cp.routes, true
+	if cp.routes != nil {
+		klog.V(4).Info("Routes interface is available")
+		return cp.routes, true
+	}
+	klog.V(4).Info("Routes interface is not available")
+	return nil, false
 }
 
 // ProviderName returns the cloud provider ID.
